@@ -2,6 +2,7 @@ import { TrainingMatrix } from "@/components/training/training-matrix";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
+import { InlineAlert } from "@/components/ui/alert";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 type TrainingMatrixPayload = {
@@ -37,8 +38,19 @@ export default async function TrainingMatrixPage({
     target_page_size: 50,
   });
 
-  const matrix =
-    (error ? null : (data as TrainingMatrixPayload | null)) ?? null;
+  if (error) {
+    return (
+      <div className="flex flex-col gap-8" data-testid="training-matrix-page">
+        <PageHeader title="Training matrix" />
+        <InlineAlert tone="error" data-testid="training-matrix-error">
+          We could not load the training matrix. Try again or contact your
+          administrator if this keeps happening.
+        </InlineAlert>
+      </div>
+    );
+  }
+
+  const matrix = (data as TrainingMatrixPayload | null) ?? null;
   const memberships = (matrix?.people ?? []).map((person) => ({
     id: person.membership_id,
     display_name: person.display_name,

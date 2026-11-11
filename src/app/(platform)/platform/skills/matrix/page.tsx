@@ -5,6 +5,7 @@ import {
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
+import { InlineAlert } from "@/components/ui/alert";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 type MatrixPayload = {
@@ -34,7 +35,19 @@ export default async function SkillsMatrixPage({
     target_page_size: 50,
   });
 
-  const matrix = (error ? null : (data as MatrixPayload | null)) ?? null;
+  if (error) {
+    return (
+      <div className="flex flex-col gap-8" data-testid="skills-matrix-page">
+        <PageHeader title="Skills matrix" />
+        <InlineAlert tone="error" data-testid="skills-matrix-error">
+          We could not load the skills matrix. Try again or contact your
+          administrator if this keeps happening.
+        </InlineAlert>
+      </div>
+    );
+  }
+
+  const matrix = (data as MatrixPayload | null) ?? null;
   const memberships = (matrix?.people ?? []).map((person) => ({
     id: person.membership_id,
     display_name: person.display_name,
@@ -65,7 +78,10 @@ export default async function SkillsMatrixPage({
           </Button>
         }
       />
-      <p className="text-sm text-muted-foreground" data-testid="skills-matrix-summary">
+      <p
+        className="text-sm text-muted-foreground"
+        data-testid="skills-matrix-summary"
+      >
         Showing {memberships.length} of {totalPeople} people
         {skills.length > 0
           ? ` · ${skills.length} skill${skills.length === 1 ? "" : "s"} required on this page`
@@ -77,11 +93,7 @@ export default async function SkillsMatrixPage({
           Skills if this organisation has not configured capability yet.
         </p>
       ) : null}
-      <SkillsMatrix
-        memberships={memberships}
-        skills={skills}
-        gaps={gapRows}
-      />
+      <SkillsMatrix memberships={memberships} skills={skills} gaps={gapRows} />
       {totalPages > 1 ? (
         <nav
           className="flex flex-wrap items-center gap-3 text-sm"

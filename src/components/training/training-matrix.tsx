@@ -26,13 +26,17 @@ export function TrainingMatrix({
   requirements,
   completions,
 }: TrainingMatrixProps) {
+  const mandatoryCells = new Set(
+    requirements
+      .filter((requirement) => requirement.mandatory)
+      .map(
+        (requirement) =>
+          `${requirement.membership_id}:${requirement.course_id}`,
+      ),
+  );
+
   function cellFor(membershipId: string, courseId: string) {
-    const isRequired = requirements.some(
-      (requirement) =>
-        requirement.membership_id === membershipId &&
-        requirement.course_id === courseId &&
-        requirement.mandatory,
-    );
+    const isRequired = mandatoryCells.has(`${membershipId}:${courseId}`);
     const completion = completions.find(
       (c) => c.membership_id === membershipId && c.course_id === courseId,
     );

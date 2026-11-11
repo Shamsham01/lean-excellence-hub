@@ -123,6 +123,7 @@ declare
   org_wide_requirement public.skill_requirements;
   effective_below_org boolean := false;
 begin
+  -- Precedence (org-wide vs unit depth vs target order) mirrors training resolver below.
 
   with candidates as (
     select
@@ -238,8 +239,9 @@ $$;
 create or replace function private.resolve_effective_training_requirement(
   target_organisation_id uuid,
   target_curriculum_version_id uuid,
-  target_membership_id uuid,
-  target_course_id uuid
+  target_course_id uuid,
+  target_job_function_id uuid,
+  target_person_unit_id uuid
 )
 returns public.training_requirements
 language plpgsql
@@ -248,26 +250,14 @@ security definer
 set search_path = ''
 as $$
 declare
-  assignment_job_function_id uuid;
-  assignment_person_unit_id uuid;
   resolved public.training_requirements%rowtype;
   resolved_id uuid;
 begin
-  select
-    assignment_row.job_function_id,
-    assignment_row.organisational_unit_id
-  into
-    assignment_job_function_id,
-    assignment_person_unit_id
-  from public.membership_job_function_assignments assignment_row
-  where assignment_row.organisation_id = target_organisation_id
-    and assignment_row.membership_id = target_membership_id
-    and assignment_row.is_primary = true
-    and assignment_row.valid_from <= statement_timestamp()
-    and (
-      assignment_row.valid_to is null
-      or assignment_row.valid_to > statement_timestamp()
-    );
+  -- Precedence mirrors private.resolve_effective_skill_requirement (unit depth vs org-wide).
+
+  if target_job_function_id is null then
+    return null;
+  end if;
 
   select winner.id
   into resolved_id
@@ -285,7 +275,7 @@ begin
             from public.organisation_unit_closure closure_row
             where closure_row.organisation_id = target_organisation_id
               and closure_row.ancestor_unit_id = requirement_row.organisational_unit_id
-              and closure_row.descendant_unit_id = assignment_person_unit_id
+              and closure_row.descendant_unit_id = target_person_unit_id
           ),
           2147483647
         ) as unit_depth,
@@ -297,15 +287,12 @@ begin
         and requirement_row.course_id = target_course_id
         and (
           requirement_row.applies_to_all_members
-          or (
-            assignment_job_function_id is not null
-            and requirement_row.job_function_id = assignment_job_function_id
-          )
+          or requirement_row.job_function_id = target_job_function_id
         )
         and private.requirement_unit_applies(
           target_organisation_id,
           requirement_row.organisational_unit_id,
-          assignment_person_unit_id
+          target_person_unit_id
         )
     )
     select candidates.id
@@ -332,7 +319,119 @@ begin
 end;
 $$;
 
-drop function if exists private.derive_skill_gap(uuid, uuid, uuid);
+create or replace function private.build_skill_gap_from_resolution(
+  target_organisation_id uuid,
+  target_membership_id uuid,
+  target_skill_id uuid,
+  target_resolution jsonb
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  requirement_row public.skill_requirements%rowtype;
+  org_wide_row public.skill_requirements%rowtype;
+  effective_below_org boolean := false;
+  org_wide_target_order integer;
+  current_assessment public.membership_skill_assessments%rowtype;
+  current_order integer;
+  target_order integer;
+begin
+  if target_resolution is null then
+    return jsonb_build_object('status', 'not_required');
+  end if;
+
+  requirement_row := jsonb_populate_record(
+    null::public.skill_requirements,
+    target_resolution -> 'effective_requirement'
+  );
+  if target_resolution -> 'org_wide_requirement' is not null
+    and target_resolution -> 'org_wide_requirement' <> 'null'::jsonb then
+    org_wide_row := jsonb_populate_record(
+      null::public.skill_requirements,
+      target_resolution -> 'org_wide_requirement'
+    );
+  end if;
+  effective_below_org := coalesce((target_resolution ->> 'effective_below_org')::boolean, false);
+  org_wide_target_order := nullif(target_resolution ->> 'org_wide_target_order', '')::integer;
+
+  if requirement_row.id is null then
+    return jsonb_build_object('status', 'not_required');
+  end if;
+
+  current_assessment := private.get_current_authoritative_skill_assessment(
+    target_organisation_id,
+    target_membership_id,
+    target_skill_id
+  );
+
+  select level_row.order_value
+  into target_order
+  from public.skill_proficiency_levels level_row
+  where level_row.organisation_id = target_organisation_id
+    and level_row.id = requirement_row.target_proficiency_level_id;
+
+  if org_wide_target_order is null and org_wide_row.id is not null then
+    select level_row.order_value
+    into org_wide_target_order
+    from public.skill_proficiency_levels level_row
+    where level_row.organisation_id = target_organisation_id
+      and level_row.id = org_wide_row.target_proficiency_level_id;
+  end if;
+
+  if current_assessment.id is null then
+    return jsonb_build_object(
+      'status', 'not_assessed',
+      'target_order', target_order,
+      'target_scale_version_id', requirement_row.proficiency_scale_version_id,
+      'effective_requirement_id', requirement_row.id,
+      'org_wide_requirement_id', org_wide_row.id,
+      'org_wide_target_order', org_wide_target_order,
+      'effective_below_org', effective_below_org
+    );
+  end if;
+
+  if current_assessment.proficiency_scale_version_id
+    <> requirement_row.proficiency_scale_version_id then
+    return jsonb_build_object(
+      'status', 'incompatible_scale',
+      'target_scale_version_id', requirement_row.proficiency_scale_version_id,
+      'assessment_scale_version_id', current_assessment.proficiency_scale_version_id,
+      'effective_requirement_id', requirement_row.id,
+      'org_wide_requirement_id', org_wide_row.id,
+      'org_wide_target_order', org_wide_target_order,
+      'effective_below_org', effective_below_org
+    );
+  end if;
+
+  select level_row.order_value
+  into current_order
+  from public.skill_proficiency_levels level_row
+  where level_row.organisation_id = target_organisation_id
+    and level_row.id = current_assessment.proficiency_level_id;
+
+  return jsonb_build_object(
+    'status',
+      case
+        when current_order < target_order then 'below_requirement'
+        when current_order = target_order then 'meets_requirement'
+        else 'above_requirement'
+      end,
+    'current_order', current_order,
+    'target_order', target_order,
+    'gap', greatest(target_order - current_order, 0),
+    'scale_version_id', requirement_row.proficiency_scale_version_id,
+    'current_assessment_id', current_assessment.id,
+    'effective_requirement_id', requirement_row.id,
+    'org_wide_requirement_id', org_wide_row.id,
+    'org_wide_target_order', org_wide_target_order,
+    'effective_below_org', effective_below_org
+  );
+end;
+$$;
 
 create or replace function private.derive_skill_gap(
   target_membership_id uuid,
@@ -350,13 +449,6 @@ declare
   capability_version_id uuid;
   assignment_job_function_id uuid;
   assignment_person_unit_id uuid;
-  requirement_row public.skill_requirements%rowtype;
-  org_wide_row public.skill_requirements%rowtype;
-  effective_below_org boolean := false;
-  org_wide_target_order integer;
-  current_assessment public.membership_skill_assessments%rowtype;
-  current_order integer;
-  target_order integer;
   resolution jsonb;
 begin
   if org_id is null
@@ -431,95 +523,11 @@ begin
     assignment_person_unit_id
   );
 
-  if resolution is null then
-    return jsonb_build_object('status', 'not_required');
-  end if;
-
-  requirement_row := jsonb_populate_record(
-    null::public.skill_requirements,
-    resolution -> 'effective_requirement'
-  );
-  if resolution -> 'org_wide_requirement' is not null
-    and resolution -> 'org_wide_requirement' <> 'null'::jsonb then
-    org_wide_row := jsonb_populate_record(
-      null::public.skill_requirements,
-      resolution -> 'org_wide_requirement'
-    );
-  end if;
-  effective_below_org := coalesce((resolution ->> 'effective_below_org')::boolean, false);
-  org_wide_target_order := nullif(resolution ->> 'org_wide_target_order', '')::integer;
-
-  if requirement_row.id is null then
-    return jsonb_build_object('status', 'not_required');
-  end if;
-
-  current_assessment := private.get_current_authoritative_skill_assessment(
+  return private.build_skill_gap_from_resolution(
     org_id,
     target_membership_id,
-    target_skill_id
-  );
-
-  select level_row.order_value
-  into target_order
-  from public.skill_proficiency_levels level_row
-  where level_row.organisation_id = org_id
-    and level_row.id = requirement_row.target_proficiency_level_id;
-
-  if org_wide_target_order is null and org_wide_row.id is not null then
-    select level_row.order_value
-    into org_wide_target_order
-    from public.skill_proficiency_levels level_row
-    where level_row.organisation_id = org_id
-      and level_row.id = org_wide_row.target_proficiency_level_id;
-  end if;
-
-  if current_assessment.id is null then
-    return jsonb_build_object(
-      'status', 'not_assessed',
-      'target_order', target_order,
-      'target_scale_version_id', requirement_row.proficiency_scale_version_id,
-      'effective_requirement_id', requirement_row.id,
-      'org_wide_requirement_id', org_wide_row.id,
-      'org_wide_target_order', org_wide_target_order,
-      'effective_below_org', effective_below_org
-    );
-  end if;
-
-  if current_assessment.proficiency_scale_version_id
-    <> requirement_row.proficiency_scale_version_id then
-    return jsonb_build_object(
-      'status', 'incompatible_scale',
-      'target_scale_version_id', requirement_row.proficiency_scale_version_id,
-      'assessment_scale_version_id', current_assessment.proficiency_scale_version_id,
-      'effective_requirement_id', requirement_row.id,
-      'org_wide_requirement_id', org_wide_row.id,
-      'org_wide_target_order', org_wide_target_order,
-      'effective_below_org', effective_below_org
-    );
-  end if;
-
-  select level_row.order_value
-  into current_order
-  from public.skill_proficiency_levels level_row
-  where level_row.organisation_id = org_id
-    and level_row.id = current_assessment.proficiency_level_id;
-
-  return jsonb_build_object(
-    'status',
-      case
-        when current_order < target_order then 'below_requirement'
-        when current_order = target_order then 'meets_requirement'
-        else 'above_requirement'
-      end,
-    'current_order', current_order,
-    'target_order', target_order,
-    'gap', greatest(target_order - current_order, 0),
-    'scale_version_id', requirement_row.proficiency_scale_version_id,
-    'current_assessment_id', current_assessment.id,
-    'effective_requirement_id', requirement_row.id,
-    'org_wide_requirement_id', org_wide_row.id,
-    'org_wide_target_order', org_wide_target_order,
-    'effective_below_org', effective_below_org
+    target_skill_id,
+    resolution
   );
 end;
 $$;
@@ -537,7 +545,6 @@ as $$ select private.derive_skill_gap(
 
 grant execute on function public.derive_skill_gap(uuid, uuid, uuid) to authenticated;
 revoke all on function public.derive_skill_gap(uuid, uuid, uuid) from public, anon;
-alter function private.derive_skill_gap(uuid, uuid, uuid) owner to lean_hub_private_owner;
 
 create or replace function public.get_training_compliance_summary(
   target_unit_id uuid default null
@@ -625,8 +632,9 @@ begin
       select private.resolve_effective_training_requirement(
         org_id,
         resolved_curriculum_version_id,
-        membership_row.membership_id,
-        mandatory_courses.course_id
+        mandatory_courses.course_id,
+        membership_row.job_function_id,
+        membership_row.person_unit_id
       ) as resolved_requirement
     ) resolved
     where (resolved.resolved_requirement).id is not null
@@ -703,7 +711,9 @@ begin
   end if;
 
   effective_page_size := least(greatest(coalesce(target_page_size, 50), 1), 100);
-  offset_value := greatest(target_page - 1, 0) * effective_page_size;
+  offset_value :=
+    (greatest(least(greatest(coalesce(target_page, 1), 1), 1000000), 1) - 1)
+    * effective_page_size;
 
   select version_row.id
   into capability_version_id
@@ -801,13 +811,31 @@ begin
         (
           select jsonb_agg(
             jsonb_build_object(
-              'membership_id', people_row.membership_id,
-              'skill_id', skill_row.id,
-              'gap', private.derive_skill_gap(people_row.membership_id, skill_row.id)
+              'membership_id', cell_row.membership_id,
+              'skill_id', cell_row.skill_id,
+              'gap', cell_row.gap
             )
           )
-          from paged_people people_row
-          join required_skills skill_row on true
+          from (
+            select
+              people_row.membership_id,
+              skill_row.id as skill_id,
+              private.build_skill_gap_from_resolution(
+                org_id,
+                people_row.membership_id,
+                skill_row.id,
+                private.resolve_effective_skill_requirement(
+                  org_id,
+                  capability_version_id,
+                  skill_row.id,
+                  people_row.job_function_id,
+                  people_row.person_unit_id
+                )
+              ) as gap
+            from paged_people people_row
+            join required_skills skill_row on true
+            where people_row.job_function_id is not null
+          ) cell_row
         ),
         '[]'::jsonb
       ),
@@ -856,15 +884,22 @@ begin
   end if;
 
   if target_unit_id is not null
-    and not private.has_scoped_permission(org_id, 'training.read', null, null)
-    and not private.has_scoped_permission(org_id, 'training.read', null, target_unit_id) then
+    and not private.has_scoped_permission(org_id, 'people.capability.read', null, null)
+    and not private.has_scoped_permission(
+      org_id,
+      'people.capability.read',
+      null,
+      target_unit_id
+    ) then
     raise exception 'training matrix is not authorised for this unit'
       using errcode = '42501';
   end if;
 
   curriculum_version_id := private.get_published_training_curriculum_version_id(org_id);
   effective_page_size := least(greatest(coalesce(target_page_size, 50), 1), 100);
-  offset_value := greatest(target_page - 1, 0) * effective_page_size;
+  offset_value :=
+    (greatest(least(greatest(coalesce(target_page, 1), 1), 1000000), 1) - 1)
+    * effective_page_size;
 
   return (
     with eligible_people as (
@@ -906,43 +941,40 @@ begin
       offset offset_value
       limit effective_page_size
     ),
-    required_courses as (
-      select distinct course_row.id, course_row.name
-      from paged_people people_row
-      cross join public.training_courses course_candidate
-      cross join lateral (
-        select private.resolve_effective_training_requirement(
-          org_id,
-          curriculum_version_id,
-          people_row.membership_id,
-          course_candidate.id
-        ) as resolved_requirement
-      ) resolved
-      join public.training_courses course_row
-        on course_row.organisation_id = org_id
-       and course_row.id = (resolved.resolved_requirement).course_id
-      where course_candidate.organisation_id = org_id
-        and course_candidate.status = 'active'
-        and (resolved.resolved_requirement).id is not null
-    ),
-    applicable_cells as (
+    resolved_training_cells as (
       select
         people_row.membership_id,
-        (resolved.resolved_requirement).course_id,
-        (resolved.resolved_requirement).mandatory
+        course_row.id as course_id,
+        course_row.name as course_name,
+        resolved.resolved_requirement
       from paged_people people_row
       cross join public.training_courses course_row
       cross join lateral (
         select private.resolve_effective_training_requirement(
           org_id,
           curriculum_version_id,
-          people_row.membership_id,
-          course_row.id
+          course_row.id,
+          people_row.job_function_id,
+          people_row.person_unit_id
         ) as resolved_requirement
       ) resolved
       where course_row.organisation_id = org_id
         and course_row.status = 'active'
+        and people_row.job_function_id is not null
         and (resolved.resolved_requirement).id is not null
+    ),
+    required_courses as (
+      select distinct
+        cell_row.course_id as id,
+        cell_row.course_name as name
+      from resolved_training_cells cell_row
+    ),
+    applicable_cells as (
+      select
+        cell_row.membership_id,
+        cell_row.course_id,
+        (cell_row.resolved_requirement).mandatory as mandatory
+      from resolved_training_cells cell_row
     )
     select jsonb_build_object(
       'people', coalesce(
@@ -1035,9 +1067,22 @@ grant execute on function public.get_training_matrix(integer, integer, uuid) to 
 revoke all on function public.get_skills_matrix(integer, integer, uuid) from public, anon;
 revoke all on function public.get_training_matrix(integer, integer, uuid) from public, anon;
 
+revoke execute on function private.requirement_unit_applies(uuid, uuid, uuid) from public;
+revoke execute on function private.resolve_effective_skill_requirement(uuid, uuid, uuid, uuid, uuid)
+  from public;
+revoke execute on function private.resolve_effective_training_requirement(uuid, uuid, uuid, uuid, uuid)
+  from public;
+revoke execute on function private.get_skills_matrix(integer, integer, uuid) from public;
+revoke execute on function private.get_training_matrix(integer, integer, uuid) from public;
+grant execute on function private.get_skills_matrix(integer, integer, uuid) to authenticated;
+grant execute on function private.get_training_matrix(integer, integer, uuid) to authenticated;
+
 alter function private.requirement_unit_applies(uuid, uuid, uuid) owner to lean_hub_private_owner;
 alter function private.resolve_effective_skill_requirement(uuid, uuid, uuid, uuid, uuid)
   owner to lean_hub_private_owner;
-alter function private.resolve_effective_training_requirement(uuid, uuid, uuid, uuid) owner to lean_hub_private_owner;
+alter function private.resolve_effective_training_requirement(uuid, uuid, uuid, uuid, uuid)
+  owner to lean_hub_private_owner;
+alter function private.build_skill_gap_from_resolution(uuid, uuid, uuid, jsonb)
+  owner to lean_hub_private_owner;
 alter function private.get_skills_matrix(integer, integer, uuid) owner to lean_hub_private_owner;
 alter function private.get_training_matrix(integer, integer, uuid) owner to lean_hub_private_owner;
