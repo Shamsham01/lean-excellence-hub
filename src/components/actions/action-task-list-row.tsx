@@ -129,6 +129,7 @@ export function ActionTaskListRow({
             displayName={assigneeName || "Unassigned"}
             avatarUrl={action.assignee_avatar_url}
             unassigned={isUnassigned}
+            showHoverTitle={!isUnassigned}
             size="sm"
             className="size-8"
           />

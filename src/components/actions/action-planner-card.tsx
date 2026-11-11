@@ -114,6 +114,7 @@ export function ActionPlannerCard({
             displayName={assigneeName || "Unassigned"}
             avatarUrl={action.assignee_avatar_url}
             unassigned={isUnassigned}
+            showHoverTitle={!isUnassigned}
             size="sm"
           />
         </div>

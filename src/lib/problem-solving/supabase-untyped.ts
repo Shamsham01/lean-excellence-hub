@@ -25,13 +25,17 @@ export async function callProblemSolvingRpc<T = unknown>(
   fn: string,
   args?: Record<string, unknown>,
 ): Promise<{ data: T | null; error: SupabaseRpcError | null }> {
-  const client = supabase as SupabaseClient<Database> & {
-    rpc: (
-      name: string,
-      params?: Record<string, unknown>,
-    ) => ReturnType<SupabaseClient<Database>["rpc"]>;
-  };
-  const { data, error } = await client.rpc(fn, args ?? {});
+  const { data, error } = await (
+    supabase as unknown as {
+      rpc: (
+        name: string,
+        params?: Record<string, unknown>,
+      ) => Promise<{
+        data: unknown;
+        error: { code?: string; message: string } | null;
+      }>;
+    }
+  ).rpc(fn, args ?? {});
   return {
     data: data as T | null,
     error: error
