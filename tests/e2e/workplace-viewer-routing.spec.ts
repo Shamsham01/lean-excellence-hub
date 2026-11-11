@@ -227,7 +227,7 @@ async function provisionWorkplaceRoutingFixture(): Promise<WorkplaceRoutingFixtu
   });
   await rpc(owner, "set_five_s_standard_applicable_units", {
     target_standard_id: standardId,
-    target_unit_ids: [auditArea, hiddenArea, siblingArea, closedArea],
+    target_unit_ids: [auditArea, hiddenArea],
   });
   await rpc(owner, "publish_five_s_standard_version", {
     target_standard_version_id: versionId,

@@ -15,15 +15,15 @@ export async function chooseApplicableUnit(
 
   if (await editLocations.isVisible().catch(() => false)) {
     await editLocations.click();
-    await expect(
-      page.getByTestId("applicable-units-picker-dialog"),
-    ).toBeVisible();
+    const picker = page.getByTestId("applicable-units-picker-dialog");
+    await expect(picker).toBeVisible();
     const checkbox = options.pickLast
-      ? page.getByTestId("applicable-unit-checkbox").last()
-      : page.getByTestId("applicable-unit-checkbox").first();
-    await checkbox.scrollIntoViewIfNeeded();
+      ? picker.getByTestId("applicable-unit-checkbox").last()
+      : picker.getByTestId("applicable-unit-checkbox").first();
+    await expect(checkbox).toBeVisible({ timeout: 60_000 });
     await checkbox.check();
     await page.getByTestId("applicable-units-picker-save").click();
+    await expect(picker).toBeHidden();
     return;
   }
 

@@ -245,11 +245,12 @@ test.describe("mobile location dialog scrolling", () => {
         height: viewport.height,
       });
       await openCreateDialog(page);
-      const { dialog, picker, scroller } =
-        await openApplicabilityPickerFromCreateDialog(page);
+      const dialog = page.getByTestId("module-setup-create-dialog");
       await expect(
         dialog.getByRole("heading", { name: "Create draft" }),
       ).toBeVisible();
+      const { picker, scroller } =
+        await openApplicabilityPickerFromCreateDialog(page);
       await expectNoHorizontalOverflow(page);
 
       const frame = await picker.evaluate((element) => {
