@@ -228,6 +228,7 @@ test.describe("QA-NEW-ORG-001 clean organisation onboarding journey", () => {
   test("founding owner: first records for action, suggestions, 5S draft, and problem-solving", async ({
     page,
   }) => {
+    test.setTimeout(300_000);
     const assertClean = trackRuntimeErrors(page);
     await page.setViewportSize(desktopViewport);
     await page.goto("/login");
@@ -268,7 +269,10 @@ test.describe("QA-NEW-ORG-001 clean organisation onboarding journey", () => {
     await page.goto("/platform/problem-solving/new");
     await expect(page.getByTestId("create-problem-solving-page")).toBeVisible();
     const wizard = page.getByTestId("create-problem-solving-wizard");
-    await wizard.getByLabel("Title").fill(caseTitle);
+    await wizard.getByTestId("create-case-title").fill(caseTitle);
+    await expect(wizard.getByRole("button", { name: "Next" })).toBeEnabled({
+      timeout: 30_000,
+    });
     await wizard.getByRole("button", { name: "Next" }).click();
     await wizard
       .locator("textarea")

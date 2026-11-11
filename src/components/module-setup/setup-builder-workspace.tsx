@@ -543,6 +543,7 @@ export function SetupBuilderWorkspace({
                   options={units}
                   requiresSiteSelection={requiresSiteSelection}
                   description="You choose where this draft applies."
+                  onSelectedIdsChange={() => setCreateError(null)}
                 />
               ) : null}
               {createError ? (
