@@ -14826,6 +14826,14 @@ export type Database = {
         Args: { target_page?: number; target_page_size?: number }
         Returns: Json
       }
+      get_skills_matrix: {
+        Args: {
+          target_page?: number
+          target_page_size?: number
+          target_unit_id?: string
+        }
+        Returns: Json
+      }
       get_suggestion_benefits: {
         Args: { target_suggestion_id: string }
         Returns: Json
@@ -14865,6 +14873,14 @@ export type Database = {
       get_suggestions_overview: { Args: never; Returns: Json }
       get_training_compliance_summary: {
         Args: { target_unit_id?: string }
+        Returns: Json
+      }
+      get_training_matrix: {
+        Args: {
+          target_page?: number
+          target_page_size?: number
+          target_unit_id?: string
+        }
         Returns: Json
       }
       get_workforce_import_credential_export_rows: {

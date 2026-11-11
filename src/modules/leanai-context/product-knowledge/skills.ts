@@ -34,7 +34,8 @@ const sharedFacts = [
   "Training is a learning activity. Completing training does not automatically make someone competent.",
   "Example: Oven Operators at Bodmin must demonstrate Operate and monitor the oven at Competent.",
   "The skills catalogue and proficiency scale belong to the organisation. A selected site does not limit them.",
-  "A requirement applies only to the organisational units confirmed on that requirement. Leave the unit unset to apply it wherever that job function is used.",
+  "A requirement with no unit is org-wide. A unit on a requirement applies to that unit and its descendants via organisation_unit_closure; the most specific matching requirement wins over org-wide.",
+  "The skills matrix loads people in pages (default 50, hard cap 100) and lists every skill required for someone on that page—no silent column caps.",
   "LeanAI can explain and propose. It cannot publish, assess people, grant permissions, or choose applicability.",
   "Quick Start sample content is a starting point. Food-production content is not a certification or a compliance guarantee.",
 ] as const;
