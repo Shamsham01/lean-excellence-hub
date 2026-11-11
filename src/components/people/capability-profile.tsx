@@ -7,6 +7,7 @@ import { SkillAssessmentDialog } from "@/components/people/skill-assessment-dial
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { formatSkillAssessmentMethodLabel } from "@/modules/skills/assessment-methods";
 
 type GapRow = {
   skill_id: string;
@@ -334,17 +335,20 @@ export function CapabilityProfile({
                 </p>
               ) : (
                 <ul className="mt-2 space-y-2">
-                  {assessments.map((item) => (
-                    <li key={item.assessment_id} className="text-sm">
-                      {new Date(item.assessed_at).toLocaleDateString("en-GB")}
-                      {" — "}
-                      {item.assertion_type}
-                      {item.is_authoritative ? " (validated)" : ""}
-                      {item.assessment_method
-                        ? ` · ${item.assessment_method}`
-                        : ""}
-                    </li>
-                  ))}
+                  {assessments.map((item) => {
+                    const assessmentMethodLabel = formatSkillAssessmentMethodLabel(
+                      item.assessment_method,
+                    );
+                    return (
+                      <li key={item.assessment_id} className="text-sm">
+                        {new Date(item.assessed_at).toLocaleDateString("en-GB")}
+                        {" — "}
+                        {item.assertion_type}
+                        {item.is_authoritative ? " (validated)" : ""}
+                        {assessmentMethodLabel ? ` · ${assessmentMethodLabel}` : ""}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>

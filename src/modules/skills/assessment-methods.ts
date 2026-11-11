@@ -25,3 +25,18 @@ export function isSkillValidationMethod(
   if (!value) return false;
   return (SKILL_VALIDATION_METHODS as readonly string[]).includes(value);
 }
+
+const SKILL_SELF_ASSESSMENT_METHOD = "self_assessment" as const;
+
+export function formatSkillAssessmentMethodLabel(
+  method: string | null | undefined,
+): string | null {
+  if (!method) return null;
+  if (method === SKILL_SELF_ASSESSMENT_METHOD) {
+    return "Self assessment";
+  }
+  if (isSkillValidationMethod(method)) {
+    return SKILL_VALIDATION_METHOD_LABELS[method];
+  }
+  return method;
+}

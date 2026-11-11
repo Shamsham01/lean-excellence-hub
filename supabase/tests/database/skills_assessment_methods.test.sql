@@ -1,6 +1,6 @@
 begin;
 
-select plan(14);
+select plan(15);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -236,6 +236,25 @@ select throws_ok(
   '22023',
   'skill validation requires a recognised assessment method',
   'omitted assessment method rejected'
+);
+
+select throws_ok(
+  $$select public.record_skill_self_assessment(
+    (select id from skills_methods_ids where key = 'membership'),
+    (select id from skills_methods_ids where key = 'skill'),
+    (select id from skills_methods_ids where key = 'scale_version'),
+    (
+      select level_row.id
+      from public.skill_proficiency_levels level_row
+      where level_row.scale_version_id = (select id from skills_methods_ids where key = 'scale_version')
+        and level_row.order_value = 1
+    ),
+  null::timestamptz,
+    'manager_assessment'
+  )$$,
+  '22023',
+  'skill self assessment requires the self_assessment method',
+  'self assessment rejects validation methods'
 );
 
 insert into skills_methods_ids (key, id)

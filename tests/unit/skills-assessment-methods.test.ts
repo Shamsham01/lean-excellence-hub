@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  formatSkillAssessmentMethodLabel,
   isSkillValidationMethod,
   SKILL_VALIDATION_METHOD_LABELS,
   SKILL_VALIDATION_METHODS,
@@ -41,5 +42,15 @@ describe("SKILL_VALIDATION_METHODS", () => {
     expect(isSkillValidationMethod("")).toBe(false);
     expect(isSkillValidationMethod(undefined)).toBe(false);
     expect(isSkillValidationMethod("observation")).toBe(false);
+  });
+
+  it("formatSkillAssessmentMethodLabel maps validation and self paths", () => {
+    expect(formatSkillAssessmentMethodLabel("practical_observation")).toBe(
+      "Practical observation",
+    );
+    expect(formatSkillAssessmentMethodLabel("self_assessment")).toBe(
+      "Self assessment",
+    );
+    expect(formatSkillAssessmentMethodLabel(null)).toBeNull();
   });
 });
