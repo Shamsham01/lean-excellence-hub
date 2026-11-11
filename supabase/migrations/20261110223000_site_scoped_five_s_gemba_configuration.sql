@@ -50,6 +50,10 @@ as $$
       on role_version.organisation_id = grant_row.organisation_id
      and role_version.id = grant_row.role_version_id
      and role_version.status = 'published'
+    join public.roles role_row
+      on role_row.organisation_id = role_version.organisation_id
+     and role_row.id = role_version.role_id
+     and role_row.status = 'active'
     join public.role_permissions role_permission
       on role_permission.organisation_id = role_version.organisation_id
      and role_permission.role_version_id = role_version.id
@@ -77,11 +81,7 @@ security definer
 set search_path = ''
 as $$
   select
-    private.membership_has_org_wide_operational_catalog_scope(
-      target_organisation_id,
-      target_membership_id
-    )
-    or private.membership_has_scoped_permission(
+    private.membership_has_scoped_permission(
       target_membership_id,
       target_organisation_id,
       target_permission_key,
@@ -107,12 +107,10 @@ stable
 security definer
 set search_path = ''
 as $$
+  -- When the organisation has no site boundary, every configured unit is
+  -- treated as in scope without subtree checks.
   select
     not private.organisation_requires_site_boundary(target_organisation_id)
-    or private.membership_has_org_wide_operational_catalog_scope(
-      target_organisation_id,
-      target_membership_id
-    )
     or private.membership_has_scoped_permission(
       target_membership_id,
       target_organisation_id,
@@ -141,29 +139,12 @@ security definer
 set search_path = ''
 as $$
   select
-    private.membership_has_org_wide_operational_catalog_scope(
-      target_organisation_id,
-      target_membership_id
-    )
-    or private.membership_has_scoped_permission(
+    private.membership_has_scoped_permission(
       target_membership_id,
       target_organisation_id,
       'five_s.standards.manage',
       null,
       null
-    )
-    or (
-      not exists (
-        select 1
-        from public.five_s_standard_applicable_units applicability_row
-        where applicability_row.organisation_id = target_organisation_id
-          and applicability_row.standard_id = target_standard_id
-      )
-      and private.membership_can_initiate_operational_configuration(
-        target_organisation_id,
-        target_membership_id,
-        'five_s.standards.manage'
-      )
     )
     or (
       exists (
@@ -199,29 +180,12 @@ security definer
 set search_path = ''
 as $$
   select
-    private.membership_has_org_wide_operational_catalog_scope(
-      target_organisation_id,
-      target_membership_id
-    )
-    or private.membership_has_scoped_permission(
+    private.membership_has_scoped_permission(
       target_membership_id,
       target_organisation_id,
       'gemba.definitions.manage',
       null,
       null
-    )
-    or (
-      not exists (
-        select 1
-        from public.gemba_definition_applicable_units applicability_row
-        where applicability_row.organisation_id = target_organisation_id
-          and applicability_row.definition_id = target_definition_id
-      )
-      and private.membership_can_initiate_operational_configuration(
-        target_organisation_id,
-        target_membership_id,
-        'gemba.definitions.manage'
-      )
     )
     or (
       exists (
@@ -273,6 +237,44 @@ begin
         using errcode = '42501';
     end if;
   end loop;
+end;
+$$;
+
+create or replace function private.require_operational_draft_applicability_for_site_scoped_author(
+  target_organisation_id uuid,
+  target_membership_id uuid,
+  target_permission_key text,
+  target_unit_ids uuid[]
+)
+returns void
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  if private.membership_has_scoped_permission(
+    target_membership_id,
+    target_organisation_id,
+    target_permission_key,
+    null,
+    null
+  ) then
+    return;
+  end if;
+
+  if target_unit_ids is null or cardinality(target_unit_ids) < 1 then
+    raise exception
+      'at least one applicable organisational unit is required for site-scoped authoring'
+      using errcode = '22023';
+  end if;
+
+  perform private.guard_operational_configuration_unit_ids(
+    target_organisation_id,
+    target_membership_id,
+    target_permission_key,
+    target_unit_ids
+  );
 end;
 $$;
 
@@ -386,6 +388,8 @@ alter function private.membership_can_author_gemba_definition(uuid, uuid, uuid)
   owner to lean_hub_private_owner;
 alter function private.guard_operational_configuration_unit_ids(uuid, uuid, text, uuid[])
   owner to lean_hub_private_owner;
+alter function private.require_operational_draft_applicability_for_site_scoped_author(uuid, uuid, text, uuid[])
+  owner to lean_hub_private_owner;
 alter function private.assert_five_s_standard_visible_to_actor(uuid)
   owner to lean_hub_private_owner;
 alter function private.assert_gemba_definition_visible_to_actor(uuid)
@@ -409,6 +413,8 @@ revoke all on function private.membership_can_author_gemba_definition(uuid, uuid
   from public, anon, authenticated;
 revoke all on function private.guard_operational_configuration_unit_ids(uuid, uuid, text, uuid[])
   from public, anon, authenticated;
+revoke all on function private.require_operational_draft_applicability_for_site_scoped_author(uuid, uuid, text, uuid[])
+  from public, anon, authenticated;
 revoke all on function private.assert_five_s_standard_visible_to_actor(uuid)
   from public, anon, authenticated;
 revoke all on function private.assert_gemba_definition_visible_to_actor(uuid)
@@ -431,6 +437,8 @@ grant execute on function private.membership_can_author_five_s_standard(uuid, uu
 grant execute on function private.membership_can_author_gemba_definition(uuid, uuid, uuid)
   to lean_hub_private_owner, postgres;
 grant execute on function private.guard_operational_configuration_unit_ids(uuid, uuid, text, uuid[])
+  to lean_hub_private_owner, postgres;
+grant execute on function private.require_operational_draft_applicability_for_site_scoped_author(uuid, uuid, text, uuid[])
   to lean_hub_private_owner, postgres;
 grant execute on function private.assert_five_s_standard_visible_to_actor(uuid)
   to lean_hub_private_owner, postgres;
@@ -481,6 +489,50 @@ grant execute on function public.member_can_author_five_s_standard(uuid)
 revoke all on function public.member_can_author_gemba_definition(uuid)
   from public, anon;
 grant execute on function public.member_can_author_gemba_definition(uuid)
+  to authenticated, lean_hub_private_owner, postgres;
+
+create or replace function public.list_authorable_five_s_standard_ids()
+returns setof uuid
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select standard_row.id
+  from public.five_s_standards standard_row
+  where standard_row.organisation_id = private.current_organisation_id()
+    and private.membership_can_author_five_s_standard(
+      standard_row.organisation_id,
+      private.current_membership_id(standard_row.organisation_id),
+      standard_row.id
+    );
+$$;
+
+create or replace function public.list_authorable_gemba_definition_ids()
+returns setof uuid
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select definition_row.id
+  from public.gemba_definitions definition_row
+  where definition_row.organisation_id = private.current_organisation_id()
+    and private.membership_can_author_gemba_definition(
+      definition_row.organisation_id,
+      private.current_membership_id(definition_row.organisation_id),
+      definition_row.id
+    );
+$$;
+
+revoke all on function public.list_authorable_five_s_standard_ids()
+  from public, anon;
+grant execute on function public.list_authorable_five_s_standard_ids()
+  to authenticated, lean_hub_private_owner, postgres;
+
+revoke all on function public.list_authorable_gemba_definition_ids()
+  from public, anon;
+grant execute on function public.list_authorable_gemba_definition_ids()
   to authenticated, lean_hub_private_owner, postgres;
 
 -- ---------------------------------------------------------------------------
@@ -1329,6 +1381,13 @@ begin
       using errcode = '42501';
   end if;
 
+  perform private.require_operational_draft_applicability_for_site_scoped_author(
+    org_id,
+    actor_membership_id,
+    'five_s.standards.manage',
+    target_unit_ids
+  );
+
   new_standard_id := private.register_resource_record(
     org_id,
     'five_s_standard',
@@ -1903,6 +1962,13 @@ begin
       using errcode = '42501';
   end if;
 
+  perform private.require_operational_draft_applicability_for_site_scoped_author(
+    org_id,
+    actor_membership_id,
+    'five_s.standards.manage',
+    target_unit_ids
+  );
+
   declared_key := btrim(coalesce(target_declared_template_key, ''));
   if declared_key = ''
     or char_length(declared_key) > 80
@@ -2212,6 +2278,13 @@ begin
       using errcode = '42501';
   end if;
 
+  perform private.require_operational_draft_applicability_for_site_scoped_author(
+    org_id,
+    actor_membership_id,
+    'gemba.definitions.manage',
+    target_unit_ids
+  );
+
   declared_key := btrim(coalesce(target_declared_template_key, ''));
   if declared_key = ''
     or char_length(declared_key) > 80
@@ -2444,6 +2517,13 @@ begin
     raise exception 'gemba definition creation is not authorised'
       using errcode = '42501';
   end if;
+
+  perform private.require_operational_draft_applicability_for_site_scoped_author(
+    org_id,
+    actor_membership_id,
+    'gemba.definitions.manage',
+    target_unit_ids
+  );
 
   new_definition_id := private.register_resource_record(
     org_id, 'gemba_definition', gen_random_uuid(), actor_membership_id
@@ -2781,3 +2861,27 @@ begin
   return new_definition_version_id;
 end;
 $$;
+
+create or replace function public.set_five_s_section_weight(
+  target_standard_version_id uuid,
+  target_section_id uuid,
+  target_weight numeric
+)
+returns boolean
+language sql
+volatile
+security invoker
+set search_path = ''
+as $$
+  select private.set_five_s_section_weight(
+    target_standard_version_id,
+    target_section_id,
+    target_weight
+  );
+$$;
+
+grant execute on function public.set_five_s_section_weight(uuid, uuid, numeric)
+  to authenticated;
+
+revoke all on function public.set_five_s_section_weight(uuid, uuid, numeric)
+  from public, anon, service_role;

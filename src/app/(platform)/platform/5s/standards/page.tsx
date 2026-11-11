@@ -50,23 +50,25 @@ export default async function FiveSStandardsPage() {
     );
   }
 
+  const { data: authorableIds, error: authorableIdsError } = canManage
+    ? await supabase.rpc("list_authorable_five_s_standard_ids")
+    : { data: null, error: null };
+
+  if (authorableIdsError) {
+    return (
+      <ModuleReadError
+        title="5S standards"
+        description="Configurable audit templates per area."
+        message="5S standards could not be loaded. Refresh the page and try again."
+        module="five_s"
+      />
+    );
+  }
+
+  const authorableIdSet = new Set(authorableIds ?? []);
   const standards = canManage
-    ? (
-        await Promise.all(
-          (loadedStandards ?? []).map(async (standard) => {
-            const { data: authorable, error } = await supabase.rpc(
-              "member_can_author_five_s_standard",
-              { target_standard_id: standard.id },
-            );
-            if (error || !authorable) {
-              return null;
-            }
-            return standard;
-          }),
-        )
-      ).filter(
-        (standard): standard is NonNullable<typeof standard> =>
-          standard !== null,
+    ? (loadedStandards ?? []).filter((standard) =>
+        authorableIdSet.has(standard.id),
       )
     : (loadedStandards ?? []);
 

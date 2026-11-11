@@ -14962,6 +14962,8 @@ export type Database = {
         }
         Returns: string
       }
+      list_authorable_five_s_standard_ids: { Args: never; Returns: string[] }
+      list_authorable_gemba_definition_ids: { Args: never; Returns: string[] }
       list_maturity_assessment_scope_entities: {
         Args: { target_model_version_id: string; target_scope_type: string }
         Returns: {
@@ -15748,6 +15750,14 @@ export type Database = {
       }
       set_action_assignee: {
         Args: { target_action_id: string; target_membership_id?: string }
+        Returns: boolean
+      }
+      set_five_s_section_weight: {
+        Args: {
+          target_section_id: string
+          target_standard_version_id: string
+          target_weight: number
+        }
         Returns: boolean
       }
       set_five_s_standard_applicable_units: {

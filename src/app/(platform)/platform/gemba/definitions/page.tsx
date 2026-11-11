@@ -52,23 +52,25 @@ export default async function GembaDefinitionsPage() {
     );
   }
 
+  const { data: authorableIds, error: authorableIdsError } = canManage
+    ? await supabase.rpc("list_authorable_gemba_definition_ids")
+    : { data: null, error: null };
+
+  if (authorableIdsError) {
+    return (
+      <ModuleReadError
+        title="Gemba definitions"
+        description="Templates for structured walks."
+        message="Gemba definitions could not be loaded. Refresh the page and try again."
+        module="gemba"
+      />
+    );
+  }
+
+  const authorableIdSet = new Set(authorableIds ?? []);
   const definitions = canManage
-    ? (
-        await Promise.all(
-          (loadedDefinitions ?? []).map(async (definition) => {
-            const { data: authorable, error } = await supabase.rpc(
-              "member_can_author_gemba_definition",
-              { target_definition_id: definition.id },
-            );
-            if (error || !authorable) {
-              return null;
-            }
-            return definition;
-          }),
-        )
-      ).filter(
-        (definition): definition is NonNullable<typeof definition> =>
-          definition !== null,
+    ? (loadedDefinitions ?? []).filter((definition) =>
+        authorableIdSet.has(definition.id),
       )
     : (loadedDefinitions ?? []);
 

@@ -1,7 +1,7 @@
 import { EmptyState } from "@/components/platform/empty-state";
 import { OperationalCatalogTable } from "@/components/operational/operational-catalog-table";
 import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
-import { buildFiveSOverviewCatalogRows } from "@/lib/operational/overview-catalog-rows";
+import { loadFiveSOverviewStartablePresentation } from "@/lib/operational/overview-catalog-rows";
 import { PageHeader } from "@/components/platform/page-header";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
 import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
@@ -39,13 +39,12 @@ export default async function FiveSOverviewPage({
     FIVE_S_PERMISSIONS.standardsManage,
   );
 
-  const { data: standards, error: standardsError } = await supabase
-    .from("five_s_standards")
-    .select("id, display_name")
-    .order("created_at", { ascending: false })
-    .limit(5);
-
-  if (standardsError) {
+  let topRows;
+  let startableCount;
+  try {
+    ({ topRows, startableCount } =
+      await loadFiveSOverviewStartablePresentation(supabase));
+  } catch {
     return (
       <ModuleReadError
         title="5S Audits"
@@ -56,16 +55,9 @@ export default async function FiveSOverviewPage({
     );
   }
 
-  const catalogRows = await buildFiveSOverviewCatalogRows(
-    supabase,
-    standards ?? [],
-  );
-  const executionVisibleCount = catalogRows.filter(
-    (row) => row.start !== null,
-  ).length;
   const catalog = presentCatalogRead({
     failed: false,
-    visibleCount: canManage ? (standards?.length ?? 0) : executionVisibleCount,
+    visibleCount: startableCount,
   });
 
   const { count: auditCount } = await supabase
@@ -156,7 +148,7 @@ export default async function FiveSOverviewPage({
         </CardHeader>
         <CardContent>
           <OperationalCatalogTable
-            rows={catalogRows}
+            rows={topRows}
             nameColumnLabel="Standard"
             actionColumnLabel="Action"
             testId="five-s-standard-list"

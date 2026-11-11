@@ -2,7 +2,7 @@ import { GembaActiveWalkList } from "@/components/gemba/active-walk-list";
 import { EmptyState } from "@/components/platform/empty-state";
 import { OperationalCatalogTable } from "@/components/operational/operational-catalog-table";
 import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
-import { buildGembaOverviewCatalogRows } from "@/lib/operational/overview-catalog-rows";
+import { loadGembaOverviewStartablePresentation } from "@/lib/operational/overview-catalog-rows";
 import { PageHeader } from "@/components/platform/page-header";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
 import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
@@ -43,13 +43,12 @@ export default async function GembaOverviewPage({
   const canManage = await currentMemberHasPermission(
     GEMBA_PERMISSIONS.definitionsManage,
   );
-  const { data: definitions, error: definitionsError } = await supabase
-    .from("gemba_definitions")
-    .select("id, display_name")
-    .order("created_at", { ascending: false })
-    .limit(5);
-
-  if (definitionsError) {
+  let topRows;
+  let startableCount;
+  try {
+    ({ topRows, startableCount } =
+      await loadGembaOverviewStartablePresentation(supabase));
+  } catch {
     return (
       <ModuleReadError
         title="Gemba walks"
@@ -60,18 +59,9 @@ export default async function GembaOverviewPage({
     );
   }
 
-  const catalogRows = await buildGembaOverviewCatalogRows(
-    supabase,
-    definitions ?? [],
-  );
-  const executionVisibleCount = catalogRows.filter(
-    (row) => row.start !== null,
-  ).length;
   const catalog = presentCatalogRead({
     failed: false,
-    visibleCount: canManage
-      ? (definitions?.length ?? 0)
-      : executionVisibleCount,
+    visibleCount: startableCount,
   });
   const { count: walkCount } = await supabase
     .from("gemba_walks")
@@ -170,7 +160,7 @@ export default async function GembaOverviewPage({
         </CardHeader>
         <CardContent>
           <OperationalCatalogTable
-            rows={catalogRows}
+            rows={topRows}
             nameColumnLabel="Definition"
             actionColumnLabel="Action"
             testId="gemba-definition-list"
