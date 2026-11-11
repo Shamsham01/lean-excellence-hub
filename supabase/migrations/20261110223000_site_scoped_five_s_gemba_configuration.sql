@@ -1,5 +1,5 @@
 -- Site-scoped 5S/Gemba configuration visibility, applicability guards, template hardening,
--- and private.add_five_s_question execute privileges.
+-- authoring site boundaries, and private.add_five_s_question execute privileges.
 
 -- ---------------------------------------------------------------------------
 -- Scope helpers (reuse site boundary membership model)
