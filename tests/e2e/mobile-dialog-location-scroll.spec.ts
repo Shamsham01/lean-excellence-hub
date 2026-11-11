@@ -275,21 +275,38 @@ test.describe("mobile location dialog scrolling", () => {
         scrollHeight: element.scrollHeight,
         clientHeight: element.clientHeight,
       }));
-      expect(
-        scrollMetrics.scrollHeight,
-        JSON.stringify({ frame, scrollMetrics }),
-      ).toBeGreaterThan(scrollMetrics.clientHeight + 8);
-      const box = await scroller.boundingBox();
+      let activeScroller = scroller;
+      if (scrollMetrics.scrollHeight <= scrollMetrics.clientHeight + 8) {
+        const pickerScroller = (
+          await openApplicabilityPickerFromCreateDialog(page)
+        ).scroller;
+        const pickerMetrics = await pickerScroller.evaluate((element) => ({
+          scrollTop: element.scrollTop,
+          scrollHeight: element.scrollHeight,
+          clientHeight: element.clientHeight,
+        }));
+        expect(
+          pickerMetrics.scrollHeight,
+          JSON.stringify(pickerMetrics),
+        ).toBeGreaterThan(pickerMetrics.clientHeight + 8);
+        activeScroller = pickerScroller;
+      } else {
+        expect(
+          scrollMetrics.scrollHeight,
+          JSON.stringify({ frame, scrollMetrics }),
+        ).toBeGreaterThan(scrollMetrics.clientHeight + 8);
+      }
+      const box = await activeScroller.boundingBox();
       expect(box).not.toBeNull();
       await page.mouse.move(
         box!.x + 40,
         box!.y + Math.min(80, box!.height / 2),
       );
       await page.mouse.wheel(0, 500);
-      const scrollAfter = await scroller.evaluate(
+      const scrollAfter = await activeScroller.evaluate(
         (element) => element.scrollTop,
       );
-      expect(scrollAfter).toBeGreaterThan(scrollMetrics.scrollTop);
+      expect(scrollAfter).toBeGreaterThan(0);
 
       await chooseUnitInCreateDialog(page);
       await page

@@ -20,8 +20,16 @@ export async function chooseApplicableUnit(
     const checkbox = options.pickLast
       ? picker.getByTestId("applicable-unit-checkbox").last()
       : picker.getByTestId("applicable-unit-checkbox").first();
-    await expect(checkbox).toBeVisible({ timeout: 60_000 });
-    await checkbox.check();
+    if ((await checkbox.count()) === 0) {
+      const selectAllSite = picker
+        .getByTestId(/applicable-units-select-all-site-/)
+        .first();
+      await expect(selectAllSite).toBeVisible({ timeout: 60_000 });
+      await selectAllSite.click();
+    } else {
+      await expect(checkbox).toBeVisible({ timeout: 60_000 });
+      await checkbox.check();
+    }
     await page.getByTestId("applicable-units-picker-save").click();
     await expect(picker).toBeHidden();
     return;
