@@ -14,7 +14,10 @@ import { fileURLToPath } from "node:url";
 import { expect, test, type Page } from "@playwright/test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { QA_USERS } from "../../scripts/qa-tenant/constants";
+import {
+  QA_ORGANISATION_CODE,
+  QA_USERS,
+} from "../../scripts/qa-tenant/constants";
 import { loginAsCookieWorksPersona } from "./helpers/cookieworks-auth";
 import {
   createPublishableClient,
@@ -121,13 +124,14 @@ function seedMembers(names: string[]): string[] {
 
 async function seed() {
   const orgRow = queryDatabase<{ id: string }>(`
-    select organisation.id from public.organisations organisation
-    join public.organisation_memberships membership on membership.organisation_id = organisation.id
-    join auth.users users on users.id = membership.user_id
-    where users.email = ${sqlString(QA_USERS.admin.email)} limit 1;
+    select id from public.organisations
+    where code = ${sqlString(QA_ORGANISATION_CODE)}
+    limit 1;
   `)[0];
   if (!orgRow) {
-    throw new Error("CookieWorks organisation not found for admin user");
+    throw new Error(
+      `CookieWorks organisation not found (code ${QA_ORGANISATION_CODE}); run qa:cookie:reset`,
+    );
   }
   ids.organisationId = orgRow.id;
   const units = queryDatabase<{ id: string; code: string }>(`
