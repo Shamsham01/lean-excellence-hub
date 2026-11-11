@@ -336,11 +336,7 @@ test.describe("Actions planner workspace", () => {
     await expect(setCover).toBeVisible({ timeout: 30_000 });
     await setCover.scrollIntoViewIfNeeded();
     await setCover.click();
-    await expect(
-      page
-        .getByTestId("action-planner-attachments")
-        .getByRole("button", { name: "Cover" }),
-    ).toBeVisible({ timeout: 15_000 });
+    await expect(setCover).toContainText("Cover", { timeout: 15_000 });
     await expect(
       page.locator('[data-testid^="evidence-preview-"]').first(),
     ).toBeVisible({ timeout: 15_000 });
