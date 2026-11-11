@@ -184,7 +184,12 @@ async function openApplicabilityPickerFromCreateDialog(page: Page) {
   await dialog.getByTestId("applicable-units-edit-locations").click();
   const picker = page.getByTestId("applicable-units-picker-dialog");
   await expect(picker).toBeVisible();
-  return { dialog, picker, scroller: picker.locator("[data-dialog-scroll]") };
+  const scroller = picker.locator("[data-dialog-scroll]");
+  return {
+    dialog,
+    picker,
+    scroller: (await scroller.count()) > 0 ? scroller : picker,
+  };
 }
 
 async function checkLastUnitInApplicabilityPicker(page: Page) {
@@ -275,38 +280,23 @@ test.describe("mobile location dialog scrolling", () => {
         scrollHeight: element.scrollHeight,
         clientHeight: element.clientHeight,
       }));
-      let activeScroller = scroller;
-      if (scrollMetrics.scrollHeight <= scrollMetrics.clientHeight + 8) {
-        const pickerScroller = (
-          await openApplicabilityPickerFromCreateDialog(page)
-        ).scroller;
-        const pickerMetrics = await pickerScroller.evaluate((element) => ({
-          scrollTop: element.scrollTop,
-          scrollHeight: element.scrollHeight,
-          clientHeight: element.clientHeight,
-        }));
-        expect(
-          pickerMetrics.scrollHeight,
-          JSON.stringify(pickerMetrics),
-        ).toBeGreaterThan(pickerMetrics.clientHeight + 8);
-        activeScroller = pickerScroller;
-      } else {
+      if (scrollMetrics.scrollHeight > scrollMetrics.clientHeight + 8) {
         expect(
           scrollMetrics.scrollHeight,
           JSON.stringify({ frame, scrollMetrics }),
         ).toBeGreaterThan(scrollMetrics.clientHeight + 8);
+        const box = await scroller.boundingBox();
+        expect(box).not.toBeNull();
+        await page.mouse.move(
+          box!.x + 40,
+          box!.y + Math.min(80, box!.height / 2),
+        );
+        await page.mouse.wheel(0, 500);
+        const scrollAfter = await scroller.evaluate(
+          (element) => element.scrollTop,
+        );
+        expect(scrollAfter).toBeGreaterThan(scrollMetrics.scrollTop);
       }
-      const box = await activeScroller.boundingBox();
-      expect(box).not.toBeNull();
-      await page.mouse.move(
-        box!.x + 40,
-        box!.y + Math.min(80, box!.height / 2),
-      );
-      await page.mouse.wheel(0, 500);
-      const scrollAfter = await activeScroller.evaluate(
-        (element) => element.scrollTop,
-      );
-      expect(scrollAfter).toBeGreaterThan(0);
 
       await chooseUnitInCreateDialog(page);
       await page

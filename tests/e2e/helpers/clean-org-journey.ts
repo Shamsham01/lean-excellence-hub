@@ -11,10 +11,10 @@ import {
 } from "./invitation-lifecycle";
 
 import {
-  completeStructureFirstSetupToPlatform,
   loginAsFoundingUser,
   type FoundingE2eUser,
 } from "./founding-onboarding";
+import { completeStructureFirstFoundationSetup } from "./structure-first-onboarding";
 import { chooseFirstApplicableUnit } from "./applicable-units";
 
 const e2eOrigin = "http://127.0.0.1:3000";
@@ -372,7 +372,7 @@ export async function onboardFoundingOrganisationToPlatform(
   await loginAsFoundingUser(page, user);
   await fillFoundingOrganisationWithLocale(page, user);
   await completeFoundingPlanAndSandboxPayment(page);
-  await completeStructureFirstSetupToPlatform(page);
+  await completeStructureFirstFoundationSetup(page, user.firstSiteName);
   await expect(page.getByTestId("setup-page")).toBeVisible();
   await page.goto("/platform");
   await expect(page.getByTestId("platform-home-page")).toBeVisible();
@@ -404,10 +404,10 @@ export async function bootstrapSuggestionProgramme(page: Page) {
 }
 
 export async function deployFiveSQuickStartDraft(page: Page) {
-  await page.goto("/platform/5s");
-  await page.getByRole("link", { name: "Set up 5S" }).click();
-  await expect(page.getByTestId("module-setup-chooser")).toBeVisible();
-  await page.getByTestId("module-setup-mode-quick-start").click();
+  await page.goto("/platform/5s/setup/quick-start");
+  await expect(page.getByTestId("five-s-quick-start-page")).toBeVisible({
+    timeout: 30_000,
+  });
   const siteSwitcher = page.getByTestId("site-context-switcher");
   if ((await siteSwitcher.count()) > 0) {
     const firstSite = siteSwitcher
@@ -419,6 +419,11 @@ export async function deployFiveSQuickStartDraft(page: Page) {
       await siteSwitcher.selectOption(value);
     }
   }
+  await expect(page.getByTestId("applicable-units-edit-locations")).toBeVisible(
+    {
+      timeout: 30_000,
+    },
+  );
   await chooseFirstApplicableUnit(page);
   await page.getByTestId("module-setup-deploy").click();
   await expect(page.getByTestId("five-s-draft-boundary")).toBeVisible({
