@@ -124,6 +124,11 @@ function parseQueryRows<T extends Record<string, unknown>>(
     return JSON.parse(extractJsonSegment(output, arrayStart, "[", "]")) as T[];
   }
 
+  const trimmed = output.trim();
+  if (/^(INSERT|UPDATE|DELETE)\s+\d+/i.test(trimmed)) {
+    return [];
+  }
+
   throw new Error(`Unexpected database query output: ${output}`);
 }
 
