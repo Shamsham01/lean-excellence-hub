@@ -29,6 +29,10 @@ test.describe("Actions planner workspace", () => {
     await expect(page.getByTestId("actions-planner-shell")).toBeVisible();
     await expect(page.getByTestId("actions-view-switcher")).toBeVisible();
 
+    await page.getByTestId("actions-filter-button").click();
+    await expect(page.getByTestId("actions-filters")).toBeVisible();
+    await page.keyboard.press("Escape");
+
     await page.getByTestId("actions-view-board").click();
     await expect(page.getByTestId("actions-board")).toBeVisible();
 

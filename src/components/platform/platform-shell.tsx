@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { LeanAiAssistantShell } from "@/components/leanai/leanai-assistant-shell";
+import { PlatformTooltipProvider } from "@/components/platform/platform-tooltip-provider";
 import { MobilePlatformNavigation } from "@/components/platform/mobile-platform-navigation";
 import { PlatformSidebar } from "@/components/platform/platform-sidebar";
 import { PlatformTopbar } from "@/components/platform/platform-topbar";
@@ -40,11 +41,12 @@ export async function PlatformShell({
     !navWithSetup.some((item) => item.href === settingsNavigationItem.href);
 
   return (
-    <div
-      data-testid="platform-shell"
-      className="flex h-dvh max-h-dvh min-w-0 flex-col overflow-hidden bg-background lg:flex-row"
-    >
-      <PlatformSidebar
+    <PlatformTooltipProvider>
+      <div
+        data-testid="platform-shell"
+        className="flex h-dvh max-h-dvh min-w-0 flex-col overflow-hidden bg-background lg:flex-row"
+      >
+        <PlatformSidebar
         items={navWithSetup}
         organisationName={organisationName}
         organisations={organisations}
@@ -80,7 +82,8 @@ export async function PlatformShell({
             </div>
           </main>
         </div>
-      </LeanAiAssistantShell>
-    </div>
+        </LeanAiAssistantShell>
+      </div>
+    </PlatformTooltipProvider>
   );
 }

@@ -27,7 +27,7 @@ export function PlatformSidebarHeader({
   return (
     <div
       className={cn(
-        "flex shrink-0 flex-col gap-2 border-b border-sidebar-border p-4",
+        "flex shrink-0 flex-col gap-2 border-b border-sidebar-border px-3 pt-3 pb-4",
         closeGutter && "pr-12",
       )}
     >
@@ -35,15 +35,14 @@ export function PlatformSidebarHeader({
         <AppLink
           href="/platform"
           aria-label={LEH_BRAND.name}
-          className="leh-brand-link w-fit max-w-full"
+          className="leh-brand-link block w-full max-w-full min-w-0"
         >
           <LehBrand
             decorative
             variant="full"
             strapline={false}
-            lockupRasterOnly
             priority
-            className="leh-brand--platform-sidebar"
+            className="leh-brand--platform-sidebar w-full min-w-0"
           />
         </AppLink>
         {notificationsSlot}

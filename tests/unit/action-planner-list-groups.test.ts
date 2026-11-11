@@ -19,6 +19,8 @@ function row(
     due_at: null,
     version: 1,
     assignee_display_name: null,
+    assignee_membership_id: null,
+    assignee_avatar_url: null,
     source: null,
     permissions: {
       can_update: true,

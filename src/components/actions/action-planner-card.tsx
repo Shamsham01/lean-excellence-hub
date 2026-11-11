@@ -43,7 +43,8 @@ export function ActionPlannerCard({
 }: ActionPlannerCardProps) {
   const hint = sourceHint(action);
   const due = formatDueDate(action.due_at);
-  const assignee = action.assignee_display_name?.trim() || "Unassigned";
+  const assigneeName = action.assignee_display_name?.trim() ?? "";
+  const isUnassigned = !assigneeName;
 
   return (
     <button
@@ -109,7 +110,12 @@ export function ActionPlannerCard({
               {actionPriorityLabel(action.priority)}
             </Badge>
           </div>
-          <PlatformMemberAvatar displayName={assignee} size="sm" />
+          <PlatformMemberAvatar
+            displayName={assigneeName || "Unassigned"}
+            avatarUrl={action.assignee_avatar_url}
+            unassigned={isUnassigned}
+            size="sm"
+          />
         </div>
       </div>
     </button>

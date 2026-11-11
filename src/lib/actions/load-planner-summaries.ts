@@ -3,6 +3,7 @@ import "server-only";
 import { callActionRpc } from "@/lib/actions/supabase-untyped";
 import type { ActionPlannerListItem } from "@/lib/actions/planner-types";
 import type { ActionDetail } from "@/lib/actions/types";
+import { loadMembershipAvatarUrls } from "@/lib/people/membership-avatar-urls";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 type RawActionRow = {
@@ -34,12 +35,21 @@ export async function loadActionPlannerSummaries(
     }),
   );
 
-  return details
-    .filter(
-      (entry): entry is { row: RawActionRow; detail: ActionDetail } =>
-        entry.detail != null,
-    )
-    .map(({ row, detail }) => ({
+  const entries = details.filter(
+    (entry): entry is { row: RawActionRow; detail: ActionDetail } =>
+      entry.detail != null,
+  );
+
+  const assigneeIds = entries
+    .map(({ detail }) => detail.assignees[0]?.membership_id)
+    .filter((id): id is string => Boolean(id));
+
+  const avatarUrls = await loadMembershipAvatarUrls(assigneeIds);
+
+  return entries.map(({ row, detail }) => {
+    const assignee = detail.assignees[0];
+    const membershipId = assignee?.membership_id ?? null;
+    return {
       id: row.id,
       action_number: row.action_number,
       title: row.title,
@@ -48,8 +58,13 @@ export async function loadActionPlannerSummaries(
       created_at: row.created_at,
       due_at: row.due_at,
       version: detail.version ?? row.version,
-      assignee_display_name: detail.assignees[0]?.display_name ?? null,
+      assignee_display_name: assignee?.display_name ?? null,
+      assignee_membership_id: membershipId,
+      assignee_avatar_url: membershipId
+        ? (avatarUrls.get(membershipId) ?? null)
+        : null,
       source: detail.source,
       permissions: detail.permissions,
-    }));
+    };
+  });
 }

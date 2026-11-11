@@ -78,6 +78,7 @@ export function PlatformSidebarFooter({
           <PlatformMemberAvatar
             displayName={member.displayName}
             avatarUrl={member.avatarUrl}
+            withTooltip={false}
             size="sm"
           />
         </span>

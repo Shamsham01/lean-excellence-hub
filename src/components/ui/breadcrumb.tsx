@@ -12,21 +12,29 @@ export type BreadcrumbItem = {
 export function Breadcrumb({
   items,
   className,
+  pageHeading = false,
 }: {
   items: BreadcrumbItem[];
   className?: string;
+  /** When true, the current page segment is the accessible page title (`h1`). */
+  pageHeading?: boolean;
 }) {
   if (items.length === 0) return null;
 
   return (
     <nav aria-label="Breadcrumb" className={cn("min-w-0", className)}>
-      <ol className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
+      <ol
+        className={cn(
+          "flex flex-wrap items-center gap-1.5",
+          pageHeading ? "text-sm text-muted-foreground" : "text-sm text-muted-foreground",
+        )}
+      >
         {items.map((item, index) => {
           const isLast = index === items.length - 1;
           return (
             <li
               key={`${item.label}:${index}`}
-              className="flex items-center gap-1.5"
+              className="flex min-w-0 items-center gap-1.5"
             >
               {index > 0 ? (
                 <ChevronRight
@@ -35,15 +43,24 @@ export function Breadcrumb({
                 />
               ) : null}
               {isLast || !item.href ? (
-                <span
-                  className={cn(
-                    "truncate",
-                    isLast ? "font-medium text-foreground" : undefined,
-                  )}
-                  aria-current={isLast ? "page" : undefined}
-                >
-                  {item.label}
-                </span>
+                pageHeading && isLast ? (
+                  <h1
+                    className="truncate text-sm font-semibold text-foreground"
+                    aria-current="page"
+                  >
+                    {item.label}
+                  </h1>
+                ) : (
+                  <span
+                    className={cn(
+                      "truncate",
+                      isLast ? "font-medium text-foreground" : undefined,
+                    )}
+                    aria-current={isLast ? "page" : undefined}
+                  >
+                    {item.label}
+                  </span>
+                )
               ) : (
                 <AppLink
                   href={item.href}

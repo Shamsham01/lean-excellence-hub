@@ -1,3 +1,10 @@
+import { UserRound } from "lucide-react";
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 type PlatformMemberAvatarProps = {
@@ -5,6 +12,8 @@ type PlatformMemberAvatarProps = {
   avatarUrl?: string | null;
   size?: "sm" | "md";
   className?: string;
+  unassigned?: boolean;
+  withTooltip?: boolean;
 };
 
 function memberInitials(name: string): string {
@@ -19,26 +28,41 @@ export function PlatformMemberAvatar({
   avatarUrl,
   size = "md",
   className,
+  unassigned: unassignedProp,
+  withTooltip = true,
 }: PlatformMemberAvatarProps) {
   const dimension = size === "sm" ? "size-8" : "size-10";
   const textSize = size === "sm" ? "text-[10px]" : "text-xs";
+  const isUnassigned =
+    unassignedProp ??
+    (displayName.trim().length === 0 ||
+      displayName.trim().toLowerCase() === "unassigned");
 
-  if (avatarUrl?.trim()) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element -- profile URLs are user-supplied storage paths
-      <img
-        src={avatarUrl}
-        alt=""
-        className={cn(
-          dimension,
-          "shrink-0 rounded-full object-cover ring-1 ring-primary/20",
-          className,
-        )}
-      />
-    );
-  }
+  const tooltipLabel = isUnassigned ? "Unassigned" : displayName.trim();
 
-  return (
+  const avatarBody = isUnassigned ? (
+    <span
+      className={cn(
+        dimension,
+        "flex shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground ring-1 ring-border",
+        className,
+      )}
+      aria-hidden
+    >
+      <UserRound className={size === "sm" ? "size-4" : "size-5"} />
+    </span>
+  ) : avatarUrl?.trim() ? (
+    // eslint-disable-next-line @next/next/no-img-element -- profile URLs are user-supplied storage paths
+    <img
+      src={avatarUrl}
+      alt=""
+      className={cn(
+        dimension,
+        "shrink-0 rounded-full object-cover ring-1 ring-primary/20",
+        className,
+      )}
+    />
+  ) : (
     <span
       className={cn(
         dimension,
@@ -50,5 +74,28 @@ export function PlatformMemberAvatar({
     >
       {memberInitials(displayName)}
     </span>
+  );
+
+  const labelled = (
+    <span
+      className="inline-flex shrink-0 rounded-full"
+      tabIndex={withTooltip ? 0 : undefined}
+      aria-label={tooltipLabel}
+      title={withTooltip ? undefined : tooltipLabel}
+      data-testid="platform-member-avatar"
+    >
+      {avatarBody}
+    </span>
+  );
+
+  if (!withTooltip) {
+    return labelled;
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{labelled}</TooltipTrigger>
+      <TooltipContent side="top">{tooltipLabel}</TooltipContent>
+    </Tooltip>
   );
 }
