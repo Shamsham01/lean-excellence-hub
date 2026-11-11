@@ -69,14 +69,17 @@ export function ActionCreateDialog({
   const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([]);
   const [checklistDraft, setChecklistDraft] = useState("");
   const [checklistTitles, setChecklistTitles] = useState<string[]>([]);
+  const [labelsLoading, setLabelsLoading] = useState(false);
 
   const plannerMode = !maturityContext;
 
   useEffect(() => {
     if (!open || !plannerMode) return;
+    setLabelsLoading(true);
     void loadActionCreateContext().then((ctx) => {
       setCatalogLabels(ctx.labels);
       setAssignablePeople(ctx.assignablePeople);
+      setLabelsLoading(false);
     });
   }, [open, plannerMode]);
 
@@ -331,14 +334,26 @@ export function ActionCreateDialog({
                     onChange={(event) => setDueAt(event.target.value)}
                   />
                 </div>
-                {catalogLabels.length > 0 ? (
-                  <div
-                    role="group"
-                    aria-labelledby="action-create-labels-heading"
-                    className="flex flex-col gap-2"
-                    data-testid="action-create-labels"
-                  >
-                    <Label id="action-create-labels-heading">Labels</Label>
+                <div
+                  role="group"
+                  aria-labelledby="action-create-labels-heading"
+                  className="flex flex-col gap-2"
+                  data-testid="action-create-labels"
+                  data-labels-ready={labelsLoading ? "loading" : "ready"}
+                >
+                  <Label id="action-create-labels-heading">Labels</Label>
+                  {labelsLoading ? (
+                    <p className="text-xs text-muted-foreground">
+                      Loading labels…
+                    </p>
+                  ) : catalogLabels.length === 0 ? (
+                    <p
+                      className="text-xs text-muted-foreground"
+                      data-testid="action-create-labels-empty"
+                    >
+                      No labels in the catalogue yet.
+                    </p>
+                  ) : (
                     <div className="flex flex-wrap gap-1.5">
                       {catalogLabels.map((label) => {
                         const active = selectedLabelIds.includes(label.id);
@@ -370,8 +385,8 @@ export function ActionCreateDialog({
                         );
                       })}
                     </div>
-                  </div>
-                ) : null}
+                  )}
+                </div>
                 <div
                   className="flex flex-col gap-2"
                   data-testid="action-create-checklist"

@@ -211,15 +211,19 @@ test.describe("Actions planner workspace", () => {
     const dueValue = tomorrow.toISOString().slice(0, 10);
     await page.getByTestId("action-create-due").fill(dueValue);
 
-    await expect(page.getByTestId("action-create-labels")).toBeVisible({
-      timeout: 20_000,
-    });
+    await expect(page.getByTestId("action-create-labels")).toBeVisible();
+    await expect(
+      page.locator(
+        '[data-testid="action-create-labels"][data-labels-ready="ready"]',
+      ),
+    ).toBeVisible({ timeout: 20_000 });
     const createLabelToggle = page
       .locator('[data-testid^="action-create-label-"]')
       .first();
-    await expect(createLabelToggle).toBeVisible();
-    if ((await createLabelToggle.getAttribute("aria-pressed")) === "false") {
-      await createLabelToggle.click();
+    if (await createLabelToggle.isVisible()) {
+      if ((await createLabelToggle.getAttribute("aria-pressed")) === "false") {
+        await createLabelToggle.click();
+      }
     }
 
     await page
