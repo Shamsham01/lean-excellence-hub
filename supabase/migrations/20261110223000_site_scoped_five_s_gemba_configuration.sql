@@ -2470,9 +2470,11 @@ set search_path = ''
 as $$
 declare
   org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
   template_version_id uuid;
 begin
   if org_id is null
+    or actor_membership_id is null
     or not private.membership_can_initiate_operational_configuration(org_id, actor_membership_id, 'gemba.definitions.manage') then
     raise exception 'gemba section creation is not authorised'
       using errcode = '42501';
@@ -2524,9 +2526,11 @@ set search_path = ''
 as $$
 declare
   org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
   template_version_id uuid;
 begin
   if org_id is null
+    or actor_membership_id is null
     or not private.membership_can_initiate_operational_configuration(org_id, actor_membership_id, 'gemba.definitions.manage') then
     raise exception 'gemba question creation is not authorised'
       using errcode = '42501';
