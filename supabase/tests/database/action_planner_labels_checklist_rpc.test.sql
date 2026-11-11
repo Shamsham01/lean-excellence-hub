@@ -1,6 +1,6 @@
 begin;
 
-select plan(30);
+select plan(33);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -496,6 +496,36 @@ select throws_ok(
   '42501',
   null,
   'read-only member cannot add checklist items'
+);
+
+select throws_ok(
+  format(
+    'select public.set_action_checklist_item_done(%L::uuid, true)',
+    (select id from planner_rpc_ids where key = 'checklist_a')
+  ),
+  '42501',
+  null,
+  'read-only member cannot toggle checklist items'
+);
+
+select throws_ok(
+  format(
+    'select public.delete_action_checklist_item(%L::uuid)',
+    (select id from planner_rpc_ids where key = 'checklist_a')
+  ),
+  '42501',
+  null,
+  'read-only member cannot delete checklist items'
+);
+
+select throws_ok(
+  format(
+    'select public.move_action_checklist_item(%L::uuid, 0)',
+    (select id from planner_rpc_ids where key = 'checklist_a')
+  ),
+  '42501',
+  null,
+  'read-only member cannot reorder checklist items'
 );
 
 select finish();

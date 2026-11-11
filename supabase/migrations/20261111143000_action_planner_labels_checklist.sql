@@ -510,7 +510,9 @@ as $$
 declare
   org_id uuid := private.current_organisation_id();
   item_row public.action_checklist_items%rowtype;
-  max_order integer;
+  item_count integer;
+  old_order integer;
+  new_order integer;
 begin
   select *
   into item_row
@@ -528,14 +530,39 @@ begin
       using errcode = '42501';
   end if;
 
-  select coalesce(max(sort_order), 0)
-  into max_order
+  select count(*)::integer
+  into item_count
   from public.action_checklist_items
   where organisation_id = org_id
     and action_id = item_row.action_id;
 
+  old_order := item_row.sort_order;
+  new_order := greatest(0, least(target_sort_order, greatest(item_count - 1, 0)));
+
+  if new_order = old_order then
+    return;
+  end if;
+
+  if new_order < old_order then
+    update public.action_checklist_items sibling_row
+    set sort_order = sibling_row.sort_order + 1
+    where sibling_row.organisation_id = org_id
+      and sibling_row.action_id = item_row.action_id
+      and sibling_row.id <> target_item_id
+      and sibling_row.sort_order >= new_order
+      and sibling_row.sort_order < old_order;
+  else
+    update public.action_checklist_items sibling_row
+    set sort_order = sibling_row.sort_order - 1
+    where sibling_row.organisation_id = org_id
+      and sibling_row.action_id = item_row.action_id
+      and sibling_row.id <> target_item_id
+      and sibling_row.sort_order > old_order
+      and sibling_row.sort_order <= new_order;
+  end if;
+
   update public.action_checklist_items
-  set sort_order = greatest(0, least(target_sort_order, max_order))
+  set sort_order = new_order
   where organisation_id = org_id
     and id = target_item_id;
 end;
@@ -775,6 +802,21 @@ begin
   );
 end;
 $$;
+
+alter function private.has_permission_any_unit_scope(uuid, text)
+  owner to lean_hub_private_owner;
+
+revoke all on function private.has_permission_any_unit_scope(uuid, text)
+  from public, anon;
+
+grant execute on function private.has_permission_any_unit_scope(uuid, text)
+  to authenticated;
+
+alter function private.validate_action_card_cover_attachment()
+  owner to lean_hub_private_owner;
+
+revoke all on function private.validate_action_card_cover_attachment()
+  from public, anon;
 
 revoke all on function public.list_action_labels() from public, anon;
 revoke all on function public.upsert_action_label(uuid, text, text, integer) from public, anon;
