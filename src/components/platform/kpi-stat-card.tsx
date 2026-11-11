@@ -21,10 +21,10 @@ function valueToneClass(
     return "text-foreground";
   }
   if (polarity === "lower-is-better") {
-    return "text-destructive";
+    return "text-destructive-emphasis";
   }
   if (polarity === "higher-is-better") {
-    return "text-emerald-700 dark:text-emerald-400";
+    return "text-success-text";
   }
   return "text-foreground";
 }
@@ -65,9 +65,9 @@ export function KpiStatCard({
 }) {
   const trendTone =
     trend?.direction === "up"
-      ? "text-emerald-700 dark:text-emerald-400"
+      ? "text-success-text"
       : trend?.direction === "down"
-        ? "text-destructive"
+        ? "text-destructive-emphasis"
         : "text-muted-foreground";
 
   const valueClass = valueToneClass(value, polarity);

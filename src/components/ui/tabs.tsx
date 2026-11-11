@@ -50,14 +50,21 @@ export function TabsList({
 
     measure();
 
+    const rafId = requestAnimationFrame(() => {
+      requestAnimationFrame(measure);
+    });
+
     if (typeof ResizeObserver === "undefined") {
-      return;
+      return () => cancelAnimationFrame(rafId);
     }
 
     const observer = new ResizeObserver(measure);
     observer.observe(element);
 
-    return () => observer.disconnect();
+    return () => {
+      cancelAnimationFrame(rafId);
+      observer.disconnect();
+    };
   }, [measure, children]);
 
   function handleScroll(event: UIEvent<HTMLDivElement>) {

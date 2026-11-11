@@ -3,11 +3,6 @@
 import { useState } from "react";
 import { UserRound } from "lucide-react";
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 type PlatformMemberAvatarProps = {
@@ -16,8 +11,8 @@ type PlatformMemberAvatarProps = {
   size?: "sm" | "md";
   className?: string;
   unassigned?: boolean;
-  /** Off by default — enable only when the avatar is not inside another focusable control. */
-  withTooltip?: boolean;
+  /** Native browser tooltip on hover (safe inside buttons; no extra focus stop). */
+  showHoverTitle?: boolean;
 };
 
 function memberInitials(name: string): string {
@@ -33,7 +28,7 @@ export function PlatformMemberAvatar({
   size = "md",
   className,
   unassigned: unassignedProp,
-  withTooltip = false,
+  showHoverTitle = false,
 }: PlatformMemberAvatarProps) {
   const [imageFailed, setImageFailed] = useState(false);
   const dimension = size === "sm" ? "size-8" : "size-10";
@@ -44,12 +39,15 @@ export function PlatformMemberAvatar({
       displayName.trim().toLowerCase() === "unassigned");
 
   const accessibleName = isUnassigned ? "Unassigned" : displayName.trim();
+  const hoverTitle =
+    showHoverTitle && !isUnassigned ? accessibleName : undefined;
   const showImage = !isUnassigned && Boolean(avatarUrl?.trim()) && !imageFailed;
 
   const avatarBody = isUnassigned ? (
     <span
       role="img"
       aria-label={accessibleName}
+      title={hoverTitle}
       className={cn(
         dimension,
         "flex shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground ring-1 ring-border",
@@ -61,10 +59,9 @@ export function PlatformMemberAvatar({
   ) : showImage ? (
     // eslint-disable-next-line @next/next/no-img-element -- profile URLs are user-supplied storage paths
     <img
-      role="img"
-      aria-label={accessibleName}
       src={avatarUrl!}
-      alt=""
+      alt={accessibleName}
+      title={hoverTitle}
       onError={() => setImageFailed(true)}
       className={cn(
         dimension,
@@ -76,6 +73,7 @@ export function PlatformMemberAvatar({
     <span
       role="img"
       aria-label={accessibleName}
+      title={hoverTitle}
       className={cn(
         dimension,
         "flex shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary ring-1 ring-primary/20",
@@ -87,25 +85,12 @@ export function PlatformMemberAvatar({
     </span>
   );
 
-  const avatar = (
+  return (
     <span
       className="inline-flex shrink-0 rounded-full"
       data-testid="platform-member-avatar"
     >
       {avatarBody}
     </span>
-  );
-
-  if (!withTooltip) {
-    return avatar;
-  }
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span className="inline-flex shrink-0 rounded-full">{avatarBody}</span>
-      </TooltipTrigger>
-      <TooltipContent side="top">{accessibleName}</TooltipContent>
-    </Tooltip>
   );
 }

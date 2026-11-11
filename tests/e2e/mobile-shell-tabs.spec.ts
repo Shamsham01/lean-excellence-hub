@@ -102,6 +102,9 @@ test.describe("MOBILE-001 shared shell and tabs", () => {
 
     const tabsList = page.locator('[role="tablist"]').first();
     await expect(tabsList).toBeVisible();
+    await expect(tabsList).toHaveAttribute("data-overflow-end", "true", {
+      timeout: 15_000,
+    });
 
     const tabMetrics = await tabsList.evaluate((element) => {
       const style = getComputedStyle(element);

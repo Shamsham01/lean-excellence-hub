@@ -17,7 +17,7 @@ describe("KpiStatCard", () => {
       />,
     );
     const value = screen.getByTestId("kpi-overdue-value");
-    expect(value.className).toContain("text-destructive");
+    expect(value.className).toContain("text-destructive-emphasis");
     expect(value.className).not.toContain("text-success");
     expect(screen.getByText("Overdue", { selector: "p" })).toBeTruthy();
   });
@@ -33,8 +33,7 @@ describe("KpiStatCard", () => {
       />,
     );
     const value = screen.getByTestId("kpi-completed-value");
-    expect(value.className).toContain("text-emerald-700");
-    expect(value.className).toContain("dark:text-emerald-400");
+    expect(value.className).toContain("text-success-text");
   });
 
   it("uses responsive columns when tileCount is set", () => {
