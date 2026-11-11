@@ -25,7 +25,7 @@ create temporary table planner_ids (
   id uuid not null
 ) on commit drop;
 
-grant select, insert, update on planner_ids to authenticated;
+grant select, insert on planner_ids to authenticated;
 
 insert into planner_ids (key, id)
 values (
@@ -60,19 +60,44 @@ values
     statement_timestamp()
   );
 
-select tests.authenticate_as('planner-owner@example.test');
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"e1000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"e1100000-0000-0000-0000-000000000001","email":"planner-owner@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from planner_ids where key = 'organisation')),
+  'owner selects organisation'
+);
 
 select lives_ok(
   $$select public.list_action_labels()$$,
   'member can list labels in own org'
 );
 
-select tests.authenticate_as('planner-outsider@example.test');
+insert into planner_ids (key, id)
+select 'action', public.create_action('Label assignment target');
+
+reset role;
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"e1000000-0000-0000-0000-000000000002","role":"authenticated","session_id":"e1100000-0000-0000-0000-000000000002","email":"planner-outsider@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from planner_ids where key = 'other_organisation')),
+  'outsider selects own organisation'
+);
 
 select throws_ok(
   format(
     'select public.set_action_labels(%L::uuid, %L::uuid[])',
-    gen_random_uuid(),
+    (select id from planner_ids where key = 'action'),
     array[]::uuid[]
   ),
   '42501',
@@ -80,7 +105,8 @@ select throws_ok(
   'outsider cannot set labels on foreign action'
 );
 
-select tests.clear_authentication();
+reset role;
+set local role anon;
 
 select throws_ok(
   $$select public.list_action_labels()$$,
