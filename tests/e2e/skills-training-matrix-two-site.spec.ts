@@ -21,6 +21,7 @@ import {
 import { loginAsCookieWorksPersona } from "./helpers/cookieworks-auth";
 import {
   createPublishableClient,
+  createServiceRoleClient,
   queryDatabase,
 } from "./helpers/workforce-provisioning";
 
@@ -118,45 +119,52 @@ function sqlString(value: string) {
   return `'${value.replace(/'/g, "''")}'`;
 }
 
-/** Inserts active, enrolled members directly (local DB only). */
-function seedMembers(names: string[]): string[] {
+/** Inserts active, enrolled members via service role (local DB only). */
+async function seedMembers(names: string[]): Promise<string[]> {
   if (names.length === 0) {
     return [];
   }
-  const values = names
-    .map((name) => `(gen_random_uuid(), ${sqlString(name)})`)
-    .join(",");
-  const rows = queryDatabase<{ membership_id: string }>(`
-    with people(user_id, display_name) as (values ${values}),
-    users as (
-      insert into auth.users (id, email, email_confirmed_at, created_at, updated_at,
-        raw_app_meta_data, raw_user_meta_data, is_sso_user, is_anonymous)
-      select user_id, 'matrix-' || user_id || '@example.test', now(), now(), now(),
-        '{}'::jsonb, '{}'::jsonb, false, false
-      from people
-      returning id
-    ),
-    memberships as (
-      insert into public.organisation_memberships
-        (organisation_id, user_id, display_name, status, activated_at)
-      select ${sqlString(ids.organisationId)}::uuid, people.user_id, people.display_name, 'active', now()
-      from people join users on users.id = people.user_id
-      returning id, user_id
-    ),
-  enrol as (
-    update private.identity_controls
-    set status = 'active', enrolment_status = 'complete', enrolment_completed_at = now()
-    where user_id in (select user_id from memberships)
-    returning user_id
-  )
-  select id as membership_id from memberships;
-  `);
-  if (rows.length !== names.length) {
-    throw new Error(
-      `seedMembers expected ${names.length} memberships, inserted ${rows.length}`,
-    );
+  const service = createServiceRoleClient();
+  const membershipIds: string[] = [];
+  for (const [index, displayName] of names.entries()) {
+    const email = `matrix-${run}-${index}-${crypto.randomUUID().slice(0, 8)}@example.test`;
+    const { data: userData, error: userError } =
+      await service.auth.admin.createUser({
+        email,
+        email_confirm: true,
+        user_metadata: { display_name: displayName },
+      });
+    if (userError) {
+      throw new Error(
+        `seedMembers createUser failed for ${displayName}: ${userError.message}`,
+      );
+    }
+    const userId = userData.user.id;
+    const { data: membership, error: membershipError } = await service
+      .from("organisation_memberships")
+      .insert({
+        organisation_id: ids.organisationId,
+        user_id: userId,
+        display_name: displayName,
+        status: "active",
+        activated_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+    if (membershipError) {
+      throw new Error(
+        `seedMembers membership insert failed for ${displayName}: ${membershipError.message}`,
+      );
+    }
+    membershipIds.push(membership.id);
+    queryDatabase(`
+      update private.identity_controls
+      set status = 'active', enrolment_status = 'complete', enrolment_completed_at = now()
+      where user_id = ${sqlString(userId)}::uuid
+      returning user_id;
+    `);
   }
-  return rows.map((row) => row.membership_id);
+  return membershipIds;
 }
 
 async function seed() {
@@ -363,10 +371,10 @@ async function seed() {
 
   // People: 30 Bodmin operators, 25 Exeter operators (=> >50 in org).
   // RISK: seat / site-capacity enforcement may reject 55 extra members.
-  const bodmin = seedMembers(
+  const bodmin = await seedMembers(
     Array.from({ length: BODMIN_PEOPLE }, (_, i) => bodminPerson(i + 1)),
   );
-  const exeter = seedMembers(
+  const exeter = await seedMembers(
     Array.from({ length: EXETER_PEOPLE }, (_, i) => exeterPerson(i + 1)),
   );
   for (const [list, unit] of [
