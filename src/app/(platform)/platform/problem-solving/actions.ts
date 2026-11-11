@@ -14,13 +14,17 @@ async function callRpc<T = unknown>(fn: string, args?: RpcArgs): Promise<T> {
     throw new Error(moduleGate.error);
   }
   const supabase = await createServerSupabaseClient();
-  const client = supabase as typeof supabase & {
-    rpc: (
-      name: string,
-      params?: Record<string, unknown>,
-    ) => ReturnType<typeof supabase.rpc>;
-  };
-  const { data, error } = await client.rpc(fn, args ?? {});
+  const { data, error } = await (
+    supabase as unknown as {
+      rpc: (
+        name: string,
+        params?: Record<string, unknown>,
+      ) => Promise<{
+        data: unknown;
+        error: { message: string } | null;
+      }>;
+    }
+  ).rpc(fn, args ?? {});
   if (error) throw error;
   return data as T;
 }
