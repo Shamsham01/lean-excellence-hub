@@ -1885,6 +1885,8 @@ declare
   help_text text;
   contributes boolean;
   scoring_metadata jsonb;
+  has_scored_question boolean := false;
+  requested_scale jsonb;
   category_count integer := 0;
   question_count integer := 0;
   questions_in_category integer;
@@ -2004,9 +2006,12 @@ begin
         32,
         true
       );
-      if question_type not in ('yes_no', 'score', 'short_text', 'long_text') then
+      if question_type not in ('yes_no', 'score') then
         raise exception '5S standard definition has an unsupported question type'
           using errcode = '22023';
+      end if;
+      if question_type = 'score' then
+        has_scored_question := true;
       end if;
       perform private.module_setup_require_text(
         question_item -> 'helpText',
@@ -2022,6 +2027,21 @@ begin
 
   if question_count > 30 then
     raise exception '5S standard definition has too many questions'
+      using errcode = '22023';
+  end if;
+
+  requested_scale := definition -> 'scoringScale';
+  if requested_scale is null
+    or pg_catalog.jsonb_typeof(requested_scale) = 'null' then
+    requested_scale := null;
+  end if;
+  if has_scored_question and requested_scale is null then
+    raise exception '5S standard definition requires an explicit scoring scale'
+      using errcode = '22023';
+  end if;
+  if requested_scale is not null
+    and not private.five_s_scoring_scale_is_valid(requested_scale) then
+    raise exception '5S scoring scale is not valid'
       using errcode = '22023';
   end if;
 
@@ -2042,6 +2062,14 @@ begin
   if new_version_id is null then
     raise exception '5S standard draft could not be prepared'
       using errcode = '55000';
+  end if;
+
+  if requested_scale is not null then
+    update public.five_s_standard_versions version_row
+    set scoring_scale = requested_scale
+    where version_row.organisation_id = org_id
+      and version_row.id = new_version_id
+      and version_row.status = 'draft';
   end if;
 
   category_position := 0;
@@ -2394,7 +2422,8 @@ $$;
 create or replace function private.create_gemba_definition_draft(
   target_display_name text,
   target_description text default null,
-  target_expected_duration_minutes integer default null
+  target_expected_duration_minutes integer default null,
+  target_unit_ids uuid[] default null
 )
 returns uuid
 language plpgsql
@@ -2453,9 +2482,18 @@ begin
     target_expected_duration_minutes, actor_membership_id
   );
 
+  if target_unit_ids is not null then
+    perform private.set_gemba_definition_applicable_units(
+      new_definition_id,
+      target_unit_ids
+    );
+  end if;
+
   return new_definition_id;
 end;
 $$;
+
+drop function if exists private.create_gemba_definition_draft(text, text, integer);
 
 create or replace function private.add_gemba_section(
   target_definition_version_id uuid,
@@ -2581,7 +2619,7 @@ as $$
 declare
   org_id uuid := private.current_organisation_id();
   actor_membership_id uuid := private.current_membership_id(org_id);
-  template_version_id uuid;
+  linked_template_version_id uuid;
   definition_id uuid;
 begin
   if org_id is null
@@ -2594,19 +2632,36 @@ begin
   select
     definition_version.template_version_id,
     definition_version.definition_id
-  into template_version_id, definition_id
+  into linked_template_version_id, definition_id
   from public.gemba_definition_versions definition_version
   where definition_version.organisation_id = org_id
     and definition_version.id = target_definition_version_id
     and definition_version.status = 'draft'
   for update;
 
-  if not found or definition_id is null then
+  if not found then
     raise exception 'gemba definition version is not publishable'
       using errcode = '55000';
   end if;
 
   perform private.assert_gemba_definition_visible_to_actor(definition_id);
+
+  if not exists (
+    select 1
+    from public.template_questions question_row
+    where question_row.organisation_id = org_id
+      and question_row.template_version_id = linked_template_version_id
+      and btrim(question_row.prompt) <> ''
+  ) then
+    raise exception 'gemba definition version requires at least one question'
+      using errcode = '55000';
+  end if;
+
+  if not private.gemba_definition_has_active_applicable_unit(org_id, definition_id) then
+    raise exception
+      'gemba definition requires at least one applicable organisational unit'
+      using errcode = '55000';
+  end if;
 
   update public.gemba_definition_versions
   set status = 'published',
@@ -2616,7 +2671,7 @@ begin
     and id = target_definition_version_id;
 
   perform private.publish_template_version_internal(
-    template_version_id,
+    linked_template_version_id,
     org_id,
     actor_membership_id
   );

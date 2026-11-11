@@ -15044,6 +15044,14 @@ export type Database = {
         Args: { target_failure_reason: string; target_intent_id: string }
         Returns: boolean
       }
+      member_can_author_five_s_standard: {
+        Args: { target_standard_id: string }
+        Returns: boolean
+      }
+      member_can_author_gemba_definition: {
+        Args: { target_definition_id: string }
+        Returns: boolean
+      }
       member_has_grant_permission: {
         Args: { target_permission_key: string }
         Returns: boolean
