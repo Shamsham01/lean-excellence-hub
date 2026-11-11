@@ -1,6 +1,9 @@
 import "server-only";
 
+import type { PeopleDirectoryPayload } from "@/lib/people/directory-types";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
+
+const DIRECTORY_PAGE_SIZE = 100;
 
 export async function loadMembershipAvatarUrls(
   membershipIds: string[],
@@ -9,32 +12,51 @@ export async function loadMembershipAvatarUrls(
   const map = new Map<string, string | null>();
   if (unique.length === 0) return map;
 
+  const needed = new Set(unique);
   const supabase = await createServerSupabaseClient();
-  const { data: rows } = await supabase
-    .from("organisation_memberships")
-    .select("id, user_id")
-    .in("id", unique);
+  let page = 1;
+  let totalCount: number | null = null;
 
-  const userIds = [...new Set((rows ?? []).map((row) => row.user_id))];
-  if (userIds.length === 0) {
-    for (const id of unique) map.set(id, null);
-    return map;
+  while (needed.size > 0) {
+    const { data, error } = await supabase.rpc("get_people_directory", {
+      target_search: null,
+      target_page: page,
+      target_page_size: DIRECTORY_PAGE_SIZE,
+      target_include_inactive: false,
+    });
+
+    if (error) {
+      console.error(
+        "[loadMembershipAvatarUrls] get_people_directory failed",
+        error.message,
+      );
+      break;
+    }
+
+    const payload = (data ?? null) as PeopleDirectoryPayload | null;
+    const people = payload?.people ?? [];
+    totalCount = payload?.total_count ?? totalCount;
+
+    for (const person of people) {
+      if (needed.has(person.membership_id)) {
+        map.set(person.membership_id, person.avatar_url ?? null);
+        needed.delete(person.membership_id);
+      }
+    }
+
+    if (people.length < DIRECTORY_PAGE_SIZE) {
+      break;
+    }
+    if (totalCount != null && page * DIRECTORY_PAGE_SIZE >= totalCount) {
+      break;
+    }
+    page += 1;
   }
 
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("user_id, avatar_url")
-    .in("user_id", userIds);
-
-  const avatarByUser = new Map(
-    (profiles ?? []).map((row) => [row.user_id, row.avatar_url]),
-  );
-
-  for (const row of rows ?? []) {
-    map.set(row.id, avatarByUser.get(row.user_id) ?? null);
-  }
   for (const id of unique) {
-    if (!map.has(id)) map.set(id, null);
+    if (!map.has(id)) {
+      map.set(id, null);
+    }
   }
 
   return map;

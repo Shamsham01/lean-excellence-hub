@@ -24,7 +24,7 @@ function valueToneClass(
     return "text-destructive";
   }
   if (polarity === "higher-is-better") {
-    return "text-success";
+    return "text-emerald-700 dark:text-emerald-400";
   }
   return "text-foreground";
 }
@@ -32,15 +32,14 @@ function valueToneClass(
 function valueAriaHint(
   value: string | number,
   polarity: KpiPolarity,
-  label: string,
 ): string | undefined {
   const n = numericValue(value);
   if (n == null || n === 0 || polarity === "neutral") return undefined;
   if (polarity === "lower-is-better") {
-    return `${label}: elevated count needs attention`;
+    return "Needs attention";
   }
   if (polarity === "higher-is-better") {
-    return `${label}: positive count`;
+    return "Good";
   }
   return undefined;
 }
@@ -66,13 +65,13 @@ export function KpiStatCard({
 }) {
   const trendTone =
     trend?.direction === "up"
-      ? "text-success"
+      ? "text-emerald-700 dark:text-emerald-400"
       : trend?.direction === "down"
         ? "text-destructive"
         : "text-muted-foreground";
 
   const valueClass = valueToneClass(value, polarity);
-  const ariaHint = valueAriaHint(value, polarity, label);
+  const ariaHint = valueAriaHint(value, polarity);
 
   return (
     <Card

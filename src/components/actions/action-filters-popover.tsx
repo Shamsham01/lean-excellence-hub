@@ -74,7 +74,7 @@ export function ActionFiltersPopover({
           data-testid="actions-filter-button"
         >
           <Filter className="size-3.5" aria-hidden />
-          Filter &amp; sort
+          Filters
           {activeCount > 0 ? (
             <Badge
               variant="secondary"

@@ -18,10 +18,26 @@ describe("KpiStatCard", () => {
     );
     const value = screen.getByTestId("kpi-overdue-value");
     expect(value.className).toContain("text-destructive");
+    expect(value.className).not.toContain("text-success");
     expect(screen.getByText("Overdue", { selector: "p" })).toBeTruthy();
   });
 
-  it("stretches tiles across the grid row", () => {
+  it("applies emerald tone for higher-is-better KPIs with a positive value", () => {
+    render(
+      <KpiStatCard
+        label="Completed"
+        value={2}
+        icon={ClipboardList}
+        polarity="higher-is-better"
+        testId="kpi-completed"
+      />,
+    );
+    const value = screen.getByTestId("kpi-completed-value");
+    expect(value.className).toContain("text-emerald-700");
+    expect(value.className).toContain("dark:text-emerald-400");
+  });
+
+  it("uses responsive columns when tileCount is set", () => {
     const { container } = render(
       <KpiStatGrid tileCount={4}>
         <KpiStatCard label="A" value={1} icon={ClipboardList} />
@@ -29,6 +45,8 @@ describe("KpiStatCard", () => {
       </KpiStatGrid>,
     );
     const grid = container.querySelector('[data-testid="kpi-stat-grid"]');
-    expect(grid?.getAttribute("style")).toContain("repeat(4");
+    expect(grid?.className).toContain("grid-cols-1");
+    expect(grid?.className).toContain("sm:grid-cols-2");
+    expect(grid?.getAttribute("style")).toContain("--kpi-tile-count");
   });
 });
