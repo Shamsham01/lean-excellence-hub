@@ -22,18 +22,6 @@ declare
   actor_membership_id uuid := private.current_membership_id(org_id);
   resolved_unit_id uuid := target_organisational_unit_id;
 begin
-  if target_assessment_method is null
-    or target_assessment_method not in (
-      'manager_assessment',
-      'practical_observation',
-      'qualification',
-      'trainer_sign_off',
-      'external_certification'
-    ) then
-    raise exception 'skill validation requires a recognised assessment method'
-      using errcode = '22023';
-  end if;
-
   if resolved_unit_id is null then
     resolved_unit_id := private.membership_primary_organisational_unit_id(
       org_id,
@@ -53,6 +41,18 @@ begin
   end if;
 
   perform private.assert_current_organisation_module_entitled('skills');
+
+  if target_assessment_method is null
+    or target_assessment_method not in (
+      'manager_assessment',
+      'practical_observation',
+      'qualification',
+      'trainer_sign_off',
+      'external_certification'
+    ) then
+    raise exception 'skill validation requires a recognised assessment method'
+      using errcode = '22023';
+  end if;
 
   return private.record_skill_assessment_internal(
     target_membership_id,

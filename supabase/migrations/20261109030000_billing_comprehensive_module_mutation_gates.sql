@@ -9871,7 +9871,7 @@ create or replace function private.record_skill_validation(
   target_proficiency_level_id uuid,
   target_assessed_at timestamptz default statement_timestamp(),
   target_organisational_unit_id uuid default null,
-  target_assessment_method text default null,
+  target_assessment_method text default 'manager_assessment',
   target_valid_until timestamptz default null,
   target_notes text default null
 )
@@ -9886,18 +9886,6 @@ declare
   actor_membership_id uuid := private.current_membership_id(org_id);
   resolved_unit_id uuid := target_organisational_unit_id;
 begin
-  if target_assessment_method is null
-    or target_assessment_method not in (
-      'manager_assessment',
-      'practical_observation',
-      'qualification',
-      'trainer_sign_off',
-      'external_certification'
-    ) then
-    raise exception 'skill validation requires a recognised assessment method'
-      using errcode = '22023';
-  end if;
-
   if resolved_unit_id is null then
     resolved_unit_id := private.membership_primary_organisational_unit_id(
       org_id,

@@ -87,8 +87,9 @@ def extract_all(path: Path) -> dict[str, str]:
 def canonical_private(name: str) -> str | None:
     chosen = None
     chosen_file = ""
+    gate_name = GATE_FILE.name
     for path in sorted(MIGRATIONS.glob("*.sql")):
-        if path.name in DEPRIORITISE or path.name == GATE_FILE.name:
+        if path.name in DEPRIORITISE or path.name >= gate_name:
             continue
         for key, body in extract_all(path).items():
             if key == f"private.{name}":
