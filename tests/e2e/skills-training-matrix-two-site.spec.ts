@@ -21,6 +21,7 @@ import {
 import { loginAsCookieWorksPersona } from "./helpers/cookieworks-auth";
 import {
   createPublishableClient,
+  createServiceRoleClient,
   queryDatabase,
 } from "./helpers/workforce-provisioning";
 
@@ -53,7 +54,7 @@ type Ids = {
 };
 const ids = {} as Ids;
 
-function resetCookieWorksFoundation() {
+async function resetCookieWorksFoundation() {
   execSync("npm run qa:cookie:reset", {
     cwd: join(fileURLToPath(new URL(".", import.meta.url)), "../.."),
     env: {
@@ -63,14 +64,18 @@ function resetCookieWorksFoundation() {
     },
     stdio: "inherit",
   });
-  const orgRows = queryDatabase<{ id: string }>(`
-    select id from public.organisations
-    where code = ${sqlString(QA_ORGANISATION_CODE)}
-    limit 1;
-  `);
-  if (orgRows.length !== 1) {
+  const client = createServiceRoleClient();
+  const { data: organisationRow, error } = await client
+    .from("organisations")
+    .select("id")
+    .eq("code", QA_ORGANISATION_CODE)
+    .maybeSingle();
+  if (error) {
+    throw error;
+  }
+  if (!organisationRow?.id) {
     throw new Error(
-      `qa:cookie:reset did not provision ${QA_ORGANISATION_CODE} (found ${orgRows.length} org rows)`,
+      `qa:cookie:reset did not provision ${QA_ORGANISATION_CODE} via API lookup`,
     );
   }
 }
@@ -354,7 +359,7 @@ test.describe("Spec B: two-site skills/training matrix", () => {
 
   test.beforeAll(async () => {
     test.setTimeout(300_000);
-    resetCookieWorksFoundation();
+    await resetCookieWorksFoundation();
     await seed();
   });
 
