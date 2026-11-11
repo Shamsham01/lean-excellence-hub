@@ -63,22 +63,27 @@ async function resetCookieWorksFoundation() {
     },
     stdio: "inherit",
   });
-  let organisationId: string | undefined;
-  for (let attempt = 0; attempt < 30; attempt += 1) {
-    const orgRows = queryDatabase<{ id: string }>(`
-      select id from public.organisations
-      where code = ${sqlString(QA_ORGANISATION_CODE)}
-      limit 1
-    `);
-    organisationId = orgRows[0]?.id;
-    if (organisationId) {
-      break;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
+  const client = createPublishableClient();
+  const { error: signInError } = await client.auth.signInWithPassword({
+    email: QA_USERS.admin.email,
+    password: QA_USERS.admin.password,
+  });
+  if (signInError) {
+    throw signInError;
   }
-  if (!organisationId) {
+  const { data, error } = await client.rpc("list_my_eligible_organisations");
+  if (error) {
+    throw error;
+  }
+  const organisation = (
+    (data ?? []) as Array<{
+      organisation_id: string;
+      organisation_code: string;
+    }>
+  ).find((row) => row.organisation_code === QA_ORGANISATION_CODE);
+  if (!organisation?.organisation_id) {
     throw new Error(
-      `qa:cookie:reset did not provision ${QA_ORGANISATION_CODE} (SQL visibility)`,
+      `qa:cookie:reset did not provision ${QA_ORGANISATION_CODE} (eligible org lookup)`,
     );
   }
 }
