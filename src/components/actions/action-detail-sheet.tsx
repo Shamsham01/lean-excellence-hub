@@ -65,6 +65,7 @@ export function ActionDetailSheet({
         side="right"
         className="w-full border-border sm:w-[min(100%,42rem)]"
         data-testid="action-detail-sheet"
+        data-planner-task-dialog=""
       >
         <SheetHeader className="border-b border-border pe-10 pb-4">
           <SheetTitle>Action</SheetTitle>

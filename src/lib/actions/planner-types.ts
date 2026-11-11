@@ -1,4 +1,5 @@
 import type {
+  ActionLabel,
   ActionPermissions,
   ActionSourceSummary,
 } from "@/lib/actions/types";
@@ -17,4 +18,10 @@ export type ActionPlannerListItem = {
   assignee_avatar_url: string | null;
   source: ActionSourceSummary | null;
   permissions: ActionPermissions;
+  labels: ActionLabel[];
+  checklist_done: number;
+  checklist_total: number;
+  comment_count: number;
+  card_cover_mime_type: string | null;
+  card_cover_storage_path: string | null;
 };

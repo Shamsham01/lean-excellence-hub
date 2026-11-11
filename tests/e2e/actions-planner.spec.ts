@@ -49,6 +49,9 @@ test.describe("Actions planner workspace", () => {
     await expect(page.getByTestId("action-detail-sheet-body")).toBeVisible({
       timeout: 30_000,
     });
+    await expect(page.getByTestId("action-planner-checklist")).toBeVisible();
+    await expect(page.getByTestId("action-planner-labels")).toBeVisible();
+    await expect(page.locator('[data-planner-task-dialog=""]')).toBeVisible();
   });
 
   test("persists the selected view in localStorage", async ({ page }) => {

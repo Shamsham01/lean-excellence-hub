@@ -65,6 +65,15 @@ export async function loadActionPlannerSummaries(
         : null,
       source: detail.source,
       permissions: detail.permissions,
+      labels: detail.labels ?? [],
+      checklist_done: (detail.checklist_items ?? []).filter(
+        (item) => item.is_done,
+      ).length,
+      checklist_total: detail.checklist_items?.length ?? 0,
+      comment_count: detail.comment_count ?? 0,
+      card_cover_mime_type: detail.card_cover_attachment?.mime_type ?? null,
+      card_cover_storage_path:
+        detail.card_cover_attachment?.storage_object_path ?? null,
     };
   });
 }

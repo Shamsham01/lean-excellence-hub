@@ -6,7 +6,11 @@ import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
 import type { CommentRow } from "@/components/comments/resource-comments";
 import { mapActionMutationError } from "@/lib/actions/errors";
 import { callActionRpc } from "@/lib/actions/supabase-untyped";
-import type { ActionDetail, AssignablePerson } from "@/lib/actions/types";
+import type {
+  ActionDetail,
+  ActionLabel,
+  AssignablePerson,
+} from "@/lib/actions/types";
 import { ACTIONS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -151,6 +155,72 @@ export async function reopenAction(input: {
   return { ok: true };
 }
 
+export async function listActionLabels(): Promise<{
+  error?: string;
+  labels?: ActionLabel[];
+}> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await callActionRpc<ActionLabel[]>(
+    supabase,
+    "list_action_labels",
+  );
+  if (error) return { error: mapActionMutationError(error) };
+  const labels = Array.isArray(data) ? data : [];
+  return { labels: labels as ActionLabel[] };
+}
+
+export async function setActionLabelsForAction(
+  actionId: string,
+  labelIds: string[],
+): Promise<ActionResult> {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await callActionRpc(supabase, "set_action_labels", {
+    target_action_id: actionId,
+    target_label_ids: labelIds,
+  });
+  if (error) return { error: mapActionMutationError(error) };
+  revalidateActionPaths(actionId);
+  return { ok: true };
+}
+
+export async function addActionChecklistItem(
+  actionId: string,
+  title: string,
+): Promise<ActionResult & { id?: string }> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await callActionRpc<string>(
+    supabase,
+    "add_action_checklist_item",
+    {
+      target_action_id: actionId,
+      target_title: title.trim(),
+    },
+  );
+  if (error) return { error: mapActionMutationError(error) };
+  revalidateActionPaths(actionId);
+  if (typeof data === "string" && data.length > 0) {
+    return { ok: true, id: data };
+  }
+  return { ok: true };
+}
+
+export async function setActionChecklistItemDone(
+  itemId: string,
+  done: boolean,
+): Promise<ActionResult> {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await callActionRpc(
+    supabase,
+    "set_action_checklist_item_done",
+    {
+      target_item_id: itemId,
+      target_done: done,
+    },
+  );
+  if (error) return { error: mapActionMutationError(error) };
+  return { ok: true };
+}
+
 export async function initiateActionEvidenceUpload(
   actionId: string,
   filename: string,
@@ -234,7 +304,7 @@ export async function loadActionSheetPayload(
 
   const { data: evidence } = await supabase
     .from("attachments")
-    .select("id, filename, mime_type, byte_size")
+    .select("id, filename, mime_type, byte_size, storage_object_path")
     .eq("target_resource_id", actionId)
     .eq("lifecycle", "active")
     .order("created_at");
@@ -282,6 +352,7 @@ export async function loadActionSheetPayload(
           filename: item.filename,
           mime_type: item.mime_type,
           byte_size: item.byte_size as number,
+          storage_object_path: item.storage_object_path,
         })),
       assignablePeople,
       canUploadEvidence,

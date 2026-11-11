@@ -11,6 +11,11 @@ import {
   updateActionFields,
 } from "@/app/(platform)/platform/actions/actions";
 import { ActionEvidenceBlock } from "@/components/actions/action-evidence-block";
+import { ActionPlannerChecklist } from "@/components/actions/action-planner-checklist";
+import { ActionPlannerLabelChips } from "@/components/actions/action-planner-label-chips";
+import { ActionPlannerLabelsField } from "@/components/actions/action-planner-labels-field";
+import { EvidenceGallery } from "@/components/attachments/evidence-gallery";
+import { PlatformMemberAvatar } from "@/components/platform/platform-member-avatar";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
 import {
   ResourceComments,
@@ -125,13 +130,41 @@ export function ActionWorkspace({
             </span>
           ) : null}
         </div>
-        {currentAssignee ? (
-          <p className="mt-2 text-sm text-muted-foreground">
-            Assigned to {currentAssignee.display_name}
+        <div className="mt-2 flex items-center gap-2">
+          <PlatformMemberAvatar
+            displayName={currentAssignee?.display_name ?? "Unassigned"}
+            unassigned={!currentAssignee}
+            showHoverTitle={Boolean(currentAssignee)}
+            size="sm"
+          />
+          <p className="text-sm text-muted-foreground">
+            {currentAssignee
+              ? `Assigned to ${currentAssignee.display_name}`
+              : "Unassigned"}
           </p>
-        ) : (
-          <p className="mt-2 text-sm text-muted-foreground">Unassigned</p>
-        )}
+        </div>
+        {(detail.labels?.length ?? 0) > 0 ? (
+          <div className="mt-3">
+            <ActionPlannerLabelChips labels={detail.labels ?? []} />
+          </div>
+        ) : null}
+        {detail.card_cover_attachment ? (
+          <div className="mt-4" data-testid="action-card-cover-preview">
+            <EvidenceGallery
+              items={[
+                {
+                  id: detail.card_cover_attachment.id,
+                  filename: detail.card_cover_attachment.filename,
+                  mime_type: detail.card_cover_attachment.mime_type,
+                  byte_size: 0,
+                  storage_object_path:
+                    detail.card_cover_attachment.storage_object_path,
+                },
+              ]}
+              heading="Card cover"
+            />
+          </div>
+        ) : null}
       </div>
 
       {source ? (
@@ -251,6 +284,18 @@ export function ActionWorkspace({
               <CardTitle>Details</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
+              <ActionPlannerLabelsField
+                key={`${detail.id}-${detail.version}`}
+                actionId={detail.id}
+                assigned={detail.labels ?? []}
+                canEdit={permissions.can_update && editable}
+              />
+              <ActionPlannerChecklist
+                key={`${detail.id}-${detail.version}`}
+                actionId={detail.id}
+                items={detail.checklist_items ?? []}
+                canEdit={permissions.can_update && editable}
+              />
               {permissions.can_update && editable ? (
                 <form
                   className="flex flex-col gap-4"
