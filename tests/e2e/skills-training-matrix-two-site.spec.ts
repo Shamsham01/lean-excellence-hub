@@ -241,14 +241,19 @@ async function seed() {
     target_name: `Matrix capability set ${run}`,
     target_code: `matrix-set-${run}`,
   });
-  const setRow = queryDatabase<{ id: string }>(`
-    select id from public.skill_capability_set_versions
-    where capability_set_id = ${sqlString(setId)}::uuid and version_number = 1;
-  `)[0];
-  if (!setRow) {
+  const { data: setVersion, error: setVersionError } = await admin
+    .from("skill_capability_set_versions")
+    .select("id")
+    .eq("capability_set_id", setId)
+    .eq("version_number", 1)
+    .maybeSingle();
+  if (setVersionError) {
+    throw setVersionError;
+  }
+  if (!setVersion?.id) {
     throw new Error("Expected draft capability set version");
   }
-  const set = setRow.id;
+  const set = setVersion.id;
   const addSkill = (name: string, level: number, unit?: string) =>
     rpc(admin, "add_skill_requirement", {
       target_capability_set_version_id: set,
@@ -285,14 +290,19 @@ async function seed() {
       target_code: `matrix-curriculum-${run}`,
     },
   );
-  const curriculumRow = queryDatabase<{ id: string }>(`
-    select id from public.training_curriculum_versions
-    where curriculum_id = ${sqlString(curriculumId)}::uuid and version_number = 1;
-  `)[0];
-  if (!curriculumRow) {
+  const { data: curriculumVersion, error: curriculumVersionError } = await admin
+    .from("training_curriculum_versions")
+    .select("id")
+    .eq("curriculum_id", curriculumId)
+    .eq("version_number", 1)
+    .maybeSingle();
+  if (curriculumVersionError) {
+    throw curriculumVersionError;
+  }
+  if (!curriculumVersion?.id) {
     throw new Error("Expected draft curriculum version");
   }
-  const curriculum = curriculumRow.id;
+  const curriculum = curriculumVersion.id;
   const addTraining = (
     version: string,
     key: keyof typeof course,
@@ -323,15 +333,20 @@ async function seed() {
       target_curriculum_id: curriculumId,
     },
   );
-  const oldRequirementRow = queryDatabase<{ id: string }>(`
-    select id from public.training_requirements
-    where curriculum_version_id = ${sqlString(successor)}::uuid and course_id = ${sqlString(courses.old!)}::uuid;
-  `)[0];
-  if (!oldRequirementRow) {
+  const { data: oldRequirement, error: oldRequirementError } = await admin
+    .from("training_requirements")
+    .select("id")
+    .eq("curriculum_version_id", successor)
+    .eq("course_id", courses.old!)
+    .maybeSingle();
+  if (oldRequirementError) {
+    throw oldRequirementError;
+  }
+  if (!oldRequirement?.id) {
     throw new Error("Expected training requirement row for superseded course");
   }
   await rpc(admin, "remove_training_requirement", {
-    target_requirement_id: oldRequirementRow.id,
+    target_requirement_id: oldRequirement.id,
   });
   await addTraining(successor, "latest", { all: true });
   await rpc(admin, "publish_training_curriculum_version", {
