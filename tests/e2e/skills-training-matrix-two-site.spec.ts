@@ -21,7 +21,6 @@ import {
 import { loginAsCookieWorksPersona } from "./helpers/cookieworks-auth";
 import {
   createPublishableClient,
-  createServiceRoleClient,
   queryDatabase,
 } from "./helpers/workforce-provisioning";
 
@@ -64,18 +63,22 @@ async function resetCookieWorksFoundation() {
     },
     stdio: "inherit",
   });
-  const client = createServiceRoleClient();
-  const { data: organisationRow, error } = await client
-    .from("organisations")
-    .select("id")
-    .eq("code", QA_ORGANISATION_CODE)
-    .maybeSingle();
-  if (error) {
-    throw error;
+  let organisationId: string | undefined;
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const orgRows = queryDatabase<{ id: string }>(`
+      select id from public.organisations
+      where code = ${sqlString(QA_ORGANISATION_CODE)}
+      limit 1
+    `);
+    organisationId = orgRows[0]?.id;
+    if (organisationId) {
+      break;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
   }
-  if (!organisationRow?.id) {
+  if (!organisationId) {
     throw new Error(
-      `qa:cookie:reset did not provision ${QA_ORGANISATION_CODE} via API lookup`,
+      `qa:cookie:reset did not provision ${QA_ORGANISATION_CODE} (SQL visibility)`,
     );
   }
 }
