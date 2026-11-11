@@ -255,10 +255,6 @@ declare
 begin
   -- Precedence mirrors private.resolve_effective_skill_requirement (unit depth vs org-wide).
 
-  if target_job_function_id is null then
-    return null;
-  end if;
-
   select winner.id
   into resolved_id
   from (
