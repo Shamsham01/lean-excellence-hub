@@ -43,6 +43,20 @@ export function ActionDetailSheet({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  function reloadSheet() {
+    if (!actionId) return;
+    startTransition(async () => {
+      const result = await loadActionSheetPayload(actionId);
+      if (result.error || !result.payload) {
+        setState(null);
+        setError(result.error ?? "This action could not be loaded.");
+        return;
+      }
+      setError(null);
+      setState(result.payload);
+    });
+  }
+
   useEffect(() => {
     if (!open || !actionId) return;
 
@@ -112,6 +126,7 @@ export function ActionDetailSheet({
                 canPostComments={state.canPostComments}
                 currentCommentAuthor={state.currentCommentAuthor}
                 assigneeAvatarUrl={state.assigneeAvatarUrl}
+                onMutated={reloadSheet}
                 showBackLink={false}
               />
             </div>

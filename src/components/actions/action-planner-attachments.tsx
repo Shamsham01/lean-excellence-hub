@@ -1,7 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { setActionCardCover } from "@/app/(platform)/platform/actions/actions";
 import { ActionEvidenceBlock } from "@/components/actions/action-evidence-block";
@@ -15,33 +14,44 @@ export function ActionPlannerAttachments({
   canUpload,
   canSetCover,
   coverAttachmentId,
+  onMutated,
 }: {
   actionId: string;
   evidence: EvidenceItem[];
   canUpload: boolean;
   canSetCover: boolean;
   coverAttachmentId: string | null;
+  onMutated?: () => void;
 }) {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pendingCover, setPendingCover] = useState<string | null>(null);
+  const [localEvidence, setLocalEvidence] = useState<EvidenceItem[]>([]);
+  const [localCoverId, setLocalCoverId] = useState<string | null>(
+    coverAttachmentId,
+  );
+
+  const mergedEvidence = useMemo(() => {
+    const byId = new Map<string, EvidenceItem>();
+    for (const item of evidence) byId.set(item.id, item);
+    for (const item of localEvidence) byId.set(item.id, item);
+    return [...byId.values()];
+  }, [evidence, localEvidence]);
 
   async function handleSetCover(attachmentId: string) {
     setPendingCover(attachmentId);
     setError(null);
-    const result = await setActionCardCover(
-      actionId,
-      coverAttachmentId === attachmentId ? null : attachmentId,
-    );
+    const nextCover = localCoverId === attachmentId ? null : attachmentId;
+    const result = await setActionCardCover(actionId, nextCover);
     setPendingCover(null);
     if (result.error) {
       setError(result.error);
       return;
     }
-    router.refresh();
+    setLocalCoverId(nextCover);
+    onMutated?.();
   }
 
-  const imageEvidence = evidence.filter((item) =>
+  const imageEvidence = mergedEvidence.filter((item) =>
     isEvidenceImageMimeType(item.mime_type),
   );
 
@@ -55,6 +65,13 @@ export function ActionPlannerAttachments({
         actionId={actionId}
         evidence={evidence}
         canEdit={canUpload}
+        onUploadSuccess={(item) => {
+          setLocalEvidence((prev) => [
+            ...prev.filter((row) => row.id !== item.id),
+            item,
+          ]);
+          onMutated?.();
+        }}
       />
       {canSetCover && imageEvidence.length > 0 ? (
         <div className="flex flex-col gap-2 border-t border-border pt-3">
@@ -63,7 +80,7 @@ export function ActionPlannerAttachments({
           </p>
           <ul className="flex flex-col gap-2">
             {imageEvidence.map((item) => {
-              const isCover = coverAttachmentId === item.id;
+              const isCover = localCoverId === item.id;
               return (
                 <li
                   key={item.id}

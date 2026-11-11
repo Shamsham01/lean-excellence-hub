@@ -57,6 +57,7 @@ export function ActionWorkspace({
   canPostComments = false,
   currentCommentAuthor = null,
   assigneeAvatarUrl = null,
+  onMutated,
   showBackLink = true,
 }: {
   detail: ActionDetail;
@@ -71,6 +72,7 @@ export function ActionWorkspace({
     avatar_url: string | null;
   } | null;
   assigneeAvatarUrl?: string | null;
+  onMutated?: () => void;
   showBackLink?: boolean;
 }) {
   const router = useRouter();
@@ -477,11 +479,13 @@ export function ActionWorkspace({
 
         <TabsContent value="evidence">
           <ActionPlannerAttachments
+            key={`planner-attachments-${detail.id}-${detail.version}`}
             actionId={detail.id}
             evidence={evidence}
             canUpload={canUploadEvidence && editable}
             canSetCover={permissions.can_update && editable}
             coverAttachmentId={detail.card_cover_attachment?.id ?? null}
+            onMutated={onMutated}
           />
         </TabsContent>
 
