@@ -39,14 +39,13 @@ export default async function FiveSOverviewPage({
     FIVE_S_PERMISSIONS.standardsManage,
   );
 
-  const { count: standardCount, error: standardCountError } = await supabase
+  const { data: standards, error: standardsError } = await supabase
     .from("five_s_standards")
-    .select("id", { count: "exact", head: true });
-  const catalog = presentCatalogRead({
-    failed: Boolean(standardCountError),
-    visibleCount: standardCount ?? 0,
-  });
-  if (catalog === "failed") {
+    .select("id, display_name")
+    .order("created_at", { ascending: false })
+    .limit(5);
+
+  if (standardsError) {
     return (
       <ModuleReadError
         title="5S Audits"
@@ -57,11 +56,17 @@ export default async function FiveSOverviewPage({
     );
   }
 
-  const { data: standards } = await supabase
-    .from("five_s_standards")
-    .select("id, display_name")
-    .order("created_at", { ascending: false })
-    .limit(5);
+  const catalogRows = await buildFiveSOverviewCatalogRows(
+    supabase,
+    standards ?? [],
+  );
+  const executionVisibleCount = catalogRows.filter((row) => row.start !== null)
+    .length;
+  const catalog = presentCatalogRead({
+    failed: false,
+    visibleCount: canManage ? (standards?.length ?? 0) : executionVisibleCount,
+  });
+
   const { count: auditCount } = await supabase
     .from("five_s_audits")
     .select("id", { count: "exact", head: true })
@@ -79,10 +84,6 @@ export default async function FiveSOverviewPage({
     .from("schedule_occurrences")
     .select("id", { count: "exact", head: true })
     .eq("lifecycle_status", "open");
-  const catalogRows = await buildFiveSOverviewCatalogRows(
-    supabase,
-    standards ?? [],
-  );
 
   if (catalog === "empty") {
     return (

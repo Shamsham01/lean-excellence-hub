@@ -43,14 +43,13 @@ export default async function GembaOverviewPage({
   const canManage = await currentMemberHasPermission(
     GEMBA_PERMISSIONS.definitionsManage,
   );
-  const { count: definitionCount, error: definitionCountError } = await supabase
+  const { data: definitions, error: definitionsError } = await supabase
     .from("gemba_definitions")
-    .select("id", { count: "exact", head: true });
-  const catalog = presentCatalogRead({
-    failed: Boolean(definitionCountError),
-    visibleCount: definitionCount ?? 0,
-  });
-  if (catalog === "failed") {
+    .select("id, display_name")
+    .order("created_at", { ascending: false })
+    .limit(5);
+
+  if (definitionsError) {
     return (
       <ModuleReadError
         title="Gemba walks"
@@ -60,11 +59,19 @@ export default async function GembaOverviewPage({
       />
     );
   }
-  const { data: definitions } = await supabase
-    .from("gemba_definitions")
-    .select("id, display_name")
-    .order("created_at", { ascending: false })
-    .limit(5);
+
+  const catalogRows = await buildGembaOverviewCatalogRows(
+    supabase,
+    definitions ?? [],
+  );
+  const executionVisibleCount = catalogRows.filter((row) => row.start !== null)
+    .length;
+  const catalog = presentCatalogRead({
+    failed: false,
+    visibleCount: canManage
+      ? (definitions?.length ?? 0)
+      : executionVisibleCount,
+  });
   const { count: walkCount } = await supabase
     .from("gemba_walks")
     .select("id", { count: "exact", head: true })
@@ -83,11 +90,6 @@ export default async function GembaOverviewPage({
   const { count: observationCount } = await supabase
     .from("gemba_walk_observations")
     .select("id", { count: "exact", head: true });
-  const catalogRows = await buildGembaOverviewCatalogRows(
-    supabase,
-    definitions ?? [],
-  );
-
   if (catalog === "empty") {
     return (
       <div className="flex flex-col gap-8" data-testid="gemba-empty-state">
