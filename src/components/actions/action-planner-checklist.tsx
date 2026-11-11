@@ -19,10 +19,12 @@ export function ActionPlannerChecklist({
   actionId,
   items,
   canEdit,
+  showWhenEmpty,
 }: {
   actionId: string;
   items: ActionChecklistItem[];
   canEdit: boolean;
+  showWhenEmpty?: boolean;
 }) {
   const router = useRouter();
   const [localItems, setLocalItems] = useState(
@@ -32,7 +34,7 @@ export function ActionPlannerChecklist({
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  const showHeading = canEdit || localItems.length > 0;
+  const showHeading = canEdit || showWhenEmpty || localItems.length > 0;
 
   async function toggle(itemId: string, done: boolean) {
     setPending(true);

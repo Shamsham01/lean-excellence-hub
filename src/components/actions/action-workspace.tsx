@@ -314,12 +314,14 @@ export function ActionWorkspace({
                 assigned={detail.labels ?? []}
                 canEdit={permissions.can_update && editable}
                 canManageCatalog={permissions.can_update}
+                showWhenEmpty={permissions.can_update}
               />
               <ActionPlannerChecklist
                 key={`planner-checklist-${detail.id}-${detail.version}`}
                 actionId={detail.id}
                 items={detail.checklist_items ?? []}
                 canEdit={permissions.can_update && editable}
+                showWhenEmpty={permissions.can_update}
               />
               {permissions.can_update && editable ? (
                 <form

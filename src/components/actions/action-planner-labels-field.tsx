@@ -27,11 +27,13 @@ export function ActionPlannerLabelsField({
   assigned,
   canEdit,
   canManageCatalog,
+  showWhenEmpty,
 }: {
   actionId: string;
   assigned: ActionLabel[];
   canEdit: boolean;
   canManageCatalog?: boolean;
+  showWhenEmpty?: boolean;
 }) {
   const [catalog, setCatalog] = useState<ActionLabel[]>([]);
   const [selected, setSelected] = useState(assigned);
@@ -42,7 +44,7 @@ export function ActionPlannerLabelsField({
   const [draftName, setDraftName] = useState("");
   const [draftColor, setDraftColor] = useState("#0058FD");
 
-  const showHeading = canEdit || selected.length > 0;
+  const showHeading = canEdit || showWhenEmpty || selected.length > 0;
 
   useEffect(() => {
     if (!canEdit && !canManageCatalog) return;

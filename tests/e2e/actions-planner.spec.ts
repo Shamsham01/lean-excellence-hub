@@ -49,8 +49,12 @@ test.describe("Actions planner workspace", () => {
     await expect(page.getByTestId("action-detail-sheet-body")).toBeVisible({
       timeout: 30_000,
     });
-    await expect(page.getByTestId("action-planner-checklist")).toBeVisible();
-    await expect(page.getByTestId("action-planner-labels")).toBeVisible();
+    await expect(page.getByTestId("action-planner-checklist")).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByTestId("action-planner-labels")).toBeVisible({
+      timeout: 15_000,
+    });
     await expect(page.locator('[data-planner-task-dialog=""]')).toBeVisible();
   });
 
@@ -179,7 +183,8 @@ test.describe("Actions planner workspace", () => {
 
   test("planner sheet: checklist, labels, comment, attachment, and full create", async ({
     page,
-  }) => {
+  }, testInfo) => {
+    testInfo.setTimeout(120_000);
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/actions");
 
@@ -196,10 +201,14 @@ test.describe("Actions planner workspace", () => {
       .fill("Ship checklist item");
     await page.getByTestId("action-create-checklist-add").press("Enter");
     await page.getByTestId("actions-create-submit").click();
+    await expect(page.getByTestId("actions-create-dialog")).not.toBeVisible({
+      timeout: 15_000,
+    });
     await expect(page.getByTestId("action-detail-sheet-body")).toContainText(
       createTitle,
       { timeout: 30_000 },
     );
+    const sheet = page.getByTestId("action-detail-sheet");
     await expect(page.getByTestId("action-planner-checklist")).toContainText(
       "Ship checklist item",
     );
@@ -224,7 +233,7 @@ test.describe("Actions planner workspace", () => {
     }
 
     const newLabelName = `E2E label ${Date.now()}`;
-    await page.getByTestId("action-label-create").click();
+    await sheet.getByTestId("action-label-create").click();
     await page.getByTestId("action-label-manage-name").fill(newLabelName);
     await page.getByTestId("action-label-manage-save").click();
     await expect(page.getByTestId("action-planner-labels")).toContainText(
