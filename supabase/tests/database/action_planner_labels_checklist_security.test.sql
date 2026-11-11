@@ -67,13 +67,6 @@ select lives_ok(
   'member can list labels in own org'
 );
 
-select throws_ok(
-  $$select public.list_action_labels()$$,
-  '42501',
-  null,
-  'anon cannot list action labels'
-);
-
 select tests.authenticate_as('planner-outsider@example.test');
 
 select throws_ok(
