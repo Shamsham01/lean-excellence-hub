@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import type { ActionPlannerComment } from "@/components/actions/action-planner-comments";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
 import type { CommentRow } from "@/components/comments/resource-comments";
 import { mapActionMutationError } from "@/lib/actions/errors";
@@ -207,6 +208,7 @@ export async function addActionChecklistItem(
 export async function setActionChecklistItemDone(
   itemId: string,
   done: boolean,
+  actionId: string,
 ): Promise<ActionResult> {
   const supabase = await createServerSupabaseClient();
   const { error } = await callActionRpc(
@@ -218,7 +220,177 @@ export async function setActionChecklistItemDone(
     },
   );
   if (error) return { error: mapActionMutationError(error) };
+  revalidateActionPaths(actionId);
   return { ok: true };
+}
+
+export async function deleteActionChecklistItem(
+  itemId: string,
+  actionId: string,
+): Promise<ActionResult> {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await callActionRpc(
+    supabase,
+    "delete_action_checklist_item",
+    { target_item_id: itemId },
+  );
+  if (error) return { error: mapActionMutationError(error) };
+  revalidateActionPaths(actionId);
+  return { ok: true };
+}
+
+export async function moveActionChecklistItem(
+  itemId: string,
+  sortOrder: number,
+  actionId: string,
+): Promise<ActionResult> {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await callActionRpc(
+    supabase,
+    "move_action_checklist_item",
+    {
+      target_item_id: itemId,
+      target_sort_order: sortOrder,
+    },
+  );
+  if (error) return { error: mapActionMutationError(error) };
+  revalidateActionPaths(actionId);
+  return { ok: true };
+}
+
+export async function upsertActionLabel(input: {
+  labelId?: string | null;
+  name: string;
+  color: string;
+}): Promise<ActionResult & { labelId?: string }> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await callActionRpc<string>(
+    supabase,
+    "upsert_action_label",
+    {
+      ...(input.labelId ? { target_label_id: input.labelId } : {}),
+      target_name: input.name.trim(),
+      target_color: input.color,
+    },
+  );
+  if (error) return { error: mapActionMutationError(error) };
+  revalidateActionPaths();
+  if (typeof data === "string" && data.length > 0) {
+    return { ok: true, labelId: data };
+  }
+  return { ok: true };
+}
+
+export async function setActionCardCover(
+  actionId: string,
+  attachmentId: string | null,
+): Promise<ActionResult> {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await callActionRpc(
+    supabase,
+    "set_action_card_cover_attachment",
+    {
+      target_action_id: actionId,
+      target_attachment_id: attachmentId,
+    },
+  );
+  if (error) return { error: mapActionMutationError(error) };
+  revalidateActionPaths(actionId);
+  return { ok: true };
+}
+
+export async function loadActionCreateContext(): Promise<{
+  labels: ActionLabel[];
+  assignablePeople: AssignablePerson[];
+  canManageLabels: boolean;
+}> {
+  const supabase = await createServerSupabaseClient();
+  const [labelsResult, canAssign, canUpdate] = await Promise.all([
+    listActionLabels(),
+    currentMemberHasPermission(ACTIONS_PERMISSIONS.assign),
+    currentMemberHasPermission(ACTIONS_PERMISSIONS.update),
+  ]);
+
+  let assignablePeople: AssignablePerson[] = [];
+  if (canAssign) {
+    const { data: directory } = await supabase.rpc("get_people_directory", {
+      target_page: 1,
+      target_page_size: 200,
+    });
+    type DirectoryPayload = {
+      people?: Array<{
+        membership_id: string;
+        display_name: string | null;
+        avatar_url?: string | null;
+      }>;
+    };
+    const people = (directory as DirectoryPayload | null)?.people ?? [];
+    assignablePeople = people.map((person) => ({
+      membership_id: person.membership_id,
+      display_name: person.display_name?.trim() || "Team member",
+      avatar_url: person.avatar_url ?? null,
+    }));
+  }
+
+  return {
+    labels: labelsResult.labels ?? [],
+    assignablePeople,
+    canManageLabels: canUpdate,
+  };
+}
+
+export async function createPlannerAction(input: {
+  title: string;
+  description: string;
+  dueAt: string | null;
+  assigneeMembershipId: string | null;
+  labelIds: string[];
+  checklistTitles: string[];
+}): Promise<ActionResult> {
+  const canCreate = await currentMemberHasPermission(
+    ACTIONS_PERMISSIONS.create,
+  );
+  if (!canCreate) {
+    return { error: "You do not have permission to create actions." };
+  }
+
+  const title = input.title.trim();
+  if (!title) return { error: "Title is required." };
+
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase.rpc("create_action", {
+    target_title: title,
+    ...(input.description.trim()
+      ? { target_description: input.description.trim() }
+      : {}),
+    target_priority: "normal",
+    ...(input.dueAt ? { target_due_at: input.dueAt } : {}),
+  });
+  if (error) return { error: mapActionMutationError(error) };
+  const actionId = data as string;
+
+  if (input.assigneeMembershipId) {
+    const assignResult = await setActionAssignee({
+      actionId,
+      membershipId: input.assigneeMembershipId,
+    });
+    if (assignResult.error) return assignResult;
+  }
+
+  if (input.labelIds.length > 0) {
+    const labelResult = await setActionLabelsForAction(actionId, input.labelIds);
+    if (labelResult.error) return labelResult;
+  }
+
+  for (const checklistTitle of input.checklistTitles) {
+    const trimmed = checklistTitle.trim();
+    if (!trimmed) continue;
+    const itemResult = await addActionChecklistItem(actionId, trimmed);
+    if (itemResult.error) return itemResult;
+  }
+
+  revalidateActionPaths(actionId);
+  return { ok: true, id: actionId };
 }
 
 export async function initiateActionEvidenceUpload(
@@ -266,7 +438,8 @@ export async function confirmActionEvidenceUpload(
 
 type ActionSheetPayload = {
   detail: ActionDetail;
-  comments: CommentRow[];
+  comments: ActionPlannerComment[];
+  legacyComments: CommentRow[];
   evidence: EvidenceItem[];
   assignablePeople: AssignablePerson[];
   canUploadEvidence: boolean;
@@ -315,16 +488,18 @@ export async function loadActionSheetPayload(
       target_page: 1,
       target_page_size: 200,
     });
-    type DirectoryPayload = {
+    type AssignDirectoryPayload = {
       people?: Array<{
         membership_id: string;
         display_name: string | null;
+        avatar_url?: string | null;
       }>;
     };
-    const people = (directory as DirectoryPayload | null)?.people ?? [];
+    const people = (directory as AssignDirectoryPayload | null)?.people ?? [];
     assignablePeople = people.map((person) => ({
       membership_id: person.membership_id,
       display_name: person.display_name?.trim() || "Team member",
+      avatar_url: person.avatar_url ?? null,
     }));
 
     for (const assignee of detail.assignees) {
@@ -341,10 +516,42 @@ export async function loadActionSheetPayload(
     }
   }
 
+  const { data: directory } = await supabase.rpc("get_people_directory", {
+    target_page: 1,
+    target_page_size: 500,
+  });
+  type DirectoryPayload = {
+    people?: Array<{
+      membership_id: string;
+      display_name: string | null;
+      avatar_url?: string | null;
+    }>;
+  };
+  const directoryPeople = (directory as DirectoryPayload | null)?.people ?? [];
+  const peopleById = new Map(
+    directoryPeople.map((person) => [person.membership_id, person]),
+  );
+
+  const enrichedComments: ActionPlannerComment[] = (comments ?? []).map(
+    (row) => {
+      const author = peopleById.get(row.author_membership_id);
+      return {
+        id: row.id,
+        body: row.body,
+        created_at: row.created_at,
+        author_membership_id: row.author_membership_id,
+        author_display_name:
+          author?.display_name?.trim() || "Team member",
+        author_avatar_url: author?.avatar_url ?? null,
+      };
+    },
+  );
+
   return {
     payload: {
       detail,
-      comments: (comments ?? []) as ActionSheetPayload["comments"],
+      comments: enrichedComments,
+      legacyComments: (comments ?? []) as CommentRow[],
       evidence: (evidence ?? [])
         .filter((item) => item.byte_size != null)
         .map((item): ActionSheetPayload["evidence"][number] => ({

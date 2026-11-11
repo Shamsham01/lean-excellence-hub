@@ -10,17 +10,15 @@ import {
   transitionActionStatus,
   updateActionFields,
 } from "@/app/(platform)/platform/actions/actions";
-import { ActionEvidenceBlock } from "@/components/actions/action-evidence-block";
+import { ActionPlannerAttachments } from "@/components/actions/action-planner-attachments";
+import type { ActionPlannerComment } from "@/components/actions/action-planner-comments";
+import { ActionPlannerComments } from "@/components/actions/action-planner-comments";
 import { ActionPlannerChecklist } from "@/components/actions/action-planner-checklist";
 import { ActionPlannerLabelChips } from "@/components/actions/action-planner-label-chips";
 import { ActionPlannerLabelsField } from "@/components/actions/action-planner-labels-field";
 import { EvidenceGallery } from "@/components/attachments/evidence-gallery";
 import { PlatformMemberAvatar } from "@/components/platform/platform-member-avatar";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
-import {
-  ResourceComments,
-  type CommentRow,
-} from "@/components/comments/resource-comments";
 import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,7 +57,7 @@ export function ActionWorkspace({
   showBackLink = true,
 }: {
   detail: ActionDetail;
-  comments: CommentRow[];
+  comments: ActionPlannerComment[];
   evidence: EvidenceItem[];
   assignablePeople: AssignablePerson[];
   canUploadEvidence: boolean;
@@ -76,12 +74,21 @@ export function ActionWorkspace({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
+  const [commentPostDelta, setCommentPostDelta] = useState(0);
+  const commentCount = comments.length + commentPostDelta;
 
   const editable = isActionEditable(detail.status);
   const permissions = detail.permissions;
   const reference = formatActionReference(detail.action_number, detail.title);
   const source = detail.source;
   const currentAssignee = detail.assignees[0];
+  const assigneeAvatarUrl =
+    assignablePeople.find(
+      (person) => person.membership_id === currentAssignee?.membership_id,
+    )?.avatar_url ?? null;
+  const coverEvidence = detail.card_cover_attachment
+    ? evidence.find((item) => item.id === detail.card_cover_attachment?.id)
+    : null;
 
   async function run(
     key: string,
@@ -133,6 +140,7 @@ export function ActionWorkspace({
         <div className="mt-2 flex items-center gap-2">
           <PlatformMemberAvatar
             displayName={currentAssignee?.display_name ?? "Unassigned"}
+            avatarUrl={assigneeAvatarUrl}
             unassigned={!currentAssignee}
             showHoverTitle={Boolean(currentAssignee)}
             size="sm"
@@ -156,7 +164,7 @@ export function ActionWorkspace({
                   id: detail.card_cover_attachment.id,
                   filename: detail.card_cover_attachment.filename,
                   mime_type: detail.card_cover_attachment.mime_type,
-                  byte_size: 0,
+                  byte_size: coverEvidence?.byte_size ?? 0,
                   storage_object_path:
                     detail.card_cover_attachment.storage_object_path,
                 },
@@ -273,7 +281,9 @@ export function ActionWorkspace({
       <Tabs defaultValue="overview" className="min-w-0">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="discussion">Discussion</TabsTrigger>
+          <TabsTrigger value="discussion" data-testid="action-tab-discussion">
+            Discussion{commentCount > 0 ? ` (${commentCount})` : ""}
+          </TabsTrigger>
           <TabsTrigger value="evidence">Evidence</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
         </TabsList>
@@ -284,14 +294,29 @@ export function ActionWorkspace({
               <CardTitle>Details</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
+              <ActionPlannerComments
+                key={`planner-comments-overview-${detail.id}-${detail.version}-${comments.length}`}
+                actionId={detail.id}
+                comments={comments}
+                canPost={permissions.can_update && editable}
+                onPosted={() => setCommentPostDelta((count) => count + 1)}
+              />
+              <ActionPlannerAttachments
+                actionId={detail.id}
+                evidence={evidence}
+                canUpload={canUploadEvidence && editable}
+                canSetCover={permissions.can_update && editable}
+                coverAttachmentId={detail.card_cover_attachment?.id ?? null}
+              />
               <ActionPlannerLabelsField
-                key={`${detail.id}-${detail.version}`}
+                key={`planner-labels-${detail.id}-${detail.version}`}
                 actionId={detail.id}
                 assigned={detail.labels ?? []}
                 canEdit={permissions.can_update && editable}
+                canManageCatalog={permissions.can_update}
               />
               <ActionPlannerChecklist
-                key={`${detail.id}-${detail.version}`}
+                key={`planner-checklist-${detail.id}-${detail.version}`}
                 actionId={detail.id}
                 items={detail.checklist_items ?? []}
                 canEdit={permissions.can_update && editable}
@@ -446,22 +471,23 @@ export function ActionWorkspace({
         </TabsContent>
 
         <TabsContent value="discussion">
-          <ResourceComments resourceId={detail.id} comments={comments} />
+          <ActionPlannerComments
+            key={`planner-comments-discussion-${detail.id}-${detail.version}-${comments.length}`}
+            actionId={detail.id}
+            comments={comments}
+            canPost={permissions.can_update && editable}
+            onPosted={() => setCommentPostDelta((count) => count + 1)}
+          />
         </TabsContent>
 
         <TabsContent value="evidence">
-          <Card>
-            <CardHeader>
-              <CardTitle>Evidence</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ActionEvidenceBlock
-                actionId={detail.id}
-                evidence={evidence}
-                canEdit={canUploadEvidence && editable}
-              />
-            </CardContent>
-          </Card>
+          <ActionPlannerAttachments
+            actionId={detail.id}
+            evidence={evidence}
+            canUpload={canUploadEvidence && editable}
+            canSetCover={permissions.can_update && editable}
+            coverAttachmentId={detail.card_cover_attachment?.id ?? null}
+          />
         </TabsContent>
 
         <TabsContent value="history">

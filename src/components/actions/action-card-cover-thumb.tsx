@@ -49,6 +49,8 @@ export function ActionCardCoverThumb({
     <img
       src={url}
       alt={alt}
+      loading="lazy"
+      decoding="async"
       className={cn(
         "size-10 shrink-0 rounded-md object-cover ring-1 ring-border",
         className,

@@ -4,8 +4,8 @@ import { useEffect, useState, useTransition } from "react";
 
 import { loadActionSheetPayload } from "@/app/(platform)/platform/actions/actions";
 import { ActionWorkspace } from "@/components/actions/action-workspace";
+import type { ActionPlannerComment } from "@/components/actions/action-planner-comments";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
-import type { CommentRow } from "@/components/comments/resource-comments";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Sheet,
@@ -18,7 +18,7 @@ import type { ActionDetail, AssignablePerson } from "@/lib/actions/types";
 
 type LoadedSheetState = {
   detail: ActionDetail;
-  comments: CommentRow[];
+  comments: ActionPlannerComment[];
   evidence: EvidenceItem[];
   assignablePeople: AssignablePerson[];
   canUploadEvidence: boolean;
@@ -97,6 +97,7 @@ export function ActionDetailSheet({
           {state && actionId === state.detail.id ? (
             <div className="py-2" data-testid="action-detail-sheet-body">
               <ActionWorkspace
+                key={`${state.detail.id}-${state.detail.version}`}
                 detail={state.detail}
                 comments={state.comments}
                 evidence={state.evidence}

@@ -95,4 +95,5 @@ export type LinkedSuggestionAction = {
 export type AssignablePerson = {
   membership_id: string;
   display_name: string;
+  avatar_url?: string | null;
 };

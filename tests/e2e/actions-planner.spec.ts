@@ -176,4 +176,77 @@ test.describe("Actions planner workspace", () => {
     await expect(avatar).toBeVisible();
     await expect(avatar).not.toBeEmpty();
   });
+
+  test("planner sheet: checklist, labels, comment, attachment, and full create", async ({
+    page,
+  }) => {
+    await signInAsDemoUser(page, "admin");
+    await page.goto("/platform/actions");
+
+    const createTitle = `E2E planner full ${Date.now()}`;
+    await page.getByTestId("actions-add-new").click();
+    await expect(page.getByTestId("action-create-checklist")).toBeVisible();
+    await page.locator("#action-create-title").fill(createTitle);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 2);
+    const dueValue = tomorrow.toISOString().slice(0, 10);
+    await page.getByTestId("action-create-due").fill(dueValue);
+    await page.getByTestId("action-create-checklist-add").fill("Ship checklist item");
+    await page.getByTestId("action-create-checklist-add").press("Enter");
+    await page.getByTestId("actions-create-submit").click();
+    await expect(page.getByTestId("action-detail-sheet-body")).toContainText(
+      createTitle,
+      { timeout: 30_000 },
+    );
+    await expect(page.getByTestId("action-planner-checklist")).toContainText(
+      "Ship checklist item",
+    );
+
+    await page.getByTestId("action-planner-checklist-add").fill("Second item");
+    await page
+      .getByTestId("action-planner-checklist")
+      .getByRole("button", { name: "Add" })
+      .click();
+    const firstCheckbox = page
+      .getByTestId("action-planner-checklist")
+      .getByRole("checkbox")
+      .first();
+    await firstCheckbox.click();
+
+    const labelToggle = page
+      .getByTestId("action-planner-labels")
+      .getByRole("button", { pressed: false })
+      .first();
+    if (await labelToggle.isVisible()) {
+      await labelToggle.click();
+    }
+
+    const newLabelName = `E2E label ${Date.now()}`;
+    await page.getByTestId("action-label-create").click();
+    await page.getByTestId("action-label-manage-name").fill(newLabelName);
+    await page.getByTestId("action-label-manage-save").click();
+    await expect(page.getByTestId("action-planner-labels")).toContainText(
+      newLabelName,
+      { timeout: 15_000 },
+    );
+
+    await page.getByTestId("action-planner-comment-input").fill("E2E comment");
+    await page.getByTestId("action-planner-comment-post").click();
+    await expect(page.getByTestId("action-planner-comments")).toContainText(
+      "E2E comment",
+      { timeout: 15_000 },
+    );
+    await expect(page.getByTestId("action-tab-discussion")).toContainText("(");
+
+    const fileInput = page.getByTestId("evidence-file-input");
+    await fileInput.setInputFiles({
+      name: "e2e-planner-note.txt",
+      mimeType: "text/plain",
+      buffer: Buffer.from("Planner attachment"),
+    });
+    await expect(page.getByTestId("evidence-uploader")).toContainText(
+      "e2e-planner-note.txt",
+      { timeout: 30_000 },
+    );
+  });
 });

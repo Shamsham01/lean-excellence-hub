@@ -1,3 +1,4 @@
+import { labelChipTextClass } from "@/lib/actions/label-contrast";
 import type { ActionLabel } from "@/lib/actions/types";
 import { cn } from "@/lib/utils";
 
@@ -23,7 +24,10 @@ export function ActionPlannerLabelChips({
       {visible.map((label) => (
         <span
           key={label.id}
-          className="inline-flex max-w-[7rem] truncate rounded-md px-1.5 py-0.5 text-[10px] font-medium text-white"
+          className={cn(
+            "inline-flex max-w-[7rem] truncate rounded-md px-1.5 py-0.5 text-[10px] font-medium",
+            labelChipTextClass(label.color),
+          )}
           style={{ backgroundColor: label.color }}
           title={label.name}
         >
