@@ -677,17 +677,15 @@ test.describe("Workplace Viewer permission routing", () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await signInMember(page, fixture.reader, fixture.organisationName);
     await page.goto("/platform/5s");
-    await expect(page.getByTestId("five-s-empty-state")).toBeVisible();
+    await expect(page.getByTestId("five-s-overview-page")).toBeVisible();
     await expect(page.getByTestId("workplace-read-only-module")).toHaveCount(0);
     await expect(
       page.getByTestId("five-s-standard-list").getByRole("link", {
         name: publishedStandardName,
         exact: true,
       }),
-    ).toHaveCount(0);
-    await expect(
-      page.getByText("No 5S standards are available with your access"),
     ).toBeVisible();
+    await expect(page.getByText("No 5S standards yet")).toHaveCount(0);
     await expect(page.getByTestId("workplace-shared-records")).toBeVisible();
     await expect(
       page.getByRole("link", { name: siblingAuditArea }),
