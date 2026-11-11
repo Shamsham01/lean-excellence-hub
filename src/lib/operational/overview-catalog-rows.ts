@@ -333,3 +333,49 @@ export async function buildGembaOverviewCatalogRows(
 
   return rows;
 }
+
+export async function loadFiveSOverviewStartablePresentation(
+  supabase: SupabaseClient,
+): Promise<{ topRows: OperationalCatalogRow[]; startableCount: number }> {
+  const { data: standards, error } = await supabase
+    .from("five_s_standards")
+    .select("id, display_name")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  const catalogRows = await buildFiveSOverviewCatalogRows(
+    supabase,
+    standards ?? [],
+  );
+  const startableRows = catalogRows.filter((row) => row.start !== null);
+  return {
+    topRows: startableRows.slice(0, 5),
+    startableCount: startableRows.length,
+  };
+}
+
+export async function loadGembaOverviewStartablePresentation(
+  supabase: SupabaseClient,
+): Promise<{ topRows: OperationalCatalogRow[]; startableCount: number }> {
+  const { data: definitions, error } = await supabase
+    .from("gemba_definitions")
+    .select("id, display_name")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  const catalogRows = await buildGembaOverviewCatalogRows(
+    supabase,
+    definitions ?? [],
+  );
+  const startableRows = catalogRows.filter((row) => row.start !== null);
+  return {
+    topRows: startableRows.slice(0, 5),
+    startableCount: startableRows.length,
+  };
+}

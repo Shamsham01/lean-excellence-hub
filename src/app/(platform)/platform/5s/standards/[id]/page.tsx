@@ -49,6 +49,7 @@ import {
 import {
   buildApplicableSiteScopedUnitOptions,
   buildSiteScopedUnitOptions,
+  filterUnitsForActiveSite,
 } from "@/modules/organisation/site-context";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
@@ -156,9 +157,14 @@ export default async function FiveSStandardDetailPage({
     ),
   );
   const { units, context } = await loadActiveSiteContext();
-  const configurationUnits = buildSiteScopedUnitOptions(units, context, {
-    requireConcreteSite: true,
-  });
+  const configurationUnits = {
+    ...buildSiteScopedUnitOptions(units, context, {
+      requireConcreteSite: true,
+    }),
+    hierarchyUnits: filterUnitsForActiveSite(units, context, {
+      requireConcreteSite: true,
+    }),
+  };
   const applicabilitySelection = splitApplicabilitySelection(
     applicableIds,
     configurationUnits.units,

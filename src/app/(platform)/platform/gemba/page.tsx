@@ -2,7 +2,7 @@ import { GembaActiveWalkList } from "@/components/gemba/active-walk-list";
 import { EmptyState } from "@/components/platform/empty-state";
 import { OperationalCatalogTable } from "@/components/operational/operational-catalog-table";
 import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
-import { buildGembaOverviewCatalogRows } from "@/lib/operational/overview-catalog-rows";
+import { loadGembaOverviewStartablePresentation } from "@/lib/operational/overview-catalog-rows";
 import { PageHeader } from "@/components/platform/page-header";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
 import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
@@ -43,14 +43,12 @@ export default async function GembaOverviewPage({
   const canManage = await currentMemberHasPermission(
     GEMBA_PERMISSIONS.definitionsManage,
   );
-  const { count: definitionCount, error: definitionCountError } = await supabase
-    .from("gemba_definitions")
-    .select("id", { count: "exact", head: true });
-  const catalog = presentCatalogRead({
-    failed: Boolean(definitionCountError),
-    visibleCount: definitionCount ?? 0,
-  });
-  if (catalog === "failed") {
+  let topRows;
+  let startableCount;
+  try {
+    ({ topRows, startableCount } =
+      await loadGembaOverviewStartablePresentation(supabase));
+  } catch {
     return (
       <ModuleReadError
         title="Gemba walks"
@@ -60,11 +58,11 @@ export default async function GembaOverviewPage({
       />
     );
   }
-  const { data: definitions } = await supabase
-    .from("gemba_definitions")
-    .select("id, display_name")
-    .order("created_at", { ascending: false })
-    .limit(5);
+
+  const catalog = presentCatalogRead({
+    failed: false,
+    visibleCount: startableCount,
+  });
   const { count: walkCount } = await supabase
     .from("gemba_walks")
     .select("id", { count: "exact", head: true })
@@ -83,11 +81,6 @@ export default async function GembaOverviewPage({
   const { count: observationCount } = await supabase
     .from("gemba_walk_observations")
     .select("id", { count: "exact", head: true });
-  const catalogRows = await buildGembaOverviewCatalogRows(
-    supabase,
-    definitions ?? [],
-  );
-
   if (catalog === "empty") {
     return (
       <div className="flex flex-col gap-8" data-testid="gemba-empty-state">
@@ -167,7 +160,7 @@ export default async function GembaOverviewPage({
         </CardHeader>
         <CardContent>
           <OperationalCatalogTable
-            rows={catalogRows}
+            rows={topRows}
             nameColumnLabel="Definition"
             actionColumnLabel="Action"
             testId="gemba-definition-list"

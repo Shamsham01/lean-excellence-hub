@@ -11,6 +11,7 @@ import {
   openFiveSAddQuestion,
   openGembaAddPrompt,
 } from "./helpers/form-dialogs";
+import { chooseFirstApplicableUnit } from "./helpers/applicable-units";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -128,7 +129,7 @@ async function expectNoHorizontalOverflow(page: Page) {
 }
 
 async function chooseFirstUnit(page: Page) {
-  await page.getByTestId("applicable-unit-checkbox").first().check();
+  await chooseFirstApplicableUnit(page);
 }
 
 test.describe("5S and Gemba guided setup", () => {

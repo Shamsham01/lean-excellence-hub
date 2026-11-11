@@ -11,6 +11,7 @@ import {
   openGembaAddSection,
 } from "./helpers/form-dialogs";
 import { navigateGembaPrompt } from "./helpers/gemba-walk-navigation";
+import { chooseFirstApplicableUnit } from "./helpers/applicable-units";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -91,7 +92,7 @@ test.describe("platform reliability after shared RSC refresh", () => {
     const secondPrompt = `Reliability prompt B ${Date.now()}`;
 
     await page.getByLabel("Name").fill(name);
-    await page.getByTestId("applicable-unit-checkbox").first().check();
+    await chooseFirstApplicableUnit(page);
     await page.getByRole("button", { name: "Create draft" }).click();
     await expect(page.getByRole("heading", { name })).toBeVisible();
 

@@ -1,7 +1,7 @@
 import { EmptyState } from "@/components/platform/empty-state";
 import { OperationalCatalogTable } from "@/components/operational/operational-catalog-table";
 import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
-import { buildFiveSOverviewCatalogRows } from "@/lib/operational/overview-catalog-rows";
+import { loadFiveSOverviewStartablePresentation } from "@/lib/operational/overview-catalog-rows";
 import { PageHeader } from "@/components/platform/page-header";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
 import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
@@ -39,14 +39,12 @@ export default async function FiveSOverviewPage({
     FIVE_S_PERMISSIONS.standardsManage,
   );
 
-  const { count: standardCount, error: standardCountError } = await supabase
-    .from("five_s_standards")
-    .select("id", { count: "exact", head: true });
-  const catalog = presentCatalogRead({
-    failed: Boolean(standardCountError),
-    visibleCount: standardCount ?? 0,
-  });
-  if (catalog === "failed") {
+  let topRows;
+  let startableCount;
+  try {
+    ({ topRows, startableCount } =
+      await loadFiveSOverviewStartablePresentation(supabase));
+  } catch {
     return (
       <ModuleReadError
         title="5S Audits"
@@ -57,11 +55,11 @@ export default async function FiveSOverviewPage({
     );
   }
 
-  const { data: standards } = await supabase
-    .from("five_s_standards")
-    .select("id, display_name")
-    .order("created_at", { ascending: false })
-    .limit(5);
+  const catalog = presentCatalogRead({
+    failed: false,
+    visibleCount: startableCount,
+  });
+
   const { count: auditCount } = await supabase
     .from("five_s_audits")
     .select("id", { count: "exact", head: true })
@@ -79,10 +77,6 @@ export default async function FiveSOverviewPage({
     .from("schedule_occurrences")
     .select("id", { count: "exact", head: true })
     .eq("lifecycle_status", "open");
-  const catalogRows = await buildFiveSOverviewCatalogRows(
-    supabase,
-    standards ?? [],
-  );
 
   if (catalog === "empty") {
     return (
@@ -154,7 +148,7 @@ export default async function FiveSOverviewPage({
         </CardHeader>
         <CardContent>
           <OperationalCatalogTable
-            rows={catalogRows}
+            rows={topRows}
             nameColumnLabel="Standard"
             actionColumnLabel="Action"
             testId="five-s-standard-list"

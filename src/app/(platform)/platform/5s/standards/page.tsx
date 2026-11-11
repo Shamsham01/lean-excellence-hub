@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { createFiveSStandard } from "@/app/(platform)/platform/5s/actions";
-import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
+import { CompactApplicableUnitsField } from "@/components/organisation/compact-applicable-units-field";
 import { PageHeader } from "@/components/platform/page-header";
 import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { AppLink } from "@/components/ui/app-link";
@@ -11,7 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FiveSScoringScaleFields } from "@/components/five-s/scoring-scale-fields";
-import { buildSiteScopedUnitOptions } from "@/modules/organisation/site-context";
+import {
+  buildSiteScopedUnitOptions,
+  filterUnitsForActiveSite,
+} from "@/modules/organisation/site-context";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { FIVE_S_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
@@ -31,7 +34,7 @@ export default async function FiveSStandardsPage() {
   const canManage = await currentMemberHasPermission(
     FIVE_S_PERMISSIONS.standardsManage,
   );
-  const { data: standards, error: standardsError } = await supabase
+  const { data: loadedStandards, error: standardsError } = await supabase
     .from("five_s_standards")
     .select("id, display_name, description, created_at")
     .order("created_at", { ascending: false });
@@ -46,8 +49,34 @@ export default async function FiveSStandardsPage() {
       />
     );
   }
+
+  const { data: authorableIds, error: authorableIdsError } = canManage
+    ? await supabase.rpc("list_authorable_five_s_standard_ids")
+    : { data: null, error: null };
+
+  if (authorableIdsError) {
+    return (
+      <ModuleReadError
+        title="5S standards"
+        description="Configurable audit templates per area."
+        message="5S standards could not be loaded. Refresh the page and try again."
+        module="five_s"
+      />
+    );
+  }
+
+  const authorableIdSet = new Set(authorableIds ?? []);
+  const standards = canManage
+    ? (loadedStandards ?? []).filter((standard) =>
+        authorableIdSet.has(standard.id),
+      )
+    : (loadedStandards ?? []);
+
   const { units, context } = await loadActiveSiteContext();
   const creationUnits = buildSiteScopedUnitOptions(units, context, {
+    requireConcreteSite: true,
+  });
+  const hierarchyUnits = filterUnitsForActiveSite(units, context, {
     requireConcreteSite: true,
   });
 
@@ -124,7 +153,8 @@ export default async function FiveSStandardsPage() {
                 </p>
               </div>
               <FiveSScoringScaleFields idPrefix="create-scoring-scale" saved />
-              <ApplicableUnitsField
+              <CompactApplicableUnitsField
+                hierarchyUnits={hierarchyUnits}
                 options={creationUnits.units}
                 requiresSiteSelection={creationUnits.requiresSiteSelection}
               />

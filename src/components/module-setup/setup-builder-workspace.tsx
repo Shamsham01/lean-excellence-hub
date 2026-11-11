@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useId, useState, useTransition } from "react";
 
-import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
+import { CompactApplicableUnitsField } from "@/components/organisation/compact-applicable-units-field";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +24,7 @@ import {
   findExactConfigurationNameMatch,
 } from "@/modules/module-setup/name-match";
 import type { UnitSelectOption } from "@/modules/organisation/site-context";
+import type { FlatOrganisationUnit } from "@/modules/organisation/unit-hierarchy";
 
 type SendResult =
   | {
@@ -45,6 +46,7 @@ type SetupBuilderWorkspaceProps = {
   quickStartHref: string;
   starters: string[];
   existingNames: string[];
+  hierarchyUnits?: FlatOrganisationUnit[];
   units: UnitSelectOption[];
   requiresSiteSelection: boolean;
   showThreshold: boolean;
@@ -73,6 +75,7 @@ export function SetupBuilderWorkspace({
   quickStartHref,
   starters,
   existingNames,
+  hierarchyUnits = [],
   units,
   requiresSiteSelection,
   showThreshold,
@@ -535,10 +538,12 @@ export function SetupBuilderWorkspace({
                 </div>
               ) : null}
               {showApplicability ? (
-                <ApplicableUnitsField
+                <CompactApplicableUnitsField
+                  hierarchyUnits={hierarchyUnits}
                   options={units}
                   requiresSiteSelection={requiresSiteSelection}
                   description="You choose where this draft applies."
+                  onSelectedIdsChange={() => setCreateError(null)}
                 />
               ) : null}
               {createError ? (

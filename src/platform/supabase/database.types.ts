@@ -15108,6 +15108,8 @@ export type Database = {
         Returns: string
       }
       list_action_labels: { Args: never; Returns: Json }
+      list_authorable_five_s_standard_ids: { Args: never; Returns: string[] }
+      list_authorable_gemba_definition_ids: { Args: never; Returns: string[] }
       list_maturity_assessment_scope_entities: {
         Args: { target_model_version_id: string; target_scope_type: string }
         Returns: {
@@ -15188,6 +15190,14 @@ export type Database = {
       }
       mark_workforce_provision_needs_remediation: {
         Args: { target_failure_reason: string; target_intent_id: string }
+        Returns: boolean
+      }
+      member_can_author_five_s_standard: {
+        Args: { target_standard_id: string }
+        Returns: boolean
+      }
+      member_can_author_gemba_definition: {
+        Args: { target_definition_id: string }
         Returns: boolean
       }
       member_has_grant_permission: {
@@ -15903,6 +15913,14 @@ export type Database = {
       set_action_labels: {
         Args: { target_action_id: string; target_label_ids: string[] }
         Returns: undefined
+      }
+      set_five_s_section_weight: {
+        Args: {
+          target_section_id: string
+          target_standard_version_id: string
+          target_weight: number
+        }
+        Returns: boolean
       }
       set_five_s_standard_applicable_units: {
         Args: { target_standard_id: string; target_unit_ids: string[] }
