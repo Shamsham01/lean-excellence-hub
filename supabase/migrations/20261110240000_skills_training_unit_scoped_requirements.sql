@@ -830,7 +830,6 @@ begin
               ) as gap
             from paged_people people_row
             join required_skills skill_row on true
-            where people_row.job_function_id is not null
           ) cell_row
         ),
         '[]'::jsonb
@@ -956,7 +955,6 @@ begin
       ) resolved
       where course_row.organisation_id = org_id
         and course_row.status = 'active'
-        and people_row.job_function_id is not null
         and (resolved.resolved_requirement).id is not null
     ),
     required_courses as (
@@ -1067,6 +1065,8 @@ revoke execute on function private.requirement_unit_applies(uuid, uuid, uuid) fr
 revoke execute on function private.resolve_effective_skill_requirement(uuid, uuid, uuid, uuid, uuid)
   from public;
 revoke execute on function private.resolve_effective_training_requirement(uuid, uuid, uuid, uuid, uuid)
+  from public;
+revoke execute on function private.build_skill_gap_from_resolution(uuid, uuid, uuid, jsonb)
   from public;
 revoke execute on function private.get_skills_matrix(integer, integer, uuid) from public;
 revoke execute on function private.get_training_matrix(integer, integer, uuid) from public;

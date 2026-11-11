@@ -134,7 +134,7 @@ export function TrainingMatrix({
               </AppLink>
               <ul className="mt-2 space-y-1 text-sm">
                 {courses
-                  .filter((c) => requiredCourseIds.has(c.id))
+                  .filter((course) => cellFor(membership.id, course.id).isRequired)
                   .map((course) => {
                     const cell = cellFor(membership.id, course.id);
                     return (
