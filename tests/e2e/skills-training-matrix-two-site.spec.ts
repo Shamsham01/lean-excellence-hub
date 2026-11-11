@@ -145,7 +145,8 @@ function seedMembers(names: string[]): string[] {
       )
       returning id as membership_id;
     `);
-    if (rows.length !== 1) {
+    const row = rows[0];
+    if (!row) {
       throw new Error(
         `seedMembers expected 1 membership for ${displayName}, inserted ${rows.length}`,
       );
@@ -156,7 +157,7 @@ function seedMembers(names: string[]): string[] {
       where user_id = ${sqlString(userId)}::uuid
       returning user_id;
     `);
-    membershipIds.push(rows[0].membership_id);
+    membershipIds.push(row.membership_id);
   }
   return membershipIds;
 }
