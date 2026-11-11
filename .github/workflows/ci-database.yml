@@ -53,6 +53,7 @@ jobs:
               - "scripts/qa-tenant/**"
               - "tests/integration/qa-tenant-harness.test.ts"
               - "tests/integration/qa-tenant-primary-placement-reseed.test.ts"
+              - "supabase/migrations/**"
               - ".github/workflows/ci-database.yml"
               - ".github/workflows/ci-full.yml"
             windows_qa_harness:

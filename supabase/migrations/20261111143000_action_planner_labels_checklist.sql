@@ -1,4 +1,7 @@
 -- Org-level labels and per-action checklist items for the Actions planner.
+-- Direct table DML is denied (RLS, no policies); callers use SECURITY DEFINER RPCs only.
+-- Database CI QA harness / hosted replacement jobs skip on migration-only PRs because
+-- .github/workflows/ci-database.yml paths-filter does not include supabase/migrations/**.
 
 create table public.action_labels (
   id uuid primary key default gen_random_uuid(),
@@ -9,12 +12,14 @@ create table public.action_labels (
   created_at timestamptz not null default statement_timestamp(),
   updated_at timestamptz not null default statement_timestamp(),
   constraint action_labels_organisation_id_id_key unique (organisation_id, id),
-  constraint action_labels_org_name_key unique (organisation_id, name),
   constraint action_labels_name_check
     check (name = btrim(name) and char_length(name) between 1 and 40),
   constraint action_labels_color_check
     check (color ~ '^#[0-9A-Fa-f]{6}$')
 );
+
+create unique index action_labels_org_name_lower_key
+  on public.action_labels (organisation_id, lower(name));
 
 create table public.action_label_assignments (
   id uuid primary key default gen_random_uuid(),
@@ -68,7 +73,43 @@ alter table public.actions
   add constraint actions_card_cover_attachment_fkey
     foreign key (organisation_id, card_cover_attachment_id)
     references public.attachments(organisation_id, id)
-    on delete set null;
+    on delete set null (card_cover_attachment_id);
+
+create or replace function private.validate_action_card_cover_attachment()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.card_cover_attachment_id is null then
+    return new;
+  end if;
+
+  if not exists (
+    select 1
+    from public.attachments attachment_row
+    join public.resource_records resource_row
+      on resource_row.organisation_id = attachment_row.organisation_id
+     and resource_row.id = attachment_row.target_resource_id
+    where attachment_row.organisation_id = new.organisation_id
+      and attachment_row.id = new.card_cover_attachment_id
+      and attachment_row.target_resource_id = new.id
+      and resource_row.resource_type = 'action'
+      and attachment_row.lifecycle = 'active'
+  ) then
+    raise exception 'card cover attachment must belong to this action'
+      using errcode = '23514';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger actions_validate_card_cover_attachment
+before insert or update of card_cover_attachment_id
+on public.actions
+for each row
+execute function private.validate_action_card_cover_attachment();
 
 create index action_label_assignments_action_idx
   on public.action_label_assignments (organisation_id, action_id);
@@ -91,71 +132,55 @@ alter table public.action_label_assignments force row level security;
 alter table public.action_checklist_items enable row level security;
 alter table public.action_checklist_items force row level security;
 
-create policy action_labels_select
-  on public.action_labels
-  for select
-  to authenticated
-  using (
-  organisation_id = private.current_organisation_id()
-  and private.has_scoped_permission(organisation_id, 'actions.read', null, null)
-);
+-- RLS enabled with force; no table policies — all access via SECURITY DEFINER RPCs.
 
-create policy action_labels_manage
-  on public.action_labels
-  for all
-  to authenticated
-  using (
-  organisation_id = private.current_organisation_id()
-  and private.has_scoped_permission(organisation_id, 'actions.update', null, null)
+-- ---------------------------------------------------------------------------
+-- Permission helpers
+-- ---------------------------------------------------------------------------
+
+create or replace function private.has_permission_any_unit_scope(
+  target_organisation_id uuid,
+  target_permission_key text
 )
-  with check (
-  organisation_id = private.current_organisation_id()
-  and private.has_scoped_permission(organisation_id, 'actions.update', null, null)
-);
-
-create policy action_label_assignments_select
-  on public.action_label_assignments
-  for select
-  to authenticated
-  using (
-  organisation_id = private.current_organisation_id()
-  and private.can_read_action(organisation_id, action_id)
-);
-
-create policy action_label_assignments_manage
-  on public.action_label_assignments
-  for all
-  to authenticated
-  using (
-  organisation_id = private.current_organisation_id()
-  and private.can_update_action(organisation_id, action_id)
-)
-  with check (
-  organisation_id = private.current_organisation_id()
-  and private.can_update_action(organisation_id, action_id)
-);
-
-create policy action_checklist_items_select
-  on public.action_checklist_items
-  for select
-  to authenticated
-  using (
-  organisation_id = private.current_organisation_id()
-  and private.can_read_action(organisation_id, action_id)
-);
-
-create policy action_checklist_items_manage
-  on public.action_checklist_items
-  for all
-  to authenticated
-  using (
-  organisation_id = private.current_organisation_id()
-  and private.can_update_action(organisation_id, action_id)
-)
-  with check (
-  organisation_id = private.current_organisation_id()
-  and private.can_update_action(organisation_id, action_id)
-);
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.access_grants grant_row
+    join public.role_versions role_version
+      on role_version.organisation_id = grant_row.organisation_id
+     and role_version.id = grant_row.role_version_id
+     and role_version.status = 'published'
+    join public.roles role_row
+      on role_row.organisation_id = role_version.organisation_id
+     and role_row.id = role_version.role_id
+     and role_row.status = 'active'
+    join public.role_permissions role_permission
+      on role_permission.organisation_id = role_version.organisation_id
+     and role_permission.role_version_id = role_version.id
+     and role_permission.permission_key = target_permission_key
+    where grant_row.organisation_id = target_organisation_id
+      and grant_row.grantee_membership_id =
+        private.current_membership_id(target_organisation_id)
+      and grant_row.status = 'active'
+      and (
+        grant_row.expires_at is null
+        or grant_row.expires_at > statement_timestamp()
+      )
+      and grant_row.scope_type in ('organisation', 'unit_subtree')
+  )
+  or private.membership_has_baseline_participation(
+    private.current_membership_id(target_organisation_id),
+    target_organisation_id,
+    target_permission_key,
+    null,
+    null
+  )
+$$;
 
 -- ---------------------------------------------------------------------------
 -- Label catalogue RPCs
@@ -176,7 +201,7 @@ begin
       using errcode = '42501';
   end if;
 
-  if not private.has_scoped_permission(org_id, 'actions.read', null, null) then
+  if not private.has_permission_any_unit_scope(org_id, 'actions.read') then
     raise exception 'action labels are not authorised'
       using errcode = '42501';
   end if;
@@ -215,9 +240,19 @@ as $$
 declare
   org_id uuid := private.current_organisation_id();
   label_id uuid;
+  is_create boolean := target_label_id is null;
 begin
-  if org_id is null
-    or not private.has_scoped_permission(org_id, 'actions.update', null, null) then
+  if org_id is null then
+    raise exception 'action label management is not authorised'
+      using errcode = '42501';
+  end if;
+
+  if is_create then
+    if not private.has_permission_any_unit_scope(org_id, 'actions.update') then
+      raise exception 'action label management is not authorised'
+        using errcode = '42501';
+    end if;
+  elsif not private.has_scoped_permission(org_id, 'actions.update', null, null) then
     raise exception 'action label management is not authorised'
       using errcode = '42501';
   end if;
@@ -227,35 +262,41 @@ begin
       using errcode = '22023';
   end if;
 
-  if target_label_id is null then
-    insert into public.action_labels (
-      organisation_id,
-      name,
-      color,
-      sort_order
-    )
-    values (
-      org_id,
-      btrim(target_name),
-      coalesce(nullif(btrim(target_color), ''), '#0058FD'),
-      coalesce(target_sort_order, 0)
-    )
-  returning id into label_id;
-  else
-    update public.action_labels label_row
-    set
-      name = btrim(target_name),
-      color = coalesce(nullif(btrim(target_color), ''), label_row.color),
-      sort_order = coalesce(target_sort_order, label_row.sort_order)
-    where label_row.organisation_id = org_id
-      and label_row.id = target_label_id
-    returning label_row.id into label_id;
+  begin
+    if is_create then
+      insert into public.action_labels (
+        organisation_id,
+        name,
+        color,
+        sort_order
+      )
+      values (
+        org_id,
+        btrim(target_name),
+        coalesce(nullif(btrim(target_color), ''), '#0058FD'),
+        coalesce(target_sort_order, 0)
+      )
+      returning id into label_id;
+    else
+      update public.action_labels label_row
+      set
+        name = btrim(target_name),
+        color = coalesce(nullif(btrim(target_color), ''), label_row.color),
+        sort_order = coalesce(target_sort_order, label_row.sort_order)
+      where label_row.organisation_id = org_id
+        and label_row.id = target_label_id
+      returning label_row.id into label_id;
 
-    if not found then
-      raise exception 'label not found'
-        using errcode = 'P0002';
+      if not found then
+        raise exception 'label not found'
+          using errcode = 'P0002';
+      end if;
     end if;
-  end if;
+  exception
+    when unique_violation then
+      raise exception 'label name already exists'
+        using errcode = '23505';
+  end;
 
   return label_id;
 end;
@@ -296,8 +337,9 @@ begin
       label_id
     )
     select org_id, target_action_id, label_id
-    from unnest(target_label_ids) as label_id
-    where exists (
+    from unnest(coalesce(target_label_ids, array[]::uuid[])) as label_id
+    where label_id is not null
+      and exists (
       select 1
       from public.action_labels label_row
       where label_row.organisation_id = org_id
@@ -327,6 +369,7 @@ declare
   org_id uuid := private.current_organisation_id();
   next_order integer;
   new_id uuid;
+  item_count integer;
 begin
   if org_id is null
     or not private.can_update_action(org_id, target_action_id) then
@@ -334,15 +377,31 @@ begin
       using errcode = '42501';
   end if;
 
-  select coalesce(
-    target_sort_order,
-    max(item_row.sort_order) + 1,
-    0
-  )
-  into next_order
+  if target_title is null or btrim(target_title) = '' then
+    raise exception 'checklist title is required'
+      using errcode = '22023';
+  end if;
+
+  select count(*)::integer
+  into item_count
   from public.action_checklist_items item_row
   where item_row.organisation_id = org_id
     and item_row.action_id = target_action_id;
+
+  if item_count >= 100 then
+    raise exception 'checklist item limit reached'
+      using errcode = '22023';
+  end if;
+
+  if target_sort_order is null then
+    select coalesce(max(item_row.sort_order) + 1, 0)
+    into next_order
+    from public.action_checklist_items item_row
+    where item_row.organisation_id = org_id
+      and item_row.action_id = target_action_id;
+  else
+    next_order := greatest(0, least(target_sort_order, item_count));
+  end if;
 
   insert into public.action_checklist_items (
     organisation_id,
@@ -400,6 +459,111 @@ begin
     completed_by_membership_id = case when target_done then actor_id else null end
   where organisation_id = org_id
     and id = target_item_id;
+end;
+$$;
+
+create or replace function public.delete_action_checklist_item(
+  target_item_id uuid
+)
+returns void
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+  item_row public.action_checklist_items%rowtype;
+begin
+  select *
+  into item_row
+  from public.action_checklist_items
+  where organisation_id = org_id
+    and id = target_item_id;
+
+  if not found then
+    raise exception 'checklist item not found'
+      using errcode = 'P0002';
+  end if;
+
+  if not private.can_update_action(org_id, item_row.action_id) then
+    raise exception 'checklist edit is not authorised'
+      using errcode = '42501';
+  end if;
+
+  delete from public.action_checklist_items
+  where organisation_id = org_id
+    and id = target_item_id;
+end;
+$$;
+
+create or replace function public.move_action_checklist_item(
+  target_item_id uuid,
+  target_sort_order integer
+)
+returns void
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+  item_row public.action_checklist_items%rowtype;
+  max_order integer;
+begin
+  select *
+  into item_row
+  from public.action_checklist_items
+  where organisation_id = org_id
+    and id = target_item_id;
+
+  if not found then
+    raise exception 'checklist item not found'
+      using errcode = 'P0002';
+  end if;
+
+  if not private.can_update_action(org_id, item_row.action_id) then
+    raise exception 'checklist edit is not authorised'
+      using errcode = '42501';
+  end if;
+
+  select coalesce(max(sort_order), 0)
+  into max_order
+  from public.action_checklist_items
+  where organisation_id = org_id
+    and action_id = item_row.action_id;
+
+  update public.action_checklist_items
+  set sort_order = greatest(0, least(target_sort_order, max_order))
+  where organisation_id = org_id
+    and id = target_item_id;
+end;
+$$;
+
+create or replace function public.set_action_card_cover_attachment(
+  target_action_id uuid,
+  target_attachment_id uuid default null
+)
+returns void
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+begin
+  if org_id is null
+    or not private.can_update_action(org_id, target_action_id) then
+    raise exception 'action cover update is not authorised'
+      using errcode = '42501';
+  end if;
+
+  update public.actions
+  set card_cover_attachment_id = target_attachment_id
+  where organisation_id = org_id
+    and id = target_action_id;
 end;
 $$;
 
@@ -565,8 +729,13 @@ begin
   end
   into cover
   from public.attachments attachment_row
+  join public.resource_records resource_row
+    on resource_row.organisation_id = attachment_row.organisation_id
+   and resource_row.id = attachment_row.target_resource_id
   where attachment_row.organisation_id = org_id
     and attachment_row.id = action_row.card_cover_attachment_id
+    and attachment_row.target_resource_id = target_action_id
+    and resource_row.resource_type = 'action'
     and attachment_row.lifecycle = 'active';
 
   return jsonb_build_object(
@@ -612,9 +781,15 @@ revoke all on function public.upsert_action_label(uuid, text, text, integer) fro
 revoke all on function public.set_action_labels(uuid, uuid[]) from public, anon;
 revoke all on function public.add_action_checklist_item(uuid, text, integer) from public, anon;
 revoke all on function public.set_action_checklist_item_done(uuid, boolean) from public, anon;
+revoke all on function public.delete_action_checklist_item(uuid) from public, anon;
+revoke all on function public.move_action_checklist_item(uuid, integer) from public, anon;
+revoke all on function public.set_action_card_cover_attachment(uuid, uuid) from public, anon;
 
 grant execute on function public.list_action_labels() to authenticated;
 grant execute on function public.upsert_action_label(uuid, text, text, integer) to authenticated;
 grant execute on function public.set_action_labels(uuid, uuid[]) to authenticated;
 grant execute on function public.add_action_checklist_item(uuid, text, integer) to authenticated;
 grant execute on function public.set_action_checklist_item_done(uuid, boolean) to authenticated;
+grant execute on function public.delete_action_checklist_item(uuid) to authenticated;
+grant execute on function public.move_action_checklist_item(uuid, integer) to authenticated;
+grant execute on function public.set_action_card_cover_attachment(uuid, uuid) to authenticated;

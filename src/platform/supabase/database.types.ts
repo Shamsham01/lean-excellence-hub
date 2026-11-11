@@ -14300,6 +14300,10 @@ export type Database = {
         }
         Returns: string
       }
+      delete_action_checklist_item: {
+        Args: { target_item_id: string }
+        Returns: undefined
+      }
       delete_gemba_observation: {
         Args: { target_observation_id: string; target_walk_id: string }
         Returns: boolean
@@ -15202,6 +15206,10 @@ export type Database = {
         Args: { target_permission_keys: string[] }
         Returns: Json
       }
+      move_action_checklist_item: {
+        Args: { target_item_id: string; target_sort_order: number }
+        Returns: undefined
+      }
       move_maturity_criterion: {
         Args: {
           target_criterion_id: string
@@ -15883,6 +15891,10 @@ export type Database = {
       set_action_assignee: {
         Args: { target_action_id: string; target_membership_id?: string }
         Returns: boolean
+      }
+      set_action_card_cover_attachment: {
+        Args: { target_action_id: string; target_attachment_id?: string }
+        Returns: undefined
       }
       set_action_checklist_item_done: {
         Args: { target_done: boolean; target_item_id: string }

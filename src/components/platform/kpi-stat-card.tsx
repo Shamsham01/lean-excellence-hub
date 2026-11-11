@@ -24,7 +24,7 @@ function valueToneClass(
     return "text-destructive-emphasis";
   }
   if (polarity === "higher-is-better") {
-    return "text-success-foreground dark:text-success";
+    return "text-success-text";
   }
   return "text-foreground";
 }
@@ -65,7 +65,7 @@ export function KpiStatCard({
 }) {
   const trendTone =
     trend?.direction === "up"
-      ? "text-success-foreground dark:text-success"
+      ? "text-success-text"
       : trend?.direction === "down"
         ? "text-destructive-emphasis"
         : "text-muted-foreground";

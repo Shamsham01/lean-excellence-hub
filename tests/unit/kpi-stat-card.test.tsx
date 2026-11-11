@@ -33,8 +33,7 @@ describe("KpiStatCard", () => {
       />,
     );
     const value = screen.getByTestId("kpi-completed-value");
-    expect(value.className).toContain("text-success-foreground");
-    expect(value.className).toContain("dark:text-success");
+    expect(value.className).toContain("text-success-text");
   });
 
   it("uses responsive columns when tileCount is set", () => {
