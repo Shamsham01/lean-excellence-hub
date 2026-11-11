@@ -121,6 +121,46 @@ describe("ActionCreateDialog", () => {
     expect(screen.getByTestId("actions-create-dialog")).toBeVisible();
   });
 
+  it("shows a warning toast when the action is created with a partial failure", async () => {
+    createPlannerActionMock.mockResolvedValue({
+      ok: true,
+      id: "action-partial",
+      warning: "Checklist could not be applied: timeout",
+    });
+    render(
+      <ActionCreateDialog open onOpenChange={vi.fn()} onCreated={vi.fn()} />,
+    );
+    fireEvent.change(screen.getByLabelText("Title"), {
+      target: { value: "Partial" },
+    });
+    fireEvent.submit(
+      within(screen.getByTestId("actions-create-dialog")).getByTestId(
+        "actions-create-form",
+      ),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("platform-ephemeral-toast")).toHaveTextContent(
+        "Checklist could not be applied",
+      ),
+    );
+  });
+
+  it("clears pending when createPlannerAction throws", async () => {
+    createPlannerActionMock.mockRejectedValue(new Error("network"));
+    render(
+      <ActionCreateDialog open onOpenChange={vi.fn()} onCreated={vi.fn()} />,
+    );
+    fireEvent.change(screen.getByLabelText("Title"), {
+      target: { value: "Throws" },
+    });
+    const submit = within(
+      screen.getByTestId("actions-create-dialog"),
+    ).getByTestId("actions-create-submit");
+    fireEvent.click(submit);
+    await waitFor(() => expect(submit).not.toBeDisabled());
+    expect(screen.getByRole("alert")).toHaveTextContent(/went wrong/i);
+  });
+
   it("prevents duplicate submits while create is in flight", async () => {
     let release: () => void = () => undefined;
     const deferred = new Promise<{ id: string }>((resolve) => {

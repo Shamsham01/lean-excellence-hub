@@ -52,7 +52,7 @@ export function SegmentedControl({
             role="radio"
             aria-checked={selected}
             className={cn(
-              "flex h-11 w-full touch-manipulation items-center justify-center rounded-md px-2 text-center text-sm font-medium leading-none transition-colors duration-150",
+              "flex h-11 w-full touch-manipulation items-center justify-center rounded-md px-2 text-center text-sm leading-none font-medium transition-colors duration-150",
               selected
                 ? "bg-card text-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",

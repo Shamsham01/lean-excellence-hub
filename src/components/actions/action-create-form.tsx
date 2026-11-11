@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { EphemeralToast } from "@/components/ui/ephemeral-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
@@ -58,6 +59,7 @@ export function ActionCreateDialog({
   const [queryText, setQueryText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
 
   const [catalogLabels, setCatalogLabels] = useState<ActionLabel[]>([]);
@@ -208,23 +210,31 @@ export function ActionCreateDialog({
       ? [...checklistTitles, extraChecklist]
       : checklistTitles;
 
-    const result = await createPlannerAction({
-      title,
-      description,
-      dueAt: dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null,
-      assigneeMembershipId: assigneeId || null,
-      labelIds: selectedLabelIds,
-      checklistTitles: allChecklist,
-    });
-    setPending(false);
-    if (!result.ok && result.error) {
-      setError(result.error);
-      return;
-    }
-    if (result.id) {
-      onOpenChange(false);
-      resetForm();
-      onCreated?.(result.id);
+    try {
+      const result = await createPlannerAction({
+        title,
+        description,
+        dueAt: dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null,
+        assigneeMembershipId: assigneeId || null,
+        labelIds: selectedLabelIds,
+        checklistTitles: allChecklist,
+      });
+      if (result.error && !result.id) {
+        setError(result.error);
+        return;
+      }
+      if (result.id) {
+        onOpenChange(false);
+        resetForm();
+        onCreated?.(result.id);
+        if (result.warning) {
+          setToastMessage(result.warning);
+        }
+      }
+    } catch {
+      setError("Something went wrong while creating the action. Try again.");
+    } finally {
+      setPending(false);
     }
   }
 
@@ -558,6 +568,11 @@ export function ActionCreateDialog({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <EphemeralToast
+        message={toastMessage}
+        tone="warning"
+        onDismiss={() => setToastMessage(null)}
+      />
     </>
   );
 }
