@@ -19,7 +19,6 @@ export async function loadMembershipAvatarUrls(
 
   while (needed.size > 0) {
     const { data, error } = await supabase.rpc("get_people_directory", {
-      target_search: null,
       target_page: page,
       target_page_size: DIRECTORY_PAGE_SIZE,
       target_include_inactive: false,

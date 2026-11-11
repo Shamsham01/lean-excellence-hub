@@ -43,7 +43,6 @@ describe("loadMembershipAvatarUrls", () => {
     const map = await loadMembershipAvatarUrls(["m-1", "m-2"]);
 
     expect(rpcMock).toHaveBeenCalledWith("get_people_directory", {
-      target_search: null,
       target_page: 1,
       target_page_size: 100,
       target_include_inactive: false,
