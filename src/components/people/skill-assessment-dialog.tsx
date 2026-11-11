@@ -291,6 +291,12 @@ export function SkillAssessmentDialog({
           </div>
 
           {assessmentId ? (
+            <span data-testid="skill-assessment-record-id" className="sr-only">
+              {assessmentId}
+            </span>
+          ) : null}
+
+          {assessmentId ? (
             <div className="space-y-2">
               <Label>Evidence (optional)</Label>
               <EvidenceUploader

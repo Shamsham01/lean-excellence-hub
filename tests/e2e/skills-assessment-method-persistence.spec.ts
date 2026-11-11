@@ -46,8 +46,6 @@ test.describe("Skill assessment method persistence (Spec A)", () => {
       .getByRole("link", { name: DEMO_USERS.operator.displayName })
       .click();
     await expect(page.getByTestId("capability-profile-page")).toBeVisible();
-    await expect(page).toHaveURL(/\/platform\/people\/[^/]+$/);
-    const membershipId = page.url().split("/").pop()!;
 
     const historySection = page.locator("section").filter({
       has: page.getByRole("heading", { name: "Assessment history" }),
@@ -103,6 +101,13 @@ test.describe("Skill assessment method persistence (Spec A)", () => {
     await page.getByTestId("skill-assessment-save").click();
 
     await expect(dialog.getByRole("button", { name: "Done" })).toBeVisible();
+    const assessmentRecordId = (
+      await dialog.getByTestId("skill-assessment-record-id").textContent()
+    )?.trim();
+    expect(
+      assessmentRecordId,
+      "saved validation should return an assessment id",
+    ).toBeTruthy();
     await dialog.getByRole("button", { name: "Done" }).click();
 
     await expect(page.getByTestId("capability-profile-page")).toBeVisible();
@@ -119,8 +124,7 @@ test.describe("Skill assessment method persistence (Spec A)", () => {
           }>(
             `select assessment_row.assessment_method, assessment_row.assertion_type
              from public.membership_skill_assessments assessment_row
-             where assessment_row.membership_id = '${membershipId}'
-             order by assessment_row.created_at desc
+             where assessment_row.id = '${assessmentRecordId}'
              limit 1`,
           );
           return rows[0] ?? null;
