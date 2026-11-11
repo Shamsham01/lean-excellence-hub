@@ -293,6 +293,7 @@ jobs:
           - label: workforce
             specs: >-
               tests/e2e/training-journeys.spec.ts
+              tests/e2e/skills-assessment-method-persistence.spec.ts
               tests/e2e/milestone7-closure.spec.ts
               tests/e2e/invitation-lifecycle.spec.ts
               tests/e2e/password-recovery.spec.ts
@@ -306,7 +307,6 @@ jobs:
               tests/e2e/training-setup.spec.ts
               tests/e2e/training-course-authoring.spec.ts
               tests/e2e/training-curriculum-authoring.spec.ts
-              tests/e2e/skills-assessment-method-persistence.spec.ts
               tests/e2e/people-mobile-organisation-assignment.spec.ts
               tests/e2e/people-access.spec.ts
               tests/e2e/people-colleague-import.spec.ts
