@@ -15,6 +15,7 @@ describe("Skills and training matrix scope (Spec B)", () => {
     expect(source).not.toContain(".limit(12)");
     expect(source).not.toContain("target_page_size: 100");
     expect(source).toContain("skills-matrix-summary");
+    expect(source).toContain("skills-matrix-error");
     expect(source).toContain("Showing");
   });
 
@@ -28,12 +29,14 @@ describe("Skills and training matrix scope (Spec B)", () => {
     expect(source).not.toContain("training_curriculum_versions");
     expect(source).not.toContain(".limit(1)");
     expect(source).toContain("training-matrix-summary");
+    expect(source).toContain("training-matrix-error");
   });
 
   it("training matrix applies requirements per person", () => {
     const source = readSource("src/components/training/training-matrix.tsx");
 
     expect(source).toContain("membership_id");
-    expect(source).toContain("requirement.membership_id === membershipId");
+    expect(source).toContain("mandatoryCells");
+    expect(source).toContain("membershipId}:${courseId}");
   });
 });
