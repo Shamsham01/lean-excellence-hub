@@ -181,7 +181,14 @@ export function EvidenceUploader({
       // revalidates the assessment RSC tree after photo upload.
       setTimeout(() => setState("idle"), 2000);
     },
-    [canEdit, createdItemExtras, onInitiate, onConfirm, onLink, onUploadSuccess],
+    [
+      canEdit,
+      createdItemExtras,
+      onInitiate,
+      onConfirm,
+      onLink,
+      onUploadSuccess,
+    ],
   );
 
   function onFileChange(files: FileList | null) {

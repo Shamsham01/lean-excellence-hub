@@ -344,9 +344,12 @@ test.describe("Actions planner workspace", () => {
     await expect(
       page.locator('[data-testid^="evidence-preview-"]').first(),
     ).toBeVisible({ timeout: 15_000 });
-    await page.getByRole("tab", { name: "Overview" }).click();
-    await expect(page.getByTestId("action-card-cover-thumb")).toBeVisible({
+    await expect(page.getByTestId("action-card-cover-preview")).toBeVisible({
       timeout: 30_000,
     });
+    await page.getByRole("tab", { name: "Overview" }).click();
+    const coverThumb = page.getByTestId("action-card-cover-thumb");
+    await coverThumb.scrollIntoViewIfNeeded();
+    await expect(coverThumb).toBeVisible({ timeout: 30_000 });
   });
 });

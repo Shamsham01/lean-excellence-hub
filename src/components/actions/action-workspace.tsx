@@ -10,6 +10,7 @@ import {
   transitionActionStatus,
   updateActionFields,
 } from "@/app/(platform)/platform/actions/actions";
+import { ActionCardCoverThumb } from "@/components/actions/action-card-cover-thumb";
 import { ActionPlannerAttachments } from "@/components/actions/action-planner-attachments";
 import type { ActionPlannerComment } from "@/components/actions/action-planner-comments";
 import { ActionPlannerComments } from "@/components/actions/action-planner-comments";
@@ -123,7 +124,18 @@ export function ActionWorkspace({
         >
           {reference}
         </p>
-        <h1 className="typography-page-title mt-1">{detail.title}</h1>
+        <div className="mt-1 flex items-start gap-3">
+          {detail.card_cover_attachment ? (
+            <ActionCardCoverThumb
+              mimeType={detail.card_cover_attachment.mime_type}
+              storagePath={detail.card_cover_attachment.storage_object_path}
+              alt={`${detail.title} cover`}
+            />
+          ) : null}
+          <h1 className="typography-page-title min-w-0 flex-1">
+            {detail.title}
+          </h1>
+        </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Badge
             variant={actionStatusBadgeVariant(detail.status)}
