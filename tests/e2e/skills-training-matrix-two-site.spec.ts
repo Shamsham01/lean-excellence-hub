@@ -195,14 +195,19 @@ async function seed() {
       target_name: `Matrix scale ${run}`,
     },
   );
-  const scaleRow = queryDatabase<{ id: string }>(`
-    select id from public.skill_proficiency_scale_versions
-    where scale_id = ${sqlString(scaleId)}::uuid and version_number = 1;
-  `)[0];
-  if (!scaleRow) {
+  const { data: scaleVersion, error: scaleVersionError } = await admin
+    .from("skill_proficiency_scale_versions")
+    .select("id")
+    .eq("scale_id", scaleId)
+    .eq("version_number", 1)
+    .maybeSingle();
+  if (scaleVersionError) {
+    throw scaleVersionError;
+  }
+  if (!scaleVersion?.id) {
     throw new Error("Expected draft scale version");
   }
-  const scale = scaleRow.id;
+  const scale = scaleVersion.id;
   const levels: string[] = [];
   for (const [order, label] of [
     [1, "Aware"],
