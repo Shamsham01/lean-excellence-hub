@@ -16,6 +16,7 @@ import { AnalyticsDateRangeToolbar } from "@/components/platform/analytics-date-
 import { KpiStatCard } from "@/components/platform/kpi-stat-card";
 import { KpiStatGrid } from "@/components/platform/kpi-stat-grid";
 import type { HomeAnalyticsBundle } from "@/modules/platform-analytics/home";
+import { DEFAULT_KPI_POLARITY } from "@/modules/platform-analytics/types";
 
 const HOME_ICONS: Record<string, LucideIcon> = {
   "actions-open": ListChecks,
@@ -51,13 +52,16 @@ export function PlatformHomeAnalytics({ data }: { data: HomeAnalyticsBundle }) {
           No module metrics are visible with your access in this period.
         </p>
       ) : (
-        <KpiStatGrid>
+        <KpiStatGrid tileCount={data.stats.length}>
           {data.stats.map((stat) => (
             <KpiStatCard
               key={stat.id}
               label={stat.label}
               value={stat.value}
               icon={HOME_ICONS[stat.id] ?? ListChecks}
+              polarity={
+                stat.polarity ?? DEFAULT_KPI_POLARITY[stat.id] ?? "neutral"
+              }
               {...(stat.trend ? { trend: stat.trend } : {})}
               {...(stat.valueTestId ? { valueTestId: stat.valueTestId } : {})}
               testId={`home-stat-${stat.id}`}

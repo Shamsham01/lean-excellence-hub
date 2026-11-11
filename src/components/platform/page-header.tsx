@@ -1,28 +1,72 @@
 import type { ReactNode } from "react";
 
 import { PageHeaderLeanAiButton } from "@/components/platform/page-header-lean-ai-button";
+import { Breadcrumb, type BreadcrumbItem } from "@/components/ui/breadcrumb";
 import { cn } from "@/lib/utils";
+
+function breadcrumbLastLabel(node: ReactNode): string | null {
+  if (!node || typeof node !== "object" || !("props" in node)) return null;
+  const props = (node as { props?: { items?: BreadcrumbItem[] } }).props;
+  const items = props?.items;
+  if (!items?.length) return null;
+  return items[items.length - 1]?.label ?? null;
+}
+
+function defaultModuleBreadcrumb(label: string): BreadcrumbItem[] {
+  return [{ label: "Platform", href: "/platform" }, { label }];
+}
 
 export function PageHeader({
   title,
   description,
   descriptionTestId,
   breadcrumb,
+  breadcrumbItems,
   actions,
   leanAiHelp = true,
   leanAiHelpLabel,
   className,
 }: {
-  title: ReactNode;
+  title?: ReactNode;
   /** Opt-in: pass only when the line carries contextual data (org name, record title, etc.). */
   description?: string;
   descriptionTestId?: string;
   breadcrumb?: ReactNode;
+  breadcrumbItems?: BreadcrumbItem[];
   actions?: ReactNode;
   leanAiHelp?: boolean;
   leanAiHelpLabel?: string;
   className?: string;
 }) {
+  const resolvedBreadcrumbItems =
+    breadcrumbItems ??
+    (typeof title === "string" && !breadcrumb
+      ? defaultModuleBreadcrumb(title)
+      : undefined);
+
+  const resolvedBreadcrumb =
+    breadcrumb ??
+    (resolvedBreadcrumbItems ? (
+      <Breadcrumb items={resolvedBreadcrumbItems} pageHeading />
+    ) : null);
+
+  const lastCrumbLabel =
+    resolvedBreadcrumbItems?.at(-1)?.label ?? breadcrumbLastLabel(breadcrumb);
+
+  const autoBreadcrumbFromTitle =
+    typeof title === "string" && !breadcrumb && !breadcrumbItems;
+
+  const titleDuplicatesCrumb =
+    typeof title === "string" &&
+    lastCrumbLabel != null &&
+    title.trim() === lastCrumbLabel.trim();
+
+  const showBreadcrumbHeading = Boolean(resolvedBreadcrumb);
+  const showTitle =
+    title != null &&
+    (typeof title !== "string" ||
+      (!autoBreadcrumbFromTitle && !titleDuplicatesCrumb));
+
   return (
     <div
       className={cn(
@@ -31,15 +75,26 @@ export function PageHeader({
       )}
     >
       <div className="flex min-w-0 flex-col gap-1.5">
-        {breadcrumb}
-        <div className="flex min-w-0 items-start gap-2">
-          <h1 className="typography-page-title min-w-0 flex-1">{title}</h1>
-          {leanAiHelp ? (
-            <PageHeaderLeanAiButton
-              {...(leanAiHelpLabel ? { label: leanAiHelpLabel } : {})}
-            />
-          ) : null}
-        </div>
+        {showBreadcrumbHeading ? (
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            {resolvedBreadcrumb}
+            {leanAiHelp ? (
+              <PageHeaderLeanAiButton
+                {...(leanAiHelpLabel ? { label: leanAiHelpLabel } : {})}
+              />
+            ) : null}
+          </div>
+        ) : null}
+        {showTitle ? (
+          <div className="flex min-w-0 items-start gap-2">
+            <h1 className="typography-page-title min-w-0 flex-1">{title}</h1>
+            {!showBreadcrumbHeading && leanAiHelp ? (
+              <PageHeaderLeanAiButton
+                {...(leanAiHelpLabel ? { label: leanAiHelpLabel } : {})}
+              />
+            ) : null}
+          </div>
+        ) : null}
         {description ? (
           <p
             className="typography-page-description max-w-2xl"

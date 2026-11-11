@@ -408,27 +408,25 @@ describe("site identity metadata", () => {
     ).toBe(true);
   });
 
-  it("renders sidebar lockups from PNG only with contained sizing", () => {
+  it("renders sidebar lockups with SVG-first theme sources in a wide slot", () => {
     render(
       <LehBrand
         decorative
-        lockupRasterOnly
         variant="full"
         className="leh-brand--platform-sidebar"
       />,
     );
     const brand = screen.getByTestId("leh-brand");
-    expect(brand.querySelector("picture source")).toBeNull();
-    const rasterSources = [...brand.querySelectorAll("img")].map((node) =>
-      node.getAttribute("src"),
+    expect(brand.querySelector("picture source")).not.toBeNull();
+    const vectorSources = [...brand.querySelectorAll("source")].map((node) =>
+      node.getAttribute("srcset"),
     );
     expect(
-      rasterSources.some((src) => src?.includes("leh-horizontal-light.png")),
+      vectorSources.some((src) => src?.includes("leh-horizontal-light.svg")),
     ).toBe(true);
     expect(
-      rasterSources.some((src) => src?.includes("leh-horizontal-dark.png")),
+      vectorSources.some((src) => src?.includes("leh-horizontal-dark.svg")),
     ).toBe(true);
-    expect(rasterSources.some((src) => src?.includes(".svg"))).toBe(false);
   });
 
   it("registers SVG-first theme lockups and icons with PNG raster fallbacks", () => {

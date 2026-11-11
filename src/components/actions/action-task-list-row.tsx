@@ -37,7 +37,8 @@ export function ActionTaskListRow({
   const router = useRouter();
   const due = formatDueDate(action.due_at);
   const isDone = action.status === "completed" || action.status === "verified";
-  const assignee = action.assignee_display_name?.trim() || "Unassigned";
+  const assigneeName = action.assignee_display_name?.trim() ?? "";
+  const isUnassigned = !assigneeName;
 
   async function handleToggleComplete(nextChecked: boolean) {
     if (nextChecked) {
@@ -125,7 +126,9 @@ export function ActionTaskListRow({
             <span className="font-mono-data">0</span>
           </span>
           <PlatformMemberAvatar
-            displayName={assignee}
+            displayName={assigneeName || "Unassigned"}
+            avatarUrl={action.assignee_avatar_url}
+            unassigned={isUnassigned}
             size="sm"
             className="size-8"
           />

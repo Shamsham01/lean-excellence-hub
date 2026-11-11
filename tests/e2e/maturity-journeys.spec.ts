@@ -267,6 +267,7 @@ test.describe("Milestone 5 maturity journeys", () => {
 
     await page.getByTestId("view-assessment-actions").click();
     await expect(page).toHaveURL(/source=maturity_assessment/);
+    await page.getByTestId("actions-filter-button").click();
     await expect(page.getByTestId("actions-filters")).toBeVisible();
     await expect(page.getByText("Improve Gemba cadence")).toBeVisible();
   });

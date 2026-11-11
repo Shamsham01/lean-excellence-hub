@@ -1,11 +1,9 @@
 import { Suspense } from "react";
 
 import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
-import { ActionFilters } from "@/components/actions/action-filters";
 import { ActionPlannerShell } from "@/components/actions/action-planner-shell";
 import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
 import { PageHeader } from "@/components/platform/page-header";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
 import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
 import { parseActionListFilters } from "@/lib/actions/action-filters";
@@ -101,44 +99,33 @@ export default async function ActionsPage({
 
   return (
     <div className="flex flex-col gap-8" data-testid="actions-page">
-      <PageHeader
-        title="Actions"
-        breadcrumb={
-          <Breadcrumb
-            items={[
-              { label: "Platform", href: "/platform" },
-              { label: "Actions" },
-            ]}
-          />
-        }
-      />
-
-      <ActionFilters
-        filters={filters}
-        people={selectorOptions.people}
-        units={selectorOptions.units.map((unit) => ({
-          id: unit.id,
-          label: unit.name,
-        }))}
-        assessments={(assessmentRows ?? []).map((assessment) => ({
-          id: assessment.id,
-          label: `${assessment.assessment_type} · ${assessment.status}`,
-        }))}
-        pillars={(pillarRows ?? []).map((pillar) => ({
-          id: pillar.id,
-          label: pillar.name,
-        }))}
-        criteria={(criterionRows ?? []).map((criterion) => ({
-          id: criterion.id,
-          label: criterion.name,
-        }))}
-      />
+      <PageHeader title="Actions" leanAiHelpLabel="Actions" />
 
       <Suspense fallback={null}>
         <ActionPlannerShell
           actions={plannerActions}
           initialOpenActionId={openActionId}
           canCreate={canCreate}
+          listFilters={{
+            filters,
+            people: selectorOptions.people,
+            units: selectorOptions.units.map((unit) => ({
+              id: unit.id,
+              label: unit.name,
+            })),
+            assessments: (assessmentRows ?? []).map((assessment) => ({
+              id: assessment.id,
+              label: `${assessment.assessment_type} · ${assessment.status}`,
+            })),
+            pillars: (pillarRows ?? []).map((pillar) => ({
+              id: pillar.id,
+              label: pillar.name,
+            })),
+            criteria: (criterionRows ?? []).map((criterion) => ({
+              id: criterion.id,
+              label: criterion.name,
+            })),
+          }}
         />
       </Suspense>
       <ModulePageInsightsDeferred
