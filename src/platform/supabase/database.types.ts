@@ -142,6 +142,129 @@ export type Database = {
           },
         ]
       }
+      action_checklist_items: {
+        Row: {
+          action_id: string
+          completed_at: string | null
+          completed_by_membership_id: string | null
+          created_at: string
+          id: string
+          is_done: boolean
+          organisation_id: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action_id: string
+          completed_at?: string | null
+          completed_by_membership_id?: string | null
+          created_at?: string
+          id?: string
+          is_done?: boolean
+          organisation_id: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          action_id?: string
+          completed_at?: string | null
+          completed_by_membership_id?: string | null
+          created_at?: string
+          id?: string
+          is_done?: boolean
+          organisation_id?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_checklist_items_action_fkey"
+            columns: ["organisation_id", "action_id"]
+            isOneToOne: false
+            referencedRelation: "actions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "action_checklist_items_completer_fkey"
+            columns: ["organisation_id", "completed_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      action_label_assignments: {
+        Row: {
+          action_id: string
+          assigned_at: string
+          id: string
+          label_id: string
+          organisation_id: string
+        }
+        Insert: {
+          action_id: string
+          assigned_at?: string
+          id?: string
+          label_id: string
+          organisation_id: string
+        }
+        Update: {
+          action_id?: string
+          assigned_at?: string
+          id?: string
+          label_id?: string
+          organisation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_label_assignments_action_fkey"
+            columns: ["organisation_id", "action_id"]
+            isOneToOne: false
+            referencedRelation: "actions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "action_label_assignments_label_fkey"
+            columns: ["organisation_id", "label_id"]
+            isOneToOne: false
+            referencedRelation: "action_labels"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      action_labels: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          organisation_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          organisation_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          organisation_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       action_status_transitions: {
         Row: {
           action_id: string
@@ -193,6 +316,7 @@ export type Database = {
       actions: {
         Row: {
           action_number: string
+          card_cover_attachment_id: string | null
           completed_at: string | null
           created_at: string
           created_by_membership_id: string
@@ -213,6 +337,7 @@ export type Database = {
         }
         Insert: {
           action_number: string
+          card_cover_attachment_id?: string | null
           completed_at?: string | null
           created_at?: string
           created_by_membership_id: string
@@ -233,6 +358,7 @@ export type Database = {
         }
         Update: {
           action_number?: string
+          card_cover_attachment_id?: string | null
           completed_at?: string | null
           created_at?: string
           created_by_membership_id?: string
@@ -252,6 +378,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "actions_card_cover_attachment_fkey"
+            columns: ["organisation_id", "card_cover_attachment_id"]
+            isOneToOne: false
+            referencedRelation: "attachments"
+            referencedColumns: ["organisation_id", "id"]
+          },
           {
             foreignKeyName: "actions_creator_fkey"
             columns: ["organisation_id", "created_by_membership_id"]
@@ -12785,6 +12918,14 @@ export type Database = {
         Args: { target_case_id: string; target_method_id: string }
         Returns: boolean
       }
+      add_action_checklist_item: {
+        Args: {
+          target_action_id: string
+          target_sort_order?: number
+          target_title: string
+        }
+        Returns: string
+      }
       add_analysis_node: {
         Args: {
           target_analysis_id: string
@@ -14962,6 +15103,7 @@ export type Database = {
         }
         Returns: string
       }
+      list_action_labels: { Args: never; Returns: Json }
       list_maturity_assessment_scope_entities: {
         Args: { target_model_version_id: string; target_scope_type: string }
         Returns: {
@@ -15742,6 +15884,14 @@ export type Database = {
         Args: { target_action_id: string; target_membership_id?: string }
         Returns: boolean
       }
+      set_action_checklist_item_done: {
+        Args: { target_done: boolean; target_item_id: string }
+        Returns: undefined
+      }
+      set_action_labels: {
+        Args: { target_action_id: string; target_label_ids: string[] }
+        Returns: undefined
+      }
       set_five_s_standard_applicable_units: {
         Args: { target_standard_id: string; target_unit_ids: string[] }
         Returns: boolean
@@ -16267,6 +16417,15 @@ export type Database = {
           target_status: string
         }
         Returns: boolean
+      }
+      upsert_action_label: {
+        Args: {
+          target_color?: string
+          target_label_id?: string
+          target_name?: string
+          target_sort_order?: number
+        }
+        Returns: string
       }
       upsert_benefit_reporting_settings: {
         Args: { target_fiscal_year_start_month: number }
