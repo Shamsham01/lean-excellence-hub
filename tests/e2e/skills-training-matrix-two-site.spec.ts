@@ -52,6 +52,7 @@ type Ids = {
   skills: Record<string, string>;
 };
 const ids = {} as Ids;
+let cookieWorksOrganisationId: string | undefined;
 
 async function resetCookieWorksFoundation() {
   execSync("npm run qa:cookie:reset", {
@@ -86,6 +87,7 @@ async function resetCookieWorksFoundation() {
       `qa:cookie:reset did not provision ${QA_ORGANISATION_CODE} (eligible org lookup)`,
     );
   }
+  cookieWorksOrganisationId = organisation.organisation_id;
 }
 
 async function signIn(persona: keyof typeof QA_USERS): Promise<SupabaseClient> {
@@ -150,22 +152,24 @@ function seedMembers(names: string[]): string[] {
 }
 
 async function seed() {
-  const orgRow = queryDatabase<{ id: string }>(`
-    select id from public.organisations
-    where code = ${sqlString(QA_ORGANISATION_CODE)}
-    limit 1;
-  `)[0];
-  if (!orgRow) {
+  if (!cookieWorksOrganisationId) {
     throw new Error(
-      `CookieWorks organisation not found (code ${QA_ORGANISATION_CODE}); run qa:cookie:reset`,
+      `CookieWorks organisation id missing; run qa:cookie:reset before seed`,
     );
   }
-  ids.organisationId = orgRow.id;
-  const units = queryDatabase<{ id: string; code: string }>(`
-    select id, code from public.organisation_units
-    where organisation_id = ${sqlString(orgRow.id)}::uuid;
-  `);
-  ids.units = Object.fromEntries(units.map((unit) => [unit.code, unit.id]));
+  ids.organisationId = cookieWorksOrganisationId;
+
+  const admin = await signIn("admin");
+  const { data: units, error: unitsError } = await admin
+    .from("organisation_units")
+    .select("id, code")
+    .eq("organisation_id", ids.organisationId);
+  if (unitsError) {
+    throw unitsError;
+  }
+  ids.units = Object.fromEntries(
+    (units ?? []).map((unit) => [unit.code, unit.id]),
+  );
   const bodminSite = ids.units["bodmin-cookie-factory"];
   const bodminPacking = ids.units["packing"];
   const exeterSite = ids.units["exeter-cookie-factory"];
@@ -174,7 +178,6 @@ async function seed() {
     undefined,
   );
 
-  const admin = await signIn("admin");
   ids.operatorJf = await rpc<string>(admin, "create_job_function", {
     target_name: `Matrix Operator ${run}`,
     target_code: `matrix-operator-${run}`,
