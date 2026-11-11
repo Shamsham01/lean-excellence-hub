@@ -7,6 +7,7 @@ import {
   openGembaAddPrompt,
   openGembaAddSection,
 } from "./helpers/form-dialogs";
+import { chooseFirstApplicableUnit } from "./helpers/applicable-units";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -30,12 +31,7 @@ test.describe("5S and Gemba draft authoring persistence", () => {
     const secondPrompt = `Are waste bins labelled? ${Date.now()}`;
 
     await page.getByLabel("Name").fill(name);
-    await page.getByTestId("applicable-units-edit-locations").click();
-    await expect(
-      page.getByTestId("applicable-units-picker-dialog"),
-    ).toBeVisible();
-    await page.getByTestId("applicable-unit-checkbox").first().check();
-    await page.getByTestId("applicable-units-picker-save").click();
+    await chooseFirstApplicableUnit(page);
     await page.getByRole("button", { name: "Create draft standard" }).click();
     await expect(page.getByRole("heading", { name })).toBeVisible();
     await expect(page.getByTestId("create-schedule-link")).toHaveCount(0);
@@ -100,12 +96,7 @@ test.describe("5S and Gemba draft authoring persistence", () => {
     const secondPrompt = `What help does the team need? ${Date.now()}`;
 
     await page.getByLabel("Name").fill(name);
-    await page.getByTestId("applicable-units-edit-locations").click();
-    await expect(
-      page.getByTestId("applicable-units-picker-dialog"),
-    ).toBeVisible();
-    await page.getByTestId("applicable-unit-checkbox").first().check();
-    await page.getByTestId("applicable-units-picker-save").click();
+    await chooseFirstApplicableUnit(page);
     await page.getByRole("button", { name: "Create draft" }).click();
     await expect(page.getByRole("heading", { name })).toBeVisible();
     await expect(page.getByTestId("create-schedule-link")).toHaveCount(0);

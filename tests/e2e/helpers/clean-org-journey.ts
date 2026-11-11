@@ -15,6 +15,7 @@ import {
   loginAsFoundingUser,
   type FoundingE2eUser,
 } from "./founding-onboarding";
+import { chooseFirstApplicableUnit } from "./applicable-units";
 
 const e2eOrigin = "http://127.0.0.1:3000";
 
@@ -407,7 +408,7 @@ export async function deployFiveSQuickStartDraft(page: Page) {
   await page.getByRole("link", { name: "Set up 5S" }).click();
   await expect(page.getByTestId("module-setup-chooser")).toBeVisible();
   await page.getByTestId("module-setup-mode-quick-start").click();
-  await page.getByTestId("applicable-unit-checkbox").first().check();
+  await chooseFirstApplicableUnit(page);
   await page.getByTestId("module-setup-deploy").click();
   await expect(page.getByTestId("five-s-draft-boundary")).toBeVisible({
     timeout: 30_000,

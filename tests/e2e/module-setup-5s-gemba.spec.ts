@@ -11,6 +11,7 @@ import {
   openFiveSAddQuestion,
   openGembaAddPrompt,
 } from "./helpers/form-dialogs";
+import { chooseFirstApplicableUnit } from "./helpers/applicable-units";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -128,17 +129,7 @@ async function expectNoHorizontalOverflow(page: Page) {
 }
 
 async function chooseFirstUnit(page: Page) {
-  const editLocations = page.getByTestId("applicable-units-edit-locations");
-  if (await editLocations.isVisible().catch(() => false)) {
-    await editLocations.click();
-    await expect(
-      page.getByTestId("applicable-units-picker-dialog"),
-    ).toBeVisible();
-    await page.getByTestId("applicable-unit-checkbox").first().check();
-    await page.getByTestId("applicable-units-picker-save").click();
-    return;
-  }
-  await page.getByTestId("applicable-unit-checkbox").first().check();
+  await chooseFirstApplicableUnit(page);
 }
 
 test.describe("5S and Gemba guided setup", () => {

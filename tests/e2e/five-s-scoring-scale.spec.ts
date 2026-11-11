@@ -7,6 +7,7 @@ import {
   DEMO_USERS,
 } from "../../scripts/demo-seed/constants";
 import { signInAsDemoUser } from "./helpers/demo-auth";
+import { chooseFirstApplicableUnit } from "./helpers/applicable-units";
 import {
   clickExecutionStartSubmit,
   selectFirstExecutionUnit,
@@ -62,7 +63,7 @@ test.describe("5S scoring scale", () => {
 
     await page.goto("/platform/5s/standards");
     await page.getByLabel("Name").fill(name);
-    await page.getByTestId("applicable-unit-checkbox").first().check();
+    await chooseFirstApplicableUnit(page);
     await page.getByRole("button", { name: "Create draft standard" }).click();
     await expect(page.getByRole("heading", { name })).toBeVisible();
     await expect(page.getByTestId("five-s-scale-summary")).toContainText(
@@ -243,7 +244,7 @@ test.describe("5S scoring scale", () => {
     await expect(page.getByTestId("five-s-scale-preview")).toContainText(
       "100 is 100%",
     );
-    await page.getByTestId("applicable-unit-checkbox").first().check();
+    await chooseFirstApplicableUnit(page);
     await page.getByRole("button", { name: "Create draft standard" }).click();
     await expect(page.getByTestId("five-s-scale-summary")).toContainText(
       "0 to 100",

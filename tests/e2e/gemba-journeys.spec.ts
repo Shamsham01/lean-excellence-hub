@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
+import { chooseFirstApplicableUnit } from "./helpers/applicable-units";
 import {
   clickGembaCompleteWalk,
   expectNoGembaCompleteWalk,
@@ -93,7 +94,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
     const filledNotes = `${typedNotes} Pasted follow-up: labels drifting.`;
 
     await page.getByLabel("Name").fill(name);
-    await page.getByTestId("applicable-unit-checkbox").first().check();
+    await chooseFirstApplicableUnit(page);
     await page.getByRole("button", { name: "Create draft" }).click();
     await expect(page.getByRole("heading", { name })).toBeVisible();
 
@@ -224,7 +225,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
     const summaryNotes = "Walk complete. One intentional observation remains.";
 
     await page.getByLabel("Name").fill(name);
-    await page.getByTestId("applicable-unit-checkbox").first().check();
+    await chooseFirstApplicableUnit(page);
     await page.getByRole("button", { name: "Create draft" }).click();
     await expect(page.getByRole("heading", { name })).toBeVisible();
 
@@ -466,7 +467,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
     const imagePath = join(fixtureDirectory, "sample.webp");
 
     await page.getByLabel("Name").fill(name);
-    await page.getByTestId("applicable-unit-checkbox").first().check();
+    await chooseFirstApplicableUnit(page);
     await page.getByRole("button", { name: "Create draft" }).click();
     await expect(page.getByRole("heading", { name })).toBeVisible();
 
