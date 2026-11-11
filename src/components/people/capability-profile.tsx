@@ -336,16 +336,17 @@ export function CapabilityProfile({
               ) : (
                 <ul className="mt-2 space-y-2">
                   {assessments.map((item) => {
-                    const assessmentMethodLabel = formatSkillAssessmentMethodLabel(
-                      item.assessment_method,
-                    );
+                    const assessmentMethodLabel =
+                      formatSkillAssessmentMethodLabel(item.assessment_method);
                     return (
                       <li key={item.assessment_id} className="text-sm">
                         {new Date(item.assessed_at).toLocaleDateString("en-GB")}
                         {" — "}
                         {item.assertion_type}
                         {item.is_authoritative ? " (validated)" : ""}
-                        {assessmentMethodLabel ? ` · ${assessmentMethodLabel}` : ""}
+                        {assessmentMethodLabel
+                          ? ` · ${assessmentMethodLabel}`
+                          : ""}
                       </li>
                     );
                   })}
