@@ -182,16 +182,35 @@ function resolveE2eDatabaseUrl(): string {
 export function queryDatabase<T extends Record<string, unknown>>(sql: string) {
   const normalized = sql.replace(/\s+/g, " ").trim();
   const dbUrl = resolveE2eDatabaseUrl();
-  const output = execSync(
-    `npx supabase db query --db-url ${JSON.stringify(dbUrl)} --output-format json ${JSON.stringify(normalized)}`,
-    {
-      cwd: repoRoot,
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "ignore"],
-      env: { ...process.env, SUPABASE_DB_URL: dbUrl },
-    },
-  );
-  return parseQueryRows<T>(output);
+  try {
+    const output = execSync(
+      `npx supabase db query --db-url ${JSON.stringify(dbUrl)} --output-format json ${JSON.stringify(normalized)}`,
+      {
+        cwd: repoRoot,
+        encoding: "utf-8",
+        stdio: ["pipe", "pipe", "pipe"],
+        env: { ...process.env, SUPABASE_DB_URL: dbUrl },
+      },
+    );
+    return parseQueryRows<T>(output);
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === "string"
+          ? error
+          : "unknown error";
+    const stderr =
+      error !== null &&
+      typeof error === "object" &&
+      "stderr" in error &&
+      typeof (error as { stderr?: unknown }).stderr === "string"
+        ? (error as { stderr: string }).stderr
+        : "";
+    throw new Error(
+      `queryDatabase failed${stderr ? `: ${stderr.trim()}` : ""} (${message})`,
+    );
+  }
 }
 
 export async function resolveDemoOrganisationId(): Promise<string> {

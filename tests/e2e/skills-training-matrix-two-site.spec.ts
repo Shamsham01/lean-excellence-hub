@@ -120,6 +120,9 @@ function sqlString(value: string) {
 
 /** Inserts active, enrolled members directly (local DB only). */
 function seedMembers(names: string[]): string[] {
+  if (names.length === 0) {
+    return [];
+  }
   const values = names
     .map((name) => `(gen_random_uuid(), ${sqlString(name)})`)
     .join(",");
@@ -132,22 +135,27 @@ function seedMembers(names: string[]): string[] {
         '{}'::jsonb, '{}'::jsonb, false, false
       from people
       returning id
-    )
-    insert into public.organisation_memberships
-      (organisation_id, user_id, display_name, status, activated_at)
-    select ${sqlString(ids.organisationId)}::uuid, people.user_id, people.display_name, 'active', now()
-    from people join users on users.id = people.user_id
-    returning id as membership_id;
-  `);
-  queryDatabase(`
+    ),
+    memberships as (
+      insert into public.organisation_memberships
+        (organisation_id, user_id, display_name, status, activated_at)
+      select ${sqlString(ids.organisationId)}::uuid, people.user_id, people.display_name, 'active', now()
+      from people join users on users.id = people.user_id
+      returning id, user_id
+    ),
+  enrol as (
     update private.identity_controls
     set status = 'active', enrolment_status = 'complete', enrolment_completed_at = now()
-    where user_id in (
-      select user_id from public.organisation_memberships
-      where id in (${rows.map((row) => sqlString(row.membership_id)).join(",")})
-    )
-    returning user_id;
+    where user_id in (select user_id from memberships)
+    returning user_id
+  )
+  select id as membership_id from memberships;
   `);
+  if (rows.length !== names.length) {
+    throw new Error(
+      `seedMembers expected ${names.length} memberships, inserted ${rows.length}`,
+    );
+  }
   return rows.map((row) => row.membership_id);
 }
 
