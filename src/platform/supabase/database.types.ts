@@ -14667,6 +14667,10 @@ export type Database = {
         Args: { target_benefit_id: string }
         Returns: Json
       }
+      get_five_s_action_lineage: {
+        Args: { target_action_id: string }
+        Returns: Json
+      }
       get_leanai_contextual_snapshot: { Args: never; Returns: Json }
       get_leanai_journey_context: { Args: never; Returns: Json }
       get_membership_administration_profile: {
@@ -15110,6 +15114,17 @@ export type Database = {
       list_action_labels: { Args: never; Returns: Json }
       list_authorable_five_s_standard_ids: { Args: never; Returns: string[] }
       list_authorable_gemba_definition_ids: { Args: never; Returns: string[] }
+      list_five_s_audit_linked_actions: {
+        Args: { target_audit_id: string }
+        Returns: Json
+      }
+      list_five_s_audits_for_action_filter: {
+        Args: never
+        Returns: {
+          audit_id: string
+          label: string
+        }[]
+      }
       list_maturity_assessment_scope_entities: {
         Args: { target_model_version_id: string; target_scope_type: string }
         Returns: {
