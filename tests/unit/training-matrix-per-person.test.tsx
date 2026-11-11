@@ -1,7 +1,5 @@
-// VERIFY draft for PR #392 (Spec B unit): TrainingMatrix marks required
-// courses per person (not globally) in both the desktop table and the mobile
-// cards. The mobile branch currently references the removed
-// `requiredCourseIds` (training-matrix.tsx:133), so render throws until fixed.
+// VERIFY (Spec B): TrainingMatrix marks required courses per person in the
+// desktop table and mobile cards, not from a global required-course list.
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 

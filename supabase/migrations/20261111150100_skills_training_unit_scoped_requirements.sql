@@ -85,7 +85,6 @@ create or replace function private.requirement_unit_applies(
 returns boolean
 language sql
 stable
-security definer
 set search_path = ''
 as $$
   select
@@ -691,6 +690,7 @@ as $$
 declare
   org_id uuid := private.current_organisation_id();
   effective_page_size integer;
+  effective_page integer;
   offset_value integer;
   capability_version_id uuid;
 begin
@@ -707,9 +707,9 @@ begin
   end if;
 
   effective_page_size := least(greatest(coalesce(target_page_size, 50), 1), 100);
-  offset_value :=
-    (greatest(least(greatest(coalesce(target_page, 1), 1), 1000000), 1) - 1)
-    * effective_page_size;
+  effective_page :=
+    greatest(least(greatest(coalesce(target_page, 1), 1), 1000000), 1);
+  offset_value := (effective_page - 1) * effective_page_size;
 
   select version_row.id
   into capability_version_id
@@ -835,7 +835,7 @@ begin
         '[]'::jsonb
       ),
       'total_people', (select count(*)::integer from eligible_people),
-      'page', greatest(target_page, 1),
+      'page', effective_page,
       'page_size', effective_page_size
     )
   );
@@ -870,6 +870,7 @@ as $$
 declare
   org_id uuid := private.current_organisation_id();
   effective_page_size integer;
+  effective_page integer;
   offset_value integer;
   curriculum_version_id uuid;
 begin
@@ -892,9 +893,9 @@ begin
 
   curriculum_version_id := private.get_published_training_curriculum_version_id(org_id);
   effective_page_size := least(greatest(coalesce(target_page_size, 50), 1), 100);
-  offset_value :=
-    (greatest(least(greatest(coalesce(target_page, 1), 1), 1000000), 1) - 1)
-    * effective_page_size;
+  effective_page :=
+    greatest(least(greatest(coalesce(target_page, 1), 1), 1000000), 1);
+  offset_value := (effective_page - 1) * effective_page_size;
 
   return (
     with eligible_people as (
@@ -1034,7 +1035,7 @@ begin
         '[]'::jsonb
       ),
       'total_people', (select count(*)::integer from eligible_people),
-      'page', greatest(target_page, 1),
+      'page', effective_page,
       'page_size', effective_page_size,
       'curriculum_version_id', curriculum_version_id
     )

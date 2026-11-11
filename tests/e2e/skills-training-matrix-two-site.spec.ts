@@ -21,7 +21,6 @@ import {
   queryDatabase,
 } from "./helpers/workforce-provisioning";
 
-const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const run = Date.now().toString(36);
 const SKILL_COUNT = 14;
 const BODMIN_PEOPLE = 30;
@@ -334,10 +333,6 @@ async function namesOnPage(page: Page, prefix: string): Promise<string[]> {
 test.describe("Spec B: two-site skills/training matrix", () => {
   test.describe.configure({ mode: "serial" });
   test.setTimeout(300_000);
-  test.skip(
-    !hasSupabaseE2e,
-    "Requires E2E_WITH_SUPABASE=1 and CookieWorks QA tenant",
-  );
 
   test.beforeAll(async () => {
     test.setTimeout(300_000);
@@ -411,8 +406,12 @@ test.describe("Spec B: two-site skills/training matrix", () => {
     await loginAsCookieWorksPersona(page, "productionManager");
     await page.goto("/platform/skills/matrix");
     await expect(page.getByTestId("skills-matrix-summary")).toBeVisible();
-    await expect(page.getByText(bodminPerson(1))).toBeVisible();
-    await expect(page.getByText(/^Matrix Exeter/)).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { name: bodminPerson(1) }).first(),
+    ).toBeVisible();
+    await expect(page.getByRole("link", { name: /^Matrix Exeter/ })).toHaveCount(
+      0,
+    );
     await expect(page.getByRole("link", { name: bodminSkill })).toBeVisible();
     await expect(page.getByRole("link", { name: exeterSkill })).toHaveCount(0);
     await expect(
@@ -451,7 +450,9 @@ test.describe("Spec B: two-site skills/training matrix", () => {
     ).toBeVisible();
     // wrongJob applies to supervisors only; nobody on this page qualifies.
     await expect(page.getByText(course.wrongJob)).toHaveCount(0);
-    await expect(page.getByText(/^Matrix Exeter/)).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /^Matrix Exeter/ })).toHaveCount(
+      0,
+    );
 
     // Admin: Exeter operator is Not Required for the Bodmin-scoped course.
     await loginAsCookieWorksPersona(page, "admin");
