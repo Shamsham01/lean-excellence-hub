@@ -1,6 +1,8 @@
 import type { DragEvent } from "react";
 import { MessageSquare } from "lucide-react";
 
+import { ActionCardCoverThumb } from "@/components/actions/action-card-cover-thumb";
+import { ActionPlannerLabelChips } from "@/components/actions/action-planner-label-chips";
 import { PlatformMemberAvatar } from "@/components/platform/platform-member-avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -75,6 +77,7 @@ export function ActionPlannerCard({
           <p className="typography-metadata mt-0.5">
             {formatActionReference(action.action_number, action.title)}
           </p>
+          <ActionPlannerLabelChips labels={action.labels} className="mt-2" />
           {layout === "tile" ? (
             <div className="mt-2 flex flex-wrap items-center gap-2">
               {due ? (
@@ -82,9 +85,17 @@ export function ActionPlannerCard({
                   {due}
                 </span>
               ) : null}
+              {action.checklist_total > 0 ? (
+                <span
+                  className="font-mono-data text-xs text-muted-foreground"
+                  data-testid="action-card-checklist-count"
+                >
+                  {action.checklist_done}/{action.checklist_total}
+                </span>
+              ) : null}
               <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                 <MessageSquare className="size-3.5" aria-hidden />
-                <span className="font-mono-data">0</span>
+                <span className="font-mono-data">{action.comment_count}</span>
               </span>
             </div>
           ) : null}
@@ -102,6 +113,27 @@ export function ActionPlannerCard({
               : "items-center",
           )}
         >
+          {layout === "row" ? (
+            <>
+              {action.checklist_total > 0 ? (
+                <span
+                  className="font-mono-data text-xs text-muted-foreground"
+                  data-testid="action-card-checklist-count"
+                >
+                  {action.checklist_done}/{action.checklist_total}
+                </span>
+              ) : null}
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                <MessageSquare className="size-3.5" aria-hidden />
+                <span className="font-mono-data">{action.comment_count}</span>
+              </span>
+            </>
+          ) : null}
+          <ActionCardCoverThumb
+            mimeType={action.card_cover_mime_type}
+            storagePath={action.card_cover_storage_path}
+            alt={`${action.title} cover`}
+          />
           <div className="flex flex-wrap gap-1">
             <Badge variant={actionStatusBadgeVariant(action.status)}>
               {actionStatusLabel(action.status)}

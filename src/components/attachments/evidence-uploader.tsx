@@ -48,6 +48,7 @@ type EvidenceUploaderProps = {
   ) => Promise<{ error?: string; attachmentId?: string; storagePath?: string }>;
   onConfirm: (attachmentId: string) => Promise<{ error?: string }>;
   onLink: (attachmentId: string) => Promise<{ error?: string }>;
+  onUploadSuccess?: (item: EvidenceItem) => void;
 };
 
 export function evidenceMatchesQuestion(
@@ -74,6 +75,7 @@ export function EvidenceUploader({
   onInitiate,
   onConfirm,
   onLink,
+  onUploadSuccess,
 }: EvidenceUploaderProps) {
   const [state, setState] = useState<UploadState>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -172,13 +174,21 @@ export function EvidenceUploader({
         ...current.filter((item) => item.id !== attachmentId),
         pendingItem,
       ]);
+      onUploadSuccess?.(pendingItem);
       setState("success");
       // Do not router.refresh() here. Delayed refreshes collide with answer
       // saves (5S evidence race), and maturity evidence linking no longer
       // revalidates the assessment RSC tree after photo upload.
       setTimeout(() => setState("idle"), 2000);
     },
-    [canEdit, createdItemExtras, onInitiate, onConfirm, onLink],
+    [
+      canEdit,
+      createdItemExtras,
+      onInitiate,
+      onConfirm,
+      onLink,
+      onUploadSuccess,
+    ],
   );
 
   function onFileChange(files: FileList | null) {

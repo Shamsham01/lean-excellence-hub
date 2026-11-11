@@ -10,12 +10,16 @@ import {
   transitionActionStatus,
   updateActionFields,
 } from "@/app/(platform)/platform/actions/actions";
-import { ActionEvidenceBlock } from "@/components/actions/action-evidence-block";
+import { ActionCardCoverThumb } from "@/components/actions/action-card-cover-thumb";
+import { ActionPlannerAttachments } from "@/components/actions/action-planner-attachments";
+import type { ActionPlannerComment } from "@/components/actions/action-planner-comments";
+import { ActionPlannerComments } from "@/components/actions/action-planner-comments";
+import { ActionPlannerChecklist } from "@/components/actions/action-planner-checklist";
+import { ActionPlannerLabelChips } from "@/components/actions/action-planner-label-chips";
+import { ActionPlannerLabelsField } from "@/components/actions/action-planner-labels-field";
+import { EvidenceGallery } from "@/components/attachments/evidence-gallery";
+import { PlatformMemberAvatar } from "@/components/platform/platform-member-avatar";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
-import {
-  ResourceComments,
-  type CommentRow,
-} from "@/components/comments/resource-comments";
 import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,13 +55,25 @@ export function ActionWorkspace({
   evidence,
   assignablePeople,
   canUploadEvidence,
+  canPostComments = false,
+  currentCommentAuthor = null,
+  assigneeAvatarUrl = null,
+  onMutated,
   showBackLink = true,
 }: {
   detail: ActionDetail;
-  comments: CommentRow[];
+  comments: ActionPlannerComment[];
   evidence: EvidenceItem[];
   assignablePeople: AssignablePerson[];
   canUploadEvidence: boolean;
+  canPostComments?: boolean;
+  currentCommentAuthor?: {
+    membership_id: string;
+    display_name: string;
+    avatar_url: string | null;
+  } | null;
+  assigneeAvatarUrl?: string | null;
+  onMutated?: () => void;
   showBackLink?: boolean;
 }) {
   const router = useRouter();
@@ -71,12 +87,17 @@ export function ActionWorkspace({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
+  const [commentPostDelta, setCommentPostDelta] = useState(0);
+  const commentCount = comments.length + commentPostDelta;
 
   const editable = isActionEditable(detail.status);
   const permissions = detail.permissions;
   const reference = formatActionReference(detail.action_number, detail.title);
   const source = detail.source;
   const currentAssignee = detail.assignees[0];
+  const coverEvidence = detail.card_cover_attachment
+    ? evidence.find((item) => item.id === detail.card_cover_attachment?.id)
+    : null;
 
   async function run(
     key: string,
@@ -103,7 +124,18 @@ export function ActionWorkspace({
         >
           {reference}
         </p>
-        <h1 className="typography-page-title mt-1">{detail.title}</h1>
+        <div className="mt-1 flex items-start gap-3">
+          {detail.card_cover_attachment ? (
+            <ActionCardCoverThumb
+              mimeType={detail.card_cover_attachment.mime_type}
+              storagePath={detail.card_cover_attachment.storage_object_path}
+              alt={`${detail.title} cover`}
+            />
+          ) : null}
+          <h1 className="typography-page-title min-w-0 flex-1">
+            {detail.title}
+          </h1>
+        </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Badge
             variant={actionStatusBadgeVariant(detail.status)}
@@ -125,13 +157,42 @@ export function ActionWorkspace({
             </span>
           ) : null}
         </div>
-        {currentAssignee ? (
-          <p className="mt-2 text-sm text-muted-foreground">
-            Assigned to {currentAssignee.display_name}
+        <div className="mt-2 flex items-center gap-2">
+          <PlatformMemberAvatar
+            displayName={currentAssignee?.display_name ?? "Unassigned"}
+            avatarUrl={assigneeAvatarUrl}
+            unassigned={!currentAssignee}
+            showHoverTitle={Boolean(currentAssignee)}
+            size="sm"
+          />
+          <p className="text-sm text-muted-foreground">
+            {currentAssignee
+              ? `Assigned to ${currentAssignee.display_name}`
+              : "Unassigned"}
           </p>
-        ) : (
-          <p className="mt-2 text-sm text-muted-foreground">Unassigned</p>
-        )}
+        </div>
+        {(detail.labels?.length ?? 0) > 0 ? (
+          <div className="mt-3">
+            <ActionPlannerLabelChips labels={detail.labels ?? []} />
+          </div>
+        ) : null}
+        {detail.card_cover_attachment ? (
+          <div className="mt-4" data-testid="action-card-cover-preview">
+            <EvidenceGallery
+              items={[
+                {
+                  id: detail.card_cover_attachment.id,
+                  filename: detail.card_cover_attachment.filename,
+                  mime_type: detail.card_cover_attachment.mime_type,
+                  byte_size: coverEvidence?.byte_size ?? 0,
+                  storage_object_path:
+                    detail.card_cover_attachment.storage_object_path,
+                },
+              ]}
+              heading="Card cover"
+            />
+          </div>
+        ) : null}
       </div>
 
       {source ? (
@@ -240,7 +301,9 @@ export function ActionWorkspace({
       <Tabs defaultValue="overview" className="min-w-0">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="discussion">Discussion</TabsTrigger>
+          <TabsTrigger value="discussion" data-testid="action-tab-discussion">
+            Discussion{commentCount > 0 ? ` (${commentCount})` : ""}
+          </TabsTrigger>
           <TabsTrigger value="evidence">Evidence</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
         </TabsList>
@@ -251,6 +314,21 @@ export function ActionWorkspace({
               <CardTitle>Details</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
+              <ActionPlannerLabelsField
+                key={`planner-labels-${detail.id}-${detail.version}`}
+                actionId={detail.id}
+                assigned={detail.labels ?? []}
+                canEdit={permissions.can_update && editable}
+                canManageCatalog={permissions.can_update}
+                showWhenEmpty={permissions.can_update}
+              />
+              <ActionPlannerChecklist
+                key={`planner-checklist-${detail.id}-${detail.version}`}
+                actionId={detail.id}
+                items={detail.checklist_items ?? []}
+                canEdit={permissions.can_update && editable}
+                showWhenEmpty={permissions.can_update}
+              />
               {permissions.can_update && editable ? (
                 <form
                   className="flex flex-col gap-4"
@@ -401,22 +479,26 @@ export function ActionWorkspace({
         </TabsContent>
 
         <TabsContent value="discussion">
-          <ResourceComments resourceId={detail.id} comments={comments} />
+          <ActionPlannerComments
+            key={`planner-comments-discussion-${detail.id}-${detail.version}-${comments.length}`}
+            actionId={detail.id}
+            comments={comments}
+            canPost={canPostComments}
+            postAsAuthor={currentCommentAuthor}
+            onPosted={() => setCommentPostDelta((count) => count + 1)}
+          />
         </TabsContent>
 
         <TabsContent value="evidence">
-          <Card>
-            <CardHeader>
-              <CardTitle>Evidence</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ActionEvidenceBlock
-                actionId={detail.id}
-                evidence={evidence}
-                canEdit={canUploadEvidence && editable}
-              />
-            </CardContent>
-          </Card>
+          <ActionPlannerAttachments
+            key={`planner-attachments-${detail.id}-${detail.version}`}
+            actionId={detail.id}
+            evidence={evidence}
+            canUpload={canUploadEvidence && editable}
+            canSetCover={permissions.can_update && editable}
+            coverAttachmentId={detail.card_cover_attachment?.id ?? null}
+            {...(onMutated ? { onMutated } : {})}
+          />
         </TabsContent>
 
         <TabsContent value="history">

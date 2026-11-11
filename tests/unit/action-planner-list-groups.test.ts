@@ -30,6 +30,12 @@ function row(
       can_reopen: true,
       can_cancel: true,
     },
+    labels: [],
+    checklist_done: 0,
+    checklist_total: 0,
+    comment_count: 0,
+    card_cover_mime_type: null,
+    card_cover_storage_path: null,
     ...partial,
   };
 }

@@ -123,7 +123,7 @@ export function ActionTaskListRow({
           ) : null}
           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
             <MessageSquare className="size-3.5" aria-hidden />
-            <span className="font-mono-data">0</span>
+            <span className="font-mono-data">{action.comment_count}</span>
           </span>
           <PlatformMemberAvatar
             displayName={assigneeName || "Unassigned"}

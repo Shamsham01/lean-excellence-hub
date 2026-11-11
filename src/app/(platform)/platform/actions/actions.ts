@@ -2,16 +2,26 @@
 
 import { revalidatePath } from "next/cache";
 
+import type { ActionPlannerComment } from "@/components/actions/action-planner-comments";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
 import type { CommentRow } from "@/components/comments/resource-comments";
 import { mapActionMutationError } from "@/lib/actions/errors";
 import { callActionRpc } from "@/lib/actions/supabase-untyped";
-import type { ActionDetail, AssignablePerson } from "@/lib/actions/types";
+import type {
+  ActionDetail,
+  ActionLabel,
+  AssignablePerson,
+} from "@/lib/actions/types";
 import { ACTIONS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-type ActionResult = { error?: string; ok?: true; id?: string };
+type ActionResult = {
+  error?: string;
+  ok?: true;
+  id?: string;
+  warning?: string;
+};
 
 function revalidateActionPaths(actionId?: string, suggestionId?: string) {
   revalidatePath("/platform/actions");
@@ -151,6 +161,261 @@ export async function reopenAction(input: {
   return { ok: true };
 }
 
+export async function listActionLabels(): Promise<{
+  error?: string;
+  labels?: ActionLabel[];
+}> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await callActionRpc<ActionLabel[]>(
+    supabase,
+    "list_action_labels",
+  );
+  if (error) return { error: mapActionMutationError(error) };
+  const labels = Array.isArray(data) ? data : [];
+  return { labels: labels as ActionLabel[] };
+}
+
+export async function setActionLabelsForAction(
+  actionId: string,
+  labelIds: string[],
+): Promise<ActionResult> {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await callActionRpc(supabase, "set_action_labels", {
+    target_action_id: actionId,
+    target_label_ids: labelIds,
+  });
+  if (error) return { error: mapActionMutationError(error) };
+  revalidateActionPaths(actionId);
+  return { ok: true };
+}
+
+export async function addActionChecklistItem(
+  actionId: string,
+  title: string,
+): Promise<ActionResult & { id?: string }> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await callActionRpc<string>(
+    supabase,
+    "add_action_checklist_item",
+    {
+      target_action_id: actionId,
+      target_title: title.trim(),
+    },
+  );
+  if (error) return { error: mapActionMutationError(error) };
+  revalidateActionPaths(actionId);
+  if (typeof data === "string" && data.length > 0) {
+    return { ok: true, id: data };
+  }
+  return { ok: true };
+}
+
+export async function setActionChecklistItemDone(
+  itemId: string,
+  done: boolean,
+  actionId: string,
+): Promise<ActionResult> {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await callActionRpc(
+    supabase,
+    "set_action_checklist_item_done",
+    {
+      target_item_id: itemId,
+      target_done: done,
+    },
+  );
+  if (error) return { error: mapActionMutationError(error) };
+  revalidateActionPaths(actionId);
+  return { ok: true };
+}
+
+export async function deleteActionChecklistItem(
+  itemId: string,
+  actionId: string,
+): Promise<ActionResult> {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await callActionRpc(
+    supabase,
+    "delete_action_checklist_item",
+    { target_item_id: itemId },
+  );
+  if (error) return { error: mapActionMutationError(error) };
+  revalidateActionPaths(actionId);
+  return { ok: true };
+}
+
+export async function moveActionChecklistItem(
+  itemId: string,
+  sortOrder: number,
+  actionId: string,
+): Promise<ActionResult> {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await callActionRpc(
+    supabase,
+    "move_action_checklist_item",
+    {
+      target_item_id: itemId,
+      target_sort_order: sortOrder,
+    },
+  );
+  if (error) return { error: mapActionMutationError(error) };
+  revalidateActionPaths(actionId);
+  return { ok: true };
+}
+
+export async function upsertActionLabel(input: {
+  labelId?: string | null;
+  name: string;
+  color: string;
+}): Promise<ActionResult & { labelId?: string }> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await callActionRpc<string>(
+    supabase,
+    "upsert_action_label",
+    {
+      ...(input.labelId ? { target_label_id: input.labelId } : {}),
+      target_name: input.name.trim(),
+      target_color: input.color,
+    },
+  );
+  if (error) return { error: mapActionMutationError(error) };
+  revalidateActionPaths();
+  if (typeof data === "string" && data.length > 0) {
+    return { ok: true, labelId: data };
+  }
+  return { ok: true };
+}
+
+export async function setActionCardCover(
+  actionId: string,
+  attachmentId: string | null,
+): Promise<ActionResult> {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await callActionRpc(
+    supabase,
+    "set_action_card_cover_attachment",
+    {
+      target_action_id: actionId,
+      target_attachment_id: attachmentId,
+    },
+  );
+  if (error) return { error: mapActionMutationError(error) };
+  revalidateActionPaths(actionId);
+  return { ok: true };
+}
+
+export async function loadActionCreateContext(): Promise<{
+  labels: ActionLabel[];
+  assignablePeople: AssignablePerson[];
+  canManageLabels: boolean;
+}> {
+  const supabase = await createServerSupabaseClient();
+  const [labelsResult, canAssign, canUpdate] = await Promise.all([
+    listActionLabels(),
+    currentMemberHasPermission(ACTIONS_PERMISSIONS.assign),
+    currentMemberHasPermission(ACTIONS_PERMISSIONS.update),
+  ]);
+
+  let assignablePeople: AssignablePerson[] = [];
+  if (canAssign) {
+    const { data: directory } = await supabase.rpc("get_people_directory", {
+      target_page: 1,
+      target_page_size: 200,
+    });
+    type DirectoryPayload = {
+      people?: Array<{
+        membership_id: string;
+        display_name: string | null;
+        avatar_url?: string | null;
+      }>;
+    };
+    const people = (directory as DirectoryPayload | null)?.people ?? [];
+    assignablePeople = people.map((person) => ({
+      membership_id: person.membership_id,
+      display_name: person.display_name?.trim() || "Team member",
+      avatar_url: person.avatar_url ?? null,
+    }));
+  }
+
+  return {
+    labels: labelsResult.labels ?? [],
+    assignablePeople,
+    canManageLabels: canUpdate,
+  };
+}
+
+export async function createPlannerAction(input: {
+  title: string;
+  description: string;
+  dueAt: string | null;
+  assigneeMembershipId: string | null;
+  labelIds: string[];
+  checklistTitles: string[];
+}): Promise<ActionResult> {
+  const canCreate = await currentMemberHasPermission(
+    ACTIONS_PERMISSIONS.create,
+  );
+  if (!canCreate) {
+    return { error: "You do not have permission to create actions." };
+  }
+
+  const title = input.title.trim();
+  if (!title) return { error: "Title is required." };
+
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase.rpc("create_action", {
+    target_title: title,
+    ...(input.description.trim()
+      ? { target_description: input.description.trim() }
+      : {}),
+    target_priority: "normal",
+    ...(input.dueAt ? { target_due_at: input.dueAt } : {}),
+  });
+  if (error) return { error: mapActionMutationError(error) };
+  const actionId = data as string;
+
+  function partialSuccess(failedStep: string, message: string): ActionResult {
+    revalidateActionPaths(actionId);
+    return {
+      ok: true,
+      id: actionId,
+      warning: `${failedStep} could not be applied: ${message} The action was created — open it to finish setup.`,
+    };
+  }
+
+  if (input.assigneeMembershipId) {
+    const assignResult = await setActionAssignee({
+      actionId,
+      membershipId: input.assigneeMembershipId,
+    });
+    if (assignResult.error) {
+      return partialSuccess("Assignee", assignResult.error);
+    }
+  }
+
+  if (input.labelIds.length > 0) {
+    const labelResult = await setActionLabelsForAction(
+      actionId,
+      input.labelIds,
+    );
+    if (labelResult.error) {
+      return partialSuccess("Labels", labelResult.error);
+    }
+  }
+
+  for (const checklistTitle of input.checklistTitles) {
+    const trimmed = checklistTitle.trim();
+    if (!trimmed) continue;
+    const itemResult = await addActionChecklistItem(actionId, trimmed);
+    if (itemResult.error) {
+      return partialSuccess("Checklist", itemResult.error);
+    }
+  }
+
+  revalidateActionPaths(actionId);
+  return { ok: true, id: actionId };
+}
+
 export async function initiateActionEvidenceUpload(
   actionId: string,
   filename: string,
@@ -194,12 +459,22 @@ export async function confirmActionEvidenceUpload(
   return {};
 }
 
+export type ActionCommentAuthor = {
+  membership_id: string;
+  display_name: string;
+  avatar_url: string | null;
+};
+
 type ActionSheetPayload = {
   detail: ActionDetail;
-  comments: CommentRow[];
+  comments: ActionPlannerComment[];
+  legacyComments: CommentRow[];
   evidence: EvidenceItem[];
   assignablePeople: AssignablePerson[];
   canUploadEvidence: boolean;
+  canPostComments: boolean;
+  currentCommentAuthor: ActionCommentAuthor | null;
+  assigneeAvatarUrl: string | null;
 };
 
 export async function loadActionSheetPayload(
@@ -222,6 +497,7 @@ export async function loadActionSheetPayload(
 
   const canUploadEvidence =
     await currentMemberHasPermission("attachments.upload");
+  const canPostComments = await currentMemberHasPermission("comments.create");
   const canAssign = await currentMemberHasPermission(
     ACTIONS_PERMISSIONS.assign,
   );
@@ -234,7 +510,7 @@ export async function loadActionSheetPayload(
 
   const { data: evidence } = await supabase
     .from("attachments")
-    .select("id, filename, mime_type, byte_size")
+    .select("id, filename, mime_type, byte_size, storage_object_path")
     .eq("target_resource_id", actionId)
     .eq("lifecycle", "active")
     .order("created_at");
@@ -245,16 +521,18 @@ export async function loadActionSheetPayload(
       target_page: 1,
       target_page_size: 200,
     });
-    type DirectoryPayload = {
+    type AssignDirectoryPayload = {
       people?: Array<{
         membership_id: string;
         display_name: string | null;
+        avatar_url?: string | null;
       }>;
     };
-    const people = (directory as DirectoryPayload | null)?.people ?? [];
+    const people = (directory as AssignDirectoryPayload | null)?.people ?? [];
     assignablePeople = people.map((person) => ({
       membership_id: person.membership_id,
       display_name: person.display_name?.trim() || "Team member",
+      avatar_url: person.avatar_url ?? null,
     }));
 
     for (const assignee of detail.assignees) {
@@ -271,10 +549,67 @@ export async function loadActionSheetPayload(
     }
   }
 
+  const { data: directory } = await supabase.rpc("get_people_directory", {
+    target_page: 1,
+    target_page_size: 500,
+  });
+  type DirectoryPayload = {
+    people?: Array<{
+      membership_id: string;
+      display_name: string | null;
+      avatar_url?: string | null;
+    }>;
+  };
+  const directoryPeople = (directory as DirectoryPayload | null)?.people ?? [];
+  const peopleById = new Map(
+    directoryPeople.map((person) => [person.membership_id, person]),
+  );
+
+  const enrichedComments: ActionPlannerComment[] = (comments ?? []).map(
+    (row) => {
+      const author = peopleById.get(row.author_membership_id);
+      return {
+        id: row.id,
+        body: row.body,
+        created_at: row.created_at,
+        author_membership_id: row.author_membership_id,
+        author_display_name: author?.display_name?.trim() || "Team member",
+        author_avatar_url: author?.avatar_url ?? null,
+      };
+    },
+  );
+
+  const { data: ownProfile } = await supabase.rpc("get_own_membership_profile");
+  type OwnMembership = {
+    membership_id?: string;
+    display_name?: string | null;
+  };
+  const own = ownProfile as OwnMembership | null;
+  const ownMembershipId = own?.membership_id ?? null;
+  const ownFromDirectory = ownMembershipId
+    ? peopleById.get(ownMembershipId)
+    : undefined;
+  const currentCommentAuthor: ActionCommentAuthor | null = ownMembershipId
+    ? {
+        membership_id: ownMembershipId,
+        display_name:
+          ownFromDirectory?.display_name?.trim() ||
+          own?.display_name?.trim() ||
+          "Team member",
+        avatar_url: ownFromDirectory?.avatar_url ?? null,
+      }
+    : null;
+
+  const assigneeMembershipId = detail.assignees[0]?.membership_id ?? null;
+  const assigneeAvatarUrl = assigneeMembershipId
+    ? (peopleById.get(assigneeMembershipId)?.avatar_url ?? null)
+    : null;
+
   return {
     payload: {
       detail,
-      comments: (comments ?? []) as ActionSheetPayload["comments"],
+      comments: enrichedComments,
+      legacyComments: (comments ?? []) as CommentRow[],
       evidence: (evidence ?? [])
         .filter((item) => item.byte_size != null)
         .map((item): ActionSheetPayload["evidence"][number] => ({
@@ -282,9 +617,13 @@ export async function loadActionSheetPayload(
           filename: item.filename,
           mime_type: item.mime_type,
           byte_size: item.byte_size as number,
+          storage_object_path: item.storage_object_path,
         })),
       assignablePeople,
       canUploadEvidence,
+      canPostComments,
+      currentCommentAuthor,
+      assigneeAvatarUrl,
     },
   };
 }

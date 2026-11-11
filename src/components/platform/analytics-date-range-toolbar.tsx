@@ -1,7 +1,8 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { cn } from "@/lib/utils";
 import { ANALYTICS_RANGE_OPTIONS } from "@/modules/platform-analytics/date-range";
 
@@ -13,41 +14,30 @@ export function AnalyticsDateRangeToolbar({
   className?: string;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const active = Number(searchParams.get(paramName) ?? "30");
+  const raw = searchParams.get(paramName);
+  const active = raw ? Number(raw) : 30;
 
   return (
-    <div
+    <SegmentedControl
+      aria-label="Analytics date range"
       className={cn(
-        "inline-flex flex-wrap gap-1 rounded-lg border border-border bg-card p-1",
+        "border-border bg-card [&_button[aria-checked=true]]:bg-primary [&_button[aria-checked=true]]:text-primary-foreground",
         className,
       )}
-      role="group"
-      aria-label="Analytics date range"
-      data-testid="analytics-date-range"
-    >
-      {ANALYTICS_RANGE_OPTIONS.map((days) => {
-        const selected =
-          active === days || (!searchParams.get(paramName) && days === 30);
+      optionTestIdPrefix="analytics-range"
+      value={String(active)}
+      onChange={(next) => {
         const params = new URLSearchParams(searchParams.toString());
-        params.set(paramName, String(days));
-        const href = `${pathname}?${params.toString()}`;
-        return (
-          <a
-            key={days}
-            href={href}
-            className={cn(
-              "min-h-9 rounded-md px-3 text-sm font-medium transition-colors",
-              selected
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-            )}
-            data-testid={`analytics-range-${days}`}
-          >
-            {days} days
-          </a>
-        );
-      })}
-    </div>
+        params.set(paramName, next);
+        router.push(`${pathname}?${params.toString()}`);
+      }}
+      options={ANALYTICS_RANGE_OPTIONS.map((days) => ({
+        value: String(days),
+        label: `${days} days`,
+      }))}
+      data-testid="analytics-date-range"
+    />
   );
 }

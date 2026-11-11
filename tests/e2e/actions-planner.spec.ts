@@ -4,6 +4,11 @@ import { signInAsDemoUser } from "./helpers/demo-auth";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
+const TINY_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  "base64",
+);
+
 async function attachDialogScreenshot(
   page: import("@playwright/test").Page,
   testInfo: TestInfo,
@@ -49,6 +54,13 @@ test.describe("Actions planner workspace", () => {
     await expect(page.getByTestId("action-detail-sheet-body")).toBeVisible({
       timeout: 30_000,
     });
+    await expect(page.getByTestId("action-planner-checklist")).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByTestId("action-planner-labels")).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.locator('[data-planner-task-dialog=""]')).toBeVisible();
   });
 
   test("persists the selected view in localStorage", async ({ page }) => {
@@ -172,5 +184,168 @@ test.describe("Actions planner workspace", () => {
     const avatar = page.getByTestId("platform-sidebar-avatar");
     await expect(avatar).toBeVisible();
     await expect(avatar).not.toBeEmpty();
+  });
+
+  test("planner sheet: checklist, labels, comment, attachment, and full create", async ({
+    page,
+  }, testInfo) => {
+    testInfo.setTimeout(180_000);
+    await signInAsDemoUser(page, "admin");
+    await page.goto("/platform/actions");
+
+    const createTitle = `E2E planner full ${Date.now()}`;
+    await page.getByTestId("actions-add-new").click();
+    await expect(page.getByTestId("action-create-checklist")).toBeVisible();
+    await page.locator("#action-create-title").fill(createTitle);
+
+    const assigneeSelect = page.getByTestId("action-create-assignee");
+    const assigneeOptions = assigneeSelect.locator("option");
+    if ((await assigneeOptions.count()) > 1) {
+      await assigneeSelect.selectOption({
+        index: 1,
+      });
+    }
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 2);
+    const dueValue = tomorrow.toISOString().slice(0, 10);
+    await page.getByTestId("action-create-due").fill(dueValue);
+
+    await expect(page.getByTestId("action-create-labels")).toBeVisible();
+    await expect(
+      page.locator(
+        '[data-testid="action-create-labels"][data-labels-ready="ready"]',
+      ),
+    ).toBeVisible({ timeout: 20_000 });
+    const createLabelToggle = page
+      .locator('[data-testid^="action-create-label-"]')
+      .first();
+    if (await createLabelToggle.isVisible()) {
+      if ((await createLabelToggle.getAttribute("aria-pressed")) === "false") {
+        await createLabelToggle.click();
+      }
+    }
+
+    await page
+      .getByTestId("action-create-checklist-add")
+      .fill("Ship checklist item");
+    await page.getByTestId("action-create-checklist-add").press("Enter");
+    await page.getByTestId("actions-create-submit").click();
+    await expect(page.getByTestId("actions-create-dialog")).not.toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByTestId("action-detail-sheet-body")).toContainText(
+      createTitle,
+      { timeout: 30_000 },
+    );
+    const sheet = page.getByTestId("action-detail-sheet");
+    await expect(page.getByTestId("action-planner-checklist")).toContainText(
+      "Ship checklist item",
+    );
+
+    const checklist = page.getByTestId("action-planner-checklist");
+    await checklist
+      .getByTestId("action-planner-checklist-add")
+      .fill("Second item");
+    await checklist.getByRole("button", { name: "Add" }).click();
+
+    const firstCheckbox = checklist.getByRole("checkbox").first();
+    await firstCheckbox.click();
+    await expect(firstCheckbox).toBeChecked();
+
+    const deleteSecond = checklist
+      .getByRole("listitem")
+      .filter({ hasText: "Second item" })
+      .getByRole("button", { name: /Delete/i });
+    await deleteSecond.click();
+    await expect(checklist).not.toContainText("Second item");
+
+    const moveDown = checklist
+      .getByRole("listitem")
+      .filter({ hasText: "Ship checklist item" })
+      .getByRole("button", { name: /Move.*down/i });
+    if (await moveDown.isEnabled()) {
+      await moveDown.click();
+    }
+
+    const labelToggle = page
+      .getByTestId("action-planner-labels")
+      .getByRole("button", { pressed: false })
+      .first();
+    await labelToggle.click();
+
+    const newLabelName = `E2E label ${Date.now()}`;
+    await sheet.getByTestId("action-planner-labels").scrollIntoViewIfNeeded();
+    const newLabelBtn = page.getByTestId("action-label-create");
+    await expect(newLabelBtn).toBeVisible();
+    await newLabelBtn.click();
+    await expect(page.getByTestId("action-label-manage-dialog")).toBeVisible({
+      timeout: 15_000,
+    });
+    await page.getByTestId("action-label-manage-name").fill(newLabelName);
+    await page.getByTestId("action-label-manage-color").fill("#10B981");
+    await page.getByTestId("action-label-manage-save").click();
+    await expect(page.getByTestId("action-planner-labels")).toContainText(
+      newLabelName,
+      { timeout: 15_000 },
+    );
+
+    const renamed = `${newLabelName} renamed`;
+    await page
+      .getByTestId("action-planner-labels")
+      .getByRole("button", { name: `Edit ${newLabelName}` })
+      .click();
+    await page.getByTestId("action-label-manage-name").fill(renamed);
+    await page.getByTestId("action-label-manage-save").click();
+    await expect(page.getByTestId("action-planner-labels")).toContainText(
+      renamed,
+      { timeout: 15_000 },
+    );
+
+    await page.getByRole("tab", { name: /Discussion/ }).click();
+    await page.getByTestId("action-planner-comment-input").fill("E2E comment");
+    await page.getByTestId("action-planner-comment-post").click();
+    await expect(page.getByTestId("action-planner-comments")).toContainText(
+      "E2E comment",
+      { timeout: 15_000 },
+    );
+    await expect(page.getByTestId("action-tab-discussion")).toContainText("(");
+
+    await page.getByRole("tab", { name: "Evidence" }).click();
+    const fileInput = page.getByTestId("evidence-file-input");
+    await fileInput.setInputFiles({
+      name: "e2e-planner-note.txt",
+      mimeType: "text/plain",
+      buffer: Buffer.from("Planner attachment"),
+    });
+    await expect(page.getByTestId("evidence-uploader")).toContainText(
+      "e2e-planner-note.txt",
+      { timeout: 30_000 },
+    );
+
+    await fileInput.setInputFiles({
+      name: "e2e-cover.png",
+      mimeType: "image/png",
+      buffer: TINY_PNG,
+    });
+    await expect(page.getByTestId("evidence-uploader")).toContainText(
+      "e2e-cover.png",
+      { timeout: 30_000 },
+    );
+    const setCover = page.locator('[data-testid^="action-set-cover-"]').first();
+    await expect(setCover).toBeVisible({ timeout: 30_000 });
+    await setCover.scrollIntoViewIfNeeded();
+    await setCover.click();
+    await expect(setCover).toContainText("Cover", { timeout: 15_000 });
+    await expect(
+      page.locator('[data-testid^="evidence-preview-"]').first(),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("action-card-cover-preview")).toBeVisible({
+      timeout: 30_000,
+    });
+    await page.getByRole("tab", { name: "Overview" }).click();
+    const coverThumb = page.getByTestId("action-card-cover-thumb");
+    await coverThumb.scrollIntoViewIfNeeded();
+    await expect(coverThumb).toBeVisible({ timeout: 30_000 });
   });
 });
