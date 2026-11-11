@@ -3,7 +3,9 @@ function parseHexChannel(hex: string, index: number): number {
 }
 
 /** Relative luminance for sRGB hex (#RRGGBB); picks black or white for ~4.5:1 text. */
-export function labelChipTextClass(hexColor: string): "text-white" | "text-black" {
+export function labelChipTextClass(
+  hexColor: string,
+): "text-white" | "text-black" {
   const hex = hexColor.replace("#", "").trim();
   if (hex.length !== 6) return "text-white";
   const r = parseHexChannel(hex, 0) / 255;

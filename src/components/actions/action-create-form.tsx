@@ -46,7 +46,7 @@ function readDraftFromForm(form: HTMLFormElement | null) {
     title: String(formData.get("title") ?? "").trim(),
     description: String(formData.get("description") ?? "").trim(),
   };
-};
+}
 
 export function ActionCreateDialog({
   open,
@@ -114,10 +114,10 @@ export function ActionCreateDialog({
     if (!plannerMode) return false;
     return Boolean(
       assigneeId ||
-        dueAt ||
-        selectedLabelIds.length > 0 ||
-        checklistTitles.length > 0 ||
-        checklistDraft.trim(),
+      dueAt ||
+      selectedLabelIds.length > 0 ||
+      checklistTitles.length > 0 ||
+      checklistDraft.trim(),
     );
   }
 
@@ -374,7 +374,9 @@ export function ActionCreateDialog({
                   className="flex flex-col gap-2"
                   data-testid="action-create-checklist"
                 >
-                  <Label htmlFor="action-create-checklist-input">Checklist</Label>
+                  <Label htmlFor="action-create-checklist-input">
+                    Checklist
+                  </Label>
                   <ul className="flex flex-col gap-1">
                     {checklistTitles.map((title, index) => (
                       <li
@@ -402,7 +404,9 @@ export function ActionCreateDialog({
                     <Input
                       id="action-create-checklist-input"
                       value={checklistDraft}
-                      onChange={(event) => setChecklistDraft(event.target.value)}
+                      onChange={(event) =>
+                        setChecklistDraft(event.target.value)
+                      }
                       placeholder="Add checklist item"
                       disabled={pending}
                       data-testid="action-create-checklist-add"

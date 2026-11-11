@@ -58,12 +58,17 @@ export function ActionPlannerAttachments({
       />
       {canSetCover && imageEvidence.length > 0 ? (
         <div className="flex flex-col gap-2 border-t border-border pt-3">
-          <p className="text-xs font-medium text-muted-foreground">Card cover</p>
+          <p className="text-xs font-medium text-muted-foreground">
+            Card cover
+          </p>
           <ul className="flex flex-col gap-2">
             {imageEvidence.map((item) => {
               const isCover = coverAttachmentId === item.id;
               return (
-                <li key={item.id} className="flex items-center justify-between gap-2">
+                <li
+                  key={item.id}
+                  className="flex items-center justify-between gap-2"
+                >
                   <span className="truncate text-sm">{item.filename}</span>
                   <Button
                     type="button"

@@ -378,7 +378,10 @@ export async function createPlannerAction(input: {
   }
 
   if (input.labelIds.length > 0) {
-    const labelResult = await setActionLabelsForAction(actionId, input.labelIds);
+    const labelResult = await setActionLabelsForAction(
+      actionId,
+      input.labelIds,
+    );
     if (labelResult.error) return labelResult;
   }
 
@@ -540,8 +543,7 @@ export async function loadActionSheetPayload(
         body: row.body,
         created_at: row.created_at,
         author_membership_id: row.author_membership_id,
-        author_display_name:
-          author?.display_name?.trim() || "Team member",
+        author_display_name: author?.display_name?.trim() || "Team member",
         author_avatar_url: author?.avatar_url ?? null,
       };
     },

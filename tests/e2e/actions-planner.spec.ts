@@ -191,7 +191,9 @@ test.describe("Actions planner workspace", () => {
     tomorrow.setDate(tomorrow.getDate() + 2);
     const dueValue = tomorrow.toISOString().slice(0, 10);
     await page.getByTestId("action-create-due").fill(dueValue);
-    await page.getByTestId("action-create-checklist-add").fill("Ship checklist item");
+    await page
+      .getByTestId("action-create-checklist-add")
+      .fill("Ship checklist item");
     await page.getByTestId("action-create-checklist-add").press("Enter");
     await page.getByTestId("actions-create-submit").click();
     await expect(page.getByTestId("action-detail-sheet-body")).toContainText(

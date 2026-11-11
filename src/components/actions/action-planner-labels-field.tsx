@@ -138,7 +138,10 @@ export function ActionPlannerLabelsField({
                 variant={active ? "default" : "outline"}
                 disabled={pending}
                 aria-pressed={active}
-                className={cn("h-7 text-xs", active && labelChipTextClass(label.color))}
+                className={cn(
+                  "h-7 text-xs",
+                  active && labelChipTextClass(label.color),
+                )}
                 style={
                   active
                     ? { backgroundColor: label.color, borderColor: label.color }
@@ -175,7 +178,10 @@ export function ActionPlannerLabelsField({
       ) : null}
 
       <Dialog open={manageOpen} onOpenChange={setManageOpen}>
-        <DialogContent className="max-w-sm" data-testid="action-label-manage-dialog">
+        <DialogContent
+          className="max-w-sm"
+          data-testid="action-label-manage-dialog"
+        >
           <DialogHeader>
             <DialogTitle>{editId ? "Edit label" : "Create label"}</DialogTitle>
           </DialogHeader>
@@ -203,7 +209,11 @@ export function ActionPlannerLabelsField({
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setManageOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setManageOpen(false)}
+            >
               Cancel
             </Button>
             <Button

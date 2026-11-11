@@ -101,7 +101,7 @@ export function ActionPlannerComments({
                     })}
                   </span>
                 </p>
-                <p className="mt-0.5 whitespace-pre-wrap text-sm text-foreground">
+                <p className="mt-0.5 text-sm whitespace-pre-wrap text-foreground">
                   {plainTextBody(comment.body)}
                 </p>
               </div>
