@@ -22,6 +22,7 @@ import { loginAsCookieWorksPersona } from "./helpers/cookieworks-auth";
 import {
   createPublishableClient,
   createServiceRoleClient,
+  queryDatabase,
 } from "./helpers/workforce-provisioning";
 
 const run = Date.now().toString(36);
@@ -114,7 +115,11 @@ async function rpc<T>(
   return data as T;
 }
 
-/** Inserts active, enrolled members via service role (RLS-safe). */
+function sqlString(value: string) {
+  return `'${value.replace(/'/g, "''")}'`;
+}
+
+/** Auth via service role; membership row via local DB (table is not API-writable). */
 async function seedMembers(names: string[]): Promise<string[]> {
   const service = createServiceRoleClient();
   const membershipIds: string[] = [];
@@ -137,23 +142,25 @@ async function seedMembers(names: string[]): Promise<string[]> {
     if (enrolmentError) {
       throw enrolmentError;
     }
-    const { data, error } = await service
-      .from("organisation_memberships")
-      .insert({
-        organisation_id: ids.organisationId,
-        user_id: userId,
-        display_name: displayName,
-        status: "active",
-        activated_at: new Date().toISOString(),
-      })
-      .select("id")
-      .single();
-    if (error) {
+    const rows = queryDatabase<{ membership_id: string }>(`
+      insert into public.organisation_memberships (
+        organisation_id, user_id, display_name, status, activated_at
+      ) values (
+        ${sqlString(ids.organisationId)}::uuid,
+        ${sqlString(userId)}::uuid,
+        ${sqlString(displayName)},
+        'active',
+        now()
+      )
+      returning id as membership_id;
+    `);
+    const row = rows[0];
+    if (!row) {
       throw new Error(
-        `seedMembers membership insert for ${displayName}: ${error.message}`,
+        `seedMembers expected 1 membership for ${displayName}, inserted ${rows.length}`,
       );
     }
-    membershipIds.push(data.id);
+    membershipIds.push(row.membership_id);
   }
   return membershipIds;
 }
