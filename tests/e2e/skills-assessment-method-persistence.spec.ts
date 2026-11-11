@@ -94,7 +94,10 @@ test.describe("Skill assessment method persistence (Spec A)", () => {
     await expect(page.getByTestId("capability-profile-page")).toBeVisible();
     await expect(historyRows).toHaveCount(before + 1);
 
-    const rows = queryDatabase<{ assessment_method: string; assertion_type: string }>(
+    const rows = queryDatabase<{
+      assessment_method: string;
+      assertion_type: string;
+    }>(
       `select assessment_row.assessment_method, assessment_row.assertion_type
        from public.membership_skill_assessments assessment_row
        join public.organisation_memberships membership_row

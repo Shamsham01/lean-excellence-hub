@@ -116,7 +116,9 @@ describe("drift guards", () => {
   it("matches the allow-list in the latest private.record_skill_validation migration", () => {
     const sql = latestValidationMigration();
     const fn = sql.slice(
-      sql.indexOf("create or replace function private.record_skill_validation("),
+      sql.indexOf(
+        "create or replace function private.record_skill_validation(",
+      ),
     );
     const inList = fn.match(/not in \(([\s\S]*?)\)/);
     expect(inList).not.toBeNull();
