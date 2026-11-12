@@ -26,11 +26,9 @@ export function FiveSAuditRaiseAction({
   const [createOpen, setCreateOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [createdActionId, setCreatedActionId] = useState<string | null>(null);
-  const [localCount, setLocalCount] = useState(actionCount);
 
   function handleCreated(actionId: string) {
     setCreatedActionId(actionId);
-    setLocalCount((prev) => prev + 1);
     setSheetOpen(true);
     onActionCreated?.();
   }
@@ -48,9 +46,9 @@ export function FiveSAuditRaiseAction({
         >
           Raise action
         </Button>
-        {localCount > 0 ? (
+        {actionCount > 0 ? (
           <Badge variant="secondary" data-testid="five-s-question-action-count">
-            {localCount} action{localCount === 1 ? "" : "s"}
+            {actionCount} action{actionCount === 1 ? "" : "s"}
           </Badge>
         ) : null}
       </div>

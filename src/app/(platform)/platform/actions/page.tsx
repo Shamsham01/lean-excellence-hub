@@ -11,6 +11,7 @@ import { loadActionPlannerSummaries } from "@/lib/actions/load-planner-summaries
 import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
 import { ACTIONS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { formatFiveSAuditStatus } from "@/modules/5s/audit-status";
 import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -136,7 +137,7 @@ export default async function ActionsPage({
               const labelParts = [
                 audit.standard_name_snapshot ?? "5S audit",
                 audit.unit_name_snapshot,
-                audit.status === "in_progress" ? "In progress" : audit.status,
+                formatFiveSAuditStatus(audit.status),
               ].filter(Boolean);
               return {
                 id: audit.id,

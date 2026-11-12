@@ -139,6 +139,9 @@ export function FiveSAuditWorkspace({
     s.questions.map((q) => ({ section: s, question: q })),
   );
   const [index, setIndex] = useState(0);
+  const [countsByQuestion, setCountsByQuestion] = useState(
+    () => actionCountsByQuestion,
+  );
   const [navigating, setNavigating] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [completeError, setCompleteError] = useState<string | null>(null);
@@ -465,13 +468,21 @@ export function FiveSAuditWorkspace({
 
           {canEdit ? (
             <FiveSAuditRaiseAction
+              key={current.question.id}
               linkContext={{
                 auditId,
                 sectionId: current.section.id,
                 questionId: current.question.id,
                 defaultTitle: current.question.prompt,
               }}
-              actionCount={actionCountsByQuestion[current.question.id] ?? 0}
+              actionCount={countsByQuestion[current.question.id] ?? 0}
+              onActionCreated={() => {
+                const questionId = current.question.id;
+                setCountsByQuestion((prev) => ({
+                  ...prev,
+                  [questionId]: (prev[questionId] ?? 0) + 1,
+                }));
+              }}
             />
           ) : null}
         </div>
