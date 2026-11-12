@@ -367,7 +367,7 @@ describe("LehBrand", () => {
 });
 
 describe("site identity metadata", () => {
-  it("points at the web manifest and registers theme-aware tab icons", () => {
+  it("points at the web manifest and uses the dark mark for tab icons", () => {
     expect(rootMetadata.manifest).toBe("/site.webmanifest");
     expect(rootMetadata.applicationName).toBe(LEH_BRAND.name);
     expect(rootMetadata.icons?.apple).toEqual([
@@ -389,21 +389,12 @@ describe("site identity metadata", () => {
       ),
     ).toBe(true);
     expect(
-      icons?.some(
+      icons?.every(
         (entry) =>
-          typeof entry === "object" &&
-          entry !== null &&
-          "url" in entry &&
-          String(entry.url).includes("leh-icon-light-128"),
-      ),
-    ).toBe(true);
-    expect(
-      icons?.some(
-        (entry) =>
-          typeof entry === "object" &&
-          entry !== null &&
-          "media" in entry &&
-          String(entry.media).includes("prefers-color-scheme: light"),
+          typeof entry !== "object" ||
+          entry === null ||
+          !("media" in entry) ||
+          entry.media === undefined,
       ),
     ).toBe(true);
   });
