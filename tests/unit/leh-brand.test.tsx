@@ -397,28 +397,49 @@ describe("site identity metadata", () => {
           entry.media === undefined,
       ),
     ).toBe(true);
+    expect(
+      icons?.some(
+        (entry) =>
+          typeof entry === "object" &&
+          entry !== null &&
+          "url" in entry &&
+          String(entry.url).includes("leh-icon-dark.svg") &&
+          "type" in entry &&
+          entry.type === "image/svg+xml",
+      ),
+    ).toBe(true);
   });
 
-  it("renders sidebar lockups as PNG masters in a full-width slot", () => {
+  it("renders sidebar lockups with SVG-first theme sources in a full-width slot", () => {
     render(
       <LehBrand
         decorative
-        lockupRasterOnly
         variant="full"
         className="leh-brand--platform-sidebar"
       />,
     );
     const brand = screen.getByTestId("leh-brand");
-    expect(brand.querySelector("picture source")).toBeNull();
-    const rasterSources = [
-      ...brand.querySelectorAll(".leh-brand-lockup-img"),
-    ].map((node) => node.getAttribute("src"));
+    expect(brand.querySelector("picture source")).not.toBeNull();
+    const vectorSources = [...brand.querySelectorAll("source")].map((node) =>
+      node.getAttribute("srcset"),
+    );
     expect(
-      rasterSources.some((src) => src?.includes("leh-horizontal-light.png")),
+      vectorSources.some((src) => src?.includes("leh-horizontal-light.svg")),
     ).toBe(true);
     expect(
-      rasterSources.some((src) => src?.includes("leh-horizontal-dark.png")),
+      vectorSources.some((src) => src?.includes("leh-horizontal-dark.svg")),
     ).toBe(true);
+  });
+
+  it("trims transparent margin from horizontal SVG viewBoxes", () => {
+    for (const path of [
+      "public/brand/leh-horizontal-light.svg",
+      "public/brand/leh-horizontal-dark.svg",
+    ]) {
+      const file = svgRoot(path);
+      expect(file).toContain('viewBox="123.688 116.229 1105.732 220.649"');
+      expect(file).toContain('preserveAspectRatio="xMinYMid meet"');
+    }
   });
 
   it("registers SVG-first theme lockups and icons with PNG raster fallbacks", () => {

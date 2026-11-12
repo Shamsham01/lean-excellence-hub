@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 
 /**
  * Root metadata. Tab and app icons come from App Router files in `src/app/`
- * (`favicon.ico`, `icon.png`, `apple-icon.png`), generated from
- * `public/brand/leh-icon-dark.png` for all browser chrome themes.
+ * (`favicon.ico`, `icon.png`, `apple-icon.png`), with `leh-icon-dark.svg`
+ * preferred in metadata; PNG and ICO remain as fallbacks for all browser chrome.
  */
 export const rootMetadata = {
   applicationName: "Lean Excellence Hub",
@@ -12,6 +12,10 @@ export const rootMetadata = {
   title: "Lean Excellence Hub",
   icons: {
     icon: [
+      {
+        url: "/brand/leh-icon-dark.svg",
+        type: "image/svg+xml",
+      },
       {
         url: "/icon.png",
         type: "image/png",
