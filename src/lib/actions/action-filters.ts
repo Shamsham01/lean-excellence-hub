@@ -20,6 +20,7 @@ export type ActionListFilters = {
   assessment: string | null;
   pillar: string | null;
   criterion: string | null;
+  audit: string | null;
 };
 
 const SOURCE_VALUES = new Set<string>(
@@ -42,6 +43,7 @@ export function parseActionListFilters(
     assessment: emptyToNull(firstParam(searchParams.assessment)),
     pillar: emptyToNull(firstParam(searchParams.pillar)),
     criterion: emptyToNull(firstParam(searchParams.criterion)),
+    audit: emptyToNull(firstParam(searchParams.audit)),
   };
 }
 
@@ -54,6 +56,7 @@ export function buildActionListQuery(filters: ActionListFilters): string {
   if (filters.assessment) params.set("assessment", filters.assessment);
   if (filters.pillar) params.set("pillar", filters.pillar);
   if (filters.criterion) params.set("criterion", filters.criterion);
+  if (filters.audit) params.set("audit", filters.audit);
   return params.toString();
 }
 
@@ -66,6 +69,20 @@ export function assessmentActionsHref(assessmentId: string): string {
     assessment: assessmentId,
     pillar: null,
     criterion: null,
+    audit: null,
+  })}`;
+}
+
+export function fiveSAuditActionsHref(auditId: string): string {
+  return `/platform/actions?${buildActionListQuery({
+    source: "five_s_audit",
+    status: null,
+    assignee: null,
+    unit: null,
+    assessment: null,
+    pillar: null,
+    criterion: null,
+    audit: auditId,
   })}`;
 }
 

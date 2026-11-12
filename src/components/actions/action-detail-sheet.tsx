@@ -28,6 +28,7 @@ type LoadedSheetState = {
   canPostComments: boolean;
   currentCommentAuthor: ActionCommentAuthor | null;
   assigneeAvatarUrl: string | null;
+  fiveSQuestionPrompt: string | null;
 };
 
 export function ActionDetailSheet({
@@ -126,6 +127,7 @@ export function ActionDetailSheet({
                 canPostComments={state.canPostComments}
                 currentCommentAuthor={state.currentCommentAuthor}
                 assigneeAvatarUrl={state.assigneeAvatarUrl}
+                fiveSQuestionPrompt={state.fiveSQuestionPrompt}
                 onMutated={reloadSheet}
                 showBackLink={false}
               />

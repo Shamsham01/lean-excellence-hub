@@ -31,6 +31,7 @@ function countActiveFilters(filters: ActionListFilters): number {
   if (filters.assessment) count += 1;
   if (filters.pillar) count += 1;
   if (filters.criterion) count += 1;
+  if (filters.audit) count += 1;
   return count;
 }
 
@@ -41,6 +42,7 @@ export function ActionFiltersPopover({
   assessments,
   pillars,
   criteria,
+  audits,
   className,
 }: {
   filters: ActionListFilters;
@@ -49,6 +51,7 @@ export function ActionFiltersPopover({
   assessments: Option[];
   pillars: Option[];
   criteria: Option[];
+  audits: Option[];
   className?: string;
 }) {
   const router = useRouter();
@@ -62,6 +65,8 @@ export function ActionFiltersPopover({
 
   const showMaturityContext =
     filters.source === "maturity_assessment" || Boolean(filters.assessment);
+  const showFiveSAuditContext =
+    filters.source === "five_s_audit" || Boolean(filters.audit);
 
   return (
     <Popover>
@@ -241,6 +246,33 @@ export function ActionFiltersPopover({
                 </select>
               </div>
             </>
+          ) : null}
+          {showFiveSAuditContext ? (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="action-audit">Audit</Label>
+              <select
+                id="action-audit"
+                name="audit"
+                value={filters.audit ?? ""}
+                className="min-h-9 rounded-md border border-border bg-background px-3 text-sm"
+                data-testid="action-audit-filter"
+                onChange={(event) =>
+                  applyChange({
+                    audit: event.target.value.trim() || null,
+                    ...(event.target.value.trim()
+                      ? { source: "five_s_audit" as const }
+                      : {}),
+                  })
+                }
+              >
+                <option value="">All 5S audits</option>
+                {audits.map((audit) => (
+                  <option key={audit.id} value={audit.id}>
+                    {audit.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           ) : null}
           {activeCount > 0 ? (
             <Button

@@ -58,6 +58,7 @@ export function ActionWorkspace({
   canPostComments = false,
   currentCommentAuthor = null,
   assigneeAvatarUrl = null,
+  fiveSQuestionPrompt = null,
   onMutated,
   showBackLink = true,
 }: {
@@ -73,6 +74,7 @@ export function ActionWorkspace({
     avatar_url: string | null;
   } | null;
   assigneeAvatarUrl?: string | null;
+  fiveSQuestionPrompt?: string | null;
   onMutated?: () => void;
   showBackLink?: boolean;
 }) {
@@ -212,6 +214,15 @@ export function ActionWorkspace({
                 {sourceLabel(source)}
               </p>
             )}
+            {fiveSQuestionPrompt && source.href ? (
+              <AppLink
+                href={source.href}
+                className="mt-2 block text-sm text-muted-foreground hover:text-primary"
+                data-testid="action-five-s-question-link"
+              >
+                Question: {fiveSQuestionPrompt}
+              </AppLink>
+            ) : null}
           </CardContent>
         </Card>
       ) : null}

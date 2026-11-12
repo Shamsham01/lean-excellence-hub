@@ -30,6 +30,10 @@ vi.mock("@/app/(platform)/platform/5s/actions", () => ({
   linkFiveSEvidence: vi.fn(),
 }));
 
+vi.mock("@/components/five-s/five-s-audit-raise-action", () => ({
+  FiveSAuditRaiseAction: () => null,
+}));
+
 const saveAnswer = vi.mocked(saveFiveSAuditAnswer);
 const completeAudit = vi.mocked(completeFiveSAudit);
 
@@ -1503,6 +1507,14 @@ describe("FiveSAuditWorkspace scoring scale", () => {
     expect(screen.getByTestId("five-s-category-sort")).toHaveAttribute(
       "data-completion-state",
       "partial",
+    );
+  });
+
+  it("shows a human-readable audit status label in the content column", () => {
+    renderWorkspace({ questions: [question(YES_NO_ID, "First", "yes_no")] });
+
+    expect(screen.getByTestId("five-s-audit-status-badge")).toHaveTextContent(
+      "In progress",
     );
   });
 });

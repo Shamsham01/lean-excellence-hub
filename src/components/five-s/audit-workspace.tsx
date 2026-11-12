@@ -24,7 +24,9 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { SectionProgressNav } from "@/components/ui/section-progress-nav";
 import { Textarea } from "@/components/ui/textarea";
+import { FiveSAuditRaiseAction } from "@/components/five-s/five-s-audit-raise-action";
 import { hasUsableFiveSAuditAnswer } from "@/modules/5s/audit-answer-usability";
+import { formatFiveSAuditStatus } from "@/modules/5s/audit-status";
 import { answerProgressPercent } from "@/modules/operational/answer-progress-percent";
 import { deriveSectionCompletionState } from "@/modules/operational/section-visual-state";
 import {
@@ -63,6 +65,7 @@ type AuditWorkspaceProps = {
   canComplete?: boolean;
   scoringScale?: FiveSScoringScale;
   onComplete?: typeof completeFiveSAudit;
+  actionCountsByQuestion?: Record<string, number>;
 };
 
 function AnswerSaveFeedback({
@@ -129,12 +132,16 @@ export function FiveSAuditWorkspace({
   canComplete = false,
   scoringScale = LEGACY_FIVE_S_SCORING_SCALE,
   onComplete = completeFiveSAudit,
+  actionCountsByQuestion = {},
 }: AuditWorkspaceProps) {
   const router = useRouter();
   const flatQuestions = sections.flatMap((s) =>
     s.questions.map((q) => ({ section: s, question: q })),
   );
   const [index, setIndex] = useState(0);
+  const [countsByQuestion, setCountsByQuestion] = useState(
+    () => actionCountsByQuestion,
+  );
   const [navigating, setNavigating] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [completeError, setCompleteError] = useState<string | null>(null);
@@ -279,30 +286,34 @@ export function FiveSAuditWorkspace({
 
   return (
     <div
-      className="flex flex-col gap-6 lg:grid lg:grid-cols-[200px_1fr] lg:gap-8"
+      className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,220px)_minmax(0,1fr)] lg:gap-8"
       data-testid="five-s-audit-workspace"
     >
-      <SectionProgressNav
-        ariaLabel="Audit categories"
-        items={sectionNavItems}
-        activeId={current.section.id}
-        disabled={questionBusy}
-        onSelect={(sectionId) => {
-          const idx = flatQuestions.findIndex(
-            (f) => f.section.id === sectionId,
-          );
-          if (idx >= 0) {
-            void moveTo(idx);
-          }
-        }}
-        testId="five-s-category-nav"
-        testIdPrefix="five-s-category"
-        className="lg:sticky lg:top-4 lg:self-start"
-      />
+      <div className="min-w-0 lg:sticky lg:top-4 lg:self-start">
+        <SectionProgressNav
+          ariaLabel="Audit categories"
+          items={sectionNavItems}
+          activeId={current.section.id}
+          disabled={questionBusy}
+          onSelect={(sectionId) => {
+            const idx = flatQuestions.findIndex(
+              (f) => f.section.id === sectionId,
+            );
+            if (idx >= 0) {
+              void moveTo(idx);
+            }
+          }}
+          testId="five-s-category-nav"
+          testIdPrefix="five-s-category"
+          itemGapClass="gap-2"
+        />
+      </div>
 
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-wrap items-center gap-3">
-          <Badge variant="outline">{status}</Badge>
+      <div className="flex min-w-0 flex-col gap-6">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
+          <Badge variant="outline" data-testid="five-s-audit-status-badge">
+            {formatFiveSAuditStatus(status)}
+          </Badge>
           <span className="text-sm text-muted-foreground">
             {current.section.title}
           </span>
@@ -454,6 +465,26 @@ export function FiveSAuditWorkspace({
             evidence={evidence}
             canEdit={canEdit}
           />
+
+          {canEdit ? (
+            <FiveSAuditRaiseAction
+              key={current.question.id}
+              linkContext={{
+                auditId,
+                sectionId: current.section.id,
+                questionId: current.question.id,
+                defaultTitle: current.question.prompt,
+              }}
+              actionCount={countsByQuestion[current.question.id] ?? 0}
+              onActionCreated={() => {
+                const questionId = current.question.id;
+                setCountsByQuestion((prev) => ({
+                  ...prev,
+                  [questionId]: (prev[questionId] ?? 0) + 1,
+                }));
+              }}
+            />
+          ) : null}
         </div>
 
         <div className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-border bg-background pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">

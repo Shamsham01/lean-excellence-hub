@@ -44,6 +44,7 @@ export default async function ActionDetailPage({
     canPostComments,
     currentCommentAuthor,
     assigneeAvatarUrl,
+    fiveSQuestionPrompt,
   } = loaded.payload;
 
   return (
@@ -56,6 +57,7 @@ export default async function ActionDetailPage({
       canPostComments={canPostComments}
       currentCommentAuthor={currentCommentAuthor}
       assigneeAvatarUrl={assigneeAvatarUrl}
+      fiveSQuestionPrompt={fiveSQuestionPrompt}
     />
   );
 }

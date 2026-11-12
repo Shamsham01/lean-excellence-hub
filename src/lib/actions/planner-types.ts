@@ -24,4 +24,6 @@ export type ActionPlannerListItem = {
   comment_count: number;
   card_cover_mime_type: string | null;
   card_cover_storage_path: string | null;
+  five_s_question_prompt?: string | null;
+  five_s_audit_href?: string | null;
 };

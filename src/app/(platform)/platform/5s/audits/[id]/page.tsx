@@ -136,6 +136,18 @@ export default async function FiveSAuditPage({
     }
   }
 
+  const { data: actionContextRows } = await supabase
+    .from("five_s_action_context")
+    .select("question_id")
+    .eq("audit_id", id);
+
+  const actionCountsByQuestion: Record<string, number> = {};
+  for (const row of actionContextRows ?? []) {
+    if (!row.question_id) continue;
+    actionCountsByQuestion[row.question_id] =
+      (actionCountsByQuestion[row.question_id] ?? 0) + 1;
+  }
+
   const evidence = [];
   for (const link of evidenceLinks ?? []) {
     const attachment = attachmentsById.get(link.attachment_id);
@@ -207,6 +219,7 @@ export default async function FiveSAuditPage({
         canComplete={canEdit && audit.status === "in_progress"}
         scoringScale={resolveFiveSScoringScale(version?.scoring_scale)}
         onComplete={completeFiveSAudit}
+        actionCountsByQuestion={actionCountsByQuestion}
       />
     </div>
   );
