@@ -18,17 +18,18 @@ describe("action list filters", () => {
         status: "open",
         assessment: "assess-1",
         pillar: "pillar-1",
-        criterion: "crit-1",
-      }),
-    ).toEqual({
-      source: "maturity_assessment",
-      status: "open",
-      assignee: null,
-      unit: null,
-      assessment: "assess-1",
-      pillar: "pillar-1",
       criterion: "crit-1",
-    });
+    }),
+  ).toEqual({
+    source: "maturity_assessment",
+    status: "open",
+    assignee: null,
+    unit: null,
+    assessment: "assess-1",
+    pillar: "pillar-1",
+    criterion: "crit-1",
+    audit: null,
+  });
   });
 
   it("ignores unknown source values", () => {
@@ -47,6 +48,7 @@ describe("action list filters", () => {
         assessment: "assess-1",
         pillar: null,
         criterion: null,
+        audit: null,
       }),
     ).toBe("source=maturity_assessment&assessment=assess-1");
     expect(assessmentActionsHref("assess-1")).toBe(

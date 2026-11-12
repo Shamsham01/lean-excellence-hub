@@ -4,6 +4,7 @@ import { MessageSquare } from "lucide-react";
 import { ActionCardCoverThumb } from "@/components/actions/action-card-cover-thumb";
 import { ActionPlannerLabelChips } from "@/components/actions/action-planner-label-chips";
 import { PlatformMemberAvatar } from "@/components/platform/platform-member-avatar";
+import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { ActionPlannerListItem } from "@/lib/actions/planner-types";
@@ -102,6 +103,22 @@ export function ActionPlannerCard({
           {hint && layout === "row" ? (
             <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
               {hint}
+            </p>
+          ) : null}
+          {action.five_s_audit_href && action.five_s_question_prompt ? (
+            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+              <AppLink
+                href={action.five_s_audit_href}
+                className="text-primary hover:underline"
+                data-testid={`action-card-five-s-audit-${action.id}`}
+                onClick={(event) => event.stopPropagation()}
+              >
+                5S audit
+              </AppLink>
+              <span className="text-muted-foreground">
+                {" "}
+                · {action.five_s_question_prompt}
+              </span>
             </p>
           ) : null}
         </div>

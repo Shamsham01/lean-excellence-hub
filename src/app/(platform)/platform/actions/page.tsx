@@ -87,6 +87,13 @@ export default async function ActionsPage({
     .from("maturity_criteria")
     .select("id, name")
     .order("name");
+  const { data: auditRows } = await supabase
+    .from("five_s_audits")
+    .select(
+      "id, status, standard_name_snapshot, unit_name_snapshot, completed_at, created_at",
+    )
+    .order("created_at", { ascending: false })
+    .limit(200);
 
   const plannerActions = await loadActionPlannerSummaries(actions);
   const openActionParam =
@@ -125,6 +132,17 @@ export default async function ActionsPage({
               id: criterion.id,
               label: criterion.name,
             })),
+            audits: (auditRows ?? []).map((audit) => {
+              const labelParts = [
+                audit.standard_name_snapshot ?? "5S audit",
+                audit.unit_name_snapshot,
+                audit.status === "in_progress" ? "In progress" : audit.status,
+              ].filter(Boolean);
+              return {
+                id: audit.id,
+                label: labelParts.join(" · "),
+              };
+            }),
           }}
         />
       </Suspense>
@@ -184,10 +202,14 @@ async function loadSourceActionIds(
       .from("suggestion_action_context")
       .select("action_id");
     sets.push((data ?? []).map((row) => row.action_id));
-  } else if (filters.source === "five_s_audit") {
-    const { data } = await supabase
+  } else if (filters.source === "five_s_audit" || filters.audit) {
+    let contextQuery = supabase
       .from("five_s_action_context")
-      .select("action_id");
+      .select("action_id, audit_id");
+    if (filters.audit) {
+      contextQuery = contextQuery.eq("audit_id", filters.audit);
+    }
+    const { data } = await contextQuery;
     sets.push((data ?? []).map((row) => row.action_id));
   } else if (filters.source === "gemba_walk") {
     const { data } = await supabase

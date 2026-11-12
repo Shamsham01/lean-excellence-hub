@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
 
 import {
+  createFiveSPlannerAction,
   createPlannerAction,
   loadActionCreateContext,
 } from "@/app/(platform)/platform/actions/actions";
@@ -33,11 +34,19 @@ type MaturityActionContext = {
   questions: Array<{ id: string; prompt: string }>;
 };
 
+export type FiveSActionLinkContext = {
+  auditId: string;
+  sectionId: string;
+  questionId: string;
+  defaultTitle: string;
+};
+
 type ActionCreateDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated?: (actionId: string) => void;
   maturityContext?: MaturityActionContext;
+  fiveSLinkContext?: FiveSActionLinkContext;
 };
 
 function readDraftFromForm(form: HTMLFormElement | null) {
@@ -54,6 +63,7 @@ export function ActionCreateDialog({
   onOpenChange,
   onCreated,
   maturityContext,
+  fiveSLinkContext,
 }: ActionCreateDialogProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const [queryText, setQueryText] = useState("");
@@ -89,6 +99,17 @@ export function ActionCreateDialog({
       cancelled = true;
     };
   }, [open, plannerMode]);
+
+  useEffect(() => {
+    if (!open || !fiveSLinkContext || !formRef.current) return;
+    const titleInput = formRef.current.elements.namedItem(
+      "title",
+    ) as HTMLInputElement | null;
+    if (titleInput && !titleInput.value.trim()) {
+      titleInput.value = fiveSLinkContext.defaultTitle;
+      syncQueryFromForm();
+    }
+  }, [open, fiveSLinkContext]);
 
   function syncQueryFromForm() {
     if (!formRef.current) return;
@@ -211,14 +232,26 @@ export function ActionCreateDialog({
       : checklistTitles;
 
     try {
-      const result = await createPlannerAction({
-        title,
-        description,
-        dueAt: dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null,
-        assigneeMembershipId: assigneeId || null,
-        labelIds: selectedLabelIds,
-        checklistTitles: allChecklist,
-      });
+      const result = fiveSLinkContext
+        ? await createFiveSPlannerAction({
+            auditId: fiveSLinkContext.auditId,
+            sectionId: fiveSLinkContext.sectionId,
+            questionId: fiveSLinkContext.questionId,
+            title,
+            description,
+            dueAt: dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null,
+            assigneeMembershipId: assigneeId || null,
+            labelIds: selectedLabelIds,
+            checklistTitles: allChecklist,
+          })
+        : await createPlannerAction({
+            title,
+            description,
+            dueAt: dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null,
+            assigneeMembershipId: assigneeId || null,
+            labelIds: selectedLabelIds,
+            checklistTitles: allChecklist,
+          });
       if (result.error && !result.id) {
         setError(result.error);
         return;
@@ -305,6 +338,12 @@ export function ActionCreateDialog({
                 required
                 placeholder="Action title"
                 disabled={pending}
+                defaultValue={fiveSLinkContext?.defaultTitle ?? undefined}
+                key={
+                  fiveSLinkContext
+                    ? `five-s-title-${fiveSLinkContext.questionId}-${open ? "open" : "closed"}`
+                    : "planner-title"
+                }
               />
             </div>
             <div className="flex flex-col gap-2">

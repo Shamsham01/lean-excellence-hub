@@ -36,6 +36,8 @@ type SectionProgressNavProps = {
   testId?: string;
   testIdPrefix?: string;
   className?: string;
+  /** Vertical spacing between sidebar step cards in workspace layout. */
+  itemGapClass?: string;
 };
 
 function NavStatusIcon({
@@ -244,6 +246,7 @@ export function SectionProgressNav({
   testId = "section-progress-nav",
   testIdPrefix = "section-progress",
   className,
+  itemGapClass = "gap-0.5",
 }: SectionProgressNavProps) {
   const itemById = new Map(items.map((item) => [item.id, item] as const));
 
@@ -384,23 +387,25 @@ export function SectionProgressNav({
           className,
         )}
       >
-        {groups?.length
-          ? groups.map((group) => {
-              const groupItems = group.itemIds
-                .map((id) => itemById.get(id))
-                .filter((item): item is SectionProgressNavItem =>
-                  Boolean(item),
-                );
-              return (
-                <div key={group.id} className="mb-2 min-w-0">
-                  <GroupHeader group={group} />
-                  <div className="mt-1 flex flex-col gap-0.5">
-                    {renderItems(groupItems, "sidebar")}
-                  </div>
+        {groups?.length ? (
+          groups.map((group) => {
+            const groupItems = group.itemIds
+              .map((id) => itemById.get(id))
+              .filter((item): item is SectionProgressNavItem => Boolean(item));
+            return (
+              <div key={group.id} className="mb-2 min-w-0">
+                <GroupHeader group={group} />
+                <div className={cn("mt-1 flex flex-col", itemGapClass)}>
+                  {renderItems(groupItems, "sidebar")}
                 </div>
-              );
-            })
-          : renderItems(items, "sidebar")}
+              </div>
+            );
+          })
+        ) : (
+          <div className={cn("flex flex-col", itemGapClass)}>
+            {renderItems(items, "sidebar")}
+          </div>
+        )}
       </nav>
     </>
   );

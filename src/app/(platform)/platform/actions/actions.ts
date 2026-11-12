@@ -416,6 +416,96 @@ export async function createPlannerAction(input: {
   return { ok: true, id: actionId };
 }
 
+export async function createFiveSPlannerAction(input: {
+  auditId: string;
+  sectionId: string;
+  questionId: string;
+  title: string;
+  description: string;
+  dueAt: string | null;
+  assigneeMembershipId: string | null;
+  labelIds: string[];
+  checklistTitles: string[];
+}): Promise<ActionResult> {
+  const canCreate = await currentMemberHasPermission(
+    ACTIONS_PERMISSIONS.create,
+  );
+  if (!canCreate) {
+    return { error: "You do not have permission to create actions." };
+  }
+
+  const title = input.title.trim();
+  if (!title) return { error: "Title is required." };
+
+  const supabase = await createServerSupabaseClient();
+  const rpcArgs: {
+    target_title: string;
+    target_audit_id: string;
+    target_section_id: string;
+    target_question_id: string;
+    target_description?: string;
+    target_priority?: string;
+    target_due_at?: string;
+  } = {
+    target_title: title,
+    target_audit_id: input.auditId,
+    target_section_id: input.sectionId,
+    target_question_id: input.questionId,
+    target_priority: "normal",
+  };
+  if (input.description.trim()) {
+    rpcArgs.target_description = input.description.trim();
+  }
+  if (input.dueAt) {
+    rpcArgs.target_due_at = input.dueAt;
+  }
+
+  const { data, error } = await supabase.rpc("create_five_s_action", rpcArgs);
+  if (error) return { error: mapActionMutationError(error) };
+  const actionId = data as string;
+
+  function partialSuccess(failedStep: string, message: string): ActionResult {
+    revalidateActionPaths(actionId);
+    return {
+      ok: true,
+      id: actionId,
+      warning: `${failedStep} could not be applied: ${message} The action was created — open it to finish setup.`,
+    };
+  }
+
+  if (input.assigneeMembershipId) {
+    const assignResult = await setActionAssignee({
+      actionId,
+      membershipId: input.assigneeMembershipId,
+    });
+    if (assignResult.error) {
+      return partialSuccess("Assignee", assignResult.error);
+    }
+  }
+
+  if (input.labelIds.length > 0) {
+    const labelResult = await setActionLabelsForAction(
+      actionId,
+      input.labelIds,
+    );
+    if (labelResult.error) {
+      return partialSuccess("Labels", labelResult.error);
+    }
+  }
+
+  for (const checklistTitle of input.checklistTitles) {
+    const trimmed = checklistTitle.trim();
+    if (!trimmed) continue;
+    const itemResult = await addActionChecklistItem(actionId, trimmed);
+    if (itemResult.error) {
+      return partialSuccess("Checklist", itemResult.error);
+    }
+  }
+
+  revalidateActionPaths(actionId);
+  return { ok: true, id: actionId };
+}
+
 export async function initiateActionEvidenceUpload(
   actionId: string,
   filename: string,
@@ -475,6 +565,7 @@ type ActionSheetPayload = {
   canPostComments: boolean;
   currentCommentAuthor: ActionCommentAuthor | null;
   assigneeAvatarUrl: string | null;
+  fiveSQuestionPrompt: string | null;
 };
 
 export async function loadActionSheetPayload(
@@ -605,6 +696,26 @@ export async function loadActionSheetPayload(
     ? (peopleById.get(assigneeMembershipId)?.avatar_url ?? null)
     : null;
 
+  let fiveSQuestionPrompt: string | null = null;
+  if (
+    detail.source?.resource_type === "five_s_audit" &&
+    detail.source_resource_id
+  ) {
+    const { data: fiveSContext } = await supabase
+      .from("five_s_action_context")
+      .select("question_id")
+      .eq("action_id", actionId)
+      .maybeSingle();
+    if (fiveSContext?.question_id) {
+      const { data: question } = await supabase
+        .from("template_questions")
+        .select("prompt")
+        .eq("id", fiveSContext.question_id)
+        .maybeSingle();
+      fiveSQuestionPrompt = question?.prompt ?? null;
+    }
+  }
+
   return {
     payload: {
       detail,
@@ -624,6 +735,7 @@ export async function loadActionSheetPayload(
       canPostComments,
       currentCommentAuthor,
       assigneeAvatarUrl,
+      fiveSQuestionPrompt,
     },
   };
 }
