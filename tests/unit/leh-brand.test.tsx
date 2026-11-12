@@ -367,7 +367,7 @@ describe("LehBrand", () => {
 });
 
 describe("site identity metadata", () => {
-  it("points at the web manifest and registers theme-aware tab icons", () => {
+  it("points at the web manifest and uses the dark mark for tab icons", () => {
     expect(rootMetadata.manifest).toBe("/site.webmanifest");
     expect(rootMetadata.applicationName).toBe(LEH_BRAND.name);
     expect(rootMetadata.icons?.apple).toEqual([
@@ -389,12 +389,12 @@ describe("site identity metadata", () => {
       ),
     ).toBe(true);
     expect(
-      icons?.some(
+      icons?.every(
         (entry) =>
-          typeof entry === "object" &&
-          entry !== null &&
-          "url" in entry &&
-          String(entry.url).includes("leh-icon-dark-128"),
+          typeof entry !== "object" ||
+          entry === null ||
+          !("media" in entry) ||
+          entry.media === undefined,
       ),
     ).toBe(true);
     expect(
@@ -402,13 +402,15 @@ describe("site identity metadata", () => {
         (entry) =>
           typeof entry === "object" &&
           entry !== null &&
-          "media" in entry &&
-          String(entry.media).includes("prefers-color-scheme: dark"),
+          "url" in entry &&
+          String(entry.url).includes("leh-icon-dark.svg") &&
+          "type" in entry &&
+          entry.type === "image/svg+xml",
       ),
     ).toBe(true);
   });
 
-  it("renders sidebar lockups with SVG-first theme sources in a wide slot", () => {
+  it("renders sidebar lockups with SVG-first theme sources in a full-width slot", () => {
     render(
       <LehBrand
         decorative
@@ -427,6 +429,17 @@ describe("site identity metadata", () => {
     expect(
       vectorSources.some((src) => src?.includes("leh-horizontal-dark.svg")),
     ).toBe(true);
+  });
+
+  it("trims transparent margin from horizontal SVG viewBoxes", () => {
+    for (const path of [
+      "public/brand/leh-horizontal-light.svg",
+      "public/brand/leh-horizontal-dark.svg",
+    ]) {
+      const file = svgRoot(path);
+      expect(file).toContain('viewBox="123.688 116.229 1105.732 220.649"');
+      expect(file).toContain('preserveAspectRatio="xMinYMid meet"');
+    }
   });
 
   it("registers SVG-first theme lockups and icons with PNG raster fallbacks", () => {
@@ -451,7 +464,7 @@ describe("site identity metadata", () => {
     }
   });
 
-  it("ships the light-theme app icon for tabs and transparent theme masters", () => {
+  it("ships the dark-theme app icon for tabs and transparent theme masters", () => {
     const favicon = readFileSync("src/app/favicon.ico");
     expect(favicon.readUInt16LE(0)).toBe(0);
     expect(favicon.readUInt16LE(2)).toBe(1);
@@ -464,7 +477,7 @@ describe("site identity metadata", () => {
 
     expect(
       readFileSync("src/app/icon.png").equals(
-        readFileSync("public/brand/leh-icon-light-512.png"),
+        readFileSync("public/brand/leh-icon-dark-512.png"),
       ),
     ).toBe(true);
 
@@ -489,8 +502,8 @@ describe("site identity metadata", () => {
     );
     expect(manifest.name).toBe(LEH_BRAND.name);
     expect(manifest.icons.map((icon: { src: string }) => icon.src)).toEqual([
-      "/brand/leh-icon-light-192.png",
-      "/brand/leh-icon-light-512.png",
+      "/brand/leh-icon-dark-192.png",
+      "/brand/leh-icon-dark-512.png",
     ]);
     expect(
       manifest.icons.some((icon: { src: string }) =>
@@ -517,6 +530,7 @@ describe("site identity metadata", () => {
       '.leh-brand-auth-shell .leh-brand[data-variant="full"] .leh-brand-lockup-img',
     );
     expect(css).toContain(".leh-brand--platform-sidebar .leh-brand-lockup-img");
+    expect(css).toContain('.leh-brand--platform-sidebar[data-variant="full"]');
     expect(css).not.toContain("object-fit: none");
     expect(css).not.toContain("visibility: hidden");
     expect(css).not.toContain("leh-horizontal.png");

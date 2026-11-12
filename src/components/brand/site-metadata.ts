@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 
 /**
- * Root metadata. Default tab icons come from App Router files in `src/app/`
- * (`favicon.ico`, `icon.png`, `apple-icon.png`), generated from
- * `public/brand/leh-icon-light.png`. A dark-tab variant uses
- * `leh-icon-dark-128.png` for `prefers-color-scheme: dark` only.
+ * Root metadata. Tab and app icons come from App Router files in `src/app/`
+ * (`favicon.ico`, `icon.png`, `apple-icon.png`), with `leh-icon-dark.svg`
+ * preferred in metadata; PNG and ICO remain as fallbacks for all browser chrome.
  */
 export const rootMetadata = {
   applicationName: "Lean Excellence Hub",
@@ -14,15 +13,13 @@ export const rootMetadata = {
   icons: {
     icon: [
       {
+        url: "/brand/leh-icon-dark.svg",
+        type: "image/svg+xml",
+      },
+      {
         url: "/icon.png",
         type: "image/png",
         sizes: "512x512",
-      },
-      {
-        url: "/brand/leh-icon-dark-128.png",
-        type: "image/png",
-        sizes: "128x128",
-        media: "(prefers-color-scheme: dark)",
       },
     ],
     apple: [
