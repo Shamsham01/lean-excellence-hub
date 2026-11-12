@@ -42,6 +42,7 @@ export function PlatformSidebarHeader({
             variant="full"
             strapline={false}
             priority
+            lockupRasterOnly
             className="leh-brand--platform-sidebar w-full min-w-0"
           />
         </AppLink>

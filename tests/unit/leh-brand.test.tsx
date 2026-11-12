@@ -394,7 +394,7 @@ describe("site identity metadata", () => {
           typeof entry === "object" &&
           entry !== null &&
           "url" in entry &&
-          String(entry.url).includes("leh-icon-dark-128"),
+          String(entry.url).includes("leh-icon-light-128"),
       ),
     ).toBe(true);
     expect(
@@ -403,29 +403,30 @@ describe("site identity metadata", () => {
           typeof entry === "object" &&
           entry !== null &&
           "media" in entry &&
-          String(entry.media).includes("prefers-color-scheme: dark"),
+          String(entry.media).includes("prefers-color-scheme: light"),
       ),
     ).toBe(true);
   });
 
-  it("renders sidebar lockups with SVG-first theme sources in a wide slot", () => {
+  it("renders sidebar lockups as PNG masters in a full-width slot", () => {
     render(
       <LehBrand
         decorative
+        lockupRasterOnly
         variant="full"
         className="leh-brand--platform-sidebar"
       />,
     );
     const brand = screen.getByTestId("leh-brand");
-    expect(brand.querySelector("picture source")).not.toBeNull();
-    const vectorSources = [...brand.querySelectorAll("source")].map((node) =>
-      node.getAttribute("srcset"),
-    );
+    expect(brand.querySelector("picture source")).toBeNull();
+    const rasterSources = [
+      ...brand.querySelectorAll(".leh-brand-lockup-img"),
+    ].map((node) => node.getAttribute("src"));
     expect(
-      vectorSources.some((src) => src?.includes("leh-horizontal-light.svg")),
+      rasterSources.some((src) => src?.includes("leh-horizontal-light.png")),
     ).toBe(true);
     expect(
-      vectorSources.some((src) => src?.includes("leh-horizontal-dark.svg")),
+      rasterSources.some((src) => src?.includes("leh-horizontal-dark.png")),
     ).toBe(true);
   });
 
@@ -451,7 +452,7 @@ describe("site identity metadata", () => {
     }
   });
 
-  it("ships the light-theme app icon for tabs and transparent theme masters", () => {
+  it("ships the dark-theme app icon for tabs and transparent theme masters", () => {
     const favicon = readFileSync("src/app/favicon.ico");
     expect(favicon.readUInt16LE(0)).toBe(0);
     expect(favicon.readUInt16LE(2)).toBe(1);
@@ -464,7 +465,7 @@ describe("site identity metadata", () => {
 
     expect(
       readFileSync("src/app/icon.png").equals(
-        readFileSync("public/brand/leh-icon-light-512.png"),
+        readFileSync("public/brand/leh-icon-dark-512.png"),
       ),
     ).toBe(true);
 
@@ -489,8 +490,8 @@ describe("site identity metadata", () => {
     );
     expect(manifest.name).toBe(LEH_BRAND.name);
     expect(manifest.icons.map((icon: { src: string }) => icon.src)).toEqual([
-      "/brand/leh-icon-light-192.png",
-      "/brand/leh-icon-light-512.png",
+      "/brand/leh-icon-dark-192.png",
+      "/brand/leh-icon-dark-512.png",
     ]);
     expect(
       manifest.icons.some((icon: { src: string }) =>
@@ -517,6 +518,7 @@ describe("site identity metadata", () => {
       '.leh-brand-auth-shell .leh-brand[data-variant="full"] .leh-brand-lockup-img',
     );
     expect(css).toContain(".leh-brand--platform-sidebar .leh-brand-lockup-img");
+    expect(css).toContain('.leh-brand--platform-sidebar[data-variant="full"]');
     expect(css).not.toContain("object-fit: none");
     expect(css).not.toContain("visibility: hidden");
     expect(css).not.toContain("leh-horizontal.png");

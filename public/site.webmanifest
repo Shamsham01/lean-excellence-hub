@@ -9,13 +9,13 @@
   "background_color": "#ffffff",
   "icons": [
     {
-      "src": "/brand/leh-icon-light-192.png",
+      "src": "/brand/leh-icon-dark-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/brand/leh-icon-light-512.png",
+      "src": "/brand/leh-icon-dark-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
