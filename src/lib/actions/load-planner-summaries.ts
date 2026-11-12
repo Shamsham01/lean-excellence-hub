@@ -47,9 +47,7 @@ export async function loadActionPlannerSummaries(
   const avatarUrls = await loadMembershipAvatarUrls(assigneeIds);
 
   const fiveSActionIds = entries
-    .filter(
-      ({ detail }) => detail.source?.resource_type === "five_s_audit",
-    )
+    .filter(({ detail }) => detail.source?.resource_type === "five_s_audit")
     .map(({ row }) => row.id);
 
   const fiveSContextByActionId = new Map<

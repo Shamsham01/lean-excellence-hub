@@ -18,18 +18,18 @@ describe("action list filters", () => {
         status: "open",
         assessment: "assess-1",
         pillar: "pillar-1",
+        criterion: "crit-1",
+      }),
+    ).toEqual({
+      source: "maturity_assessment",
+      status: "open",
+      assignee: null,
+      unit: null,
+      assessment: "assess-1",
+      pillar: "pillar-1",
       criterion: "crit-1",
-    }),
-  ).toEqual({
-    source: "maturity_assessment",
-    status: "open",
-    assignee: null,
-    unit: null,
-    assessment: "assess-1",
-    pillar: "pillar-1",
-    criterion: "crit-1",
-    audit: null,
-  });
+      audit: null,
+    });
   });
 
   it("ignores unknown source values", () => {
