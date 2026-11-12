@@ -12,6 +12,7 @@ import {
   loadWorkplaceRecordFallback,
   loadWorkplaceRecordView,
 } from "@/modules/workplace/access";
+import { loadFiveSAuditLinkedActions } from "@/modules/5s/load-audit-linked-actions";
 import { resolveFiveSScoringScale } from "@/modules/5s/scoring-scale";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -165,6 +166,11 @@ export default async function FiveSAuditPage({
     }
   }
 
+  const linkedActions =
+    audit.status === "completed"
+      ? await loadFiveSAuditLinkedActions(id)
+      : [];
+
   if (audit.status === "completed") {
     return (
       <div
@@ -198,6 +204,7 @@ export default async function FiveSAuditPage({
           sections={sections}
           answers={answers}
           evidence={evidence}
+          linkedActions={linkedActions}
         />
       </div>
     );

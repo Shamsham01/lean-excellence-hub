@@ -4,10 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
 
 import {
+  confirmActionEvidenceUpload,
   createFiveSPlannerAction,
   createPlannerAction,
+  initiateActionEvidenceUpload,
   loadActionCreateContext,
 } from "@/app/(platform)/platform/actions/actions";
+import {
+  ActionCreateEvidencePicker,
+  type ActionCreateEvidenceDraft,
+} from "@/components/actions/action-create-evidence-picker";
 import { createMaturityAction } from "@/app/(platform)/platform/maturity/actions";
 import { labelChipTextClass } from "@/lib/actions/label-contrast";
 import type { ActionLabel, AssignablePerson } from "@/lib/actions/types";
@@ -25,6 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EphemeralToast } from "@/components/ui/ephemeral-toast";
 import { Textarea } from "@/components/ui/textarea";
+import { uploadEvidenceFileClient } from "@/lib/attachments/upload-evidence-client";
 import { cn } from "@/lib/utils";
 
 type MaturityActionContext = {
@@ -82,6 +89,10 @@ export function ActionCreateDialog({
   const [checklistDraft, setChecklistDraft] = useState("");
   const [checklistTitles, setChecklistTitles] = useState<string[]>([]);
   const [createContextLoaded, setCreateContextLoaded] = useState(false);
+  const [evidenceDrafts, setEvidenceDrafts] = useState<ActionCreateEvidenceDraft[]>(
+    [],
+  );
+  const [evidenceError, setEvidenceError] = useState<string | null>(null);
 
   const plannerMode = !maturityContext;
   const labelsLoading = plannerMode && open && !createContextLoaded;
@@ -123,6 +134,11 @@ export function ActionCreateDialog({
     setSelectedLabelIds([]);
     setChecklistDraft("");
     setChecklistTitles([]);
+    for (const draft of evidenceDrafts) {
+      if (draft.previewUrl) URL.revokeObjectURL(draft.previewUrl);
+    }
+    setEvidenceDrafts([]);
+    setEvidenceError(null);
   }
 
   function resetForm() {
@@ -149,7 +165,8 @@ export function ActionCreateDialog({
       dueAt ||
       selectedLabelIds.length > 0 ||
       checklistTitles.length > 0 ||
-      checklistDraft.trim(),
+      checklistDraft.trim() ||
+      evidenceDrafts.length > 0,
     );
   }
 
@@ -231,6 +248,28 @@ export function ActionCreateDialog({
       ? [...checklistTitles, extraChecklist]
       : checklistTitles;
 
+    async function uploadCreateEvidence(actionId: string) {
+      const failures: string[] = [];
+      for (const draft of evidenceDrafts) {
+        const uploaded = await uploadEvidenceFileClient(draft.file, {
+          onInitiate: (filename, mimeType, byteSize) =>
+            initiateActionEvidenceUpload(
+              actionId,
+              filename,
+              mimeType,
+              byteSize,
+            ),
+          onConfirm: (attachmentId) =>
+            confirmActionEvidenceUpload(actionId, attachmentId),
+          onLink: async () => ({}),
+        });
+        if (!uploaded.ok) {
+          failures.push(`${draft.file.name}: ${uploaded.error}`);
+        }
+      }
+      return failures;
+    }
+
     try {
       const result = fiveSLinkContext
         ? await createFiveSPlannerAction({
@@ -257,6 +296,18 @@ export function ActionCreateDialog({
         return;
       }
       if (result.id) {
+        const uploadFailures =
+          evidenceDrafts.length > 0
+            ? await uploadCreateEvidence(result.id)
+            : [];
+        if (uploadFailures.length > 0) {
+          setEvidenceError(uploadFailures.join(" "));
+          setError(
+            "The action was created, but one or more attachments could not be uploaded. Remove failed files or try again.",
+          );
+          setPending(false);
+          return;
+        }
         onOpenChange(false);
         resetForm();
         onCreated?.(result.id);
@@ -443,6 +494,16 @@ export function ActionCreateDialog({
                     </div>
                   )}
                 </div>
+                <ActionCreateEvidencePicker
+                  drafts={evidenceDrafts}
+                  disabled={pending}
+                  error={evidenceError}
+                  onPickError={(message) => setEvidenceError(message)}
+                  onChange={(next) => {
+                    setEvidenceDrafts(next);
+                    setEvidenceError(null);
+                  }}
+                />
                 <div
                   className="flex flex-col gap-2"
                   data-testid="action-create-checklist"

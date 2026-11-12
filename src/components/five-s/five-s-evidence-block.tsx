@@ -27,6 +27,7 @@ export function FiveSEvidenceBlock({
 }: FiveSEvidenceBlockProps) {
   return (
     <EvidenceUploader
+      key={questionId}
       existingEvidence={evidence}
       canEdit={canEdit}
       filter={(item) => item.question_id === questionId}

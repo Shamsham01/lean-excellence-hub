@@ -10,6 +10,7 @@ import { ActionWorkspace } from "@/components/actions/action-workspace";
 import type { ActionPlannerComment } from "@/components/actions/action-planner-comments";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -17,6 +18,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { ArrowLeft, X } from "lucide-react";
 import type { ActionDetail, AssignablePerson } from "@/lib/actions/types";
 
 type LoadedSheetState = {
@@ -84,17 +86,41 @@ export function ActionDetailSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full border-border sm:w-[min(100%,42rem)]"
+        className="flex w-full flex-col gap-0 overflow-hidden p-0 [&>button.absolute]:z-30 [&>button.absolute]:max-sm:hidden sm:w-[min(100%,42rem)] sm:p-4"
         data-testid="action-detail-sheet"
         data-planner-task-dialog=""
       >
-        <SheetHeader className="border-b border-border pe-10 pb-4">
-          <SheetTitle>Action</SheetTitle>
-          <SheetDescription>
-            Review owners, due dates, status, and linked evidence.
-          </SheetDescription>
-        </SheetHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto pe-1">
+        <div className="sticky top-0 z-20 flex shrink-0 items-center gap-2 border-b border-border bg-card px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:static sm:border-0 sm:px-0 sm:py-0 sm:pt-0">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="min-h-11 gap-2 px-2 sm:hidden"
+            data-testid="action-detail-sheet-back"
+            onClick={() => onOpenChange(false)}
+          >
+            <ArrowLeft className="size-4" aria-hidden />
+            Back
+          </Button>
+          <SheetHeader className="min-w-0 flex-1 border-0 pb-0 pe-12 sm:pe-10">
+            <SheetTitle>Action</SheetTitle>
+            <SheetDescription className="hidden sm:block">
+              Review owners, due dates, status, and linked evidence.
+            </SheetDescription>
+          </SheetHeader>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="min-h-11 min-w-11 shrink-0 sm:hidden"
+            data-testid="action-detail-sheet-close"
+            aria-label="Close"
+            onClick={() => onOpenChange(false)}
+          >
+            <X className="size-4" />
+          </Button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-0 sm:pb-0">
           {pending && !state ? (
             <div
               className="flex flex-col gap-3 py-2"

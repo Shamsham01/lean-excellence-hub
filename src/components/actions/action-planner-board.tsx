@@ -151,7 +151,7 @@ export function ActionPlannerBoard({
           {error}
         </p>
       ) : null}
-      <div className="flex gap-3 overflow-x-auto pb-2">
+      <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 lg:grid lg:snap-none lg:grid-cols-3 lg:gap-4 lg:overflow-visible">
         {BOARD_STATUS_COLUMNS.map((status) => {
           const columnActions = byStatus.get(status) ?? [];
           const droppable =
@@ -172,7 +172,7 @@ export function ActionPlannerBoard({
             <div
               key={status}
               className={cn(
-                "flex max-w-full min-w-[min(100%,17rem)] flex-1 flex-col gap-2 rounded-xl border border-border/60 bg-card p-3 shadow-[var(--shadow-theme-xs)] sm:max-w-[20rem] sm:min-w-[17rem]",
+                "flex max-w-full min-w-[min(100%,17rem)] snap-center flex-1 flex-col gap-3 rounded-xl border border-border/60 bg-card p-3 shadow-[var(--shadow-theme-xs)] sm:max-w-[20rem] sm:min-w-[17rem] lg:min-w-0 lg:max-w-none",
                 droppable &&
                   hoverColumn === status &&
                   "border-primary/50 bg-primary/5",
@@ -223,7 +223,7 @@ export function ActionPlannerBoard({
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex min-h-[8rem] flex-col gap-2">
                 {columnActions.length === 0 ? (
                   <EmptyState
                     testId={`actions-board-empty-${status}`}
@@ -241,6 +241,7 @@ export function ActionPlannerBoard({
                     <ActionPlannerCard
                       key={action.id}
                       action={action}
+                      layout="tile"
                       onOpen={onOpen}
                       draggable={actionHasDraggableTransitions(
                         action.permissions,

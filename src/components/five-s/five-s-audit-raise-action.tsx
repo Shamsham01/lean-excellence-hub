@@ -6,7 +6,6 @@ import {
   ActionCreateDialog,
   type FiveSActionLinkContext,
 } from "@/components/actions/action-create-form";
-import { ActionDetailSheet } from "@/components/actions/action-detail-sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -24,12 +23,9 @@ export function FiveSAuditRaiseAction({
   onActionCreated,
 }: FiveSAuditRaiseActionProps) {
   const [createOpen, setCreateOpen] = useState(false);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [createdActionId, setCreatedActionId] = useState<string | null>(null);
 
-  function handleCreated(actionId: string) {
-    setCreatedActionId(actionId);
-    setSheetOpen(true);
+  function handleCreated(_actionId: string) {
+    setCreateOpen(false);
     onActionCreated?.();
   }
 
@@ -57,14 +53,6 @@ export function FiveSAuditRaiseAction({
         onOpenChange={setCreateOpen}
         fiveSLinkContext={linkContext}
         onCreated={handleCreated}
-      />
-      <ActionDetailSheet
-        actionId={createdActionId}
-        open={sheetOpen}
-        onOpenChange={(open) => {
-          setSheetOpen(open);
-          if (!open) setCreatedActionId(null);
-        }}
       />
     </>
   );
