@@ -15,8 +15,7 @@ export type ClientEvidenceUploadHandlers = {
 };
 
 export type ClientEvidenceUploadResult =
-  | { ok: true; attachmentId: string }
-  | { ok: false; error: string };
+  { ok: true; attachmentId: string } | { ok: false; error: string };
 
 export async function uploadEvidenceFileClient(
   file: File,

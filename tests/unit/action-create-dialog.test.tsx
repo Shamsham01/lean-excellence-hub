@@ -155,7 +155,10 @@ describe("ActionCreateDialog", () => {
   });
 
   it("uploads selected evidence after the action is created", async () => {
-    createPlannerActionMock.mockResolvedValue({ ok: true, id: "action-evidence" });
+    createPlannerActionMock.mockResolvedValue({
+      ok: true,
+      id: "action-evidence",
+    });
     uploadEvidenceMock.mockResolvedValue({ ok: true, attachmentId: "att-1" });
 
     render(

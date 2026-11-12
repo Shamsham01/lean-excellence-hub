@@ -167,9 +167,7 @@ export default async function FiveSAuditPage({
   }
 
   const linkedActions =
-    audit.status === "completed"
-      ? await loadFiveSAuditLinkedActions(id)
-      : [];
+    audit.status === "completed" ? await loadFiveSAuditLinkedActions(id) : [];
 
   if (audit.status === "completed") {
     return (

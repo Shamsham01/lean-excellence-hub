@@ -86,7 +86,7 @@ export function ActionDetailSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="flex w-full flex-col gap-0 overflow-hidden p-0 [&>button.absolute]:z-30 [&>button.absolute]:max-sm:hidden sm:w-[min(100%,42rem)] sm:p-4"
+        className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:w-[min(100%,42rem)] sm:p-4 [&>button.absolute]:z-30 [&>button.absolute]:max-sm:hidden"
         data-testid="action-detail-sheet"
         data-planner-task-dialog=""
       >
@@ -102,7 +102,7 @@ export function ActionDetailSheet({
             <ArrowLeft className="size-4" aria-hidden />
             Back
           </Button>
-          <SheetHeader className="min-w-0 flex-1 border-0 pb-0 pe-12 sm:pe-10">
+          <SheetHeader className="min-w-0 flex-1 border-0 pe-12 pb-0 sm:pe-10">
             <SheetTitle>Action</SheetTitle>
             <SheetDescription className="hidden sm:block">
               Review owners, due dates, status, and linked evidence.

@@ -89,9 +89,9 @@ export function ActionCreateDialog({
   const [checklistDraft, setChecklistDraft] = useState("");
   const [checklistTitles, setChecklistTitles] = useState<string[]>([]);
   const [createContextLoaded, setCreateContextLoaded] = useState(false);
-  const [evidenceDrafts, setEvidenceDrafts] = useState<ActionCreateEvidenceDraft[]>(
-    [],
-  );
+  const [evidenceDrafts, setEvidenceDrafts] = useState<
+    ActionCreateEvidenceDraft[]
+  >([]);
   const [evidenceError, setEvidenceError] = useState<string | null>(null);
 
   const plannerMode = !maturityContext;

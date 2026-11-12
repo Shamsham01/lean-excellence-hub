@@ -86,10 +86,7 @@ export function ActionCreateEvidencePicker({
   }
 
   return (
-    <div
-      className="flex flex-col gap-2"
-      data-testid="action-create-evidence"
-    >
+    <div className="flex flex-col gap-2" data-testid="action-create-evidence">
       <Label htmlFor={fileInputId}>Photos &amp; attachments</Label>
       <p className="text-xs text-muted-foreground">
         Optional. Files upload when the action is created. {EVIDENCE_FILE_HELP}.
@@ -169,7 +166,10 @@ export function ActionCreateEvidencePicker({
           disabled={disabled}
           asChild
         >
-          <label htmlFor={fileInputId} className="inline-flex items-center gap-2">
+          <label
+            htmlFor={fileInputId}
+            className="inline-flex items-center gap-2"
+          >
             <Upload className="size-4" aria-hidden />
             Choose file
           </label>

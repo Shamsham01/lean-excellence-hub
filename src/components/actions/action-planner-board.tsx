@@ -172,7 +172,7 @@ export function ActionPlannerBoard({
             <div
               key={status}
               className={cn(
-                "flex max-w-full min-w-[min(100%,17rem)] snap-center flex-1 flex-col gap-3 rounded-xl border border-border/60 bg-card p-3 shadow-[var(--shadow-theme-xs)] sm:max-w-[20rem] sm:min-w-[17rem] lg:min-w-0 lg:max-w-none",
+                "flex max-w-full min-w-[min(100%,17rem)] flex-1 snap-center flex-col gap-3 rounded-xl border border-border/60 bg-card p-3 shadow-[var(--shadow-theme-xs)] sm:max-w-[20rem] sm:min-w-[17rem] lg:max-w-none lg:min-w-0",
                 droppable &&
                   hoverColumn === status &&
                   "border-primary/50 bg-primary/5",

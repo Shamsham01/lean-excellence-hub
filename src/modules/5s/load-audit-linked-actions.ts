@@ -45,7 +45,9 @@ export async function loadFiveSAuditLinkedActions(
 
   const { data: attachmentRows } = await supabase
     .from("attachments")
-    .select("id, filename, mime_type, byte_size, storage_object_path, target_resource_id")
+    .select(
+      "id, filename, mime_type, byte_size, storage_object_path, target_resource_id",
+    )
     .in("target_resource_id", actionIds)
     .eq("lifecycle", "active")
     .order("created_at");

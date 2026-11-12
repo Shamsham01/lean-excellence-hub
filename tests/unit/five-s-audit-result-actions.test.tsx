@@ -58,10 +58,12 @@ describe("FiveSAuditResult linked actions", () => {
       />,
     );
 
-    expect(screen.getByTestId(`five-s-result-actions-${QUESTION_ID}`)).toBeVisible();
-    expect(screen.getByTestId("five-s-result-action-action-9")).toHaveTextContent(
-      "Clear aisle obstruction",
-    );
+    expect(
+      screen.getByTestId(`five-s-result-actions-${QUESTION_ID}`),
+    ).toBeVisible();
+    expect(
+      screen.getByTestId("five-s-result-action-action-9"),
+    ).toHaveTextContent("Clear aisle obstruction");
     expect(screen.getByText("Assignee: Alex Operator")).toBeVisible();
     expect(screen.getByText("aisle.jpg")).toBeVisible();
   });

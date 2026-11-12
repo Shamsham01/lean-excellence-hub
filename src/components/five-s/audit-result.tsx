@@ -122,7 +122,9 @@ export function FiveSAuditResult({
                             >
                               {action.title}
                             </AppLink>
-                            <Badge variant={actionStatusBadgeVariant(action.status)}>
+                            <Badge
+                              variant={actionStatusBadgeVariant(action.status)}
+                            >
                               {actionStatusLabel(action.status)}
                             </Badge>
                           </div>
