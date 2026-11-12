@@ -37,9 +37,7 @@ export default async function NewSchedulePage({
   const returnTo = params.returnTo ?? "/platform/schedule";
   const activityResourceId = params.activityId ?? "";
   const schedulable =
-    activityResourceId.length === 0
-      ? await loadSchedulableActivities()
-      : null;
+    activityResourceId.length === 0 ? await loadSchedulableActivities() : null;
   let activityLabel = params.activityLabel ?? "Scheduled activity";
   const scheduleUnits = activityResourceId
     ? await loadActivityScheduleUnitOptions(

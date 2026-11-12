@@ -32,7 +32,9 @@ test.describe("Schedule activity picker", () => {
     }
 
     await expect(empty).toBeVisible();
-    await expect(page.getByTestId("schedule-picker-5s-setup-link")).toBeVisible();
+    await expect(
+      page.getByTestId("schedule-picker-5s-setup-link"),
+    ).toBeVisible();
     await expect(
       page.getByTestId("schedule-picker-gemba-setup-link"),
     ).toBeVisible();
