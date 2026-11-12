@@ -159,7 +159,11 @@ describe("ActionCreateDialog", () => {
       ok: true,
       id: "action-evidence",
     });
-    uploadEvidenceMock.mockResolvedValue({ ok: true, attachmentId: "att-1" });
+    uploadEvidenceMock.mockResolvedValue({
+      ok: true,
+      attachmentId: "att-1",
+      storageObjectPath: "org/att-1",
+    });
 
     render(
       <ActionCreateDialog open onOpenChange={vi.fn()} onCreated={vi.fn()} />,
@@ -191,6 +195,58 @@ describe("ActionCreateDialog", () => {
         onConfirm: expect.any(Function),
       }),
     );
+  });
+
+  it("does not create a duplicate action when retrying failed evidence uploads", async () => {
+    const onCreated = vi.fn();
+    createPlannerActionMock.mockResolvedValue({ ok: true, id: "action-retry" });
+    uploadEvidenceMock
+      .mockResolvedValueOnce({ ok: false, error: "storage failed" })
+      .mockResolvedValueOnce({
+        ok: true,
+        attachmentId: "att-2",
+        storageObjectPath: "org/att-2",
+      });
+
+    const onOpenChange = vi.fn();
+    render(
+      <ActionCreateDialog
+        open
+        onOpenChange={onOpenChange}
+        onCreated={onCreated}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Title"), {
+      target: { value: "Retry upload case" },
+    });
+    const file = new File(["notes"], "notes.txt", { type: "text/plain" });
+    fireEvent.change(screen.getByTestId("action-create-evidence-file"), {
+      target: { files: [file] },
+    });
+
+    const form = within(
+      screen.getByTestId("actions-create-dialog"),
+    ).getByTestId("actions-create-form");
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(createPlannerActionMock).toHaveBeenCalledTimes(1);
+      expect(onCreated).toHaveBeenCalledWith("action-retry");
+    });
+    expect(screen.getByTestId("actions-create-submit")).toHaveTextContent(
+      /Retry upload/i,
+    );
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    expect(uploadEvidenceMock).toHaveBeenCalledTimes(1);
+
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(createPlannerActionMock).toHaveBeenCalledTimes(1);
+      expect(uploadEvidenceMock).toHaveBeenCalledTimes(2);
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
   });
 
   it("clears pending when createPlannerAction throws", async () => {

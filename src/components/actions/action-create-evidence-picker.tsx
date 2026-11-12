@@ -143,7 +143,7 @@ export function ActionCreateEvidencePicker({
         id={cameraInputId}
         type="file"
         className="sr-only"
-        accept={EVIDENCE_ACCEPT}
+        accept="image/*"
         capture="environment"
         disabled={disabled}
         data-testid="action-create-evidence-camera"

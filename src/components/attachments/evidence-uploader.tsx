@@ -123,6 +123,7 @@ export function EvidenceUploader({
         filename: validation.filename,
         mime_type: validation.mimeType,
         byte_size: validation.byteSize,
+        storage_object_path: uploaded.storageObjectPath,
       };
       if (isEvidenceImageMimeType(validation.mimeType)) {
         pendingItem.preview_url = URL.createObjectURL(file);
@@ -200,7 +201,7 @@ export function EvidenceUploader({
               <input
                 type="file"
                 className="sr-only"
-                accept={EVIDENCE_ACCEPT}
+                accept="image/*"
                 capture="environment"
                 onChange={(e) => onFileChange(e.target.files)}
                 data-testid="evidence-camera-input"

@@ -93,6 +93,7 @@ export function ActionCreateDialog({
     ActionCreateEvidenceDraft[]
   >([]);
   const [evidenceError, setEvidenceError] = useState<string | null>(null);
+  const [createdActionId, setCreatedActionId] = useState<string | null>(null);
 
   const plannerMode = !maturityContext;
   const labelsLoading = plannerMode && open && !createContextLoaded;
@@ -139,6 +140,7 @@ export function ActionCreateDialog({
     }
     setEvidenceDrafts([]);
     setEvidenceError(null);
+    setCreatedActionId(null);
   }
 
   function resetForm() {
@@ -157,6 +159,7 @@ export function ActionCreateDialog({
   }
 
   function hasDraft() {
+    if (createdActionId) return true;
     const { title, description } = readDraftFromForm(formRef.current);
     if (title || description) return true;
     if (!plannerMode) return false;
@@ -248,9 +251,13 @@ export function ActionCreateDialog({
       ? [...checklistTitles, extraChecklist]
       : checklistTitles;
 
-    async function uploadCreateEvidence(actionId: string) {
+    async function uploadCreateEvidence(
+      actionId: string,
+      drafts: ActionCreateEvidenceDraft[],
+    ) {
       const failures: string[] = [];
-      for (const draft of evidenceDrafts) {
+      const uploadedDraftIds: string[] = [];
+      for (const draft of drafts) {
         const uploaded = await uploadEvidenceFileClient(draft.file, {
           onInitiate: (filename, mimeType, byteSize) =>
             initiateActionEvidenceUpload(
@@ -265,58 +272,84 @@ export function ActionCreateDialog({
         });
         if (!uploaded.ok) {
           failures.push(`${draft.file.name}: ${uploaded.error}`);
+          continue;
         }
+        uploadedDraftIds.push(draft.id);
+        if (draft.previewUrl) {
+          URL.revokeObjectURL(draft.previewUrl);
+        }
+      }
+      if (uploadedDraftIds.length > 0) {
+        setEvidenceDrafts((current) =>
+          current.filter((draft) => !uploadedDraftIds.includes(draft.id)),
+        );
       }
       return failures;
     }
 
     try {
-      const result = fiveSLinkContext
-        ? await createFiveSPlannerAction({
-            auditId: fiveSLinkContext.auditId,
-            sectionId: fiveSLinkContext.sectionId,
-            questionId: fiveSLinkContext.questionId,
-            title,
-            description,
-            dueAt: dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null,
-            assigneeMembershipId: assigneeId || null,
-            labelIds: selectedLabelIds,
-            checklistTitles: allChecklist,
-          })
-        : await createPlannerAction({
-            title,
-            description,
-            dueAt: dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null,
-            assigneeMembershipId: assigneeId || null,
-            labelIds: selectedLabelIds,
-            checklistTitles: allChecklist,
-          });
-      if (result.error && !result.id) {
-        setError(result.error);
-        return;
-      }
-      if (result.id) {
-        const uploadFailures =
-          evidenceDrafts.length > 0
-            ? await uploadCreateEvidence(result.id)
-            : [];
-        if (uploadFailures.length > 0) {
-          setEvidenceError(uploadFailures.join(" "));
-          setError(
-            "The action was created, but one or more attachments could not be uploaded. Remove failed files or try again.",
-          );
-          setPending(false);
+      let actionId = createdActionId;
+      let createWarning: string | undefined;
+
+      if (!actionId) {
+        const result = fiveSLinkContext
+          ? await createFiveSPlannerAction({
+              auditId: fiveSLinkContext.auditId,
+              sectionId: fiveSLinkContext.sectionId,
+              questionId: fiveSLinkContext.questionId,
+              title,
+              description,
+              dueAt: dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null,
+              assigneeMembershipId: assigneeId || null,
+              labelIds: selectedLabelIds,
+              checklistTitles: allChecklist,
+            })
+          : await createPlannerAction({
+              title,
+              description,
+              dueAt: dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null,
+              assigneeMembershipId: assigneeId || null,
+              labelIds: selectedLabelIds,
+              checklistTitles: allChecklist,
+            });
+        if (result.error && !result.id) {
+          setError(result.error);
           return;
         }
-        onOpenChange(false);
-        resetForm();
+        if (!result.id) {
+          return;
+        }
+        actionId = result.id;
+        setCreatedActionId(result.id);
         onCreated?.(result.id);
         if (result.warning) {
-          setToastMessage(result.warning);
+          createWarning = result.warning;
         }
       }
+
+      const uploadFailures =
+        evidenceDrafts.length > 0
+          ? await uploadCreateEvidence(actionId, evidenceDrafts)
+          : [];
+      if (uploadFailures.length > 0) {
+        setEvidenceError(uploadFailures.join(" "));
+        setError(
+          "One or more attachments could not be uploaded. Fix the issue and use Retry upload — a new action will not be created.",
+        );
+        return;
+      }
+
+      onOpenChange(false);
+      resetForm();
+      if (createWarning) {
+        setToastMessage(createWarning);
+      }
     } catch {
-      setError("Something went wrong while creating the action. Try again.");
+      setError(
+        createdActionId
+          ? "Something went wrong while uploading attachments. Try again."
+          : "Something went wrong while creating the action. Try again.",
+      );
     } finally {
       setPending(false);
     }
@@ -388,7 +421,7 @@ export function ActionCreateDialog({
                 name="title"
                 required
                 placeholder="Action title"
-                disabled={pending}
+                disabled={pending || Boolean(createdActionId)}
                 defaultValue={fiveSLinkContext?.defaultTitle ?? undefined}
                 key={
                   fiveSLinkContext
@@ -403,7 +436,7 @@ export function ActionCreateDialog({
                 id="action-create-description"
                 name="description"
                 rows={3}
-                disabled={pending}
+                disabled={pending || Boolean(createdActionId)}
               />
             </div>
 
@@ -631,7 +664,13 @@ export function ActionCreateDialog({
                     : "actions-create-submit"
                 }
               >
-                {pending ? "Creating…" : "Create action"}
+                {pending
+                  ? createdActionId
+                    ? "Uploading…"
+                    : "Creating…"
+                  : createdActionId
+                    ? "Retry upload"
+                    : "Create action"}
               </Button>
             </DialogFooter>
           </form>

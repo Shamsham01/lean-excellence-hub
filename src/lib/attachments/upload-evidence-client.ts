@@ -15,7 +15,8 @@ export type ClientEvidenceUploadHandlers = {
 };
 
 export type ClientEvidenceUploadResult =
-  { ok: true; attachmentId: string } | { ok: false; error: string };
+  | { ok: true; attachmentId: string; storageObjectPath: string }
+  | { ok: false; error: string };
 
 export async function uploadEvidenceFileClient(
   file: File,
@@ -38,7 +39,10 @@ export async function uploadEvidenceFileClient(
   const supabase = createBrowserSupabaseClient();
   const { error: storageError } = await supabase.storage
     .from(EVIDENCE_BUCKET)
-    .upload(init.storagePath, file, { upsert: false });
+    .upload(init.storagePath, file, {
+      upsert: false,
+      contentType: validation.mimeType,
+    });
 
   if (storageError) {
     return { ok: false, error: storageError.message };
@@ -54,5 +58,9 @@ export async function uploadEvidenceFileClient(
     return { ok: false, error: link.error };
   }
 
-  return { ok: true, attachmentId: init.attachmentId };
+  return {
+    ok: true,
+    attachmentId: init.attachmentId,
+    storageObjectPath: init.storagePath,
+  };
 }

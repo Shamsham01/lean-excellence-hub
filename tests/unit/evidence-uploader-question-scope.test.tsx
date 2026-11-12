@@ -11,9 +11,11 @@ import { useState } from "react";
 import { EvidenceUploader } from "@/components/attachments/evidence-uploader";
 
 vi.mock("@/lib/attachments/upload-evidence-client", () => ({
-  uploadEvidenceFileClient: vi
-    .fn()
-    .mockResolvedValue({ ok: true, attachmentId: "att-q1" }),
+  uploadEvidenceFileClient: vi.fn().mockResolvedValue({
+    ok: true,
+    attachmentId: "att-q1",
+    storageObjectPath: "org/att-q1",
+  }),
 }));
 
 afterEach(() => {
