@@ -17,10 +17,19 @@ import {
 vi.mock("@/app/(platform)/platform/actions/actions", () => ({
   createPlannerAction: vi.fn(),
   loadActionCreateContext: vi.fn(),
+  initiateActionEvidenceUpload: vi.fn(),
+  confirmActionEvidenceUpload: vi.fn(),
 }));
+
+vi.mock("@/lib/attachments/upload-evidence-client", () => ({
+  uploadEvidenceFileClient: vi.fn(),
+}));
+
+import { uploadEvidenceFileClient } from "@/lib/attachments/upload-evidence-client";
 
 const createPlannerActionMock = vi.mocked(createPlannerAction);
 const loadActionCreateContextMock = vi.mocked(loadActionCreateContext);
+const uploadEvidenceMock = vi.mocked(uploadEvidenceFileClient);
 
 beforeEach(() => {
   loadActionCreateContextMock.mockResolvedValue({
@@ -143,6 +152,141 @@ describe("ActionCreateDialog", () => {
         "Checklist could not be applied",
       ),
     );
+  });
+
+  it("uploads selected evidence after the action is created", async () => {
+    createPlannerActionMock.mockResolvedValue({
+      ok: true,
+      id: "action-evidence",
+    });
+    uploadEvidenceMock.mockResolvedValue({
+      ok: true,
+      attachmentId: "att-1",
+      storageObjectPath: "org/att-1",
+    });
+
+    render(
+      <ActionCreateDialog open onOpenChange={vi.fn()} onCreated={vi.fn()} />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Title"), {
+      target: { value: "With photo" },
+    });
+
+    const file = new File(["pixels"], "photo.jpg", { type: "image/jpeg" });
+    const fileInput = screen.getByTestId("action-create-evidence-file");
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    fireEvent.submit(
+      within(screen.getByTestId("actions-create-dialog")).getByTestId(
+        "actions-create-form",
+      ),
+    );
+
+    await waitFor(() => {
+      expect(createPlannerActionMock).toHaveBeenCalledTimes(1);
+      expect(uploadEvidenceMock).toHaveBeenCalledTimes(1);
+    });
+
+    expect(uploadEvidenceMock).toHaveBeenCalledWith(
+      expect.any(File),
+      expect.objectContaining({
+        onInitiate: expect.any(Function),
+        onConfirm: expect.any(Function),
+      }),
+    );
+  });
+
+  it("does not create a duplicate action when retrying failed evidence uploads", async () => {
+    const onActionPersisted = vi.fn();
+    const onCreated = vi.fn();
+    createPlannerActionMock.mockResolvedValue({ ok: true, id: "action-retry" });
+    uploadEvidenceMock
+      .mockResolvedValueOnce({ ok: false, error: "storage failed" })
+      .mockResolvedValueOnce({
+        ok: true,
+        attachmentId: "att-2",
+        storageObjectPath: "org/att-2",
+      });
+
+    const onOpenChange = vi.fn();
+    render(
+      <ActionCreateDialog
+        open
+        onOpenChange={onOpenChange}
+        onActionPersisted={onActionPersisted}
+        onCreated={onCreated}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Title"), {
+      target: { value: "Retry upload case" },
+    });
+    const file = new File(["notes"], "notes.txt", { type: "text/plain" });
+    fireEvent.change(screen.getByTestId("action-create-evidence-file"), {
+      target: { files: [file] },
+    });
+
+    const form = within(
+      screen.getByTestId("actions-create-dialog"),
+    ).getByTestId("actions-create-form");
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(createPlannerActionMock).toHaveBeenCalledTimes(1);
+      expect(onActionPersisted).toHaveBeenCalledWith("action-retry");
+    });
+    expect(onCreated).not.toHaveBeenCalled();
+    expect(screen.getByTestId("actions-create-submit")).toHaveTextContent(
+      /Retry upload/i,
+    );
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    expect(uploadEvidenceMock).toHaveBeenCalledTimes(1);
+
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(createPlannerActionMock).toHaveBeenCalledTimes(1);
+      expect(uploadEvidenceMock).toHaveBeenCalledTimes(2);
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+      expect(onCreated).toHaveBeenCalledWith("action-retry");
+    });
+  });
+
+  it("calls onCreated only after uploads succeed, not when upload fails", async () => {
+    const onActionPersisted = vi.fn();
+    const onCreated = vi.fn();
+    createPlannerActionMock.mockResolvedValue({ ok: true, id: "action-late" });
+    uploadEvidenceMock.mockResolvedValueOnce({ ok: false, error: "denied" });
+
+    render(
+      <ActionCreateDialog
+        open
+        onOpenChange={vi.fn()}
+        onActionPersisted={onActionPersisted}
+        onCreated={onCreated}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Title"), {
+      target: { value: "Late complete" },
+    });
+    fireEvent.change(screen.getByTestId("action-create-evidence-file"), {
+      target: {
+        files: [new File(["a"], "a.jpg", { type: "image/jpeg" })],
+      },
+    });
+    fireEvent.submit(
+      within(screen.getByTestId("actions-create-dialog")).getByTestId(
+        "actions-create-form",
+      ),
+    );
+
+    await waitFor(() =>
+      expect(onActionPersisted).toHaveBeenCalledWith("action-late"),
+    );
+    expect(onCreated).not.toHaveBeenCalled();
+    expect(screen.getByTestId("actions-create-dialog")).toBeVisible();
   });
 
   it("clears pending when createPlannerAction throws", async () => {

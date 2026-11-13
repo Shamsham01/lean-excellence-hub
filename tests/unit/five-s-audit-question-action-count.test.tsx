@@ -24,16 +24,16 @@ vi.mock("@/app/(platform)/platform/5s/actions", () => ({
 vi.mock("@/components/actions/action-create-form", () => ({
   ActionCreateDialog: ({
     open,
-    onCreated,
+    onActionPersisted,
   }: {
     open: boolean;
-    onCreated?: (id: string) => void;
+    onActionPersisted?: (id: string) => void;
   }) =>
     open ? (
       <button
         type="button"
         data-testid="mock-five-s-action-created"
-        onClick={() => onCreated?.("action-new")}
+        onClick={() => onActionPersisted?.("action-new")}
       >
         Mock create
       </button>

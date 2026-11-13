@@ -126,7 +126,7 @@ export function ActionPlannerCard({
           className={cn(
             "flex shrink-0 gap-1.5",
             layout === "tile"
-              ? "flex-wrap items-center justify-between"
+              ? "w-full flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-2"
               : "items-center",
           )}
         >

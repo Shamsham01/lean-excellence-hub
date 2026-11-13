@@ -135,8 +135,11 @@ export function ActionPlannerShell({
     setCreateOpen(true);
   }
 
-  function handleCreated(actionId: string) {
+  function handleActionPersisted() {
     router.refresh();
+  }
+
+  function handleCreated(actionId: string) {
     openAction(actionId);
   }
 
@@ -283,6 +286,7 @@ export function ActionPlannerShell({
         <ActionCreateDialog
           open={createOpen}
           onOpenChange={setCreateOpen}
+          onActionPersisted={handleActionPersisted}
           onCreated={handleCreated}
         />
       ) : null}

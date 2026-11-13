@@ -4,10 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
 
 import {
+  confirmActionEvidenceUpload,
   createFiveSPlannerAction,
   createPlannerAction,
+  initiateActionEvidenceUpload,
   loadActionCreateContext,
 } from "@/app/(platform)/platform/actions/actions";
+import {
+  ActionCreateEvidencePicker,
+  type ActionCreateEvidenceDraft,
+} from "@/components/actions/action-create-evidence-picker";
 import { createMaturityAction } from "@/app/(platform)/platform/maturity/actions";
 import { labelChipTextClass } from "@/lib/actions/label-contrast";
 import type { ActionLabel, AssignablePerson } from "@/lib/actions/types";
@@ -25,6 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EphemeralToast } from "@/components/ui/ephemeral-toast";
 import { Textarea } from "@/components/ui/textarea";
+import { uploadEvidenceFileClient } from "@/lib/attachments/upload-evidence-client";
 import { cn } from "@/lib/utils";
 
 type MaturityActionContext = {
@@ -44,6 +51,9 @@ export type FiveSActionLinkContext = {
 type ActionCreateDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Fires when the action record exists; uploads may still be in flight. */
+  onActionPersisted?: (actionId: string) => void;
+  /** Fires when create and all pending uploads succeeded, before the dialog closes. */
   onCreated?: (actionId: string) => void;
   maturityContext?: MaturityActionContext;
   fiveSLinkContext?: FiveSActionLinkContext;
@@ -61,11 +71,13 @@ function readDraftFromForm(form: HTMLFormElement | null) {
 export function ActionCreateDialog({
   open,
   onOpenChange,
+  onActionPersisted,
   onCreated,
   maturityContext,
   fiveSLinkContext,
 }: ActionCreateDialogProps) {
   const formRef = useRef<HTMLFormElement>(null);
+  const wasOpenRef = useRef(false);
   const [queryText, setQueryText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -82,9 +94,23 @@ export function ActionCreateDialog({
   const [checklistDraft, setChecklistDraft] = useState("");
   const [checklistTitles, setChecklistTitles] = useState<string[]>([]);
   const [createContextLoaded, setCreateContextLoaded] = useState(false);
+  const [evidenceDrafts, setEvidenceDrafts] = useState<
+    ActionCreateEvidenceDraft[]
+  >([]);
+  const [evidenceError, setEvidenceError] = useState<string | null>(null);
+  const [createdActionId, setCreatedActionId] = useState<string | null>(null);
 
   const plannerMode = !maturityContext;
   const labelsLoading = plannerMode && open && !createContextLoaded;
+
+  useEffect(() => {
+    if (open && !wasOpenRef.current) {
+      resetForm();
+    } else if (!open && wasOpenRef.current) {
+      resetForm();
+    }
+    wasOpenRef.current = open;
+  }, [open]);
 
   useEffect(() => {
     if (!open || !plannerMode) return;
@@ -123,6 +149,12 @@ export function ActionCreateDialog({
     setSelectedLabelIds([]);
     setChecklistDraft("");
     setChecklistTitles([]);
+    for (const draft of evidenceDrafts) {
+      if (draft.previewUrl) URL.revokeObjectURL(draft.previewUrl);
+    }
+    setEvidenceDrafts([]);
+    setEvidenceError(null);
+    setCreatedActionId(null);
   }
 
   function resetForm() {
@@ -141,6 +173,7 @@ export function ActionCreateDialog({
   }
 
   function hasDraft() {
+    if (createdActionId) return true;
     const { title, description } = readDraftFromForm(formRef.current);
     if (title || description) return true;
     if (!plannerMode) return false;
@@ -149,7 +182,8 @@ export function ActionCreateDialog({
       dueAt ||
       selectedLabelIds.length > 0 ||
       checklistTitles.length > 0 ||
-      checklistDraft.trim(),
+      checklistDraft.trim() ||
+      evidenceDrafts.length > 0,
     );
   }
 
@@ -231,41 +265,105 @@ export function ActionCreateDialog({
       ? [...checklistTitles, extraChecklist]
       : checklistTitles;
 
-    try {
-      const result = fiveSLinkContext
-        ? await createFiveSPlannerAction({
-            auditId: fiveSLinkContext.auditId,
-            sectionId: fiveSLinkContext.sectionId,
-            questionId: fiveSLinkContext.questionId,
-            title,
-            description,
-            dueAt: dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null,
-            assigneeMembershipId: assigneeId || null,
-            labelIds: selectedLabelIds,
-            checklistTitles: allChecklist,
-          })
-        : await createPlannerAction({
-            title,
-            description,
-            dueAt: dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null,
-            assigneeMembershipId: assigneeId || null,
-            labelIds: selectedLabelIds,
-            checklistTitles: allChecklist,
-          });
-      if (result.error && !result.id) {
-        setError(result.error);
-        return;
-      }
-      if (result.id) {
-        onOpenChange(false);
-        resetForm();
-        onCreated?.(result.id);
-        if (result.warning) {
-          setToastMessage(result.warning);
+    async function uploadCreateEvidence(
+      actionId: string,
+      drafts: ActionCreateEvidenceDraft[],
+    ) {
+      const failures: string[] = [];
+      const uploadedDraftIds: string[] = [];
+      for (const draft of drafts) {
+        const uploaded = await uploadEvidenceFileClient(draft.file, {
+          onInitiate: (filename, mimeType, byteSize) =>
+            initiateActionEvidenceUpload(
+              actionId,
+              filename,
+              mimeType,
+              byteSize,
+            ),
+          onConfirm: (attachmentId) =>
+            confirmActionEvidenceUpload(actionId, attachmentId),
+          onLink: async () => ({}),
+        });
+        if (!uploaded.ok) {
+          failures.push(`${draft.file.name}: ${uploaded.error}`);
+          continue;
+        }
+        uploadedDraftIds.push(draft.id);
+        if (draft.previewUrl) {
+          URL.revokeObjectURL(draft.previewUrl);
         }
       }
+      if (uploadedDraftIds.length > 0) {
+        setEvidenceDrafts((current) =>
+          current.filter((draft) => !uploadedDraftIds.includes(draft.id)),
+        );
+      }
+      return failures;
+    }
+
+    let actionId = createdActionId;
+    let createWarning: string | undefined;
+
+    try {
+      if (!actionId) {
+        const result = fiveSLinkContext
+          ? await createFiveSPlannerAction({
+              auditId: fiveSLinkContext.auditId,
+              sectionId: fiveSLinkContext.sectionId,
+              questionId: fiveSLinkContext.questionId,
+              title,
+              description,
+              dueAt: dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null,
+              assigneeMembershipId: assigneeId || null,
+              labelIds: selectedLabelIds,
+              checklistTitles: allChecklist,
+            })
+          : await createPlannerAction({
+              title,
+              description,
+              dueAt: dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null,
+              assigneeMembershipId: assigneeId || null,
+              labelIds: selectedLabelIds,
+              checklistTitles: allChecklist,
+            });
+        if (result.error && !result.id) {
+          setError(result.error);
+          return;
+        }
+        if (!result.id) {
+          return;
+        }
+        actionId = result.id;
+        setCreatedActionId(result.id);
+        onActionPersisted?.(result.id);
+        if (result.warning) {
+          createWarning = result.warning;
+        }
+      }
+
+      const uploadFailures =
+        evidenceDrafts.length > 0
+          ? await uploadCreateEvidence(actionId, evidenceDrafts)
+          : [];
+      if (uploadFailures.length > 0) {
+        setEvidenceError(uploadFailures.join(" "));
+        setError(
+          "One or more attachments could not be uploaded. Fix the issue and use Retry upload — a new action will not be created.",
+        );
+        return;
+      }
+
+      onCreated?.(actionId);
+      onOpenChange(false);
+      if (createWarning) {
+        setToastMessage(createWarning);
+      }
     } catch {
-      setError("Something went wrong while creating the action. Try again.");
+      setError(
+        actionId
+          ? "Something went wrong while uploading attachments. Try again."
+          : "Something went wrong while creating the action. Try again.",
+      );
     } finally {
       setPending(false);
     }
@@ -337,7 +435,7 @@ export function ActionCreateDialog({
                 name="title"
                 required
                 placeholder="Action title"
-                disabled={pending}
+                disabled={pending || Boolean(createdActionId)}
                 defaultValue={fiveSLinkContext?.defaultTitle ?? undefined}
                 key={
                   fiveSLinkContext
@@ -352,7 +450,7 @@ export function ActionCreateDialog({
                 id="action-create-description"
                 name="description"
                 rows={3}
-                disabled={pending}
+                disabled={pending || Boolean(createdActionId)}
               />
             </div>
 
@@ -443,6 +541,16 @@ export function ActionCreateDialog({
                     </div>
                   )}
                 </div>
+                <ActionCreateEvidencePicker
+                  drafts={evidenceDrafts}
+                  disabled={pending}
+                  error={evidenceError}
+                  onPickError={(message) => setEvidenceError(message)}
+                  onChange={(next) => {
+                    setEvidenceDrafts(next);
+                    setEvidenceError(null);
+                  }}
+                />
                 <div
                   className="flex flex-col gap-2"
                   data-testid="action-create-checklist"
@@ -570,7 +678,13 @@ export function ActionCreateDialog({
                     : "actions-create-submit"
                 }
               >
-                {pending ? "Creating…" : "Create action"}
+                {pending
+                  ? createdActionId
+                    ? "Uploading…"
+                    : "Creating…"
+                  : createdActionId
+                    ? "Retry upload"
+                    : "Create action"}
               </Button>
             </DialogFooter>
           </form>
