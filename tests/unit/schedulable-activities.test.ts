@@ -4,6 +4,7 @@ import {
   buildSchedulableFiveSOptions,
   buildSchedulableGembaOptions,
   mergeSchedulableActivityOptions,
+  schedulableActivitiesRequireSiteChoice,
 } from "@/lib/schedule/schedulable-activities";
 import {
   buildSiteScopedUnitOptions,
@@ -53,6 +54,44 @@ const unitStatusById = new Map([
   ["bodmin-packing", "active"],
   ["bodmin", "active"],
 ]);
+
+describe("schedulableActivitiesRequireSiteChoice", () => {
+  it("is true in All sites mode with requireConcreteSite", () => {
+    const allSitesContext: ActiveSiteContext = {
+      mode: "all",
+      activeSiteId: null,
+      locked: false,
+      sites: [
+        {
+          id: "bodmin",
+          name: "Bodmin Cookie Factory",
+          code: "bodmin-cookie-factory",
+        },
+      ],
+    };
+    const configurationUnits = buildSiteScopedUnitOptions(
+      units,
+      allSitesContext,
+      { requireConcreteSite: true },
+    );
+    expect(configurationUnits.requiresSiteSelection).toBe(true);
+    expect(
+      schedulableActivitiesRequireSiteChoice(
+        allSitesContext,
+        configurationUnits,
+      ),
+    ).toBe(true);
+  });
+
+  it("is false when a concrete site is active", () => {
+    const configurationUnits = buildSiteScopedUnitOptions(units, context, {
+      requireConcreteSite: true,
+    });
+    expect(
+      schedulableActivitiesRequireSiteChoice(context, configurationUnits),
+    ).toBe(false);
+  });
+});
 
 describe("schedulable activities", () => {
   it("includes published 5S standards with active applicable units", () => {

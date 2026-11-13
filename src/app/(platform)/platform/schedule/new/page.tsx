@@ -102,6 +102,7 @@ export default async function NewSchedulePage({
         <ScheduleActivityPicker
           activities={schedulable.activities}
           returnTo={returnTo}
+          requiresSiteChoice={schedulable.requiresSiteChoice === true}
           {...(schedulable.loadError
             ? { loadError: schedulable.loadError }
             : {})}

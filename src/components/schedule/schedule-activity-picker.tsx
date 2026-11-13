@@ -27,16 +27,43 @@ export function ScheduleActivityPicker({
   activities,
   returnTo,
   loadError,
+  requiresSiteChoice = false,
 }: {
   activities: SchedulableActivityOption[];
   returnTo: string;
   loadError?: string;
+  requiresSiteChoice?: boolean;
 }) {
   if (loadError) {
     return (
       <Card data-testid="schedule-activity-picker-error">
         <CardContent className="py-6">
           <p className="text-sm text-destructive">{loadError}</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (requiresSiteChoice) {
+    return (
+      <Card data-testid="schedule-activity-picker-choose-site">
+        <CardContent className="flex flex-col items-center gap-5 px-4 py-12 text-center sm:px-8">
+          <div
+            className="grid size-14 place-items-center rounded-xl border border-dashed border-border bg-muted/30 text-muted-foreground"
+            aria-hidden
+          >
+            <CalendarClock className="size-6" />
+          </div>
+          <div className="flex max-w-md flex-col gap-1.5">
+            <h2 className="text-base font-semibold text-foreground">
+              Choose a site to see schedulable activities
+            </h2>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Schedules are scoped to a site&apos;s applicable 5S standards and
+              Gemba definitions. Select an active site in the sidebar, then
+              return here to pick an activity.
+            </p>
+          </div>
         </CardContent>
       </Card>
     );

@@ -3,12 +3,30 @@ import {
   requireApplicableUnitIds,
   splitApplicabilitySelection,
 } from "@/modules/operational/five-s-applicability";
+import type { ActiveSiteContext } from "@/modules/organisation/site-context";
 import {
   buildSiteScopedUnitOptions,
   filterUnitsForActiveSite,
 } from "@/modules/organisation/site-context";
 
 export type SchedulableActivityKind = "five_s" | "gemba";
+
+/** When true, published activities may exist but cannot be listed without a concrete site. */
+export function schedulableActivitiesRequireSiteChoice(
+  context: ActiveSiteContext,
+  configurationUnits: ReturnType<typeof buildSiteScopedUnitOptions>,
+): boolean {
+  if (configurationUnits.requiresSiteSelection) {
+    return true;
+  }
+  if (context.mode === "legacy") {
+    return false;
+  }
+  if (context.mode === "all") {
+    return true;
+  }
+  return context.activeSiteId === null;
+}
 
 export type SchedulableActivityOption = {
   kind: SchedulableActivityKind;

@@ -4,6 +4,7 @@ import {
   buildSchedulableFiveSOptions,
   buildSchedulableGembaOptions,
   mergeSchedulableActivityOptions,
+  schedulableActivitiesRequireSiteChoice,
   type SchedulableActivityOption,
 } from "@/lib/schedule/schedulable-activities";
 import { collectUnitStatuses } from "@/modules/operational/five-s-applicability";
@@ -17,9 +18,17 @@ import { createServerSupabaseClient } from "@/platform/supabase/server";
 export async function loadSchedulableActivities(): Promise<{
   activities: SchedulableActivityOption[];
   loadError?: string;
+  requiresSiteChoice?: boolean;
 }> {
   const supabase = await createServerSupabaseClient();
   const { units, context } = await loadActiveSiteContext();
+  const configurationUnits = buildSiteScopedUnitOptions(units, context, {
+    requireConcreteSite: true,
+  });
+
+  if (schedulableActivitiesRequireSiteChoice(context, configurationUnits)) {
+    return { activities: [], requiresSiteChoice: true };
+  }
 
   const [fiveSResult, gembaResult] = await Promise.all([
     supabase
@@ -112,9 +121,6 @@ export async function loadSchedulableActivities(): Promise<{
       : { data: [] };
 
   const unitStatusById = collectUnitStatuses(mappedUnits ?? []);
-  const configurationUnits = buildSiteScopedUnitOptions(units, context, {
-    requireConcreteSite: true,
-  });
   const hierarchyUnits = filterUnitsForActiveSite(units, context, {
     requireConcreteSite: true,
   });
