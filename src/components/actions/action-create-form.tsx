@@ -51,6 +51,9 @@ export type FiveSActionLinkContext = {
 type ActionCreateDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Fires when the action record exists; uploads may still be in flight. */
+  onActionPersisted?: (actionId: string) => void;
+  /** Fires when create and all pending uploads succeeded, before the dialog closes. */
   onCreated?: (actionId: string) => void;
   maturityContext?: MaturityActionContext;
   fiveSLinkContext?: FiveSActionLinkContext;
@@ -68,11 +71,13 @@ function readDraftFromForm(form: HTMLFormElement | null) {
 export function ActionCreateDialog({
   open,
   onOpenChange,
+  onActionPersisted,
   onCreated,
   maturityContext,
   fiveSLinkContext,
 }: ActionCreateDialogProps) {
   const formRef = useRef<HTMLFormElement>(null);
+  const wasOpenRef = useRef(false);
   const [queryText, setQueryText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -97,6 +102,15 @@ export function ActionCreateDialog({
 
   const plannerMode = !maturityContext;
   const labelsLoading = plannerMode && open && !createContextLoaded;
+
+  useEffect(() => {
+    if (open && !wasOpenRef.current) {
+      resetForm();
+    } else if (!open && wasOpenRef.current) {
+      resetForm();
+    }
+    wasOpenRef.current = open;
+  }, [open]);
 
   useEffect(() => {
     if (!open || !plannerMode) return;
@@ -287,10 +301,10 @@ export function ActionCreateDialog({
       return failures;
     }
 
-    try {
-      let actionId = createdActionId;
-      let createWarning: string | undefined;
+    let actionId = createdActionId;
+    let createWarning: string | undefined;
 
+    try {
       if (!actionId) {
         const result = fiveSLinkContext
           ? await createFiveSPlannerAction({
@@ -321,7 +335,7 @@ export function ActionCreateDialog({
         }
         actionId = result.id;
         setCreatedActionId(result.id);
-        onCreated?.(result.id);
+        onActionPersisted?.(result.id);
         if (result.warning) {
           createWarning = result.warning;
         }
@@ -339,14 +353,14 @@ export function ActionCreateDialog({
         return;
       }
 
+      onCreated?.(actionId);
       onOpenChange(false);
-      resetForm();
       if (createWarning) {
         setToastMessage(createWarning);
       }
     } catch {
       setError(
-        createdActionId
+        actionId
           ? "Something went wrong while uploading attachments. Try again."
           : "Something went wrong while creating the action. Try again.",
       );

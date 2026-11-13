@@ -24,8 +24,7 @@ export function FiveSAuditRaiseAction({
 }: FiveSAuditRaiseActionProps) {
   const [createOpen, setCreateOpen] = useState(false);
 
-  function handleCreated(_actionId: string) {
-    setCreateOpen(false);
+  function handleActionPersisted(_actionId: string) {
     onActionCreated?.();
   }
 
@@ -52,7 +51,7 @@ export function FiveSAuditRaiseAction({
         open={createOpen}
         onOpenChange={setCreateOpen}
         fiveSLinkContext={linkContext}
-        onCreated={handleCreated}
+        onActionPersisted={handleActionPersisted}
       />
     </>
   );

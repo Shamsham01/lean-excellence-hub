@@ -198,6 +198,7 @@ describe("ActionCreateDialog", () => {
   });
 
   it("does not create a duplicate action when retrying failed evidence uploads", async () => {
+    const onActionPersisted = vi.fn();
     const onCreated = vi.fn();
     createPlannerActionMock.mockResolvedValue({ ok: true, id: "action-retry" });
     uploadEvidenceMock
@@ -213,6 +214,7 @@ describe("ActionCreateDialog", () => {
       <ActionCreateDialog
         open
         onOpenChange={onOpenChange}
+        onActionPersisted={onActionPersisted}
         onCreated={onCreated}
       />,
     );
@@ -232,8 +234,9 @@ describe("ActionCreateDialog", () => {
 
     await waitFor(() => {
       expect(createPlannerActionMock).toHaveBeenCalledTimes(1);
-      expect(onCreated).toHaveBeenCalledWith("action-retry");
+      expect(onActionPersisted).toHaveBeenCalledWith("action-retry");
     });
+    expect(onCreated).not.toHaveBeenCalled();
     expect(screen.getByTestId("actions-create-submit")).toHaveTextContent(
       /Retry upload/i,
     );
@@ -246,7 +249,44 @@ describe("ActionCreateDialog", () => {
       expect(createPlannerActionMock).toHaveBeenCalledTimes(1);
       expect(uploadEvidenceMock).toHaveBeenCalledTimes(2);
       expect(onOpenChange).toHaveBeenCalledWith(false);
+      expect(onCreated).toHaveBeenCalledWith("action-retry");
     });
+  });
+
+  it("calls onCreated only after uploads succeed, not when upload fails", async () => {
+    const onActionPersisted = vi.fn();
+    const onCreated = vi.fn();
+    createPlannerActionMock.mockResolvedValue({ ok: true, id: "action-late" });
+    uploadEvidenceMock.mockResolvedValueOnce({ ok: false, error: "denied" });
+
+    render(
+      <ActionCreateDialog
+        open
+        onOpenChange={vi.fn()}
+        onActionPersisted={onActionPersisted}
+        onCreated={onCreated}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Title"), {
+      target: { value: "Late complete" },
+    });
+    fireEvent.change(screen.getByTestId("action-create-evidence-file"), {
+      target: {
+        files: [new File(["a"], "a.jpg", { type: "image/jpeg" })],
+      },
+    });
+    fireEvent.submit(
+      within(screen.getByTestId("actions-create-dialog")).getByTestId(
+        "actions-create-form",
+      ),
+    );
+
+    await waitFor(() =>
+      expect(onActionPersisted).toHaveBeenCalledWith("action-late"),
+    );
+    expect(onCreated).not.toHaveBeenCalled();
+    expect(screen.getByTestId("actions-create-dialog")).toBeVisible();
   });
 
   it("clears pending when createPlannerAction throws", async () => {
