@@ -146,6 +146,12 @@ select 'child_node', public.add_analysis_node(
   3
 );
 
+select set_config(
+  'psnm.leaf_node',
+  (select id::text from ps_node_mutation_ids where key = 'leaf_node'),
+  true
+);
+
 reset role;
 
 set local role anon;
@@ -153,7 +159,7 @@ set local role anon;
 select throws_ok(
   format(
     'select public.update_analysis_node(%L::uuid, %L)',
-    (select id from ps_node_mutation_ids where key = 'leaf_node'),
+    current_setting('psnm.leaf_node')::uuid,
     'Anon edit attempt'
   ),
   '42501',
@@ -164,7 +170,7 @@ select throws_ok(
 select throws_ok(
   format(
     'select public.delete_analysis_node(%L::uuid)',
-    (select id from ps_node_mutation_ids where key = 'leaf_node')
+    current_setting('psnm.leaf_node')::uuid
   ),
   '42501',
   null,
@@ -174,7 +180,7 @@ select throws_ok(
 select throws_ok(
   format(
     'select public.promote_analysis_node_to_hypothesis(%L::uuid)',
-    (select id from ps_node_mutation_ids where key = 'leaf_node')
+    current_setting('psnm.leaf_node')::uuid
   ),
   '42501',
   null,
