@@ -71,7 +71,8 @@ export function HypothesisVerificationCard({
   const canVerify =
     canVerifyCause && ["testing", "supported"].includes(hypothesis.status);
   const canReject =
-    canManage && ["proposed", "testing", "supported"].includes(hypothesis.status);
+    canManage &&
+    ["proposed", "testing", "supported"].includes(hypothesis.status);
 
   function patchTestForm(patch: Partial<TestFormState>) {
     setTestForm((current) => ({ ...current, ...patch }));
@@ -129,11 +130,7 @@ export function HypothesisVerificationCard({
   async function handleVerify() {
     if (!verifyRationale.trim()) return;
     setLoading(true);
-    await verifyCauseHypothesis(
-      hypothesis.id,
-      caseId,
-      verifyRationale.trim(),
-    );
+    await verifyCauseHypothesis(hypothesis.id, caseId, verifyRationale.trim());
     setShowVerifyForm(false);
     setVerifyRationale("");
     setLoading(false);

@@ -107,7 +107,9 @@ export async function updateProblemSolvingProblemStatement(
   } catch (error) {
     return {
       error:
-        error instanceof Error ? error.message : "Problem statement update failed",
+        error instanceof Error
+          ? error.message
+          : "Problem statement update failed",
     };
   }
 }
@@ -126,7 +128,9 @@ export async function updateProblemSolvingTargetCondition(
   } catch (error) {
     return {
       error:
-        error instanceof Error ? error.message : "Target condition update failed",
+        error instanceof Error
+          ? error.message
+          : "Target condition update failed",
     };
   }
 }

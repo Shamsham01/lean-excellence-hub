@@ -17,9 +17,8 @@ vi.mock("@/platform/supabase/server", () => ({
 describe("problem solving case definition server actions", () => {
   it("calls update_problem_solving_problem_statement for active cases", async () => {
     rpcMock.mockResolvedValueOnce({ data: true, error: null });
-    const { updateProblemSolvingProblemStatement } = await import(
-      "@/app/(platform)/platform/problem-solving/actions"
-    );
+    const { updateProblemSolvingProblemStatement } =
+      await import("@/app/(platform)/platform/problem-solving/actions");
     const result = await updateProblemSolvingProblemStatement(
       "case-1",
       "Updated statement",
@@ -36,9 +35,8 @@ describe("problem solving case definition server actions", () => {
 
   it("calls update_problem_solving_target_condition for active cases", async () => {
     rpcMock.mockResolvedValueOnce({ data: true, error: null });
-    const { updateProblemSolvingTargetCondition } = await import(
-      "@/app/(platform)/platform/problem-solving/actions"
-    );
+    const { updateProblemSolvingTargetCondition } =
+      await import("@/app/(platform)/platform/problem-solving/actions");
     const result = await updateProblemSolvingTargetCondition(
       "case-1",
       "Target achieved",
