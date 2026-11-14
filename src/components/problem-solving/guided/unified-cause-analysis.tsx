@@ -18,6 +18,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  FISHBONE_CAUSE_LABEL_MAX_LENGTH,
+  PROMOTED_FISHBONE_CAUSE_LOCKED_MESSAGE,
+} from "@/lib/problem-solving/fishbone-cause-mutation-rules";
+import {
   HYPOTHESIS_CATEGORIES,
   hypothesisCategoryLabel,
   normalizeFishboneCategory,
@@ -60,7 +64,9 @@ export function UnifiedCauseAnalysis({
   const [loading, setLoading] = useState(false);
   const [fishboneMessage, setFishboneMessage] = useState<string | null>(null);
   const [fishboneError, setFishboneError] = useState<string | null>(null);
-  const [hypothesisMessage, setHypothesisMessage] = useState<string | null>(null);
+  const [hypothesisMessage, setHypothesisMessage] = useState<string | null>(
+    null,
+  );
   const [hypothesisError, setHypothesisError] = useState<string | null>(null);
 
   const [newCauseByCategory, setNewCauseByCategory] = useState<
@@ -68,6 +74,9 @@ export function UnifiedCauseAnalysis({
   >({});
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const [editingLabel, setEditingLabel] = useState("");
+  const [removeConfirmNodeId, setRemoveConfirmNodeId] = useState<string | null>(
+    null,
+  );
 
   const [manualStatement, setManualStatement] = useState("");
   const [manualCategory, setManualCategory] = useState<string>("");
@@ -78,16 +87,10 @@ export function UnifiedCauseAnalysis({
       (item) => item.analysis_type === "fishbone",
     );
     if (fishbones.length === 0) return null;
-    return fishbones.reduce((primary, candidate) => {
-      const primaryCount = analysisNodes.filter(
-        (node) => node.analysis_id === primary.id,
-      ).length;
-      const candidateCount = analysisNodes.filter(
-        (node) => node.analysis_id === candidate.id,
-      ).length;
-      return candidateCount > primaryCount ? candidate : primary;
-    });
-  }, [analyses, analysisNodes]);
+    return fishbones.reduce((oldest, candidate) =>
+      candidate.created_at < oldest.created_at ? candidate : oldest,
+    );
+  }, [analyses]);
 
   const fishboneNodes = useMemo(() => {
     if (!fishboneAnalysis) return [] as AnalysisNodeView[];
@@ -111,6 +114,9 @@ export function UnifiedCauseAnalysis({
   }, [fishboneNodes]);
 
   const hypotheses = detail.hypotheses ?? [];
+  const caseOpen = ["draft", "active"].includes(detail.status);
+  const canEditFishbone = canEditCaseDefinition && caseOpen;
+  const canAddManualHypothesis = canEditCaseDefinition && caseOpen;
 
   const fishboneLinkOptions = useMemo(
     () =>
@@ -124,7 +130,7 @@ export function UnifiedCauseAnalysis({
   );
 
   async function submitNewCause(category: string) {
-    if (!canEditCaseDefinition) return;
+    if (!canEditFishbone) return;
     const label = (newCauseByCategory[category] ?? "").trim();
     if (!label) {
       setFishboneError("Cause description is required.");
@@ -176,12 +182,13 @@ export function UnifiedCauseAnalysis({
       setFishboneError(result.error);
       return;
     }
+    setRemoveConfirmNodeId(null);
     setFishboneMessage("Cause removed.");
     router.refresh();
   }
 
   async function handlePromote(nodeId: string) {
-    if (!canEditCaseDefinition) return;
+    if (!canEditFishbone) return;
     setLoading(true);
     setFishboneError(null);
     setFishboneMessage(null);
@@ -199,19 +206,15 @@ export function UnifiedCauseAnalysis({
 
   async function handleManualHypothesis(event: React.FormEvent) {
     event.preventDefault();
-    if (!canEditCaseDefinition) return;
+    if (!canAddManualHypothesis) return;
     setLoading(true);
     setHypothesisError(null);
     setHypothesisMessage(null);
     const result = await createManualCauseHypothesis({
       caseId,
       statement: manualStatement,
-      ...(manualCategory
-        ? { category: manualCategory }
-        : {}),
-      ...(manualFishboneNodeId
-        ? { fishboneNodeId: manualFishboneNodeId }
-        : {}),
+      ...(manualCategory ? { category: manualCategory } : {}),
+      ...(manualFishboneNodeId ? { fishboneNodeId: manualFishboneNodeId } : {}),
     });
     setLoading(false);
     if (result.error) {
@@ -252,7 +255,7 @@ export function UnifiedCauseAnalysis({
                 <ul className="mt-2 flex flex-col gap-2">
                   {nodes.length === 0 ? (
                     <li className="text-xs text-muted-foreground">
-                      {canEditCaseDefinition
+                      {canEditFishbone
                         ? "Add a cause below, or let Lean AI propose one."
                         : "No causes yet."}
                     </li>
@@ -268,16 +271,19 @@ export function UnifiedCauseAnalysis({
                         >
                           {isEditing ? (
                             <div className="flex flex-col gap-2">
-                              <Label className="sr-only" htmlFor={`edit-${node.id}`}>
+                              <Label
+                                className="sr-only"
+                                htmlFor={`edit-${node.id}`}
+                              >
                                 Edit cause
                               </Label>
                               <Input
                                 id={`edit-${node.id}`}
                                 value={editingLabel}
+                                maxLength={FISHBONE_CAUSE_LABEL_MAX_LENGTH}
                                 onChange={(event) =>
                                   setEditingLabel(event.target.value)
                                 }
-                                aria-label={`Edit ${hypothesisCategoryLabel(category)} cause`}
                               />
                               <div className="flex flex-wrap gap-2">
                                 <Button
@@ -305,54 +311,90 @@ export function UnifiedCauseAnalysis({
                           ) : (
                             <>
                               <p className="break-words">{node.label}</p>
-                              <div className="mt-2 flex flex-wrap items-center gap-2">
-                                {canEditCaseDefinition ? (
+                              <div className="mt-2 flex flex-col gap-2">
+                                {promoted ? (
+                                  <p
+                                    className="text-xs text-muted-foreground"
+                                    data-testid="pps-fishbone-promoted"
+                                  >
+                                    {PROMOTED_FISHBONE_CAUSE_LOCKED_MESSAGE}
+                                  </p>
+                                ) : canEditFishbone ? (
                                   <>
-                                    {promoted ? (
-                                      <span
-                                        className="text-xs text-muted-foreground"
-                                        data-testid="pps-fishbone-promoted"
-                                      >
-                                        Promoted
-                                      </span>
+                                    {removeConfirmNodeId === node.id ? (
+                                      <div className="flex flex-col gap-2">
+                                        <p className="text-xs text-muted-foreground">
+                                          Remove this cause?
+                                        </p>
+                                        <div className="flex flex-wrap gap-2">
+                                          <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="destructive"
+                                            disabled={loading}
+                                            onClick={() =>
+                                              void handleRemoveCause(node.id)
+                                            }
+                                          >
+                                            Confirm remove
+                                          </Button>
+                                          <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="ghost"
+                                            disabled={loading}
+                                            onClick={() =>
+                                              setRemoveConfirmNodeId(null)
+                                            }
+                                          >
+                                            Cancel
+                                          </Button>
+                                        </div>
+                                      </div>
                                     ) : (
-                                      <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-auto px-0 text-xs"
-                                        disabled={loading}
-                                        onClick={() => handlePromote(node.id)}
-                                      >
-                                        Promote to hypothesis
-                                      </Button>
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="ghost"
+                                          className="h-auto px-0 text-xs"
+                                          disabled={loading}
+                                          onClick={() => handlePromote(node.id)}
+                                        >
+                                          Promote to hypothesis
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="ghost"
+                                          className="h-auto px-0 text-xs"
+                                          disabled={loading}
+                                          onClick={() => {
+                                            setEditingNodeId(node.id);
+                                            setEditingLabel(node.label);
+                                            setFishboneError(null);
+                                            setRemoveConfirmNodeId(null);
+                                          }}
+                                          aria-label={`Edit cause ${node.label}`}
+                                        >
+                                          Edit
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="ghost"
+                                          className="h-auto px-0 text-xs text-destructive hover:text-destructive"
+                                          disabled={loading}
+                                          onClick={() => {
+                                            setRemoveConfirmNodeId(node.id);
+                                            setEditingNodeId(null);
+                                          }}
+                                          aria-label={`Remove cause ${node.label}`}
+                                        >
+                                          Remove
+                                        </Button>
+                                      </div>
                                     )}
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-auto px-0 text-xs"
-                                      disabled={loading}
-                                      onClick={() => {
-                                        setEditingNodeId(node.id);
-                                        setEditingLabel(node.label);
-                                        setFishboneError(null);
-                                      }}
-                                      aria-label={`Edit cause ${node.label}`}
-                                    >
-                                      Edit
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-auto px-0 text-xs text-destructive hover:text-destructive"
-                                      disabled={loading}
-                                      onClick={() => handleRemoveCause(node.id)}
-                                      aria-label={`Remove cause ${node.label}`}
-                                    >
-                                      Remove
-                                    </Button>
                                   </>
                                 ) : null}
                               </div>
@@ -363,7 +405,7 @@ export function UnifiedCauseAnalysis({
                     })
                   )}
                 </ul>
-                {canEditCaseDefinition ? (
+                {canEditFishbone ? (
                   <form
                     className="mt-3 flex flex-col gap-2 border-t border-dashed pt-3"
                     onSubmit={(event) => {
@@ -381,6 +423,7 @@ export function UnifiedCauseAnalysis({
                       id={`pps-fishbone-add-${category}`}
                       value={newCauseValue}
                       placeholder="Describe a possible cause"
+                      maxLength={FISHBONE_CAUSE_LABEL_MAX_LENGTH}
                       disabled={loading}
                       onChange={(event) =>
                         setNewCauseByCategory((current) => ({
@@ -388,7 +431,7 @@ export function UnifiedCauseAnalysis({
                           [category]: event.target.value,
                         }))
                       }
-                      aria-label={`Add ${hypothesisCategoryLabel(category)} cause`}
+                      required
                       data-testid={`pps-fishbone-add-input-${category}`}
                     />
                     <Button
@@ -449,13 +492,16 @@ export function UnifiedCauseAnalysis({
             })
           )}
 
-          {canEditCaseDefinition ? (
+          {canAddManualHypothesis ? (
             <form
               onSubmit={handleManualHypothesis}
               className="flex flex-col gap-3 rounded-lg border border-dashed p-3"
               data-testid="pps-manual-hypothesis-form"
             >
               <p className="text-sm font-medium">Add hypothesis</p>
+              <p className="text-xs text-muted-foreground">
+                Write it so a test could prove it wrong.
+              </p>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="pps-manual-hypothesis-statement">
                   Hypothesis statement
@@ -467,7 +513,8 @@ export function UnifiedCauseAnalysis({
                   placeholder="State what you think is driving the problem"
                   rows={3}
                   disabled={loading}
-                  aria-required
+                  required
+                  aria-required="true"
                 />
               </div>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
@@ -477,7 +524,7 @@ export function UnifiedCauseAnalysis({
                   </Label>
                   <select
                     id="pps-manual-hypothesis-category"
-                    className="h-10 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm"
+                    className="border-input h-10 w-full min-w-0 rounded-md border bg-background px-3 text-sm"
                     value={manualCategory}
                     disabled={loading}
                     onChange={(event) => setManualCategory(event.target.value)}
@@ -497,7 +544,7 @@ export function UnifiedCauseAnalysis({
                   </Label>
                   <select
                     id="pps-manual-hypothesis-fishbone"
-                    className="h-10 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm"
+                    className="border-input h-10 w-full min-w-0 rounded-md border bg-background px-3 text-sm"
                     value={manualFishboneNodeId}
                     disabled={loading || fishboneLinkOptions.length === 0}
                     onChange={(event) =>

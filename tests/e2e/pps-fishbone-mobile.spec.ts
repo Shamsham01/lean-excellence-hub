@@ -175,7 +175,9 @@ test.describe("PPS fishbone mobile", () => {
     const causeRow = machineBucket
       .getByTestId("pps-fishbone-cause-row")
       .filter({ hasText: manualLabel });
-    await causeRow.getByRole("button", { name: "Promote to hypothesis" }).click();
+    await causeRow
+      .getByRole("button", { name: "Promote to hypothesis" })
+      .click();
     await expect(causeRow.getByTestId("pps-fishbone-promoted")).toBeVisible({
       timeout: 15_000,
     });

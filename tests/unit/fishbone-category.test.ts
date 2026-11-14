@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   HYPOTHESIS_CATEGORIES,
+  hypothesisCategoryLabel,
   normalizeFishboneCategory,
 } from "@/lib/problem-solving/hypothesis";
 
@@ -10,6 +11,10 @@ describe("normalizeFishboneCategory", () => {
     for (const category of HYPOTHESIS_CATEGORIES) {
       expect(normalizeFishboneCategory(category)).toBe(category);
     }
+  });
+
+  it("labels the man category as People", () => {
+    expect(hypothesisCategoryLabel("man")).toBe("People");
   });
 
   it("maps title case and demo seed labels", () => {

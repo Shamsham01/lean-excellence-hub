@@ -43,7 +43,7 @@ export const HYPOTHESIS_CATEGORIES = [
 export type HypothesisCategory = (typeof HYPOTHESIS_CATEGORIES)[number];
 
 const CATEGORY_LABELS: Record<HypothesisCategory, string> = {
-  man: "Man",
+  man: "People",
   machine: "Machine",
   material: "Material",
   method: "Method",

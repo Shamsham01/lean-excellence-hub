@@ -12941,6 +12941,14 @@ export type Database = {
         Args: { target_node_id: string }
         Returns: boolean
       }
+      promote_analysis_node_to_hypothesis: {
+        Args: {
+          target_category?: string | null
+          target_node_id: string
+          target_statement?: string | null
+        }
+        Returns: string
+      }
       add_benefit_source_link: {
         Args: {
           target_benefit_id: string

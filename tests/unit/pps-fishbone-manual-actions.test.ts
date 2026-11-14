@@ -14,9 +14,16 @@ vi.mock("@/lib/problem-solving/assert-can-edit-case-definition", () => ({
   assertCanEditCaseDefinition: (...args: unknown[]) => assertEditMock(...args),
 }));
 
+const callProblemSolvingRpcMock = vi.fn(async () => ({
+  data: { id: "case-1", status: "active" },
+  error: null,
+}));
+
 vi.mock("@/lib/problem-solving/supabase-untyped", () => ({
   untypedFrom: (...args: unknown[]) => untypedFromMock(...args),
-  callProblemSolvingRpc: vi.fn(),
+  callProblemSolvingRpc: (
+    ..._args: [unknown, string, Record<string, unknown>?]
+  ) => callProblemSolvingRpcMock(),
 }));
 
 vi.mock("@/platform/supabase/server", () => ({
@@ -94,7 +101,6 @@ describe("manual fishbone and hypothesis server actions", () => {
       return analysisQueryChain(true);
     });
     rpcMock.mockResolvedValueOnce({ data: "hypothesis-new", error: null });
-    rpcMock.mockResolvedValueOnce({ data: true, error: null });
     const { promoteFishboneCauseToHypothesis } =
       await import("@/app/(platform)/platform/problem-solving/actions");
     const result = await promoteFishboneCauseToHypothesis({
@@ -103,15 +109,37 @@ describe("manual fishbone and hypothesis server actions", () => {
     });
     expect(result.ok).toBe(true);
     expect(result.id).toBe("hypothesis-new");
-    expect(rpcMock).toHaveBeenNthCalledWith(1, "create_hypothesis", {
-      target_problem_solving_case_id: "case-1",
-      target_statement: "Heat soak wear",
-      target_category: "machine",
+    expect(rpcMock).toHaveBeenCalledWith(
+      "promote_analysis_node_to_hypothesis",
+      {
+        target_node_id: "node-1",
+        target_category: "machine",
+      },
+    );
+  });
+
+  it("updateFishboneCause refuses promoted causes before RPC", async () => {
+    untypedFromMock.mockImplementation((_client, table: string) => {
+      if (table === "problem_solving_analysis_nodes") {
+        return nodeQueryChain({
+          id: "node-1",
+          label: "Wear",
+          category: "machine",
+          linked_hypothesis_id: "hypothesis-1",
+          analysis_id: "analysis-1",
+        });
+      }
+      return analysisQueryChain(true);
     });
-    expect(rpcMock).toHaveBeenNthCalledWith(2, "link_node_hypothesis", {
-      target_node_id: "node-1",
-      target_hypothesis_id: "hypothesis-new",
+    const { updateFishboneCause } =
+      await import("@/app/(platform)/platform/problem-solving/actions");
+    const result = await updateFishboneCause({
+      caseId: "case-1",
+      nodeId: "node-1",
+      label: "New label",
     });
+    expect(result.error).toBe("Promoted, edit the hypothesis instead.");
+    expect(rpcMock).not.toHaveBeenCalled();
   });
 
   it("addFishboneCause rejects blank labels before RPC", async () => {
