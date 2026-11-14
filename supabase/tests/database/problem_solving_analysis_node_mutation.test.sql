@@ -307,7 +307,7 @@ with inserted_membership as (
     organisation_id,
     user_id,
     status,
-    joined_at
+    activated_at
   )
   values (
     (select id from ps_node_mutation_ids where key = 'organisation'),
@@ -320,6 +320,12 @@ with inserted_membership as (
 insert into ps_node_mutation_ids (key, id)
 select 'contributor_membership', id from inserted_membership;
 
+update private.identity_controls
+set status = 'active',
+    enrolment_status = 'complete',
+    enrolment_completed_at = statement_timestamp()
+where user_id = 'a1900000-0000-0000-0000-000000000002';
+
 select set_config(
   'request.jwt.claims',
   '{"sub":"a1900000-0000-0000-0000-000000000001","role":"authenticated","session_id":"a1910000-0000-0000-0000-000000000001","email":"ps-node-mutation-owner@example.test"}',
@@ -331,11 +337,13 @@ insert into ps_node_mutation_ids (key, id)
 select 'contributor_role_version', public.create_role_draft(
   (select id from ps_node_mutation_ids where key = 'organisation'),
   'ps-node-mutation-contributor-only',
-  'Contributor without manage'
+  'Contributor without manage',
+  'Contribute to cases without problem_solving.manage permission'
 );
 
 select ok(
-  public.add_permission_to_role(
+  public.add_role_permission(
+    (select id from ps_node_mutation_ids where key = 'organisation'),
     (select id from ps_node_mutation_ids where key = 'contributor_role_version'),
     'problem_solving.view'
   ),
@@ -343,7 +351,8 @@ select ok(
 );
 
 select ok(
-  public.add_permission_to_role(
+  public.add_role_permission(
+    (select id from ps_node_mutation_ids where key = 'organisation'),
     (select id from ps_node_mutation_ids where key = 'contributor_role_version'),
     'problem_solving.contribute'
   ),
@@ -352,18 +361,23 @@ select ok(
 
 select ok(
   public.publish_role_version(
+    (select id from ps_node_mutation_ids where key = 'organisation'),
     (select id from ps_node_mutation_ids where key = 'contributor_role_version')
   ),
   'contributor role publishes'
 );
 
+insert into ps_node_mutation_ids (key, id)
+select 'contributor_grant', public.grant_role_version(
+  (select id from ps_node_mutation_ids where key = 'organisation'),
+  (select id from ps_node_mutation_ids where key = 'contributor_membership'),
+  (select id from ps_node_mutation_ids where key = 'contributor_role_version'),
+  'organisation',
+  null
+);
+
 select ok(
-  public.grant_role_version(
-    (select id from ps_node_mutation_ids where key = 'organisation'),
-    (select id from ps_node_mutation_ids where key = 'contributor_membership'),
-    (select id from ps_node_mutation_ids where key = 'contributor_role_version'),
-    statement_timestamp()
-  ),
+  (select id from ps_node_mutation_ids where key = 'contributor_grant') is not null,
   'contributor grant applied'
 );
 
@@ -513,25 +527,25 @@ select ok(
 insert into ps_node_mutation_ids (key, id)
 select 'delete_parent_analysis', public.create_analysis(
   (select id from ps_node_mutation_ids where key = 'delete_parent_case'),
-  'five_whys',
-  'Parent delete guard chain'
+  'fishbone',
+  'Parent delete guard fishbone'
 );
 
 insert into ps_node_mutation_ids (key, id)
 select 'delete_parent', public.add_analysis_node(
   (select id from ps_node_mutation_ids where key = 'delete_parent_analysis'),
-  'Parent why',
+  'Parent fishbone cause',
   null,
-  'problem',
+  'method',
   1
 );
 
 insert into ps_node_mutation_ids (key, id)
 select 'delete_child', public.add_analysis_node(
   (select id from ps_node_mutation_ids where key = 'delete_parent_analysis'),
-  'Child why',
+  'Child fishbone cause',
   (select id from ps_node_mutation_ids where key = 'delete_parent'),
-  'cause',
+  'method',
   2
 );
 
@@ -544,10 +558,26 @@ select throws_ok(
   '55000'
 );
 
+insert into ps_node_mutation_ids (key, id)
+select 'non_fishbone_analysis', public.create_analysis(
+  (select id from ps_node_mutation_ids where key = 'delete_parent_case'),
+  'five_whys',
+  'Non-fishbone update guard'
+);
+
+insert into ps_node_mutation_ids (key, id)
+select 'non_fishbone_node', public.add_analysis_node(
+  (select id from ps_node_mutation_ids where key = 'non_fishbone_analysis'),
+  'Five why step',
+  null,
+  'problem',
+  1
+);
+
 select throws_ok(
   format(
     'select public.update_analysis_node(%L::uuid, %L)',
-    (select id from ps_node_mutation_ids where key = 'delete_parent'),
+    (select id from ps_node_mutation_ids where key = 'non_fishbone_node'),
     'Five why edit attempt'
   ),
   'only fishbone causes can be changed here',
