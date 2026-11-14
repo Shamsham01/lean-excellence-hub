@@ -12937,18 +12937,6 @@ export type Database = {
         }
         Returns: string
       }
-      delete_analysis_node: {
-        Args: { target_node_id: string }
-        Returns: boolean
-      }
-      promote_analysis_node_to_hypothesis: {
-        Args: {
-          target_category?: string | null
-          target_node_id: string
-          target_statement?: string | null
-        }
-        Returns: string
-      }
       add_benefit_source_link: {
         Args: {
           target_benefit_id: string
@@ -14316,6 +14304,10 @@ export type Database = {
         Args: { target_item_id: string }
         Returns: undefined
       }
+      delete_analysis_node: {
+        Args: { target_node_id: string }
+        Returns: boolean
+      }
       delete_gemba_observation: {
         Args: { target_observation_id: string; target_walk_id: string }
         Returns: boolean
@@ -15389,6 +15381,14 @@ export type Database = {
         Args: { target_bundle_id: string }
         Returns: Json
       }
+      promote_analysis_node_to_hypothesis: {
+        Args: {
+          target_category?: string
+          target_node_id: string
+          target_statement?: string
+        }
+        Returns: string
+      }
       provision_organisation: {
         Args: {
           organisation_code: string
@@ -16185,6 +16185,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_analysis_node: {
+        Args: { target_label: string; target_node_id: string }
+        Returns: boolean
+      }
       update_benefit_category: {
         Args: {
           target_category_id: string
@@ -16277,10 +16281,6 @@ export type Database = {
           target_observation_type: string
           target_walk_id: string
         }
-        Returns: boolean
-      }
-      update_analysis_node: {
-        Args: { target_node_id: string; target_label: string }
         Returns: boolean
       }
       update_hypothesis_status: {
