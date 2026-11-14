@@ -93,6 +93,44 @@ export async function createProblemSolvingCaseDraft(input: {
   }
 }
 
+export async function updateProblemSolvingProblemStatement(
+  caseId: string,
+  problemStatement: string,
+): Promise<ActionResult> {
+  try {
+    await callRpc("update_problem_solving_problem_statement", {
+      target_case_id: caseId,
+      target_problem_statement: problemStatement.trim(),
+    });
+    revalidateCasePaths(caseId);
+    return { ok: true };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Problem statement update failed",
+    };
+  }
+}
+
+export async function updateProblemSolvingTargetCondition(
+  caseId: string,
+  targetCondition: string,
+): Promise<ActionResult> {
+  try {
+    await callRpc("update_problem_solving_target_condition", {
+      target_case_id: caseId,
+      target_target_condition: targetCondition.trim(),
+    });
+    revalidateCasePaths(caseId);
+    return { ok: true };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Target condition update failed",
+    };
+  }
+}
+
 export async function updateProblemSolvingCaseDraft(input: {
   caseId: string;
   title?: string;
