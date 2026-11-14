@@ -14,6 +14,10 @@ vi.mock("@/lib/problem-solving/load-hypothesis-for-verification", () => ({
     loadContextMock(...args),
 }));
 
+vi.mock("@/lib/problem-solving/assert-can-edit-case-definition", () => ({
+  assertCanEditCaseDefinition: vi.fn(async () => ({ ok: true })),
+}));
+
 vi.mock("@/platform/supabase/server", () => ({
   createServerSupabaseClient: vi.fn(async () => ({
     rpc: rpcMock,

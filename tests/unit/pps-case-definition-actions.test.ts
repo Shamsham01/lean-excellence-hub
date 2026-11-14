@@ -6,6 +6,10 @@ vi.mock("@/modules/billing/assert-module-write", () => ({
   assertPlanModuleWrite: vi.fn(async () => ({ ok: true })),
 }));
 
+vi.mock("@/lib/problem-solving/assert-can-edit-case-definition", () => ({
+  assertCanEditCaseDefinition: vi.fn(async () => ({ ok: true })),
+}));
+
 const rpcMock = vi.fn();
 
 vi.mock("@/platform/supabase/server", () => ({
