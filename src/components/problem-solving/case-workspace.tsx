@@ -431,6 +431,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
           canContribute={canContribute || canManage}
           canManage={canManage}
           canVerifyCause={canVerifyCause}
+          canEditCaseDefinition={canEditCaseDefinition}
         />
       );
     }

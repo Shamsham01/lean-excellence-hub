@@ -119,6 +119,51 @@ describe("hypothesis verification rules", () => {
     ).toBe(true);
   });
 
+  it("blocks verify when refute completes later the same day as support", () => {
+    const sameDay = "2026-03-10";
+    const tests = [
+      testRow({
+        id: "t1",
+        conclusion: "supports",
+        completed_date: sameDay,
+        created_at: "2026-03-10T09:00:00Z",
+      }),
+      testRow({
+        id: "t2",
+        conclusion: "refutes",
+        completed_date: sameDay,
+        created_at: "2026-03-10T15:00:00Z",
+      }),
+    ];
+    expect(latestCompletedRefutesWithoutNewerSupport(tests)).toBe(true);
+  });
+
+  it("allows verify when support completes later the same day as refute", () => {
+    const sameDay = "2026-03-10";
+    const tests = [
+      testRow({
+        id: "t1",
+        conclusion: "refutes",
+        completed_date: sameDay,
+        created_at: "2026-03-10T09:00:00Z",
+      }),
+      testRow({
+        id: "t2",
+        conclusion: "supports",
+        completed_date: sameDay,
+        created_at: "2026-03-10T15:00:00Z",
+      }),
+    ];
+    expect(latestCompletedRefutesWithoutNewerSupport(tests)).toBe(false);
+    expect(
+      evaluateVerifyEligibility({
+        tests,
+        evidenceLinkCount: 0,
+        status: "supported",
+      }).allowed,
+    ).toBe(true);
+  });
+
   it("allows verify with linked evidence and no supporting test", () => {
     const tests = [
       testRow({

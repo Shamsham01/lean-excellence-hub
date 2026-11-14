@@ -23,17 +23,30 @@ function completedTests(
   );
 }
 
-function completionTimestamp(test: ProblemSolvingHypothesisTest): number {
-  const primary = test.completed_date ?? test.created_at;
-  return new Date(primary).getTime();
+/** Newest-first ordering: completed_date (date-only) then created_at tie-break. */
+export function compareCompletedTestsNewestFirst(
+  a: ProblemSolvingHypothesisTest,
+  b: ProblemSolvingHypothesisTest,
+): number {
+  const dateA = a.completed_date ?? "";
+  const dateB = b.completed_date ?? "";
+  if (dateA !== dateB) {
+    return dateB.localeCompare(dateA);
+  }
+  return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+}
+
+export function isCompletedTestNewerThan(
+  candidate: ProblemSolvingHypothesisTest,
+  reference: ProblemSolvingHypothesisTest,
+): boolean {
+  return compareCompletedTestsNewestFirst(reference, candidate) > 0;
 }
 
 function sortCompletedNewestFirst(
   tests: ProblemSolvingHypothesisTest[],
 ): ProblemSolvingHypothesisTest[] {
-  return [...completedTests(tests)].sort(
-    (a, b) => completionTimestamp(b) - completionTimestamp(a),
-  );
+  return [...completedTests(tests)].sort(compareCompletedTestsNewestFirst);
 }
 
 export function hasSupportingCompletedTest(
@@ -63,10 +76,9 @@ export function latestCompletedRefutesWithoutNewerSupport(
   if (!newest || newest.conclusion !== "refutes") {
     return false;
   }
-  const refutedAt = completionTimestamp(newest);
   return !completedTests(tests).some(
     (test) =>
-      test.conclusion === "supports" && completionTimestamp(test) > refutedAt,
+      test.conclusion === "supports" && isCompletedTestNewerThan(test, newest),
   );
 }
 

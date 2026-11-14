@@ -37,6 +37,7 @@ type HypothesisVerificationCardProps = {
   canContribute: boolean;
   canManage: boolean;
   canVerifyCause: boolean;
+  canEditCaseDefinition: boolean;
 };
 
 type TestFormState = {
@@ -59,12 +60,12 @@ export function HypothesisVerificationCard({
   caseId,
   hypothesis,
   tests,
-  canContribute,
-  canManage,
+  canEditCaseDefinition,
   canVerifyCause,
 }: HypothesisVerificationCardProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [verifyRationale, setVerifyRationale] = useState("");
   const [rejectRationale, setRejectRationale] = useState("");
   const [showVerifyForm, setShowVerifyForm] = useState(false);
@@ -73,7 +74,7 @@ export function HypothesisVerificationCard({
 
   const pendingTest = tests.find((test) => !test.completed_date);
   const canRunTestWorkflow =
-    canContribute &&
+    canEditCaseDefinition &&
     ["proposed", "testing", "supported"].includes(hypothesis.status);
   const verifyEligibility = useMemo(
     () =>
@@ -88,7 +89,7 @@ export function HypothesisVerificationCard({
   const showVerifyControls =
     canVerifyCause && ["testing", "supported"].includes(hypothesis.status);
   const canReject =
-    canManage &&
+    canEditCaseDefinition &&
     ["proposed", "testing", "supported"].includes(hypothesis.status);
 
   function patchTestForm(patch: Partial<TestFormState>) {
@@ -96,14 +97,19 @@ export function HypothesisVerificationCard({
   }
 
   async function handleStartTesting() {
+    setActionError(null);
     setLoading(true);
-    await updateHypothesisStatus(
+    const result = await updateHypothesisStatus(
       hypothesis.id,
       caseId,
       "testing",
       "Investigation started",
     );
     setLoading(false);
+    if (result.error) {
+      setActionError(result.error);
+      return;
+    }
     router.refresh();
   }
 
@@ -115,21 +121,27 @@ export function HypothesisVerificationCard({
     ) {
       return;
     }
+    setActionError(null);
     setLoading(true);
-    await createHypothesisTest({
+    const result = await createHypothesisTest({
       hypothesisId: hypothesis.id,
       caseId,
       testQuestion: testForm.question.trim(),
       expectedResult: testForm.expected.trim(),
       method: testForm.method.trim(),
     });
-    setTestForm(defaultTestForm());
     setLoading(false);
+    if (result.error) {
+      setActionError(result.error);
+      return;
+    }
+    setTestForm(defaultTestForm());
     router.refresh();
   }
 
   async function handleCompleteTest(testId: string) {
     if (!testForm.actual.trim()) return;
+    setActionError(null);
     setLoading(true);
     const result = await completeHypothesisTest({
       testId,
@@ -137,13 +149,23 @@ export function HypothesisVerificationCard({
       actualResult: testForm.actual.trim(),
       conclusion: testForm.conclusion,
     });
-    if (!result.error && testForm.conclusion === "supports") {
-      await updateHypothesisStatus(
+    if (result.error) {
+      setLoading(false);
+      setActionError(result.error);
+      return;
+    }
+    if (testForm.conclusion === "supports") {
+      const statusResult = await updateHypothesisStatus(
         hypothesis.id,
         caseId,
         "supported",
         "Test supports hypothesis",
       );
+      if (statusResult.error) {
+        setLoading(false);
+        setActionError(statusResult.error);
+        return;
+      }
     }
     setTestForm(defaultTestForm());
     setLoading(false);
@@ -152,21 +174,39 @@ export function HypothesisVerificationCard({
 
   async function handleVerify() {
     if (!verifyEligibility.allowed || !verifyRationale.trim()) return;
+    setActionError(null);
     setLoading(true);
-    await verifyCauseHypothesis(hypothesis.id, caseId, verifyRationale.trim());
+    const result = await verifyCauseHypothesis(
+      hypothesis.id,
+      caseId,
+      verifyRationale.trim(),
+    );
+    setLoading(false);
+    if (result.error) {
+      setActionError(result.error);
+      return;
+    }
     setShowVerifyForm(false);
     setVerifyRationale("");
-    setLoading(false);
     router.refresh();
   }
 
   async function handleReject() {
     if (!rejectRationale.trim()) return;
+    setActionError(null);
     setLoading(true);
-    await rejectCauseHypothesis(hypothesis.id, caseId, rejectRationale.trim());
+    const result = await rejectCauseHypothesis(
+      hypothesis.id,
+      caseId,
+      rejectRationale.trim(),
+    );
+    setLoading(false);
+    if (result.error) {
+      setActionError(result.error);
+      return;
+    }
     setShowRejectForm(false);
     setRejectRationale("");
-    setLoading(false);
     router.refresh();
   }
 
@@ -175,6 +215,11 @@ export function HypothesisVerificationCard({
       className="rounded-lg border p-3"
       data-testid={`hypothesis-item-${hypothesis.id}`}
     >
+      {actionError ? (
+        <p className="mb-2 text-sm text-destructive" role="alert">
+          {actionError}
+        </p>
+      ) : null}
       <div className="flex flex-wrap items-center gap-2">
         <p className="min-w-0 flex-1 font-medium">{hypothesis.statement}</p>
         <Badge variant={hypothesisStatusBadgeVariant(hypothesis.status)}>
@@ -206,7 +251,7 @@ export function HypothesisVerificationCard({
         </ul>
       ) : null}
 
-      {canContribute && hypothesis.status === "proposed" ? (
+      {canEditCaseDefinition && hypothesis.status === "proposed" ? (
         <Button
           type="button"
           size="sm"
@@ -227,22 +272,28 @@ export function HypothesisVerificationCard({
           </p>
           {!pendingTest ? (
             <>
-              <Input
-                placeholder="Test question"
-                value={testForm.question}
-                onChange={(event) =>
-                  patchTestForm({ question: event.target.value })
-                }
-                data-testid={`hypothesis-test-question-${hypothesis.id}`}
-              />
-              <Input
-                placeholder="Expected result"
-                value={testForm.expected}
-                onChange={(event) =>
-                  patchTestForm({ expected: event.target.value })
-                }
-                data-testid={`hypothesis-test-expected-${hypothesis.id}`}
-              />
+              <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
+                Test question
+                <Input
+                  value={testForm.question}
+                  onChange={(event) =>
+                    patchTestForm({ question: event.target.value })
+                  }
+                  data-testid={`hypothesis-test-question-${hypothesis.id}`}
+                  aria-label="Test question"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
+                Expected result
+                <Input
+                  value={testForm.expected}
+                  onChange={(event) =>
+                    patchTestForm({ expected: event.target.value })
+                  }
+                  data-testid={`hypothesis-test-expected-${hypothesis.id}`}
+                  aria-label="Expected result"
+                />
+              </label>
               <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
                 Verification method
                 <select
@@ -253,6 +304,7 @@ export function HypothesisVerificationCard({
                   }
                   data-testid={`hypothesis-test-method-${hypothesis.id}`}
                   required
+                  aria-label="Verification method"
                 >
                   <option value="">Select method…</option>
                   {HYPOTHESIS_VERIFICATION_METHODS.map((method) => (
@@ -279,14 +331,17 @@ export function HypothesisVerificationCard({
             </>
           ) : (
             <>
-              <Input
-                placeholder="Actual result"
-                value={testForm.actual}
-                onChange={(event) =>
-                  patchTestForm({ actual: event.target.value })
-                }
-                data-testid={`hypothesis-test-actual-${hypothesis.id}`}
-              />
+              <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
+                Actual result
+                <Input
+                  value={testForm.actual}
+                  onChange={(event) =>
+                    patchTestForm({ actual: event.target.value })
+                  }
+                  data-testid={`hypothesis-test-actual-${hypothesis.id}`}
+                  aria-label="Actual result"
+                />
+              </label>
               <select
                 className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
                 value={testForm.conclusion}
@@ -325,13 +380,17 @@ export function HypothesisVerificationCard({
             </p>
           ) : showVerifyForm ? (
             <>
-              <Textarea
-                rows={2}
-                value={verifyRationale}
-                onChange={(event) => setVerifyRationale(event.target.value)}
-                placeholder="Verification rationale"
-                data-testid="verify-cause-rationale"
-              />
+              <label className="flex flex-col gap-1 text-sm font-medium">
+                Verification rationale
+                <Textarea
+                  rows={2}
+                  value={verifyRationale}
+                  onChange={(event) => setVerifyRationale(event.target.value)}
+                  placeholder="Why this cause is verified for the team"
+                  data-testid="verify-cause-rationale"
+                  aria-label="Verification rationale"
+                />
+              </label>
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
@@ -378,6 +437,7 @@ export function HypothesisVerificationCard({
                   onChange={(event) => setRejectRationale(event.target.value)}
                   placeholder="Describe what ruled out this cause"
                   data-testid={`reject-hypothesis-rationale-${hypothesis.id}`}
+                  aria-label="What disproved it?"
                   required
                 />
               </label>

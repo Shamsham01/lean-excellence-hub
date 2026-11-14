@@ -33,6 +33,7 @@ type UnifiedCauseAnalysisProps = {
   canContribute: boolean;
   canManage: boolean;
   canVerifyCause: boolean;
+  canEditCaseDefinition: boolean;
 };
 
 export function UnifiedCauseAnalysis({
@@ -44,6 +45,7 @@ export function UnifiedCauseAnalysis({
   canContribute,
   canManage,
   canVerifyCause,
+  canEditCaseDefinition,
 }: UnifiedCauseAnalysisProps) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
@@ -184,6 +186,7 @@ export function UnifiedCauseAnalysis({
                   canContribute={canContribute}
                   canManage={canManage}
                   canVerifyCause={canVerifyCause}
+                  canEditCaseDefinition={canEditCaseDefinition}
                 />
               );
             })

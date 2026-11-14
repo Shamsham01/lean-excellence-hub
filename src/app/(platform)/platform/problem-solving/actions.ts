@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
+import { evaluateVerifyEligibility } from "@/lib/problem-solving/hypothesis-verification-rules";
+import { loadHypothesisForVerification } from "@/lib/problem-solving/load-hypothesis-for-verification";
 import { assertPlanModuleWrite } from "@/modules/billing/assert-module-write";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -418,6 +420,18 @@ export async function verifyCauseHypothesis(
   verificationRationale: string,
 ): Promise<ActionResult> {
   try {
+    const context = await loadHypothesisForVerification(caseId, hypothesisId);
+    if (!context) {
+      return { error: "Hypothesis not found on this case." };
+    }
+    const eligibility = evaluateVerifyEligibility({
+      tests: context.tests,
+      evidenceLinkCount: context.hypothesis.evidence_links?.length ?? 0,
+      status: context.hypothesis.status,
+    });
+    if (!eligibility.allowed) {
+      return { error: eligibility.reason };
+    }
     await callRpc("verify_cause_hypothesis", {
       target_hypothesis_id: hypothesisId,
       target_verification_rationale: verificationRationale,
@@ -437,11 +451,12 @@ export async function rejectCauseHypothesis(
   rejectionRationale?: string,
 ): Promise<ActionResult> {
   try {
+    if (!rejectionRationale?.trim()) {
+      return { error: "What disproved it? is required." };
+    }
     await callRpc("reject_cause_hypothesis", {
       target_hypothesis_id: hypothesisId,
-      ...(rejectionRationale
-        ? { target_rejection_rationale: rejectionRationale }
-        : {}),
+      target_rejection_rationale: rejectionRationale.trim(),
     });
     revalidateCasePaths(caseId);
     return { ok: true };
