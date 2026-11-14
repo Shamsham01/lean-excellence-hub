@@ -1,6 +1,6 @@
 begin;
 
-select plan(32);
+select plan(40);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -218,8 +218,9 @@ select throws_ok(
     (select id from ps_node_mutation_ids where key = 'leaf_node'),
     ''
   ),
+  '22023',
   'cause label is required',
-  '22023'
+  'blank cause label rejected'
 );
 
 select throws_ok(
@@ -228,8 +229,9 @@ select throws_ok(
     (select id from ps_node_mutation_ids where key = 'leaf_node'),
     repeat('x', 501)
   ),
+  '22023',
   'cause label must be 500 characters or fewer',
-  '22023'
+  'oversize cause label rejected'
 );
 
 select throws_ok(
@@ -238,8 +240,9 @@ select throws_ok(
     (select id from ps_node_mutation_ids where key = 'leaf_node'),
     repeat('x', 2001)
   ),
+  '22023',
   'hypothesis statement must be 2000 characters or fewer',
-  '22023'
+  'oversize promote statement rejected'
 );
 
 select set_config(
@@ -315,8 +318,29 @@ select throws_ok(
     (select id from ps_node_mutation_ids where key = 'other_org_node'),
     'Should not see other organisation node'
   ),
+  'P0002',
   'analysis node not found',
-  'P0002'
+  'cross-org update blocked'
+);
+
+select throws_ok(
+  format(
+    'select public.delete_analysis_node(%L::uuid)',
+    (select id from ps_node_mutation_ids where key = 'other_org_node')
+  ),
+  'P0002',
+  'analysis node not found',
+  'cross-org delete blocked'
+);
+
+select throws_ok(
+  format(
+    'select public.promote_analysis_node_to_hypothesis(%L::uuid)',
+    (select id from ps_node_mutation_ids where key = 'other_org_node')
+  ),
+  'P0002',
+  'analysis node not found',
+  'cross-org promote blocked'
 );
 
 reset role;
@@ -424,8 +448,9 @@ select throws_ok(
     (select id from ps_node_mutation_ids where key = 'leaf_node'),
     'Contributor edit attempt'
   ),
+  '42501',
   'analysis node update is not authorised',
-  '42501'
+  'contributor cannot update analysis node'
 );
 
 select throws_ok(
@@ -433,8 +458,19 @@ select throws_ok(
     'select public.delete_analysis_node(%L::uuid)',
     (select id from ps_node_mutation_ids where key = 'leaf_node')
   ),
+  '42501',
   'analysis node deletion is not authorised',
-  '42501'
+  'contributor cannot delete analysis node'
+);
+
+select throws_ok(
+  format(
+    'select public.promote_analysis_node_to_hypothesis(%L::uuid)',
+    (select id from ps_node_mutation_ids where key = 'leaf_node')
+  ),
+  '42501',
+  'hypothesis promotion is not authorised',
+  'contributor cannot promote analysis node'
 );
 
 select set_config(
@@ -462,8 +498,29 @@ select throws_ok(
     (select id from ps_node_mutation_ids where key = 'leaf_node'),
     'Cannot edit on cancelled case'
   ),
+  '55000',
   'case is closed; analysis cannot be changed',
-  '55000'
+  'cancelled case blocks update'
+);
+
+select throws_ok(
+  format(
+    'select public.delete_analysis_node(%L::uuid)',
+    (select id from ps_node_mutation_ids where key = 'leaf_node')
+  ),
+  '55000',
+  'case is closed; analysis cannot be changed',
+  'cancelled case blocks delete'
+);
+
+select throws_ok(
+  format(
+    'select public.promote_analysis_node_to_hypothesis(%L::uuid)',
+    (select id from ps_node_mutation_ids where key = 'leaf_node')
+  ),
+  '55000',
+  'case is closed; analysis cannot be changed',
+  'cancelled case blocks promote'
 );
 
 insert into ps_node_mutation_ids (key, id)
@@ -506,8 +563,9 @@ select throws_ok(
     'select public.promote_analysis_node_to_hypothesis(%L::uuid)',
     (select id from ps_node_mutation_ids where key = 'promoted_node')
   ),
+  '55000',
   'this cause is already promoted to a hypothesis',
-  '55000'
+  'double promote rejected'
 );
 
 select throws_ok(
@@ -516,8 +574,9 @@ select throws_ok(
     (select id from ps_node_mutation_ids where key = 'promoted_node'),
     'Promoted edit attempt'
   ),
+  '55000',
   'promoted fishbone causes cannot be changed; edit the hypothesis instead',
-  '55000'
+  'promoted node update rejected'
 );
 
 select throws_ok(
@@ -525,8 +584,9 @@ select throws_ok(
     'select public.delete_analysis_node(%L::uuid)',
     (select id from ps_node_mutation_ids where key = 'promoted_node')
   ),
+  '55000',
   'promoted fishbone causes cannot be removed; edit the hypothesis instead',
-  '55000'
+  'promoted node delete rejected'
 );
 
 insert into ps_node_mutation_ids (key, id)
@@ -573,8 +633,9 @@ select throws_ok(
     'select public.delete_analysis_node(%L::uuid)',
     (select id from ps_node_mutation_ids where key = 'delete_parent')
   ),
+  '55000',
   'remove child causes before deleting this node',
-  '55000'
+  'parent delete blocked while children exist'
 );
 
 insert into ps_node_mutation_ids (key, id)
@@ -599,8 +660,57 @@ select throws_ok(
     (select id from ps_node_mutation_ids where key = 'non_fishbone_node'),
     'Five why edit attempt'
   ),
+  '55000',
   'only fishbone causes can be changed here',
-  '55000'
+  'non-fishbone update rejected'
+);
+
+insert into ps_node_mutation_ids (key, id)
+select 'link_test_node', public.add_analysis_node(
+  (select id from ps_node_mutation_ids where key = 'active_analysis'),
+  'Unlinked cause for hypothesis link test',
+  null,
+  'machine',
+  2
+);
+
+insert into ps_node_mutation_ids (key, id)
+select 'link_hypothesis_a', public.create_hypothesis(
+  (select id from ps_node_mutation_ids where key = 'active_case'),
+  'Primary link target hypothesis'
+);
+
+insert into ps_node_mutation_ids (key, id)
+select 'link_hypothesis_b', public.create_hypothesis(
+  (select id from ps_node_mutation_ids where key = 'active_case'),
+  'Alternate link target hypothesis'
+);
+
+select ok(
+  public.link_node_hypothesis(
+    (select id from ps_node_mutation_ids where key = 'link_test_node'),
+    (select id from ps_node_mutation_ids where key = 'link_hypothesis_a')
+  ),
+  'manager can link node to first hypothesis'
+);
+
+select throws_ok(
+  format(
+    'select public.link_node_hypothesis(%L::uuid, %L::uuid)',
+    (select id from ps_node_mutation_ids where key = 'link_test_node'),
+    (select id from ps_node_mutation_ids where key = 'link_hypothesis_b')
+  ),
+  '55000',
+  'fishbone cause already has a different linked hypothesis',
+  'relink to different hypothesis rejected'
+);
+
+select ok(
+  public.link_node_hypothesis(
+    (select id from ps_node_mutation_ids where key = 'promoted_node'),
+    (select id from ps_node_mutation_ids where key = 'promoted_hypothesis')
+  ),
+  'linking same hypothesis again is a no-op'
 );
 
 select * from finish();

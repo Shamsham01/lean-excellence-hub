@@ -68,25 +68,6 @@ async function waitForInterventionSnooze(page: Page, interventionKey: string) {
     .not.toBe("");
 }
 
-async function waitForSnoozedCoachHidden(page: Page, interventionKey: string) {
-  await expect
-    .poll(
-      async () => {
-        const snapshot = await readContextualSnapshot(page);
-        const state = snapshot.journey.interventionStates.find(
-          (item) => item.interventionKey === interventionKey,
-        );
-        const snoozedUntil = state?.snoozedUntil ?? "";
-        const snoozed =
-          snoozedUntil !== "" && Date.parse(snoozedUntil) > Date.now();
-        const coachCount = await page.getByTestId("leanai-coach").count();
-        return snoozed && coachCount === 0;
-      },
-      { timeout: 30_000 },
-    )
-    .toBe(true);
-}
-
 async function expireInterventionSnooze(page: Page, interventionKey: string) {
   const occurredAt = new Date(Date.now() - 20 * 60 * 1000).toISOString();
   const response = await page.request.post("/api/leanai/context", {
@@ -256,7 +237,7 @@ test.describe("LeanAI intervention engine and coach UI", () => {
     await expect(
       platformMain(page).getByTestId("maturity-overview-page"),
     ).toBeVisible();
-    await waitForSnoozedCoachHidden(page, "maturity_first_setup");
+    await expect(page.getByTestId("leanai-coach")).toHaveCount(0);
 
     await expireInterventionSnooze(page, "maturity_first_setup");
     await page.reload();
