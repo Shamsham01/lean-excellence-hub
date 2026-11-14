@@ -7,6 +7,7 @@ import { loadCasePendingAiProposals } from "@/lib/problem-solving/load-case-pend
 import { loadCaseWorkspaceData } from "@/lib/problem-solving/load-case-workspace-data";
 import { callProblemSolvingRpc } from "@/lib/problem-solving/supabase-untyped";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
+import { listEligibleOrganisations } from "@/modules/organisations/context";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { loadWorkplaceRecordView } from "@/modules/workplace/access";
 import { isApplicationAiProviderAvailable } from "@/platform/ai/config";
@@ -65,6 +66,12 @@ export default async function ProblemSolvingCaseDetailPage({
         })
       : [];
   const providerAvailable = isApplicationAiProviderAvailable();
+  const organisations = await listEligibleOrganisations();
+  const currentMembershipId = organisations.find(
+    (organisation) => organisation.selected,
+  )?.membership_id;
+  const canEditCaseDefinition =
+    canManage || detail.owner_membership_id === currentMembershipId;
   const targetDueDateLabel = detail.target_due_at
     ? formatLongDate(detail.target_due_at)
     : null;
@@ -107,6 +114,7 @@ export default async function ProblemSolvingCaseDetailPage({
         canContribute={canContribute}
         canFacilitate={canFacilitate}
         canVerifyCause={canVerifyCause}
+        canEditCaseDefinition={canEditCaseDefinition}
         canClose={canClose}
         canUseAi={canUseAi}
         providerAvailable={providerAvailable}

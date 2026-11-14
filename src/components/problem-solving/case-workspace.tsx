@@ -88,6 +88,7 @@ type CaseWorkspaceProps = {
   canContribute: boolean;
   canFacilitate: boolean;
   canVerifyCause: boolean;
+  canEditCaseDefinition: boolean;
   canClose: boolean;
   canUseAi: boolean;
   providerAvailable: boolean;
@@ -114,6 +115,8 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     canManage,
     canContribute,
     canFacilitate,
+    canVerifyCause,
+    canEditCaseDefinition,
     canClose,
     canUseAi,
     providerAvailable,
@@ -427,6 +430,8 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
           hypothesisTests={hypothesisTests}
           canContribute={canContribute || canManage}
           canManage={canManage}
+          canVerifyCause={canVerifyCause}
+          canEditCaseDefinition={canEditCaseDefinition}
         />
       );
     }
@@ -489,6 +494,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
         detail={detail}
         evidence={evidence}
         canContribute={canContribute || canManage}
+        canEditCaseDefinition={canEditCaseDefinition}
       />
     );
   }

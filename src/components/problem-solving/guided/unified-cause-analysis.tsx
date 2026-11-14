@@ -3,20 +3,14 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import {
-  createHypothesis,
-  createHypothesisTest,
-} from "@/app/(platform)/platform/problem-solving/actions";
+import { createHypothesis } from "@/app/(platform)/platform/problem-solving/actions";
 import { FiveWhyGuidedChain } from "@/components/problem-solving/guided/five-why-guided-chain";
-import { Badge } from "@/components/ui/badge";
+import { HypothesisVerificationCard } from "@/components/problem-solving/guided/hypothesis-verification-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import {
   HYPOTHESIS_CATEGORIES,
   hypothesisCategoryLabel,
-  hypothesisStatusBadgeVariant,
-  hypothesisStatusLabel,
   normalizeFishboneCategory,
 } from "@/lib/problem-solving/hypothesis";
 import type {
@@ -38,6 +32,8 @@ type UnifiedCauseAnalysisProps = {
   hypothesisTests: ProblemSolvingHypothesisTest[];
   canContribute: boolean;
   canManage: boolean;
+  canVerifyCause: boolean;
+  canEditCaseDefinition: boolean;
 };
 
 export function UnifiedCauseAnalysis({
@@ -48,10 +44,10 @@ export function UnifiedCauseAnalysis({
   hypothesisTests,
   canContribute,
   canManage,
+  canVerifyCause,
+  canEditCaseDefinition,
 }: UnifiedCauseAnalysisProps) {
   const router = useRouter();
-  const [testQuestion, setTestQuestion] = useState("");
-  const [testHypothesisId, setTestHypothesisId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -103,23 +99,6 @@ export function UnifiedCauseAnalysis({
       category,
     });
     setMessage(result.error ?? "Hypothesis created from fishbone cause.");
-    setLoading(false);
-    router.refresh();
-  }
-
-  async function submitQuickTest(event: React.FormEvent) {
-    event.preventDefault();
-    if (!testHypothesisId || !testQuestion.trim()) return;
-    setLoading(true);
-    const result = await createHypothesisTest({
-      caseId,
-      hypothesisId: testHypothesisId,
-      testQuestion: testQuestion.trim(),
-      expectedResult: "To be agreed with the team",
-    });
-    setMessage(result.error ?? "Hypothesis test created.");
-    setTestQuestion("");
-    setTestHypothesisId(null);
     setLoading(false);
     router.refresh();
   }
@@ -199,70 +178,19 @@ export function UnifiedCauseAnalysis({
                 (test) => test.hypothesis_id === hypothesis.id,
               );
               return (
-                <div
+                <HypothesisVerificationCard
                   key={hypothesis.id}
-                  className="rounded-lg border p-3"
-                  data-testid="pps-hypothesis-card"
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium">{hypothesis.statement}</p>
-                    <Badge
-                      variant={hypothesisStatusBadgeVariant(hypothesis.status)}
-                    >
-                      {hypothesisStatusLabel(hypothesis.status)}
-                    </Badge>
-                  </div>
-                  {tests.length > 0 ? (
-                    <ul className="mt-2 list-disc pl-5 text-sm text-muted-foreground">
-                      {tests.map((test) => (
-                        <li key={test.id}>{test.test_question}</li>
-                      ))}
-                    </ul>
-                  ) : null}
-                  {(canManage || canContribute) &&
-                  ["proposed", "testing"].includes(hypothesis.status) ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="mt-2"
-                      onClick={() => setTestHypothesisId(hypothesis.id)}
-                    >
-                      Plan a test
-                    </Button>
-                  ) : null}
-                </div>
+                  caseId={caseId}
+                  hypothesis={hypothesis}
+                  tests={tests}
+                  canContribute={canContribute}
+                  canManage={canManage}
+                  canVerifyCause={canVerifyCause}
+                  canEditCaseDefinition={canEditCaseDefinition}
+                />
               );
             })
           )}
-
-          {testHypothesisId ? (
-            <form
-              onSubmit={submitQuickTest}
-              className="flex flex-col gap-2 rounded-lg border border-dashed p-3"
-            >
-              <p className="text-sm font-medium">Hypothesis test</p>
-              <Textarea
-                value={testQuestion}
-                onChange={(event) => setTestQuestion(event.target.value)}
-                placeholder="What test could disprove this hypothesis?"
-                rows={3}
-              />
-              <div className="flex gap-2">
-                <Button type="submit" size="sm" disabled={loading}>
-                  Save test
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setTestHypothesisId(null)}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          ) : null}
         </CardContent>
       </Card>
 

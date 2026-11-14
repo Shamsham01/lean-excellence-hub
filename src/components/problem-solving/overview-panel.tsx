@@ -1,3 +1,5 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppLink } from "@/components/ui/app-link";
@@ -8,12 +10,19 @@ import type {
   ProblemSolvingSourceLinkSummary,
 } from "@/lib/problem-solving/types";
 import { CaseEvidenceBlock } from "@/components/problem-solving/case-evidence-block";
+import { CaseDefinitionField } from "@/components/problem-solving/case-definition-field";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
+import {
+  updateProblemSolvingCaseDraft,
+  updateProblemSolvingProblemStatement,
+  updateProblemSolvingTargetCondition,
+} from "@/app/(platform)/platform/problem-solving/actions";
 
 type OverviewPanelProps = {
   detail: ProblemSolvingCaseDetail;
   evidence: EvidenceItem[];
   canContribute: boolean;
+  canEditCaseDefinition: boolean;
 };
 
 function normaliseSourceLinks(
@@ -27,8 +36,31 @@ export function OverviewPanel({
   detail,
   evidence,
   canContribute,
+  canEditCaseDefinition,
 }: OverviewPanelProps) {
   const sourceLinks = normaliseSourceLinks(detail.source_links);
+  const caseOpen = ["draft", "active"].includes(detail.status);
+  const canEditDefinition = canEditCaseDefinition && caseOpen;
+
+  async function saveProblemStatement(nextValue: string) {
+    if (detail.status === "draft") {
+      return updateProblemSolvingCaseDraft({
+        caseId: detail.id,
+        problemStatement: nextValue,
+      });
+    }
+    return updateProblemSolvingProblemStatement(detail.id, nextValue);
+  }
+
+  async function saveTargetCondition(nextValue: string) {
+    if (detail.status === "draft") {
+      return updateProblemSolvingCaseDraft({
+        caseId: detail.id,
+        targetCondition: nextValue,
+      });
+    }
+    return updateProblemSolvingTargetCondition(detail.id, nextValue);
+  }
 
   return (
     <div
@@ -40,12 +72,15 @@ export function OverviewPanel({
           <CardTitle className="text-base">Case definition</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 p-0 text-sm">
-          <div>
-            <p className="font-medium">Problem statement</p>
-            <p className="text-muted-foreground">
-              {detail.problem_statement ?? "—"}
-            </p>
-          </div>
+          <CaseDefinitionField
+            label="Problem statement"
+            value={detail.problem_statement}
+            placeholder="Describe the gap between current and desired performance"
+            maxLength={4000}
+            testId="pps-problem-statement"
+            canEdit={canEditDefinition}
+            onSave={saveProblemStatement}
+          />
           <div className="grid grid-cols-1 gap-3 @md/canvas:grid-cols-2">
             <div className="min-w-0">
               <p className="font-medium">Background</p>
@@ -70,12 +105,15 @@ export function OverviewPanel({
               <p className="text-muted-foreground">{detail.scope_out ?? "—"}</p>
             </div>
           </div>
-          <div>
-            <p className="font-medium">Target condition</p>
-            <p className="text-muted-foreground">
-              {detail.target_condition ?? "—"}
-            </p>
-          </div>
+          <CaseDefinitionField
+            label="Target condition"
+            value={detail.target_condition}
+            placeholder="Describe the measurable target once the problem is solved"
+            maxLength={4000}
+            testId="pps-target-condition"
+            canEdit={canEditDefinition}
+            onSave={saveTargetCondition}
+          />
           {detail.closure_outcome ? (
             <div>
               <p className="font-medium">Closure</p>
