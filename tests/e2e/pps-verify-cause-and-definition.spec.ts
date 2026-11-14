@@ -62,6 +62,9 @@ test.describe("PPS verify cause and case definition edit", () => {
     await hypothesisCard
       .getByTestId(/^hypothesis-test-expected-/)
       .fill("Measured effect matches predicted failure mode.");
+    await hypothesisCard
+      .getByTestId(/^hypothesis-test-method-/)
+      .selectOption("Measurement / data");
     await hypothesisCard.getByTestId(/^create-hypothesis-test-/).click();
 
     await hypothesisCard

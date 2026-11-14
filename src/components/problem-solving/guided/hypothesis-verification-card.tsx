@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -20,6 +20,11 @@ import {
   hypothesisStatusLabel,
   hypothesisTestConclusionLabel,
 } from "@/lib/problem-solving/hypothesis";
+import {
+  evaluateVerifyEligibility,
+  HYPOTHESIS_VERIFICATION_METHODS,
+  hypothesisTestMethodLabel,
+} from "@/lib/problem-solving/hypothesis-verification-rules";
 import type {
   ProblemSolvingHypothesis,
   ProblemSolvingHypothesisTest,
@@ -37,6 +42,7 @@ type HypothesisVerificationCardProps = {
 type TestFormState = {
   question: string;
   expected: string;
+  method: string;
   actual: string;
   conclusion: string;
 };
@@ -44,6 +50,7 @@ type TestFormState = {
 const defaultTestForm = (): TestFormState => ({
   question: "",
   expected: "",
+  method: "",
   actual: "",
   conclusion: "supports",
 });
@@ -68,7 +75,17 @@ export function HypothesisVerificationCard({
   const canRunTestWorkflow =
     canContribute &&
     ["proposed", "testing", "supported"].includes(hypothesis.status);
-  const canVerify =
+  const verifyEligibility = useMemo(
+    () =>
+      evaluateVerifyEligibility({
+        tests,
+        evidenceLinkCount: hypothesis.evidence_links?.length ?? 0,
+        status: hypothesis.status,
+      }),
+    [hypothesis.evidence_links, hypothesis.status, tests],
+  );
+
+  const showVerifyControls =
     canVerifyCause && ["testing", "supported"].includes(hypothesis.status);
   const canReject =
     canManage &&
@@ -91,14 +108,20 @@ export function HypothesisVerificationCard({
   }
 
   async function handleCreateTest() {
-    if (!testForm.question.trim() || !testForm.expected.trim()) return;
+    if (
+      !testForm.question.trim() ||
+      !testForm.expected.trim() ||
+      !testForm.method.trim()
+    ) {
+      return;
+    }
     setLoading(true);
     await createHypothesisTest({
       hypothesisId: hypothesis.id,
       caseId,
       testQuestion: testForm.question.trim(),
       expectedResult: testForm.expected.trim(),
-      method: "Workspace test",
+      method: testForm.method.trim(),
     });
     setTestForm(defaultTestForm());
     setLoading(false);
@@ -128,7 +151,7 @@ export function HypothesisVerificationCard({
   }
 
   async function handleVerify() {
-    if (!verifyRationale.trim()) return;
+    if (!verifyEligibility.allowed || !verifyRationale.trim()) return;
     setLoading(true);
     await verifyCauseHypothesis(hypothesis.id, caseId, verifyRationale.trim());
     setShowVerifyForm(false);
@@ -138,12 +161,9 @@ export function HypothesisVerificationCard({
   }
 
   async function handleReject() {
+    if (!rejectRationale.trim()) return;
     setLoading(true);
-    await rejectCauseHypothesis(
-      hypothesis.id,
-      caseId,
-      rejectRationale.trim() || "Rejected after review",
-    );
+    await rejectCauseHypothesis(hypothesis.id, caseId, rejectRationale.trim());
     setShowRejectForm(false);
     setRejectRationale("");
     setLoading(false);
@@ -175,6 +195,8 @@ export function HypothesisVerificationCard({
           {tests.map((test) => (
             <li key={test.id} data-testid={`hypothesis-test-${test.id}`}>
               {test.test_question}
+              {" · "}
+              {hypothesisTestMethodLabel(test.method)}
               {" — "}
               {test.completed_date
                 ? hypothesisTestConclusionLabel(test.conclusion)
@@ -221,10 +243,34 @@ export function HypothesisVerificationCard({
                 }
                 data-testid={`hypothesis-test-expected-${hypothesis.id}`}
               />
+              <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
+                Verification method
+                <select
+                  className="border-input min-h-11 rounded-md border bg-background px-3 py-2 text-sm font-normal text-foreground"
+                  value={testForm.method}
+                  onChange={(event) =>
+                    patchTestForm({ method: event.target.value })
+                  }
+                  data-testid={`hypothesis-test-method-${hypothesis.id}`}
+                  required
+                >
+                  <option value="">Select method…</option>
+                  {HYPOTHESIS_VERIFICATION_METHODS.map((method) => (
+                    <option key={method} value={method}>
+                      {method}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <Button
                 type="button"
                 size="sm"
-                disabled={loading}
+                disabled={
+                  loading ||
+                  !testForm.question.trim() ||
+                  !testForm.expected.trim() ||
+                  !testForm.method.trim()
+                }
                 onClick={handleCreateTest}
                 data-testid={`create-hypothesis-test-${hypothesis.id}`}
               >
@@ -268,9 +314,16 @@ export function HypothesisVerificationCard({
         </div>
       ) : null}
 
-      {canVerify ? (
+      {showVerifyControls ? (
         <div className="mt-2 flex flex-col gap-2">
-          {showVerifyForm ? (
+          {!verifyEligibility.allowed ? (
+            <p
+              className="text-xs text-muted-foreground"
+              data-testid={`verify-cause-blocked-${hypothesis.id}`}
+            >
+              {verifyEligibility.reason}
+            </p>
+          ) : showVerifyForm ? (
             <>
               <Textarea
                 rows={2}
@@ -317,19 +370,23 @@ export function HypothesisVerificationCard({
         <div className="mt-2 flex flex-col gap-2">
           {showRejectForm ? (
             <>
-              <Textarea
-                rows={2}
-                value={rejectRationale}
-                onChange={(event) => setRejectRationale(event.target.value)}
-                placeholder="Rejection rationale (optional)"
-                data-testid={`reject-hypothesis-rationale-${hypothesis.id}`}
-              />
+              <label className="flex flex-col gap-1 text-sm font-medium">
+                What disproved it?
+                <Textarea
+                  rows={2}
+                  value={rejectRationale}
+                  onChange={(event) => setRejectRationale(event.target.value)}
+                  placeholder="Describe what ruled out this cause"
+                  data-testid={`reject-hypothesis-rationale-${hypothesis.id}`}
+                  required
+                />
+              </label>
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
-                  disabled={loading}
+                  disabled={loading || !rejectRationale.trim()}
                   onClick={handleReject}
                   data-testid={`confirm-reject-hypothesis-${hypothesis.id}`}
                 >
