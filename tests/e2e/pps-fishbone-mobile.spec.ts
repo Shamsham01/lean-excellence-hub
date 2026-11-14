@@ -159,6 +159,31 @@ test.describe("PPS fishbone mobile", () => {
     await expect(leanAiPanel(page)).toBeVisible();
   });
 
+  test("manager can add a fishbone cause manually and promote it", async ({
+    page,
+  }) => {
+    await openActiveCaseFishboneStage(page);
+    const machineBucket = page.getByTestId("pps-fishbone-machine");
+    const manualLabel = `Manual wear ${Date.now().toString(36)}`;
+    await machineBucket
+      .getByTestId("pps-fishbone-add-input-machine")
+      .fill(manualLabel);
+    await machineBucket.getByTestId("pps-fishbone-add-submit-machine").click();
+    await expect(machineBucket.getByText(manualLabel)).toBeVisible({
+      timeout: 15_000,
+    });
+    const causeRow = machineBucket
+      .getByTestId("pps-fishbone-cause-row")
+      .filter({ hasText: manualLabel });
+    await causeRow.getByRole("button", { name: "Promote to hypothesis" }).click();
+    await expect(causeRow.getByTestId("pps-fishbone-promoted")).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(
+      page.getByTestId("pps-unified-cause-analysis").getByText(manualLabel),
+    ).toHaveCount(2);
+  });
+
   test("accepting a fishbone cause proposal renders under the machine category", async ({
     page,
   }) => {

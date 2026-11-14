@@ -12937,6 +12937,10 @@ export type Database = {
         }
         Returns: string
       }
+      delete_analysis_node: {
+        Args: { target_node_id: string }
+        Returns: boolean
+      }
       add_benefit_source_link: {
         Args: {
           target_benefit_id: string
@@ -16265,6 +16269,10 @@ export type Database = {
           target_observation_type: string
           target_walk_id: string
         }
+        Returns: boolean
+      }
+      update_analysis_node: {
+        Args: { target_node_id: string; target_label: string }
         Returns: boolean
       }
       update_hypothesis_status: {

@@ -2,8 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 
+import { assertCanEditCaseDefinition } from "@/lib/problem-solving/assert-can-edit-case-definition";
 import { evaluateVerifyEligibility } from "@/lib/problem-solving/hypothesis-verification-rules";
 import { loadHypothesisForVerification } from "@/lib/problem-solving/load-hypothesis-for-verification";
+import { normalizeFishboneCategory } from "@/lib/problem-solving/hypothesis";
+import { validateFishboneCausePromotion } from "@/lib/problem-solving/promote-fishbone-cause";
+import { untypedFrom } from "@/lib/problem-solving/supabase-untyped";
 import { assertPlanModuleWrite } from "@/modules/billing/assert-module-write";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -395,6 +399,9 @@ export async function createHypothesis(input: {
   rationale?: string;
 }): Promise<ActionResult> {
   try {
+    if (!input.statement.trim()) {
+      return { error: "Hypothesis statement is required." };
+    }
     const id = await callRpc<string>("create_hypothesis", {
       target_problem_solving_case_id: input.caseId,
       target_statement: input.statement,
@@ -651,6 +658,260 @@ export async function createAnalysis(input: {
   }
 }
 
+async function resolvePrimaryFishboneAnalysisId(caseId: string): Promise<string> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await untypedFrom(supabase, "problem_solving_analyses")
+    .select("id, created_at")
+    .eq("problem_solving_case_id", caseId)
+    .eq("analysis_type", "fishbone")
+    .order("created_at", { ascending: true });
+  if (error) {
+    throw error;
+  }
+  const rows = (data ?? []) as Array<{ id: string }>;
+  if (rows[0]?.id) {
+    return rows[0].id;
+  }
+  return callRpc<string>("create_analysis", {
+    target_problem_solving_case_id: caseId,
+    target_analysis_type: "fishbone",
+    target_title: "Fishbone analysis",
+  });
+}
+
+async function loadFishboneAnalysisNode(nodeId: string) {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await untypedFrom(
+    supabase,
+    "problem_solving_analysis_nodes",
+  )
+    .select("id, label, category, linked_hypothesis_id, analysis_id")
+    .eq("id", nodeId)
+    .maybeSingle();
+  if (error) {
+    throw error;
+  }
+  return data as {
+    id: string;
+    label: string;
+    category: string | null;
+    linked_hypothesis_id: string | null;
+    analysis_id: string;
+  } | null;
+}
+
+async function assertFishboneNodeInCase(
+  caseId: string,
+  analysisId: string,
+): Promise<void> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await untypedFrom(supabase, "problem_solving_analyses")
+    .select("id")
+    .eq("id", analysisId)
+    .eq("problem_solving_case_id", caseId)
+    .eq("analysis_type", "fishbone")
+    .maybeSingle();
+  if (error) {
+    throw error;
+  }
+  if (!data) {
+    throw new Error("Fishbone cause not found on this case.");
+  }
+}
+
+export async function addFishboneCause(input: {
+  caseId: string;
+  category: string;
+  label: string;
+}): Promise<ActionResult> {
+  try {
+    const access = await assertCanEditCaseDefinition(input.caseId);
+    if ("error" in access) {
+      return { error: access.error };
+    }
+    const label = input.label.trim();
+    if (!label) {
+      return { error: "Cause description is required." };
+    }
+    const category = normalizeFishboneCategory(input.category);
+    const analysisId = await resolvePrimaryFishboneAnalysisId(input.caseId);
+    const id = await callRpc<string>("add_analysis_node", {
+      target_analysis_id: analysisId,
+      target_label: label,
+      target_category: category,
+    });
+    revalidateCasePaths(input.caseId);
+    return { ok: true, id };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Fishbone cause create failed",
+    };
+  }
+}
+
+export async function updateFishboneCause(input: {
+  caseId: string;
+  nodeId: string;
+  label: string;
+}): Promise<ActionResult> {
+  try {
+    const access = await assertCanEditCaseDefinition(input.caseId);
+    if ("error" in access) {
+      return { error: access.error };
+    }
+    const label = input.label.trim();
+    if (!label) {
+      return { error: "Cause description is required." };
+    }
+    const node = await loadFishboneAnalysisNode(input.nodeId);
+    if (!node) {
+      return { error: "Fishbone cause not found." };
+    }
+    await assertFishboneNodeInCase(input.caseId, node.analysis_id);
+    await callRpc("update_analysis_node", {
+      target_node_id: input.nodeId,
+      target_label: label,
+    });
+    revalidateCasePaths(input.caseId);
+    return { ok: true };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Fishbone cause update failed",
+    };
+  }
+}
+
+export async function removeFishboneCause(input: {
+  caseId: string;
+  nodeId: string;
+}): Promise<ActionResult> {
+  try {
+    const access = await assertCanEditCaseDefinition(input.caseId);
+    if ("error" in access) {
+      return { error: access.error };
+    }
+    const node = await loadFishboneAnalysisNode(input.nodeId);
+    if (!node) {
+      return { error: "Fishbone cause not found." };
+    }
+    await assertFishboneNodeInCase(input.caseId, node.analysis_id);
+    await callRpc("delete_analysis_node", {
+      target_node_id: input.nodeId,
+    });
+    revalidateCasePaths(input.caseId);
+    return { ok: true };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Fishbone cause remove failed",
+    };
+  }
+}
+
+export async function promoteFishboneCauseToHypothesis(input: {
+  caseId: string;
+  nodeId: string;
+}): Promise<ActionResult> {
+  try {
+    const access = await assertCanEditCaseDefinition(input.caseId);
+    if ("error" in access) {
+      return { error: access.error };
+    }
+    const node = await loadFishboneAnalysisNode(input.nodeId);
+    if (!node) {
+      return { error: "Fishbone cause not found." };
+    }
+    await assertFishboneNodeInCase(input.caseId, node.analysis_id);
+    const category = normalizeFishboneCategory(node.category ?? "other");
+    const promotionCheck = validateFishboneCausePromotion({
+      linkedHypothesisId: node.linked_hypothesis_id,
+      label: node.label,
+      category,
+    });
+    if ("error" in promotionCheck) {
+      return {
+        error: promotionCheck.error,
+        ...(node.linked_hypothesis_id
+          ? { id: node.linked_hypothesis_id }
+          : {}),
+      };
+    }
+    const hypothesisId = await callRpc<string>("create_hypothesis", {
+      target_problem_solving_case_id: input.caseId,
+      target_statement: node.label.trim(),
+      target_category: category,
+    });
+    await callRpc("link_node_hypothesis", {
+      target_node_id: input.nodeId,
+      target_hypothesis_id: hypothesisId,
+    });
+    revalidateCasePaths(input.caseId);
+    return { ok: true, id: hypothesisId };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Promote to hypothesis failed",
+    };
+  }
+}
+
+export async function createManualCauseHypothesis(input: {
+  caseId: string;
+  statement: string;
+  category?: string;
+  fishboneNodeId?: string;
+}): Promise<ActionResult> {
+  try {
+    const access = await assertCanEditCaseDefinition(input.caseId);
+    if ("error" in access) {
+      return { error: access.error };
+    }
+    const statement = input.statement.trim();
+    if (!statement) {
+      return { error: "Hypothesis statement is required." };
+    }
+    const category = input.category
+      ? normalizeFishboneCategory(input.category)
+      : undefined;
+
+    if (input.fishboneNodeId) {
+      const node = await loadFishboneAnalysisNode(input.fishboneNodeId);
+      if (!node) {
+        return { error: "Linked fishbone cause not found." };
+      }
+      await assertFishboneNodeInCase(input.caseId, node.analysis_id);
+      if (node.linked_hypothesis_id) {
+        return { error: "That fishbone cause already has a hypothesis." };
+      }
+    }
+
+    const hypothesisId = await callRpc<string>("create_hypothesis", {
+      target_problem_solving_case_id: input.caseId,
+      target_statement: statement,
+      ...(category ? { target_category: category } : {}),
+    });
+
+    if (input.fishboneNodeId) {
+      await callRpc("link_node_hypothesis", {
+        target_node_id: input.fishboneNodeId,
+        target_hypothesis_id: hypothesisId,
+      });
+    }
+
+    revalidateCasePaths(input.caseId);
+    return { ok: true, id: hypothesisId };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Hypothesis create failed",
+    };
+  }
+}
+
 export async function addAnalysisNode(input: {
   analysisId: string;
   caseId: string;
@@ -659,9 +920,12 @@ export async function addAnalysisNode(input: {
   sortOrder?: number;
 }): Promise<ActionResult> {
   try {
+    if (!input.label.trim()) {
+      return { error: "Cause description is required." };
+    }
     const id = await callRpc<string>("add_analysis_node", {
       target_analysis_id: input.analysisId,
-      target_label: input.label,
+      target_label: input.label.trim(),
       ...(input.category ? { target_category: input.category } : {}),
       ...(input.sortOrder != null
         ? { target_sort_order: input.sortOrder }
