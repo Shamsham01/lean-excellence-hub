@@ -38,7 +38,8 @@ begin
   into node_row
   from public.problem_solving_analysis_nodes n
   where n.organisation_id = org_id
-    and n.id = target_node_id;
+    and n.id = target_node_id
+  for update;
 
   if not found then
     raise exception 'analysis node not found'
@@ -80,7 +81,8 @@ begin
   update public.problem_solving_analysis_nodes n
   set label = btrim(target_label)
   where n.organisation_id = org_id
-    and n.id = target_node_id;
+    and n.id = target_node_id
+    and n.linked_hypothesis_id is null;
 
   return true;
 end;
@@ -113,7 +115,8 @@ begin
   into node_row
   from public.problem_solving_analysis_nodes n
   where n.organisation_id = org_id
-    and n.id = target_node_id;
+    and n.id = target_node_id
+  for update;
 
   if not found then
     raise exception 'analysis node not found'
@@ -164,7 +167,8 @@ begin
 
   delete from public.problem_solving_analysis_nodes n
   where n.organisation_id = org_id
-    and n.id = target_node_id;
+    and n.id = target_node_id
+    and n.linked_hypothesis_id is null;
 
   return true;
 end;
@@ -248,6 +252,11 @@ begin
       using errcode = '22023';
   end if;
 
+  if char_length(statement_text) > 2000 then
+    raise exception 'hypothesis statement must be 2000 characters or fewer'
+      using errcode = '22023';
+  end if;
+
   category_text := nullif(btrim(coalesce(target_category, node_row.category)), '');
 
   new_hypothesis_id := private.create_hypothesis(
@@ -296,7 +305,8 @@ begin
   into node_row
   from public.problem_solving_analysis_nodes n
   where n.organisation_id = org_id
-    and n.id = target_node_id;
+    and n.id = target_node_id
+  for update;
 
   if not found then
     raise exception 'analysis node not found'
@@ -344,7 +354,8 @@ begin
   set linked_hypothesis_id = target_hypothesis_id,
       updated_at           = statement_timestamp()
   where n.organisation_id = org_id
-    and n.id = target_node_id;
+    and n.id = target_node_id
+    and n.linked_hypothesis_id is null;
 
   return true;
 end;

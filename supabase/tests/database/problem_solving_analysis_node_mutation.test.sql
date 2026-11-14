@@ -1,6 +1,6 @@
 begin;
 
-select plan(30);
+select plan(32);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -152,6 +152,15 @@ select set_config(
   true
 );
 
+select ok(
+  not pg_catalog.has_function_privilege(
+    'anon',
+    'public.promote_analysis_node_to_hypothesis(uuid, text, text)',
+    'execute'
+  ),
+  'anon role lacks execute privilege on promote_analysis_node_to_hypothesis'
+);
+
 reset role;
 
 set local role anon;
@@ -220,6 +229,16 @@ select throws_ok(
     repeat('x', 501)
   ),
   'cause label must be 500 characters or fewer',
+  '22023'
+);
+
+select throws_ok(
+  format(
+    'select public.promote_analysis_node_to_hypothesis(%L::uuid, %L)',
+    (select id from ps_node_mutation_ids where key = 'leaf_node'),
+    repeat('x', 2001)
+  ),
+  'hypothesis statement must be 2000 characters or fewer',
   '22023'
 );
 
