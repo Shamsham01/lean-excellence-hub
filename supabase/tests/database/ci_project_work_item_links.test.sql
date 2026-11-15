@@ -1,6 +1,6 @@
 begin;
 
-select plan(87);
+select plan(105);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -22,6 +22,12 @@ values
   (
     'f1000000-0000-0000-0000-000000000099',
     'ci-work-link-outsider@example.test',
+    statement_timestamp(), statement_timestamp(), statement_timestamp(),
+    '{"provider":"email","providers":["email"]}', '{}', false, false
+  ),
+  (
+    'f1000000-0000-0000-0000-000000000003',
+    'ci-work-link-viewer@example.test',
     statement_timestamp(), statement_timestamp(), statement_timestamp(),
     '{"provider":"email","providers":["email"]}', '{}', false, false
   );
@@ -72,21 +78,37 @@ values
     'f1000000-0000-0000-0000-000000000099',
     statement_timestamp(),
     statement_timestamp()
+  ),
+  (
+    'f1100000-0000-0000-0000-000000000003',
+    'f1000000-0000-0000-0000-000000000003',
+    statement_timestamp(),
+    statement_timestamp()
   );
 
 insert into public.organisation_memberships (organisation_id, user_id, status, activated_at)
-values (
-  (select id from work_link_ids where key = 'organisation'),
-  'f1000000-0000-0000-0000-000000000002',
-  'active',
-  statement_timestamp()
-);
+values
+  (
+    (select id from work_link_ids where key = 'organisation'),
+    'f1000000-0000-0000-0000-000000000002',
+    'active',
+    statement_timestamp()
+  ),
+  (
+    (select id from work_link_ids where key = 'organisation'),
+    'f1000000-0000-0000-0000-000000000003',
+    'active',
+    statement_timestamp()
+  );
 
 update private.identity_controls
 set status = 'active',
     enrolment_status = 'complete',
     enrolment_completed_at = statement_timestamp()
-where user_id = 'f1000000-0000-0000-0000-000000000002';
+where user_id in (
+  'f1000000-0000-0000-0000-000000000002',
+  'f1000000-0000-0000-0000-000000000003'
+);
 
 select set_config(
   'request.jwt.claims',
@@ -148,9 +170,80 @@ where role_version.organisation_id = (select id from work_link_ids where key = '
   and role_row.module_responsibility_key = 'gemba'
   and role_version.status = 'published';
 
+set local role postgres;
+
+with inserted_version as (
+  insert into public.role_versions (
+    organisation_id,
+    role_id,
+    version_number,
+    status,
+    created_by_membership_id
+  )
+  select
+    (select id from work_link_ids where key = 'organisation'),
+    role_row.id,
+    2,
+    'draft',
+    membership_row.id
+  from public.roles role_row
+  join public.organisation_memberships membership_row
+    on membership_row.organisation_id = role_row.organisation_id
+   and membership_row.user_id = 'f1000000-0000-0000-0000-000000000001'
+  where role_row.organisation_id = (select id from work_link_ids where key = 'organisation')
+    and role_row.module_responsibility_key = 'actions'
+  returning id
+)
+insert into work_link_ids (key, id)
+select 'actions_no_assign_version', inserted_version.id
+from inserted_version;
+
+insert into public.role_permissions (
+  organisation_id,
+  role_version_id,
+  permission_key
+)
+select
+  role_permission.organisation_id,
+  (select id from work_link_ids where key = 'actions_no_assign_version'),
+  role_permission.permission_key
+from public.role_permissions role_permission
+where role_permission.organisation_id = (select id from work_link_ids where key = 'organisation')
+  and role_permission.role_version_id = (select id from work_link_ids where key = 'actions_role_version')
+  and role_permission.permission_key is distinct from 'actions.assign';
+
+update public.role_versions role_version
+set status = 'published',
+    published_at = statement_timestamp(),
+    published_by_membership_id = membership_row.id
+from public.organisation_memberships membership_row
+where role_version.id = (select id from work_link_ids where key = 'actions_no_assign_version')
+  and membership_row.organisation_id = (select id from work_link_ids where key = 'organisation')
+  and membership_row.user_id = 'f1000000-0000-0000-0000-000000000001';
+
+update public.role_versions role_version
+set status = 'retired',
+    retired_at = statement_timestamp(),
+    retired_by_membership_id = membership_row.id
+from public.organisation_memberships membership_row
+where role_version.organisation_id = (select id from work_link_ids where key = 'organisation')
+  and role_version.id = (select id from work_link_ids where key = 'actions_role_version')
+  and membership_row.user_id = 'f1000000-0000-0000-0000-000000000001';
+
+set local role authenticated;
+
+select ok(
+  (
+    select role_version.status
+    from public.role_versions role_version
+    where role_version.id = (select id from work_link_ids where key = 'actions_no_assign_version')
+  ) = 'published',
+  'actions role without assign is published for site manager coverage'
+);
+
 select ok(
   public.grant_role_version(
-    (select id from work_link_ids where key = 'organisation'),
+   (select id from work_link_ids where key = 'organisation'),
     (select id from work_link_ids where key = 'site_b_manager_membership'),
     (select id from work_link_ids where key = 'projects_role_version'),
     'unit_subtree',
@@ -163,11 +256,11 @@ select ok(
   public.grant_role_version(
     (select id from work_link_ids where key = 'organisation'),
     (select id from work_link_ids where key = 'site_b_manager_membership'),
-    (select id from work_link_ids where key = 'actions_role_version'),
+    (select id from work_link_ids where key = 'actions_no_assign_version'),
     'unit_subtree',
     (select id from work_link_ids where key = 'unit')
   ) is not null,
-  'site-scoped manager receives actions responsibility on site A'
+  'site-scoped manager receives actions responsibility on site A without assign'
 );
 
 select ok(
@@ -180,6 +273,12 @@ select ok(
   ) is not null,
   'site-scoped manager receives gemba responsibility on site A'
 );
+
+insert into work_link_ids (key, id)
+select 'viewer_membership', membership_row.id
+from public.organisation_memberships membership_row
+where membership_row.organisation_id = (select id from work_link_ids where key = 'organisation')
+  and membership_row.user_id = 'f1000000-0000-0000-0000-000000000003';
 
 insert into work_link_ids (key, id)
 select 'gemba_definition', public.create_gemba_definition_draft(
@@ -212,6 +311,17 @@ select lives_ok(
 );
 
 select ok(
+  public.set_gemba_definition_applicable_units(
+    (select id from work_link_ids where key = 'gemba_definition'),
+    array[
+      (select id from work_link_ids where key = 'unit'),
+      (select id from work_link_ids where key = 'site_b')
+    ]::uuid[]
+  ),
+  'gemba definition applies to site A and site B'
+);
+
+select ok(
   public.publish_gemba_definition_version(
     (select id from work_link_ids where key = 'gemba_version')
   ),
@@ -241,6 +351,19 @@ insert into work_link_ids (key, id)
 select 'completed_observation', public.create_gemba_observation(
   (select id from work_link_ids where key = 'completed_walk'),
   'Completed walk finding.',
+  'issue'
+);
+
+insert into work_link_ids (key, id)
+select 'site_b_walk', public.start_gemba_walk(
+  (select id from work_link_ids where key = 'gemba_definition'),
+  (select id from work_link_ids where key = 'site_b')
+);
+
+insert into work_link_ids (key, id)
+select 'site_b_observation', public.create_gemba_observation(
+  (select id from work_link_ids where key = 'site_b_walk'),
+  'Site B-only observation.',
   'issue'
 );
 
@@ -286,6 +409,78 @@ select 'project_site_b', public.create_improvement_project(
   'Impact'
 );
 
+set local role postgres;
+
+with inserted_projects_read_version as (
+  insert into public.role_versions (
+    organisation_id,
+    role_id,
+    version_number,
+    status,
+    created_by_membership_id
+  )
+  select
+    (select id from work_link_ids where key = 'organisation'),
+    role_row.id,
+    2,
+    'draft',
+    membership_row.id
+  from public.roles role_row
+  join public.organisation_memberships membership_row
+    on membership_row.organisation_id = role_row.organisation_id
+   and membership_row.user_id = 'f1000000-0000-0000-0000-000000000001'
+  where role_row.organisation_id = (select id from work_link_ids where key = 'organisation')
+    and role_row.module_responsibility_key = 'projects'
+  returning id
+)
+insert into work_link_ids (key, id)
+select 'projects_read_only_version', inserted_projects_read_version.id
+from inserted_projects_read_version;
+
+insert into public.role_permissions (
+  organisation_id,
+  role_version_id,
+  permission_key
+)
+values (
+  (select id from work_link_ids where key = 'organisation'),
+  (select id from work_link_ids where key = 'projects_read_only_version'),
+  'projects.read'
+);
+
+update public.role_versions role_version
+set status = 'published',
+    published_at = statement_timestamp(),
+    published_by_membership_id = membership_row.id
+from public.organisation_memberships membership_row
+where role_version.id = (select id from work_link_ids where key = 'projects_read_only_version')
+  and membership_row.organisation_id = (select id from work_link_ids where key = 'organisation')
+  and membership_row.user_id = 'f1000000-0000-0000-0000-000000000001';
+
+set local role authenticated;
+
+select ok(
+  public.grant_role_version(
+    (select id from work_link_ids where key = 'organisation'),
+    (select id from work_link_ids where key = 'viewer_membership'),
+    (select id from work_link_ids where key = 'projects_read_only_version'),
+    'unit_subtree',
+    (select id from work_link_ids where key = 'unit')
+  ) is not null,
+  'viewer receives projects.read on site A'
+);
+
+select ok(
+  public.grant_role_version(
+    (select id from work_link_ids where key = 'organisation'),
+    (select id from work_link_ids where key = 'viewer_membership'),
+    (select id from work_link_ids where key = 'gemba_role_version'),
+    'unit_subtree',
+    (select id from work_link_ids where key = 'unit')
+  ) is not null,
+  'viewer receives gemba walk edit on site A'
+);
+
 insert into work_link_ids (key, id)
 select 'relink_target_project', public.create_improvement_project(
   'Relink target project',
@@ -300,6 +495,20 @@ select 'owner_membership', membership_row.id
 from public.organisation_memberships membership_row
 where membership_row.organisation_id = (select id from work_link_ids where key = 'organisation')
   and membership_row.user_id = 'f1000000-0000-0000-0000-000000000001';
+
+insert into work_link_ids (key, id)
+select 'planner_action_guard', public.create_gemba_action(
+  'Action for assign-guard coverage',
+  (select id from work_link_ids where key = 'active_walk'),
+  (select id from work_link_ids where key = 'owner_membership'),
+  statement_timestamp() + interval '8 days',
+  'f3000000-0000-0000-0000-0000000000aa',
+  null,
+  null,
+  (select id from work_link_ids where key = 'observation'),
+  'Guard action context',
+  'normal'
+);
 
 insert into work_link_ids (key, id)
 select 'action', public.create_action(
@@ -1010,6 +1219,46 @@ select throws_ok(
   'site-scoped manager cannot set gemba link to unreadable site B project'
 );
 
+select throws_ok(
+  format(
+    'select public.set_action_assignee(%L::uuid, %L::uuid)',
+    (select id from work_link_ids where key = 'planner_action_guard'),
+    (select id from work_link_ids where key = 'site_b_manager_membership')
+  ),
+  '42501',
+  'action assignment is not authorised',
+  'set_action_assignee rejects self-assign without actions.assign'
+);
+
+select throws_ok(
+  format(
+    'select public.set_gemba_observation_linked_project(%L::uuid, %L::uuid)',
+    gen_random_uuid(),
+    (select id from work_link_ids where key = 'project')
+  ),
+  '42501',
+  'gemba observation project link is not authorised',
+  'site manager receives unified denial for non-existent gemba observation'
+);
+
+select throws_ok(
+  format(
+    'select public.set_gemba_observation_linked_project(%L::uuid, %L::uuid)',
+    (select id from work_link_ids where key = 'site_b_observation'),
+    (select id from work_link_ids where key = 'project')
+  ),
+  '42501',
+  'gemba observation project link is not authorised',
+  'site manager receives unified denial for out-of-scope gemba observation'
+);
+
+select throws_ok(
+  'select public.clear_gemba_observation_linked_project(gen_random_uuid())',
+  '42501',
+  'gemba observation project unlink is not authorised',
+  'site manager receives unified denial for non-existent gemba observation clear'
+);
+
 select set_config(
   'request.jwt.claims',
   '{"sub":"f1000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"f1100000-0000-0000-0000-000000000001","email":"ci-work-link-owner@example.test"}',
@@ -1019,6 +1268,50 @@ select set_config(
 select ok(
   public.switch_organisation((select id from work_link_ids where key = 'organisation')),
   'owner returns after site-scoped gemba denial'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1000000-0000-0000-0000-000000000003","role":"authenticated","session_id":"f1100000-0000-0000-0000-000000000003","email":"ci-work-link-viewer@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from work_link_ids where key = 'organisation')),
+  'viewer session for read-only project guards'
+);
+
+select throws_ok(
+  format(
+    'select public.set_gemba_observation_linked_project(%L::uuid, %L::uuid)',
+    (select id from work_link_ids where key = 'observation'),
+    (select id from work_link_ids where key = 'project')
+  ),
+  '42501',
+  'gemba observation project link is not authorised',
+  'gemba set refuses target project that is readable but not editable'
+);
+
+select throws_ok(
+  format(
+    'select public.link_problem_solving_case_to_ci_project(%L::uuid, %L::uuid)',
+    (select id from work_link_ids where key = 'case'),
+    (select id from work_link_ids where key = 'project')
+  ),
+  '42501',
+  'problem solving project link is not authorised',
+  'case link refuses target project that is readable but not editable'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"f1100000-0000-0000-0000-000000000001","email":"ci-work-link-owner@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from work_link_ids where key = 'organisation')),
+  'owner returns after viewer read-only guards'
 );
 
 select lives_ok(
@@ -1038,6 +1331,47 @@ select is(
   ),
   (select id::text from work_link_ids where key = 'project'),
   'gemba observation linked_project_id is set'
+);
+
+select lives_ok(
+  format(
+    'select public.set_gemba_observation_linked_project(%L::uuid, %L::uuid)',
+    (select id from work_link_ids where key = 'observation'),
+    (select id from work_link_ids where key = 'project_site_b')
+  ),
+  'owner links observation to unreadable project for clear guard'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1000000-0000-0000-0000-000000000002","role":"authenticated","session_id":"f1100000-0000-0000-0000-000000000002","email":"ci-work-link-site-mgr@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from work_link_ids where key = 'organisation')),
+  'site manager session for unreadable gemba clear guard'
+);
+
+select throws_ok(
+  format(
+    'select public.clear_gemba_observation_linked_project(%L::uuid)',
+    (select id from work_link_ids where key = 'observation')
+  ),
+  '42501',
+  'gemba observation project unlink is not authorised',
+  'gemba clear refuses when current linked project is unreadable'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"f1100000-0000-0000-0000-000000000001","email":"ci-work-link-owner@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from work_link_ids where key = 'organisation')),
+  'owner returns after unreadable gemba clear guard'
 );
 
 select lives_ok(
@@ -1238,6 +1572,26 @@ select ok(
 );
 
 insert into work_link_ids (key, id)
+select 'second_active_walk', public.start_gemba_walk(
+  (select id from work_link_ids where key = 'gemba_definition'),
+  (select id from work_link_ids where key = 'unit')
+);
+
+select throws_ok(
+  format(
+    'select public.create_gemba_action(%L, %L::uuid, %L::uuid, %L::timestamptz, %L)',
+    'Gemba walk mismatch replay',
+    (select id from work_link_ids where key = 'second_active_walk'),
+    (select id from work_link_ids where key = 'owner_membership'),
+    statement_timestamp() + interval '4 days',
+    'f3000000-0000-0000-0000-000000000001'
+  ),
+  '23505',
+  'gemba action idempotency key reuse mismatch',
+  'create_gemba_action rejects idempotency replay on a different walk'
+);
+
+insert into work_link_ids (key, id)
 select 'closed_case_site_b', public.create_problem_solving_case_draft(
   'Closed case on site B',
   (select id from work_link_ids where key = 'site_b'),
@@ -1305,35 +1659,36 @@ select throws_ok(
   'site manager receives unified denial for closed case on another site'
 );
 
-select set_config(
-  'request.jwt.claims',
-  '{"sub":"f1000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"f1100000-0000-0000-0000-000000000001","email":"ci-work-link-owner@example.test"}',
-  true
-);
-
-select ok(
-  public.switch_organisation((select id from work_link_ids where key = 'organisation')),
-  'owner returns after existence oracle guards'
-);
-
-insert into work_link_ids (key, id)
-select 'second_active_walk', public.start_gemba_walk(
-  (select id from work_link_ids where key = 'gemba_definition'),
-  (select id from work_link_ids where key = 'unit')
+select throws_ok(
+  'select public.unlink_problem_solving_case_from_ci_project(gen_random_uuid())',
+  '42501',
+  'problem solving project unlink is not authorised',
+  'site manager receives unified denial for non-existent case unlink'
 );
 
 select throws_ok(
   format(
-    'select public.create_gemba_action(%L, %L::uuid, %L::uuid, %L::timestamptz, %L)',
-    'Gemba walk mismatch replay',
-    (select id from work_link_ids where key = 'second_active_walk'),
-    (select id from work_link_ids where key = 'owner_membership'),
-    statement_timestamp() + interval '4 days',
-    'f3000000-0000-0000-0000-000000000001'
+    'select public.unlink_problem_solving_case_from_ci_project(%L::uuid)',
+    (select id from work_link_ids where key = 'closed_case_site_b')
   ),
-  '23505',
-  'gemba action idempotency key reuse mismatch',
-  'create_gemba_action rejects idempotency replay on a different walk'
+  '42501',
+  'problem solving project unlink is not authorised',
+  'site manager receives unified denial for out-of-scope case unlink'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"f1100000-0000-000000000001","email":"ci-work-link-owner@example.test"}',
+  true
+);
+set local role authenticated;
+
+select lives_ok(
+  format(
+    'select public.switch_organisation(%L::uuid)',
+    (select id from work_link_ids where key = 'organisation')
+  ),
+  'owner returns after existence oracle guards'
 );
 
 select * from finish();

@@ -1,6 +1,6 @@
 begin;
 
-select plan(8);
+select plan(9);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -181,6 +181,34 @@ insert into five_s_action_rpc_ids (key, id)
 select 'second_audit', public.start_five_s_audit(
   (select id from five_s_action_rpc_ids where key = 'standard'),
   (select id from five_s_action_rpc_ids where key = 'unit')
+);
+
+insert into five_s_action_rpc_ids (key, id)
+select 'first_audit_finding', public.create_five_s_finding(
+  (select id from five_s_action_rpc_ids where key = 'audit'),
+  'Foreign finding body',
+  (select id from five_s_action_rpc_ids where key = 'section'),
+  (select id from five_s_action_rpc_ids where key = 'question'),
+  'low',
+  'normal',
+  false
+);
+
+select throws_ok(
+  format(
+    'select public.create_five_s_action(%L, %L::uuid, %L::uuid, %L::timestamptz, %L, %L::uuid, %L::uuid, %L::uuid)',
+    '5S action with finding from another audit',
+    (select id from five_s_action_rpc_ids where key = 'second_audit'),
+    (select id from five_s_action_rpc_ids where key = 'owner_membership'),
+    statement_timestamp() + interval '6 days',
+    'f5100000-0000-0000-0000-0000000000b1',
+    (select id from five_s_action_rpc_ids where key = 'section'),
+    (select id from five_s_action_rpc_ids where key = 'question'),
+    (select id from five_s_action_rpc_ids where key = 'first_audit_finding')
+  ),
+  'P0002',
+  '5S finding was not found on this audit',
+  'create_five_s_action refuses finding from another audit'
 );
 
 select throws_ok(
