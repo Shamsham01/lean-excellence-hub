@@ -36,6 +36,7 @@ import {
   syncSessionPendingProposals,
 } from "@/lib/problem-solving/sync-session-pending-proposals";
 import { OverviewPanel } from "@/components/problem-solving/overview-panel";
+import { PpsStageBodyErrorBoundary } from "@/components/problem-solving/pps-stage-body-error-boundary";
 import { StageCanvasHeader } from "@/components/problem-solving/stage-canvas-header";
 import { SustainmentPanel } from "@/components/problem-solving/sustainment-panel";
 import { VerificationPanel } from "@/components/problem-solving/verification-panel";
@@ -52,6 +53,7 @@ import {
   guidedStageConfig,
   resolveViewStage,
 } from "@/lib/problem-solving/guided-flow";
+import { isProblemSolvingCaseOpenForAiDraft } from "@/lib/problem-solving/status";
 import type { CasePendingAiProposal } from "@/lib/problem-solving/load-case-pending-ai-proposals";
 import type { PinnedMethodVersionContext } from "@/lib/problem-solving/load-case-workspace-data";
 import {
@@ -149,23 +151,13 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     tone: "default" | "error";
   } | null>(null);
   const [movingStage, setMovingStage] = useState(false);
-  const initialCopilotPrefs = readPpsCopilotPreference(detail.id) ?? {
-    mobileOpen: false,
-    dockCollapsed: false,
-  };
-  const [copilotCollapsed, setCopilotCollapsed] = useState(
-    initialCopilotPrefs.dockCollapsed,
-  );
-  const [mobileCopilotOpen, setMobileCopilotOpen] = useState(
-    initialCopilotPrefs.mobileOpen,
-  );
-  const copilotPrefsHydratedRef = useRef(false);
-  const [isMobileViewport, setIsMobileViewport] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-    return window.matchMedia("(max-width: 1023px)").matches;
-  });
+  const [copilotCollapsed, setCopilotCollapsed] = useState(false);
+  const [mobileCopilotOpen, setMobileCopilotOpen] = useState(false);
+  const storedCopilotPrefsRef = useRef<ReturnType<
+    typeof readPpsCopilotPreference
+  > | null>(null);
+  const pendingHydrationSaveSkipRef = useRef(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [pendingProposals, setPendingProposals] = useState<PendingProposal[]>(
     [],
   );
@@ -209,21 +201,44 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
 
   useLayoutEffect(() => {
     const media = window.matchMedia("(max-width: 1023px)");
-    const apply = () => setIsMobileViewport(media.matches);
-    apply();
-    media.addEventListener("change", apply);
-    return () => media.removeEventListener("change", apply);
-  }, []);
+    const applyViewport = () => setIsMobileViewport(media.matches);
+    applyViewport();
+    media.addEventListener("change", applyViewport);
+
+    const storedCopilotPrefs = readPpsCopilotPreference(detail.id);
+    storedCopilotPrefsRef.current = storedCopilotPrefs;
+    if (storedCopilotPrefs) {
+      pendingHydrationSaveSkipRef.current = true;
+      // Post-hydration read of localStorage; SSR and the first client paint use defaults above.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional hydration-safe prefs apply
+      setCopilotCollapsed(storedCopilotPrefs.dockCollapsed);
+      setMobileCopilotOpen(storedCopilotPrefs.mobileOpen);
+    }
+
+    return () => media.removeEventListener("change", applyViewport);
+  }, [detail.id]);
 
   useEffect(() => {
-    if (!copilotPrefsHydratedRef.current) {
-      copilotPrefsHydratedRef.current = true;
-      return;
-    }
-    writePpsCopilotPreference(detail.id, {
+    const next = {
       mobileOpen: mobileCopilotOpen,
       dockCollapsed: copilotCollapsed,
-    });
+    };
+    if (pendingHydrationSaveSkipRef.current) {
+      pendingHydrationSaveSkipRef.current = false;
+      if (!next.dockCollapsed && !next.mobileOpen) {
+        return;
+      }
+    }
+    const stored = storedCopilotPrefsRef.current;
+    if (
+      stored &&
+      stored.dockCollapsed === next.dockCollapsed &&
+      stored.mobileOpen === next.mobileOpen
+    ) {
+      return;
+    }
+    writePpsCopilotPreference(detail.id, next);
+    storedCopilotPrefsRef.current = next;
   }, [detail.id, mobileCopilotOpen, copilotCollapsed]);
 
   const leanAiPanelOpen = isMobileViewport
@@ -359,6 +374,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     (detail.problem_statement && detail.problem_statement.trim().length > 0) ||
     currentConditionItems.length > 0,
   );
+  const caseOpenForAiDraft = isProblemSolvingCaseOpenForAiDraft(detail.status);
 
   const canMoveStage =
     (canManage || canFacilitate) &&
@@ -637,6 +653,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
                 canUseAi={canUseAi}
                 providerAvailable={providerAvailable}
                 hasProblemData={hasProblemData}
+                caseOpen={caseOpenForAiDraft}
               />
             </div>
 
@@ -655,7 +672,12 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
                   }
                 />
               ) : null}
-              {renderStageBody()}
+              <PpsStageBodyErrorBoundary
+                key={stageKey ?? "DEFINE"}
+                stageKey={stageKey}
+              >
+                {renderStageBody()}
+              </PpsStageBodyErrorBoundary>
             </div>
           </div>
         </section>

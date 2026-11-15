@@ -23,6 +23,7 @@ type StageAutoDraftTriggerProps = {
   canUseAi: boolean;
   providerAvailable: boolean;
   hasProblemData: boolean;
+  caseOpen: boolean;
   onDraftComplete?: () => void;
 };
 
@@ -40,6 +41,7 @@ export function StageAutoDraftTrigger({
   canUseAi,
   providerAvailable,
   hasProblemData,
+  caseOpen,
   onDraftComplete,
 }: StageAutoDraftTriggerProps) {
   const router = useRouter();
@@ -53,7 +55,7 @@ export function StageAutoDraftTrigger({
 
   const runDraft = useCallback(
     async (fromAuto = false) => {
-      if (!canUseAi || !providerAvailable) return;
+      if (!canUseAi || !providerAvailable || !caseOpen) return;
       setLoading(true);
       setMessage(null);
       setIsError(false);
@@ -132,6 +134,7 @@ export function StageAutoDraftTrigger({
       autoDraftPrompt,
       canUseAi,
       caseId,
+      caseOpen,
       currentStageKey,
       onDraftComplete,
       providerAvailable,
@@ -143,7 +146,13 @@ export function StageAutoDraftTrigger({
   );
 
   useEffect(() => {
-    if (!canUseAi || !providerAvailable || !hasProblemData || autoRan.current) {
+    if (
+      !canUseAi ||
+      !providerAvailable ||
+      !hasProblemData ||
+      !caseOpen ||
+      autoRan.current
+    ) {
       return;
     }
     if (typeof window === "undefined") return;
@@ -158,7 +167,15 @@ export function StageAutoDraftTrigger({
       void runDraft(true);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [canUseAi, providerAvailable, hasProblemData, caseId, stageKey, runDraft]);
+  }, [
+    canUseAi,
+    providerAvailable,
+    hasProblemData,
+    caseOpen,
+    caseId,
+    stageKey,
+    runDraft,
+  ]);
 
   if (!canUseAi || !providerAvailable) {
     return null;
@@ -174,18 +191,24 @@ export function StageAutoDraftTrigger({
         type="button"
         size="sm"
         variant="secondary"
-        disabled={loading || !hasProblemData}
+        disabled={loading || !hasProblemData || !caseOpen}
         onClick={() => runDraft(false)}
         data-testid="pps-stage-auto-draft-button"
         title={
-          hasProblemData
-            ? "Generate one bounded draft for this stage visit"
-            : "Add a problem statement or current-condition facts first"
+          !caseOpen
+            ? "Stage drafts are only available on draft or active cases"
+            : hasProblemData
+              ? "Generate one bounded draft for this stage visit"
+              : "Add a problem statement or current-condition facts first"
         }
       >
         {loading ? "Drafting…" : "Draft this stage"}
       </Button>
-      {!hasProblemData ? (
+      {!caseOpen ? (
+        <p className="w-full text-xs text-muted-foreground">
+          This case is closed or cancelled — stage drafts are disabled.
+        </p>
+      ) : !hasProblemData ? (
         <p className="w-full text-xs text-muted-foreground">
           Add problem or current-condition facts first.
         </p>

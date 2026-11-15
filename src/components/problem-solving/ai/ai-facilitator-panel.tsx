@@ -21,6 +21,7 @@ import {
   problemSolvingClientTurnError,
   retainProblemSolvingTurnKey,
 } from "@/platform/ai/ai-turn-messages";
+import { isProblemSolvingCaseOpenForAiDraft } from "@/lib/problem-solving/status";
 import type { AiSessionMode, FacilitatorEnvelope } from "@/platform/ai/types";
 import { cn } from "@/lib/utils";
 
@@ -193,11 +194,18 @@ export function AiFacilitatorPanel({
     }
   }
 
+  const caseOpenForAi =
+    caseStatus === undefined || caseStatus === null
+      ? true
+      : isProblemSolvingCaseOpenForAiDraft(caseStatus);
+
   const disabledReason = !canUseAi
     ? "You do not have permission to use Lean AI on this case."
     : !providerAvailable
       ? "Lean AI is not enabled or configured for this environment."
-      : null;
+      : !caseOpenForAi
+        ? "This case is closed or cancelled; Lean AI is not available."
+        : null;
 
   async function ensureSession(): Promise<string> {
     if (sessionId) return sessionId;

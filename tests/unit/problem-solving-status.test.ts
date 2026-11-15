@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   canTransitionProblemSolvingStatus,
   isProblemSolvingCaseEditable,
+  isProblemSolvingCaseOpenForAiDraft,
   portfolioFilterStatuses,
   priorityLabel,
   problemSolvingStatusLabel,
@@ -20,6 +21,13 @@ describe("problem solving status helpers", () => {
   it("restricts draft-only editing", () => {
     expect(isProblemSolvingCaseEditable("draft")).toBe(true);
     expect(isProblemSolvingCaseEditable("active")).toBe(false);
+  });
+
+  it("allows Lean AI stage drafts only on draft and active cases", () => {
+    expect(isProblemSolvingCaseOpenForAiDraft("draft")).toBe(true);
+    expect(isProblemSolvingCaseOpenForAiDraft("active")).toBe(true);
+    expect(isProblemSolvingCaseOpenForAiDraft("closed")).toBe(false);
+    expect(isProblemSolvingCaseOpenForAiDraft("cancelled")).toBe(false);
   });
 
   it("allows expected lifecycle transitions", () => {

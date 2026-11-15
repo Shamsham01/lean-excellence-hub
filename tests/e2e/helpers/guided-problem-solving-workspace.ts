@@ -40,7 +40,9 @@ export async function ensureLeanAiPanelOpen(page: Page) {
 }
 
 export async function fillLeanAiPrompt(page: Page, text: string) {
+  await ensureLeanAiPanelOpen(page);
   const input = leanAiPanel(page).getByTestId("lean-ai-input");
+  await expect(input).toBeEnabled({ timeout: 30_000 });
   await input.scrollIntoViewIfNeeded();
   await input.click();
   await input.fill("");
