@@ -44,11 +44,17 @@ export function ProjectLinkField({
   const [pickerOpenValue, setPickerOpenValue] = useState<string | null>(null);
 
   const summary = linked;
-  const linkMutable = !summary || isCiProjectLinkableStatus(summary.status);
+  const linkMutable =
+    !summary ||
+    (summary.can_open &&
+      summary.status != null &&
+      isCiProjectLinkableStatus(summary.status));
   const canChangeLink = canEdit && linkMutable;
 
   const chipLabel = summary
-    ? `${formatProjectReference(summary.project_number, summary.title)} · ${summary.title}`
+    ? summary.can_open && summary.project_number && summary.title
+      ? `${formatProjectReference(summary.project_number, summary.title)} · ${summary.title}`
+      : (summary.title ?? "Linked project (not available here)")
     : null;
 
   async function handleLink(projectId: string | null) {
@@ -94,9 +100,11 @@ export function ProjectLinkField({
             ) : (
               <span>{chipLabel}</span>
             )}
-            <span className="text-muted-foreground">
-              · {projectStatusLabel(summary.status)}
-            </span>
+            {summary.status ? (
+              <span className="text-muted-foreground">
+                · {projectStatusLabel(summary.status)}
+              </span>
+            ) : null}
           </Badge>
         ) : (
           <span className="text-sm text-muted-foreground">Not linked</span>

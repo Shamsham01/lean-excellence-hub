@@ -2,13 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 
+import { mapCiProjectLinkError } from "@/lib/projects/errors";
 import { callProjectRpc } from "@/lib/projects/supabase-untyped";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 type LinkResult = { error?: string };
 
-function mapLinkError(error: { message?: string } | null): string {
-  return error?.message?.trim() || "The project link could not be saved.";
+function mapLinkError(error: unknown): string {
+  return mapCiProjectLinkError(error);
 }
 
 export async function linkActionToCiProject(
@@ -43,41 +44,6 @@ export async function unlinkActionFromCiProject(
   if (error) return { error: mapLinkError(error) };
   revalidatePath(`/platform/actions/${actionId}`);
   revalidatePath("/platform/actions");
-  return {};
-}
-
-export async function linkFiveSFindingToCiProject(
-  findingId: string,
-  projectId: string,
-  auditId: string,
-): Promise<LinkResult> {
-  const supabase = await createServerSupabaseClient();
-  const { error } = await callProjectRpc(
-    supabase,
-    "set_five_s_audit_finding_linked_project",
-    {
-      target_finding_id: findingId,
-      target_project_id: projectId,
-    },
-  );
-  if (error) return { error: mapLinkError(error) };
-  revalidatePath(`/platform/5s/audits/${auditId}`);
-  revalidatePath(`/platform/projects/${projectId}`);
-  return {};
-}
-
-export async function unlinkFiveSFindingFromCiProject(
-  findingId: string,
-  auditId: string,
-): Promise<LinkResult> {
-  const supabase = await createServerSupabaseClient();
-  const { error } = await callProjectRpc(
-    supabase,
-    "clear_five_s_audit_finding_linked_project",
-    { target_finding_id: findingId },
-  );
-  if (error) return { error: mapLinkError(error) };
-  revalidatePath(`/platform/5s/audits/${auditId}`);
   return {};
 }
 

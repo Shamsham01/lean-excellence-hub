@@ -57,7 +57,7 @@ describe("ProjectLinkField", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /link to project/i }));
+    fireEvent.click(screen.getByRole("combobox", { name: /link to project/i }));
     expect(
       screen.getByText("PRJ-001 · Walkway clearance · Active"),
     ).toBeInTheDocument();

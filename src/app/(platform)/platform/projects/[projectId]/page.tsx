@@ -275,35 +275,20 @@ export default async function ProjectDetailPage({
   }>(supabase, "get_project_benefits", { target_project_id: projectId });
   const benefits = projectBenefitsData?.items ?? [];
 
-  const [sourceLinks, linkedFindings, linkedObservations] = await Promise.all([
-    untypedFrom(supabase, "ci_project_source_links")
-      .select("source_resource_id")
-      .eq("project_id", projectId),
-    untypedFrom(supabase, "five_s_audit_findings")
-      .select("id, observation, audit_id, linked_project_id")
-      .eq("linked_project_id", projectId)
-      .limit(20),
-    untypedFrom(supabase, "gemba_walk_observations")
-      .select("id, observation_text, walk_id, linked_project_id")
-      .eq("linked_project_id", projectId)
-      .limit(20),
-  ]);
+  const [{ data: linkedCaseRows }, { data: linkedObservationRows }] =
+    await Promise.all([
+      supabase
+        .from("problem_solving_cases")
+        .select("id, title, case_number")
+        .eq("linked_ci_project_id", projectId)
+        .limit(20),
+      untypedFrom(supabase, "gemba_walk_observations")
+        .select("id, observation_text, walk_id, linked_project_id")
+        .eq("linked_project_id", projectId)
+        .limit(20),
+    ]);
 
-  const caseIds = (
-    (sourceLinks.data as Array<{ source_resource_id: string }> | null) ?? []
-  ).map((row) => row.source_resource_id);
-  let linkedCases: Array<{
-    id: string;
-    title: string;
-    case_number: string | null;
-  }> = [];
-  if (caseIds.length > 0) {
-    const { data: caseRows } = await supabase
-      .from("problem_solving_cases")
-      .select("id, title, case_number")
-      .in("id", caseIds);
-    linkedCases = caseRows ?? [];
-  }
+  const linkedCases = linkedCaseRows ?? [];
 
   const linkedWorkItems: ProjectLinkedWorkItem[] = [
     ...linkedCases.map((caseRow) => ({
@@ -314,20 +299,7 @@ export default async function ProjectDetailPage({
       kindLabel: "Problem solving case",
     })),
     ...(
-      (linkedFindings.data as Array<{
-        id: string;
-        observation: string;
-        audit_id: string;
-      }> | null) ?? []
-    ).map((finding) => ({
-      id: finding.id,
-      kind: "five_s_finding" as const,
-      title: finding.observation,
-      href: `/platform/5s/audits/${finding.audit_id}`,
-      kindLabel: "5S audit finding",
-    })),
-    ...(
-      (linkedObservations.data as Array<{
+      (linkedObservationRows as Array<{
         id: string;
         observation_text: string;
         walk_id: string;

@@ -88,17 +88,18 @@ export type ProjectSelectorOption = {
 };
 
 export type ProjectLinkSummary = {
-  id: string;
-  project_number: string;
-  title: string;
-  status: string;
-  href: string;
+  id?: string;
+  project_number?: string;
+  title?: string;
+  status?: string;
+  href?: string;
   can_open: boolean;
+  linked?: boolean;
 };
 
 export type ProjectLinkedWorkItem = {
   id: string;
-  kind: "problem_solving_case" | "five_s_finding" | "gemba_observation";
+  kind: "problem_solving_case" | "gemba_observation";
   title: string;
   href: string;
   kindLabel: string;

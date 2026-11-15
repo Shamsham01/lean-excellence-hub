@@ -16,6 +16,8 @@ type ProjectLinkPickerProps = {
   disabled?: boolean;
   className?: string;
   placeholder?: string;
+  id?: string;
+  "aria-label"?: string;
 };
 
 export function projectOptionLabel(option: ProjectSelectorOption): string {
@@ -29,6 +31,8 @@ export function ProjectLinkPicker({
   disabled = false,
   className,
   placeholder = "Link to project…",
+  id,
+  "aria-label": ariaLabel,
 }: ProjectLinkPickerProps) {
   const comboboxOptions = useMemo(
     () =>
@@ -47,8 +51,15 @@ export function ProjectLinkPicker({
         onChange={onChange}
         disabled={disabled}
         {...(className ? { className } : {})}
+        {...(id ? { id } : {})}
+        {...(ariaLabel ? { "aria-label": ariaLabel } : {})}
         placeholder={placeholder}
         searchPlaceholder="Search code, title, or status"
+        emptyHint={
+          options.length === 0
+            ? "No live projects in your current scope. Try another site or create a project first."
+            : "No matches"
+        }
       />
     </div>
   );

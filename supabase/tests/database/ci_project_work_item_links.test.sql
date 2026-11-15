@@ -1,6 +1,6 @@
 begin;
 
-select plan(11);
+select plan(21);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -138,6 +138,16 @@ select 'case', public.create_problem_solving_case_draft(
   null
 );
 
+insert into work_link_ids (key, id)
+select 'charter_project', public.create_improvement_project(
+  'Charter source project',
+  (select id from work_link_ids where key = 'unit'),
+  'Problem',
+  'Objective',
+  'Impact',
+  (select id from work_link_ids where key = 'case')
+);
+
 select lives_ok(
   format(
     'select public.link_problem_solving_case_to_ci_project(%L::uuid, %L::uuid)',
@@ -149,14 +159,34 @@ select lives_ok(
 
 select is(
   (
+    select case_row.linked_ci_project_id::text
+    from public.problem_solving_cases case_row
+    where case_row.id = (select id from work_link_ids where key = 'case')
+  ),
+  (select id::text from work_link_ids where key = 'project'),
+  'case linked_ci_project_id is set'
+);
+
+select is(
+  (
+    select public.get_problem_solving_detail((select id from work_link_ids where key = 'case'))
+      -> 'linked_project'
+      ->> 'id'
+  ),
+  (select id::text from work_link_ids where key = 'project'),
+  'get_problem_solving_detail exposes linked_project'
+);
+
+select is(
+  (
     select count(*)::integer
     from public.ci_project_source_links link_row
     where link_row.organisation_id = (select id from work_link_ids where key = 'organisation')
-      and link_row.project_id = (select id from work_link_ids where key = 'project')
+      and link_row.project_id = (select id from work_link_ids where key = 'charter_project')
       and link_row.source_resource_id = (select id from work_link_ids where key = 'case')
   ),
   1,
-  'case appears in ci_project_source_links'
+  'charter source link remains after work-item link'
 );
 
 select lives_ok(
@@ -165,6 +195,18 @@ select lives_ok(
     (select id from work_link_ids where key = 'case')
   ),
   'unlink_problem_solving_case_from_ci_project succeeds'
+);
+
+select is(
+  (
+    select count(*)::integer
+    from public.ci_project_source_links link_row
+    where link_row.organisation_id = (select id from work_link_ids where key = 'organisation')
+      and link_row.project_id = (select id from work_link_ids where key = 'charter_project')
+      and link_row.source_resource_id = (select id from work_link_ids where key = 'case')
+  ),
+  1,
+  'charter source link survives case unlink'
 );
 
 insert into work_link_ids (key, id)
@@ -190,8 +232,9 @@ select throws_ok(
     (select id from work_link_ids where key = 'action'),
     (select id from work_link_ids where key = 'cancelled_project')
   ),
+  '22023',
   'This project is completed or cancelled and cannot accept new links.',
-  '22023'
+  'live project guard blocks cancelled'
 );
 
 insert into work_link_ids (key, id)
@@ -214,8 +257,106 @@ select throws_ok(
     (select id from work_link_ids where key = 'action'),
     (select id from work_link_ids where key = 'completed_project')
   ),
+  '22023',
   'This project is completed or cancelled and cannot accept new links.',
-  '22023'
+  'live project guard blocks completed'
+);
+
+insert into work_link_ids (key, id)
+select 'rapid_method', method_row.id
+from public.problem_solving_methods method_row
+where method_row.organisation_id = (select id from work_link_ids where key = 'organisation')
+  and method_row.builtin_code = 'rapid_rca';
+
+insert into work_link_ids (key, id)
+select 'closed_case', public.create_problem_solving_case_draft(
+  'Closed case',
+  (select id from work_link_ids where key = 'unit'),
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  (select id from work_link_ids where key = 'owner_membership'),
+  null,
+  null,
+  null
+);
+
+select ok(
+  public.activate_problem_solving_case(
+    (select id from work_link_ids where key = 'closed_case'),
+    (select id from work_link_ids where key = 'rapid_method')
+  ),
+  'closed case activates'
+);
+
+select ok(
+  public.cancel_problem_solving_case(
+    (select id from work_link_ids where key = 'closed_case'),
+    'Stopped'
+  ),
+  'closed case cancelled'
+);
+
+select throws_ok(
+  format(
+    'select public.link_problem_solving_case_to_ci_project(%L::uuid, %L::uuid)',
+    (select id from work_link_ids where key = 'closed_case'),
+    (select id from work_link_ids where key = 'project')
+  ),
+  '55000',
+  'This case is closed or cancelled and cannot accept project links.',
+  'closed case cannot link'
+);
+
+insert into work_link_ids (key, id)
+select 'project_action', public.create_project_action(
+  'Project-native action',
+  (select id from work_link_ids where key = 'project'),
+  null,
+  'From project workspace',
+  'normal',
+  null
+);
+
+select throws_ok(
+  format(
+    'select public.unlink_action_from_ci_project(%L::uuid)',
+    (select id from work_link_ids where key = 'project_action')
+  ),
+  '55000',
+  'This action belongs to its project and cannot be unlinked.',
+  'native project action cannot unlink'
+);
+
+select throws_ok(
+  format(
+    'select public.link_action_to_ci_project(%L::uuid, %L::uuid)',
+    (select id from work_link_ids where key = 'project_action'),
+    (select id from work_link_ids where key = 'cancelled_project')
+  ),
+  '55000',
+  'This action belongs to its project and cannot be moved to another project.',
+  'native project action cannot relink'
+);
+
+select throws_ok(
+  'select private.link_action_to_ci_project(gen_random_uuid(), gen_random_uuid())',
+  '42501',
+  'permission denied for function link_action_to_ci_project',
+  'authenticated cannot execute private link_action_to_ci_project'
+);
+
+select throws_ok(
+  'select private.ci_project_link_summary(gen_random_uuid(), gen_random_uuid())',
+  '42501',
+  'permission denied for function ci_project_link_summary',
+  'authenticated cannot execute private ci_project_link_summary'
 );
 
 select * from finish();

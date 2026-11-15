@@ -25,14 +25,6 @@ import { Progress } from "@/components/ui/progress";
 import { SectionProgressNav } from "@/components/ui/section-progress-nav";
 import { Textarea } from "@/components/ui/textarea";
 import { FiveSAuditRaiseAction } from "@/components/five-s/five-s-audit-raise-action";
-import {
-  FiveSAuditFindingPanel,
-  type FiveSAuditFindingRow,
-} from "@/components/five-s/five-s-audit-finding-panel";
-import type {
-  ProjectLinkSummary,
-  ProjectSelectorOption,
-} from "@/lib/projects/types";
 import { hasUsableFiveSAuditAnswer } from "@/modules/5s/audit-answer-usability";
 import { formatFiveSAuditStatus } from "@/modules/5s/audit-status";
 import { answerProgressPercent } from "@/modules/operational/answer-progress-percent";
@@ -74,10 +66,6 @@ type AuditWorkspaceProps = {
   scoringScale?: FiveSScoringScale;
   onComplete?: typeof completeFiveSAudit;
   actionCountsByQuestion?: Record<string, number>;
-  findingsByQuestion?: Record<string, FiveSAuditFindingRow>;
-  linkedProjectsByQuestion?: Record<string, ProjectLinkSummary | null>;
-  projectOptions?: ProjectSelectorOption[];
-  requiresSiteSelection?: boolean;
 };
 
 function AnswerSaveFeedback({
@@ -145,15 +133,8 @@ export function FiveSAuditWorkspace({
   scoringScale = LEGACY_FIVE_S_SCORING_SCALE,
   onComplete = completeFiveSAudit,
   actionCountsByQuestion = {},
-  findingsByQuestion = {},
-  linkedProjectsByQuestion = {},
-  projectOptions = [],
-  requiresSiteSelection = false,
 }: AuditWorkspaceProps) {
   const router = useRouter();
-  const [localFindingsByQuestion, setLocalFindingsByQuestion] = useState(
-    () => findingsByQuestion,
-  );
   const flatQuestions = sections.flatMap((s) =>
     s.questions.map((q) => ({ section: s, question: q })),
   );
@@ -162,13 +143,6 @@ export function FiveSAuditWorkspace({
     () => actionCountsByQuestion,
   );
 
-  const findingsFingerprint = JSON.stringify(findingsByQuestion);
-  const [syncedFindingsFingerprint, setSyncedFindingsFingerprint] =
-    useState(findingsFingerprint);
-  if (syncedFindingsFingerprint !== findingsFingerprint) {
-    setSyncedFindingsFingerprint(findingsFingerprint);
-    setLocalFindingsByQuestion(findingsByQuestion);
-  }
   const [navigating, setNavigating] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [completeError, setCompleteError] = useState<string | null>(null);
@@ -412,29 +386,6 @@ export function FiveSAuditWorkspace({
                     );
                   })}
                 </div>
-                {noSelected ? (
-                  <FiveSAuditFindingPanel
-                    auditId={auditId}
-                    sectionId={current.section.id}
-                    questionId={current.question.id}
-                    questionPrompt={current.question.prompt}
-                    finding={
-                      localFindingsByQuestion[current.question.id] ?? null
-                    }
-                    linkedProject={
-                      linkedProjectsByQuestion[current.question.id] ?? null
-                    }
-                    projectOptions={projectOptions}
-                    requiresSiteSelection={requiresSiteSelection}
-                    canEdit={canEdit}
-                    onFindingEnsured={(row) => {
-                      setLocalFindingsByQuestion((prev) => ({
-                        ...prev,
-                        [current.question.id]: row,
-                      }));
-                    }}
-                  />
-                ) : null}
               </>
             ) : numericQuestion ? (
               <div>

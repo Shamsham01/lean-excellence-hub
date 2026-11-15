@@ -34,6 +34,7 @@ export function ProjectSelect({
     <div className="flex flex-col gap-2" data-testid="project-select">
       <Label htmlFor="project-source-select">Linked project</Label>
       <ProjectLinkPicker
+        id="project-source-select"
         options={options}
         value={value || null}
         onChange={(next) => {

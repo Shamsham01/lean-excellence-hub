@@ -174,7 +174,7 @@ test.describe("Project charter lifecycle and benefits lineage", () => {
     await page.getByTestId("wizard-step-mobile-4").click();
     await expect(page.getByTestId("project-select")).toBeVisible();
     await expect(page.getByTestId("project-link-picker")).toBeVisible();
-    await page.getByRole("button", { name: /Select a project/i }).click();
+    await page.getByRole("combobox", { name: /Select a project/i }).click();
     await expect(
       page.getByPlaceholder("Search code, title, or status"),
     ).toBeVisible();

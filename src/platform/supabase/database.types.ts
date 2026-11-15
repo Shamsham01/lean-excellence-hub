@@ -7626,6 +7626,7 @@ export type Database = {
           detected_at: string | null
           facilitator_membership_id: string | null
           id: string
+          linked_ci_project_id: string | null
           method_version_id: string | null
           organisation_id: string
           organisation_unit_id: string
@@ -7661,6 +7662,7 @@ export type Database = {
           detected_at?: string | null
           facilitator_membership_id?: string | null
           id: string
+          linked_ci_project_id?: string | null
           method_version_id?: string | null
           organisation_id: string
           organisation_unit_id: string
@@ -7696,6 +7698,7 @@ export type Database = {
           detected_at?: string | null
           facilitator_membership_id?: string | null
           id?: string
+          linked_ci_project_id?: string | null
           method_version_id?: string | null
           organisation_id?: string
           organisation_unit_id?: string
@@ -7747,6 +7750,13 @@ export type Database = {
             columns: ["organisation_id", "facilitator_membership_id"]
             isOneToOne: false
             referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_cases_linked_ci_project_fkey"
+            columns: ["organisation_id", "linked_ci_project_id"]
+            isOneToOne: false
+            referencedRelation: "ci_projects"
             referencedColumns: ["organisation_id", "id"]
           },
           {
