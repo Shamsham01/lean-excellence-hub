@@ -866,6 +866,56 @@ async function findDemoProblemSolvingCase(
   return match;
 }
 
+async function ensureActiveDemoCaseForLeanAi(
+  managerClient: SupabaseClient,
+  operationsUnitId: string,
+  managerMembershipId: string,
+  story: typeof DEMO_PROBLEM_SOLVING_CASE,
+): Promise<void> {
+  const active = await findDemoProblemSolvingCase(managerClient, {
+    excludeClosed: true,
+  });
+  if (active) {
+    return;
+  }
+
+  await expectRpc(
+    managerClient,
+    "ensure_problem_solving_methods_provisioned",
+    {},
+  );
+
+  const methodId = await resolveProblemSolvingMethodId(
+    managerClient,
+    story.methodBuiltinCode,
+  );
+
+  const caseId = (await expectRpc(
+    managerClient,
+    "create_problem_solving_case_draft",
+    {
+      target_title: story.title,
+      target_organisation_unit_id: operationsUnitId,
+      target_problem_statement: story.problemStatement,
+      target_background: story.background,
+      target_business_impact: story.businessImpact,
+      target_scope_in: story.scopeIn,
+      target_scope_out: story.scopeOut,
+      target_target_condition: story.targetCondition,
+      target_detected_at: new Date("2026-01-15T08:00:00Z").toISOString(),
+      target_priority: story.priority,
+      target_severity: story.severity,
+      target_owner_membership_id: managerMembershipId,
+      target_facilitator_membership_id: managerMembershipId,
+    },
+  )) as string;
+
+  await expectRpc(managerClient, "activate_problem_solving_case", {
+    target_case_id: caseId,
+    target_method_id: methodId,
+  });
+}
+
 async function resolveProblemSolvingMethodId(
   client: SupabaseClient,
   builtinCode: string,
@@ -1294,6 +1344,13 @@ async function seedDemoProblemSolvingCase(
     target_closure_outcome: "resolved_verified_cause",
     target_closure_rationale: story.closureRationale,
   });
+
+  await ensureActiveDemoCaseForLeanAi(
+    managerClient,
+    operationsUnitId,
+    managerMembershipId,
+    story,
+  );
 }
 
 async function ensureM11Demo(

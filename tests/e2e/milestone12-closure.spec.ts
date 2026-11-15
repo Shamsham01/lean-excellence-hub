@@ -7,10 +7,10 @@ import {
   expectGuidedProblemSolvingWorkspace,
   fillLeanAiPrompt,
   leanAiPanel,
+  openDemoProblemSolvingCaseFromPortfolio,
   openProblemSolvingStage,
   sendLeanAiPrompt,
 } from "./helpers/guided-problem-solving-workspace";
-import { DEMO_PROBLEM_SOLVING_CASE } from "../../scripts/demo-seed/constants";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -38,10 +38,7 @@ test.describe("Milestone 12 closure", () => {
 
   test("manager opens Lean AI on seeded case", async ({ page }) => {
     await signInAsDemoUser(page, "manager");
-    await page.goto("/platform/problem-solving");
-    await page
-      .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
-      .click();
+    await openDemoProblemSolvingCaseFromPortfolio(page);
     await expectGuidedProblemSolvingWorkspace(page);
   });
 
@@ -49,7 +46,8 @@ test.describe("Milestone 12 closure", () => {
     page,
   }) => {
     await signInAsDemoUser(page, "manager");
-    await createActiveCaseAndOpenLeanAi(page);
+    await openDemoProblemSolvingCaseFromPortfolio(page);
+    await expectGuidedProblemSolvingWorkspace(page);
     await leanAiPanel(page)
       .getByTestId("lean-ai-mode")
       .selectOption("challenge");
@@ -91,7 +89,8 @@ test.describe("Milestone 12 closure", () => {
   });
 
   async function openLeanAiPanel(page: Page) {
-    await createActiveCaseAndOpenLeanAi(page);
+    await openDemoProblemSolvingCaseFromPortfolio(page);
+    await expectGuidedProblemSolvingWorkspace(page);
   }
 
   async function createActiveCaseAndOpenLeanAi(page: Page) {

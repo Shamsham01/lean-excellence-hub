@@ -1,5 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 
+import { DEMO_PROBLEM_SOLVING_CASE } from "../../../scripts/demo-seed/constants";
+
 /** Call before the first navigation in a spec so auto-draft does not race Lean AI sends. */
 export async function disableProblemSolvingStageAutoDraft(page: Page) {
   await page.addInitScript(() => {
@@ -9,6 +11,25 @@ export async function disableProblemSolvingStageAutoDraft(page: Page) {
 
 export function leanAiPanel(page: Page) {
   return page.getByTestId("lean-ai-panel");
+}
+
+/** Opens the demo title case; when M11 closure left a closed row, picks the Active portfolio item. */
+export async function openDemoProblemSolvingCaseFromPortfolio(page: Page) {
+  await page.goto("/platform/problem-solving");
+  await expect(
+    page.getByTestId("problem-solving-portfolio-page"),
+  ).toBeVisible();
+  const title = DEMO_PROBLEM_SOLVING_CASE.title;
+  const activeItem = page
+    .locator('[data-testid^="problem-solving-portfolio-item-"]')
+    .filter({ hasText: title })
+    .filter({ hasText: "Active" })
+    .first();
+  if ((await activeItem.count()) > 0) {
+    await activeItem.click();
+    return;
+  }
+  await page.getByRole("link", { name: title }).first().click();
 }
 
 export async function ensureLeanAiPanelOpen(page: Page) {
