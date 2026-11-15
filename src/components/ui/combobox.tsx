@@ -81,7 +81,7 @@ export function Combobox({
         type="button"
         variant="outline"
         disabled={disabled}
-        className="min-h-11 h-11 w-full justify-between font-normal"
+        className="h-11 min-h-11 w-full justify-between font-normal"
         role="combobox"
         aria-expanded={open}
         aria-controls={listboxId}

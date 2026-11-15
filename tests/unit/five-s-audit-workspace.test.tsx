@@ -38,7 +38,6 @@ vi.mock("@/components/five-s/five-s-audit-raise-action", () => ({
   FiveSAuditRaiseAction: () => null,
 }));
 
-
 const saveAnswer = vi.mocked(saveFiveSAuditAnswer);
 const completeAudit = vi.mocked(completeFiveSAudit);
 

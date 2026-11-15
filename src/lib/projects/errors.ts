@@ -128,9 +128,7 @@ export function mapCiProjectLinkError(error: unknown): string {
     return "The project link could not be saved.";
   }
 
-  if (
-    /postgres|supabase|rpc|uuid|\{.*\}|42501|22023|55000|P0002/i.test(raw)
-  ) {
+  if (/postgres|supabase|rpc|uuid|\{.*\}|42501|22023|55000|P0002/i.test(raw)) {
     return "The project link could not be saved.";
   }
 
