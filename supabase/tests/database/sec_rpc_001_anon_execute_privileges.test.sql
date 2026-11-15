@@ -1,6 +1,6 @@
 begin;
 
-select plan(53);
+select plan(58);
 
 -- Privilege inventory after SEC-RPC-001. Signatures match hosted/local catalogs.
 create temporary table sec_rpc_restricted_sigs (
@@ -204,6 +204,51 @@ select ok(
     'EXECUTE'
   ),
   'PUBLIC cannot execute private assign_planner_action_to_creator'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.set_action_assignee(uuid,uuid)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute private set_action_assignee'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'anon',
+    'private.set_action_assignee(uuid,uuid)',
+    'EXECUTE'
+  ),
+  'anon cannot execute private set_action_assignee'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'public',
+    'private.set_action_assignee(uuid,uuid)',
+    'EXECUTE'
+  ),
+  'PUBLIC cannot execute private set_action_assignee'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'service_role',
+    'private.set_action_assignee(uuid,uuid)',
+    'EXECUTE'
+  ),
+  'service_role cannot execute private set_action_assignee'
+);
+
+select ok(
+  pg_catalog.has_function_privilege(
+    'lean_hub_private_owner',
+    'private.set_action_assignee(uuid,uuid)',
+    'EXECUTE'
+  ),
+  'private owner retains EXECUTE on set_action_assignee'
 );
 
 select ok(
