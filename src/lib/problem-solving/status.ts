@@ -47,6 +47,11 @@ export function isProblemSolvingCaseEditable(status: string): boolean {
   return EDITABLE_STATUSES.has(status as ProblemSolvingStatus);
 }
 
+/** Draft and active cases accept Lean AI stage drafts; closed/cancelled do not. */
+export function isProblemSolvingCaseOpenForAiDraft(status: string): boolean {
+  return status === "draft" || status === "active";
+}
+
 export function canTransitionProblemSolvingStatus(
   fromStatus: string,
   toStatus: string,

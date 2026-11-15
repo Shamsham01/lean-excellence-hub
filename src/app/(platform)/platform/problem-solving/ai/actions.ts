@@ -15,6 +15,7 @@ import { recoverProblemSolvingAiRunsForCase } from "@/platform/ai/recover-proble
 import { acceptAiProposal } from "@/platform/ai/proposals/acceptance";
 import { formatProposalAcceptanceError } from "@/platform/ai/proposals/contracts";
 import type { AiSessionMode } from "@/platform/ai/types";
+import { assertProblemSolvingCaseOpenForAiDraftWithClient } from "@/lib/problem-solving/assert-case-open-for-ai-draft-shared";
 import {
   countPendingProposalsForViewStage,
   resolveCanonicalStageKey,
@@ -195,6 +196,15 @@ export async function draftProblemSolvingStage(input: {
 
   try {
     const supabase = await createServerSupabaseClient();
+    const caseOpenResult =
+      await assertProblemSolvingCaseOpenForAiDraftWithClient(
+        supabase,
+        input.caseId,
+      );
+    if ("error" in caseOpenResult) {
+      return { error: caseOpenResult.error };
+    }
+
     await recoverProblemSolvingAiRunsForCase(supabase, input.caseId);
 
     const sessionResult = await createProblemSolvingAiSession({
@@ -299,6 +309,15 @@ export async function reconcileProblemSolvingStageDraft(input: {
 > {
   try {
     const supabase = await createServerSupabaseClient();
+    const caseOpenResult =
+      await assertProblemSolvingCaseOpenForAiDraftWithClient(
+        supabase,
+        input.caseId,
+      );
+    if ("error" in caseOpenResult) {
+      return { error: caseOpenResult.error };
+    }
+
     const trimmedKey = input.idempotencyKey.trim();
     const { data: runRow, error: runError } = await supabase
       .from("ai_runs")
