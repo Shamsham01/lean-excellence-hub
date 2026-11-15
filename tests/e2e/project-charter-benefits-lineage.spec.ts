@@ -173,10 +173,12 @@ test.describe("Project charter lifecycle and benefits lineage", () => {
     await expect(page.getByTestId("create-benefit-wizard")).toBeVisible();
     await page.getByTestId("wizard-step-mobile-4").click();
     await expect(page.getByTestId("project-select")).toBeVisible();
-    await expect(page.getByTestId("project-select-input")).toBeVisible();
+    await expect(page.getByTestId("project-link-picker")).toBeVisible();
+    await page.getByRole("button", { name: /Select a project/i }).click();
     await expect(
-      page.locator("#project-source-select option").nth(1),
-    ).toHaveText(/PROJ-/);
+      page.getByPlaceholder("Search code, title, or status"),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: /PROJ-/ }).first()).toBeVisible();
     await expect(page.getByText("Primary source resource ID")).toHaveCount(0);
   });
 
