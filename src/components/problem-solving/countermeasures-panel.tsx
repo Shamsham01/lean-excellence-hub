@@ -221,6 +221,7 @@ export function CountermeasuresPanel({
         <p className="text-sm text-muted-foreground">{message}</p>
       ) : null}
       <ProblemSolvingActionDialog
+        key={actionDialogFor ?? "closed"}
         open={actionDialogFor != null}
         onOpenChange={(next) => {
           if (!next) setActionDialogFor(null);

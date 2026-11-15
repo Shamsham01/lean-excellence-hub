@@ -50,11 +50,6 @@ export function ProblemSolvingActionDialog({
 
   useEffect(() => {
     if (!open) return;
-    setTitle(defaultTitle);
-    setDescription("");
-    setDueAt("");
-    setAssigneeId(defaultMembershipId ?? "");
-    setError(null);
     let cancelled = false;
     void loadActionCreateContext().then((ctx) => {
       if (cancelled) return;

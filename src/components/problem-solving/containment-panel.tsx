@@ -159,6 +159,7 @@ export function ContainmentPanel({
         <p className="text-sm text-muted-foreground">{message}</p>
       ) : null}
       <ProblemSolvingActionDialog
+        key={actionDialogFor ?? "closed"}
         open={actionDialogFor != null}
         onOpenChange={(open) => {
           if (!open) setActionDialogFor(null);
