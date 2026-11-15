@@ -71,10 +71,7 @@ export async function loadProjectPickerOptions(
   let page = 1;
   let totalCount = Number.POSITIVE_INFINITY;
 
-  while (
-    projects.length < totalCount &&
-    page <= PICKER_MAX_PAGES
-  ) {
+  while (projects.length < totalCount && page <= PICKER_MAX_PAGES) {
     const portfolio = await fetchPortfolioPage(supabase, portfolioArgs, page);
     totalCount = portfolio.total_count;
     projects.push(...portfolio.items);

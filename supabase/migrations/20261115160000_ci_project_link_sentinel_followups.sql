@@ -384,7 +384,7 @@ declare
   org_id uuid := private.current_organisation_id();
   actor_membership_id uuid := private.current_membership_id(org_id);
   unit_id uuid;
-  template_version_id uuid;
+  walk_template_version_id uuid;
   observation_row public.gemba_walk_observations%rowtype;
   new_action_id uuid;
   resolved_assignee uuid;
@@ -426,7 +426,7 @@ begin
   end if;
 
   select walk_row.unit_id, definition_version.template_version_id
-  into unit_id, template_version_id
+  into unit_id, walk_template_version_id
   from public.gemba_walks walk_row
   join public.gemba_definition_versions definition_version
     on definition_version.organisation_id = walk_row.organisation_id
@@ -477,7 +477,7 @@ begin
       from public.template_sections section_row
       where section_row.organisation_id = org_id
         and section_row.id = target_section_id
-        and section_row.template_version_id = template_version_id
+        and section_row.template_version_id = walk_template_version_id
     ) then
     raise exception 'section does not belong to this walk'
       using errcode = '22023';
@@ -489,7 +489,7 @@ begin
       from public.template_questions question_row
       where question_row.organisation_id = org_id
         and question_row.id = target_question_id
-        and question_row.template_version_id = template_version_id
+        and question_row.template_version_id = walk_template_version_id
         and (
           target_section_id is null
           or question_row.section_id = target_section_id

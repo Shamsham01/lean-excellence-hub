@@ -296,7 +296,13 @@ export default async function ProjectDetailPage({
             .from("problem_solving_cases")
             .select("id, title, case_number")
             .in("id", linkedCaseIds)
-        : Promise.resolve({ data: [] as { id: string; title: string; case_number: string | null }[] }),
+        : Promise.resolve({
+            data: [] as {
+              id: string;
+              title: string;
+              case_number: string | null;
+            }[],
+          }),
       untypedFrom(supabase, "gemba_walk_observations")
         .select("id, observation_text, walk_id, linked_project_id")
         .eq("linked_project_id", projectId)
