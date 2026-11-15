@@ -12,7 +12,7 @@ export type ProjectPickerOptions = {
 };
 
 const PICKER_PAGE_SIZE = 100;
-const PICKER_MAX_PAGES = 50;
+const PICKER_MAX_PAGES = 2;
 
 async function fetchPortfolioPage(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,

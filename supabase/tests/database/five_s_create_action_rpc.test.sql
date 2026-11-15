@@ -1,6 +1,6 @@
 begin;
 
-select plan(6);
+select plan(8);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -175,6 +175,39 @@ select throws_ok(
   '42501',
   'permission denied for function create_five_s_action',
   'authenticated cannot execute private create_five_s_action'
+);
+
+insert into five_s_action_rpc_ids (key, id)
+select 'second_audit', public.start_five_s_audit(
+  (select id from five_s_action_rpc_ids where key = 'standard'),
+  (select id from five_s_action_rpc_ids where key = 'unit')
+);
+
+select throws_ok(
+  format(
+    'select public.create_five_s_action(%L, %L::uuid, %L::uuid, %L::timestamptz, %L)',
+    '5S audit mismatch replay',
+    (select id from five_s_action_rpc_ids where key = 'second_audit'),
+    (select id from five_s_action_rpc_ids where key = 'owner_membership'),
+    statement_timestamp() + interval '6 days',
+    'f5100000-0000-0000-0000-000000000099'
+  ),
+  '23505',
+  '5S action idempotency key reuse mismatch',
+  'create_five_s_action rejects idempotency replay on a different audit'
+);
+
+select ok(
+  exists (
+    select 1
+    from public.actions action_row
+    where action_row.id = (select id from five_s_action_rpc_ids where key = 'action_idem')
+      and action_row.idempotency_key = format(
+        'five_s:%s:f5100000-0000-0000-0000-000000000099',
+        (select id from five_s_action_rpc_ids where key = 'owner_membership')
+      )
+  ),
+  'create_five_s_action stores namespaced idempotency keys'
 );
 
 select * from finish();

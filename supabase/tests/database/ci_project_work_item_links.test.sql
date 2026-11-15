@@ -1,6 +1,6 @@
 begin;
 
-select plan(79);
+select plan(87);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -1006,7 +1006,7 @@ select throws_ok(
     (select id from work_link_ids where key = 'project_site_b')
   ),
   '42501',
-  'project link is not authorised',
+  'gemba observation project link is not authorised',
   'site-scoped manager cannot set gemba link to unreadable site B project'
 );
 
@@ -1093,7 +1093,7 @@ select throws_ok(
     (select id from work_link_ids where key = 'project')
   ),
   '42501',
-  'project link is not authorised',
+  'gemba observation project link is not authorised',
   'gemba cross-org cannot set home-org observation link'
 );
 
@@ -1224,6 +1224,116 @@ select throws_ok(
   '42501',
   'action project link is not authorised',
   'non-member cannot link actions to projects'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"f1100000-0000-0000-0000-000000000001","email":"ci-work-link-owner@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from work_link_ids where key = 'organisation')),
+  'owner session before existence oracle case setup'
+);
+
+insert into work_link_ids (key, id)
+select 'closed_case_site_b', public.create_problem_solving_case_draft(
+  'Closed case on site B',
+  (select id from work_link_ids where key = 'site_b'),
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  (select id from work_link_ids where key = 'owner_membership'),
+  null,
+  null,
+  null
+);
+
+select ok(
+  public.activate_problem_solving_case(
+    (select id from work_link_ids where key = 'closed_case_site_b'),
+    (select id from work_link_ids where key = 'rapid_method')
+  ),
+  'closed site B case activates'
+);
+
+select ok(
+  public.cancel_problem_solving_case(
+    (select id from work_link_ids where key = 'closed_case_site_b'),
+    'Stopped on site B'
+  ),
+  'closed site B case cancelled'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1000000-0000-0000-0000-000000000002","role":"authenticated","session_id":"f1100000-0000-0000-0000-000000000002","email":"ci-work-link-site-mgr@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from work_link_ids where key = 'organisation')),
+  'site manager session for existence oracle guards'
+);
+
+select throws_ok(
+  format(
+    'select public.link_problem_solving_case_to_ci_project(%L::uuid, %L::uuid)',
+  gen_random_uuid(),
+    (select id from work_link_ids where key = 'project')
+  ),
+  '42501',
+  'problem solving project link is not authorised',
+  'site manager receives unified denial for non-existent case'
+);
+
+select throws_ok(
+  format(
+    'select public.link_problem_solving_case_to_ci_project(%L::uuid, %L::uuid)',
+    (select id from work_link_ids where key = 'closed_case_site_b'),
+    (select id from work_link_ids where key = 'project_site_b')
+  ),
+  '42501',
+  'problem solving project link is not authorised',
+  'site manager receives unified denial for closed case on another site'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"f1100000-0000-0000-0000-000000000001","email":"ci-work-link-owner@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from work_link_ids where key = 'organisation')),
+  'owner returns after existence oracle guards'
+);
+
+insert into work_link_ids (key, id)
+select 'second_active_walk', public.start_gemba_walk(
+  (select id from work_link_ids where key = 'gemba_definition'),
+  (select id from work_link_ids where key = 'unit')
+);
+
+select throws_ok(
+  format(
+    'select public.create_gemba_action(%L, %L::uuid, %L::uuid, %L::timestamptz, %L)',
+    'Gemba walk mismatch replay',
+    (select id from work_link_ids where key = 'second_active_walk'),
+    (select id from work_link_ids where key = 'owner_membership'),
+    statement_timestamp() + interval '4 days',
+    'f3000000-0000-0000-0000-000000000001'
+  ),
+  '23505',
+  'gemba action idempotency key reuse mismatch',
+  'create_gemba_action rejects idempotency replay on a different walk'
 );
 
 select * from finish();
