@@ -1,7 +1,5 @@
 -- CI project work-item links: consolidated final definitions (PR #405).
 
--- CI project work-item links: actions, problem-solving cases, gemba observations, 5S findings.
-
 alter table public.five_s_audit_findings
   add column if not exists linked_project_id uuid;
 
@@ -88,14 +86,17 @@ as $$
     when project_row.id is null then null
     when not private.can_read_ci_project(target_organisation_id, project_row.id) then
       jsonb_build_object(
-        'restricted', true
+        'linked', true,
+        'restricted', true,
+        'can_open', false
       )
     else jsonb_build_object(
       'id', project_row.id,
       'project_number', project_row.project_number,
       'title', project_row.title,
       'status', project_row.status,
-      'restricted', false
+      'href', '/platform/projects/' || project_row.id::text,
+      'can_open', true
     )
   end
   from public.ci_projects project_row
@@ -483,6 +484,14 @@ begin
 end;
 $$;
 
+grant execute on function public.get_ci_projects_portfolio(
+  text, text, uuid, text, integer, integer, uuid, boolean
+) to authenticated;
+
+revoke all on function public.get_ci_projects_portfolio(
+  text, text, uuid, text, integer, integer, uuid, boolean
+) from public, anon;
+
 -- ── Action ↔ project links ───────────────────────────────────────────────────
 
 create or replace function private.link_action_to_ci_project(
@@ -704,6 +713,16 @@ begin
 
   if action_row.status in ('completed', 'verified', 'cancelled') then
     raise exception 'completed actions cannot be reassigned'
+      using errcode = '55000';
+  end if;
+
+  if exists (
+    select 1
+    from public.action_assignees assignee_row
+    where assignee_row.organisation_id = org_id
+      and assignee_row.action_id = target_action_id
+  ) then
+    raise exception 'action already has an assignee'
       using errcode = '55000';
   end if;
 
@@ -2152,7 +2171,7 @@ revoke all on function public.create_five_s_action(
   text, uuid, uuid, timestamptz, text, uuid, uuid, uuid, text, text
 ) from public, anon;
 
-grant select, update on public.actions to lean_hub_private_owner;
+grant select, update (updated_at) on public.actions to lean_hub_private_owner;
 grant select, insert, update, delete on public.ci_project_action_context
   to lean_hub_private_owner;
 

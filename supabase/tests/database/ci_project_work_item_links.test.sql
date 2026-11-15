@@ -1,6 +1,6 @@
 begin;
 
-select plan(106);
+select plan(112);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -510,6 +510,32 @@ select 'planner_action_guard', public.create_gemba_action(
   'normal'
 );
 
+reset role;
+set local role postgres;
+
+select throws_ok(
+  format(
+    'select private.assign_planner_action_to_creator(%L::uuid, %L::uuid)',
+    (select id from work_link_ids where key = 'planner_action_guard'),
+    (select id from work_link_ids where key = 'owner_membership')
+  ),
+  '55000',
+  'action already has an assignee',
+  'assign_planner_action_to_creator refuses when action already has an assignee'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"f1100000-0000-0000-0000-000000000001","email":"ci-work-link-owner@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from work_link_ids where key = 'organisation')),
+  'owner session after assign_planner guard test'
+);
+
 insert into work_link_ids (key, id)
 select 'action', public.create_action(
   'Standalone action for link test',
@@ -538,6 +564,18 @@ select is(
   ),
   (select id::text from work_link_ids where key = 'project'),
   'get_action_detail exposes linked_project'
+);
+
+select ok(
+  (
+    public.get_action_detail((select id from work_link_ids where key = 'action')) -> 'linked_project'
+      ->> 'can_open'
+  ) = 'true'
+  and (
+    public.get_action_detail((select id from work_link_ids where key = 'action')) -> 'linked_project'
+      ->> 'href'
+  ) = '/platform/projects/' || (select id::text from work_link_ids where key = 'project'),
+  'readable linked project summary includes can_open and href'
 );
 
 select lives_ok(
@@ -1201,6 +1239,14 @@ select ok(
     public.get_action_detail((select id from work_link_ids where key = 'action')) -> 'linked_project'
       ->> 'restricted'
   ) = 'true'
+  and (
+    public.get_action_detail((select id from work_link_ids where key = 'action')) -> 'linked_project'
+      ->> 'linked'
+  ) = 'true'
+  and (
+    public.get_action_detail((select id from work_link_ids where key = 'action')) -> 'linked_project'
+      ->> 'can_open'
+  ) = 'false'
   and not (
     public.get_action_detail((select id from work_link_ids where key = 'action')) -> 'linked_project'
       ? 'id'
@@ -1219,6 +1265,18 @@ select throws_ok(
   'site-scoped manager cannot set gemba link to unreadable site B project'
 );
 
+select lives_ok(
+  format(
+    'select public.create_action(%L, null, %L, %L::uuid, null, %L::timestamptz, %L)',
+  'Site manager planner create_action',
+  'normal',
+  (select id from work_link_ids where key = 'unit'),
+  statement_timestamp() + interval '5 days',
+  'f3000000-0000-0000-0000-0000000000c0'
+  ),
+  'site manager with actions_no_assign can create_action'
+);
+
 select throws_ok(
   format(
     'select public.set_action_assignee(%L::uuid, %L::uuid)',
@@ -1228,6 +1286,27 @@ select throws_ok(
   '42501',
   'action assignment is not authorised',
   'set_action_assignee rejects self-assign without actions.assign'
+);
+
+select is(
+  (
+    select assignee_row.membership_id::text
+    from public.action_assignees assignee_row
+    where assignee_row.organisation_id = (select id from work_link_ids where key = 'organisation')
+      and assignee_row.action_id = (select id from work_link_ids where key = 'planner_action_guard')
+  ),
+  (select id::text from work_link_ids where key = 'owner_membership'),
+  'set_action_assignee denial keeps the original assignee'
+);
+
+select throws_ok(
+  format(
+    'select public.clear_gemba_observation_linked_project(%L::uuid)',
+    (select id from work_link_ids where key = 'site_b_observation')
+  ),
+  '42501',
+  'gemba observation project unlink is not authorised',
+  'site manager cannot clear gemba project link on out-of-scope observation'
 );
 
 select throws_ok(

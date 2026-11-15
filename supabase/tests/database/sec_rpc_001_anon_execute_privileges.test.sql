@@ -1,6 +1,6 @@
 begin;
 
-select plan(47);
+select plan(53);
 
 -- Privilege inventory after SEC-RPC-001. Signatures match hosted/local catalogs.
 create temporary table sec_rpc_restricted_sigs (
@@ -177,6 +177,60 @@ select ok(
     'EXECUTE'
   ),
   'private owner retains EXECUTE on assert_five_s_planner_action_idempotency_replay'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.assign_planner_action_to_creator(uuid,uuid)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute private assign_planner_action_to_creator'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'anon',
+    'private.assign_planner_action_to_creator(uuid,uuid)',
+    'EXECUTE'
+  ),
+  'anon cannot execute private assign_planner_action_to_creator'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'public',
+    'private.assign_planner_action_to_creator(uuid,uuid)',
+    'EXECUTE'
+  ),
+  'PUBLIC cannot execute private assign_planner_action_to_creator'
+);
+
+select ok(
+  pg_catalog.has_function_privilege(
+    'authenticated',
+    'public.get_ci_projects_portfolio(text,text,uuid,text,integer,integer,uuid,boolean)',
+    'EXECUTE'
+  ),
+  'authenticated can execute get_ci_projects_portfolio'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'anon',
+    'public.get_ci_projects_portfolio(text,text,uuid,text,integer,integer,uuid,boolean)',
+    'EXECUTE'
+  ),
+  'anon cannot execute get_ci_projects_portfolio'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'public',
+    'public.get_ci_projects_portfolio(text,text,uuid,text,integer,integer,uuid,boolean)',
+    'EXECUTE'
+  ),
+  'PUBLIC cannot execute get_ci_projects_portfolio'
 );
 
 select ok(
