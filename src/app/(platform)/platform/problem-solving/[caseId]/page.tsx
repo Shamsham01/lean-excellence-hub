@@ -42,6 +42,7 @@ export default async function ProblemSolvingCaseDetailPage({
     canVerifyCause,
     canClose,
     canUseAi,
+    projectPicker,
   ] = await Promise.all([
     callProblemSolvingRpc<ProblemSolvingCaseDetail>(
       supabase,
@@ -54,20 +55,20 @@ export default async function ProblemSolvingCaseDetailPage({
     currentMemberHasPermission("problem_solving.verify_cause"),
     currentMemberHasPermission("problem_solving.close"),
     currentMemberHasPermission("ai.use"),
+    loadProjectPickerOptions(),
   ]);
 
   const detail = await resolveProblemSolvingDetailAccess(detailResult);
   if (canUseAi) {
     await recoverProblemSolvingAiRunsForCase(supabase, caseId);
   }
-  const [workspaceData, auditPayload, projectPicker] = await Promise.all([
+  const [workspaceData, auditPayload] = await Promise.all([
     loadCaseWorkspaceData(supabase, caseId, detail),
     callProblemSolvingRpc<unknown>(
       supabase,
       "get_problem_solving_case_audit_activity",
       { target_case_id: caseId },
     ),
-    loadProjectPickerOptions(),
   ]);
   const auditActivity = auditPayload.error
     ? []

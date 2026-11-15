@@ -1,6 +1,6 @@
 begin;
 
-select plan(25);
+select plan(29);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -28,6 +28,16 @@ values (
     'f1000000-0000-0000-0000-000000000001',
     'ci-work-link-org',
     'CI Work Link Org'
+  )
+);
+
+insert into work_link_ids (key, id)
+values (
+  'foreign_org',
+  private.provision_organisation(
+    'f1000000-0000-0000-0000-000000000001',
+    'ci-work-link-foreign',
+    'CI Work Link Foreign Org'
   )
 );
 
@@ -167,6 +177,16 @@ select is(
   ),
   (select id::text from work_link_ids where key = 'project'),
   'case work_item link is set'
+);
+
+select is(
+  (
+    select public.get_problem_solving_detail((select id from work_link_ids where key = 'case'))
+      -> 'linked_project'
+      ->> 'id'
+  ),
+  (select id::text from work_link_ids where key = 'project'),
+  'get_problem_solving_detail exposes linked_project after case link'
 );
 
 select is(
@@ -431,6 +451,27 @@ select throws_ok(
 );
 
 set local role authenticated;
+
+select ok(
+  public.switch_organisation((select id from work_link_ids where key = 'foreign_org')),
+  'switch to foreign organisation for cross-org guard'
+);
+
+select throws_ok(
+  format(
+    'select public.link_action_to_ci_project(%L::uuid, %L::uuid)',
+    (select id from work_link_ids where key = 'action'),
+    (select id from work_link_ids where key = 'project')
+  ),
+  '42501',
+  'action project link is not authorised',
+  'cross-org cannot link foreign action to home-org project'
+);
+
+select ok(
+  public.switch_organisation((select id from work_link_ids where key = 'organisation')),
+  'switch back to home organisation'
+);
 
 select throws_ok(
   format(

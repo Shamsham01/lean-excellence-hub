@@ -588,7 +588,9 @@ revoke all on function public.create_gemba_action(
 revoke execute on function public.set_five_s_audit_finding_linked_project(uuid, uuid)
   from authenticated;
 revoke execute on function public.clear_five_s_audit_finding_linked_project(uuid)
-  from authenticated;create or replace function public.get_problem_solving_detail(
+  from authenticated;
+
+create or replace function public.get_problem_solving_detail(
   target_case_id uuid
 )
 returns jsonb
