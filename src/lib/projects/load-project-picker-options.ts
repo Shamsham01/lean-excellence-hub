@@ -1,4 +1,5 @@
 import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
+import { isCiProjectLinkableStatus } from "@/lib/projects/status";
 import { callProjectRpc } from "@/lib/projects/supabase-untyped";
 import type {
   ProjectPortfolioResponse,
@@ -42,8 +43,12 @@ export async function loadProjectPickerOptions(): Promise<ProjectPickerOptions> 
     portfolioArgs,
   );
 
+  const projects = (portfolio?.items ?? []).filter((item) =>
+    isCiProjectLinkableStatus(item.status),
+  );
+
   return {
-    projects: portfolio?.items ?? [],
+    projects,
     requiresSiteSelection: false,
   };
 }

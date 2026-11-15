@@ -62,4 +62,30 @@ describe("ProjectLinkField", () => {
       screen.getByText("PRJ-001 · Walkway clearance · Active"),
     ).toBeInTheDocument();
   });
+
+  it("keeps completed project links read-only", () => {
+    render(
+      <ProjectLinkField
+        linked={{
+          id: "proj-1",
+          project_number: "PRJ-001",
+          title: "Walkway clearance",
+          status: "completed",
+          href: "/platform/projects/proj-1",
+          can_open: true,
+        }}
+        options={options}
+        canEdit
+        onLink={async () => ({})}
+        onUnlink={async () => ({})}
+      />,
+    );
+
+    expect(
+      screen.queryByTestId("project-link-field-unlink"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("project-link-field-frozen")).toHaveTextContent(
+      /read-only/i,
+    );
+  });
 });

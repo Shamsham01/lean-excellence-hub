@@ -8,6 +8,19 @@ export const PROJECT_STATUSES = [
   "cancelled",
 ] as const;
 
+/** Projects that can be selected when linking operational work items. */
+export const CI_PROJECT_LINKABLE_STATUSES = [
+  "draft",
+  "submitted",
+  "approved",
+  "active",
+  "on_hold",
+] as const;
+
+export function isCiProjectLinkableStatus(status: string): boolean {
+  return (CI_PROJECT_LINKABLE_STATUSES as readonly string[]).includes(status);
+}
+
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
 export const PROJECT_PRIORITIES = [

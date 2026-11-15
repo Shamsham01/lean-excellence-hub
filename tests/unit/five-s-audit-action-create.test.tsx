@@ -40,8 +40,15 @@ describe("5S audit raise action", () => {
   beforeEach(() => {
     vi.mocked(loadActionCreateContext).mockResolvedValue({
       labels: [],
-      assignablePeople: [],
+      assignablePeople: [
+        {
+          membership_id: "member-1",
+          display_name: "Audit lead",
+          avatar_url: null,
+        },
+      ],
       canManageLabels: false,
+      currentMembershipId: "member-1",
     });
     createFiveSAction.mockReset();
     createFiveSAction.mockResolvedValue({ ok: true, id: "action-42" });
@@ -60,6 +67,19 @@ describe("5S audit raise action", () => {
     const titleInput = screen.getByLabelText("Title") as HTMLInputElement;
     expect(titleInput.value).toBe(linkContext.defaultTitle);
 
+    await waitFor(() => {
+      expect(screen.getByTestId("action-create-assignee")).toHaveValue(
+        "member-1",
+      );
+    });
+
+    fireEvent.change(screen.getByTestId("action-create-due"), {
+      target: { value: "2026-12-01" },
+    });
+    fireEvent.change(screen.getByTestId("action-create-assignee"), {
+      target: { value: "member-1" },
+    });
+
     fireEvent.click(screen.getByTestId("actions-create-submit"));
 
     await waitFor(() => {
@@ -72,11 +92,40 @@ describe("5S audit raise action", () => {
       questionId: "question-visibility",
       title: linkContext.defaultTitle,
       description: "",
-      dueAt: null,
-      assigneeMembershipId: null,
+      dueAt: new Date("2026-12-01T12:00:00").toISOString(),
+      assigneeMembershipId: "member-1",
       labelIds: [],
       checklistTitles: [],
     });
+  });
+
+  it("blocks submit without assignee and due date from audit", async () => {
+    vi.mocked(loadActionCreateContext).mockResolvedValueOnce({
+      labels: [],
+      assignablePeople: [],
+      canManageLabels: false,
+      currentMembershipId: null,
+    });
+
+    render(
+      <ActionCreateDialog
+        open
+        onOpenChange={vi.fn()}
+        fiveSLinkContext={linkContext}
+        onCreated={vi.fn()}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("action-create-assignee")).toBeDisabled(),
+    );
+
+    fireEvent.submit(screen.getByTestId("actions-create-form"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Assignee is required.")).toBeInTheDocument();
+    });
+    expect(createFiveSAction).not.toHaveBeenCalled();
   });
 });
 

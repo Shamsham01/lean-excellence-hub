@@ -105,6 +105,9 @@ export function ActionCreateDialog({
   const [checklistDraft, setChecklistDraft] = useState("");
   const [checklistTitles, setChecklistTitles] = useState<string[]>([]);
   const [createContextLoaded, setCreateContextLoaded] = useState(false);
+  const [currentMembershipId, setCurrentMembershipId] = useState<string | null>(
+    null,
+  );
   const [evidenceDrafts, setEvidenceDrafts] = useState<
     ActionCreateEvidenceDraft[]
   >([]);
@@ -112,6 +115,7 @@ export function ActionCreateDialog({
   const [createdActionId, setCreatedActionId] = useState<string | null>(null);
 
   const plannerMode = !maturityContext;
+  const raisedFromAudit = Boolean(fiveSLinkContext ?? gembaLinkContext);
   const labelsLoading = plannerMode && open && !createContextLoaded;
 
   useEffect(() => {
@@ -130,6 +134,7 @@ export function ActionCreateDialog({
       if (cancelled) return;
       setCatalogLabels(ctx.labels);
       setAssignablePeople(ctx.assignablePeople);
+      setCurrentMembershipId(ctx.currentMembershipId);
       setCreateContextLoaded(true);
     });
     return () => {
@@ -148,6 +153,25 @@ export function ActionCreateDialog({
       syncQueryFromForm();
     }
   }, [open, fiveSLinkContext, gembaLinkContext]);
+
+  useEffect(() => {
+    if (!open || !raisedFromAudit || !createContextLoaded || assigneeId) return;
+    if (
+      currentMembershipId &&
+      assignablePeople.some(
+        (person) => person.membership_id === currentMembershipId,
+      )
+    ) {
+      setAssigneeId(currentMembershipId);
+    }
+  }, [
+    open,
+    raisedFromAudit,
+    createContextLoaded,
+    currentMembershipId,
+    assignablePeople,
+    assigneeId,
+  ]);
 
   function syncQueryFromForm() {
     if (!formRef.current) return;
@@ -272,6 +296,18 @@ export function ActionCreateDialog({
     }
 
     const { title, description } = readDraftFromForm(formRef.current);
+    if (raisedFromAudit) {
+      if (!assigneeId) {
+        setError("Assignee is required.");
+        setPending(false);
+        return;
+      }
+      if (!dueAt) {
+        setError("Due date is required.");
+        setPending(false);
+        return;
+      }
+    }
     const extraChecklist = checklistDraft.trim();
     const allChecklist = extraChecklist
       ? [...checklistTitles, extraChecklist]
@@ -425,7 +461,9 @@ export function ActionCreateDialog({
             <DialogTitle>Create action</DialogTitle>
             <DialogDescription>
               {plannerMode
-                ? "Add title, assignee, due date, labels, and checklist items."
+                ? raisedFromAudit
+                  ? "Assign an owner and due date before raising this corrective action."
+                  : "Add title, assignee, due date, labels, and checklist items."
                 : "Add a title and description. Save when you are ready."}
             </DialogDescription>
           </DialogHeader>
@@ -492,16 +530,21 @@ export function ActionCreateDialog({
             {plannerMode ? (
               <>
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="action-create-assignee">Assignee</Label>
+                  <Label htmlFor="action-create-assignee">
+                    Assignee{raisedFromAudit ? " *" : ""}
+                  </Label>
                   <select
                     id="action-create-assignee"
                     className="min-h-9 rounded-md border border-border bg-background px-3 text-sm"
                     value={assigneeId}
+                    required={raisedFromAudit}
                     disabled={pending || assignablePeople.length === 0}
                     data-testid="action-create-assignee"
                     onChange={(event) => setAssigneeId(event.target.value)}
                   >
-                    <option value="">Unassigned</option>
+                    <option value="">
+                      {raisedFromAudit ? "Select assignee…" : "Unassigned"}
+                    </option>
                     {assignablePeople.map((person) => (
                       <option
                         key={person.membership_id}
@@ -513,11 +556,14 @@ export function ActionCreateDialog({
                   </select>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="action-create-due">Due date</Label>
+                  <Label htmlFor="action-create-due">
+                    Due date{raisedFromAudit ? " *" : ""}
+                  </Label>
                   <Input
                     id="action-create-due"
                     type="date"
                     value={dueAt}
+                    required={raisedFromAudit}
                     disabled={pending}
                     data-testid="action-create-due"
                     onChange={(event) => setDueAt(event.target.value)}

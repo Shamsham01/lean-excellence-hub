@@ -31,6 +31,7 @@ beforeEach(() => {
     labels: [],
     assignablePeople: [],
     canManageLabels: false,
+    currentMembershipId: null,
   });
   vi.mocked(createGembaPlannerAction).mockResolvedValue({
     ok: true,

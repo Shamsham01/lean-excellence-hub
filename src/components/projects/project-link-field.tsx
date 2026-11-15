@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { InlineAlert } from "@/components/ui/alert";
 import {
   formatProjectReference,
+  isCiProjectLinkableStatus,
   projectStatusLabel,
 } from "@/lib/projects/status";
 import type {
@@ -43,6 +44,8 @@ export function ProjectLinkField({
   const [pickerOpenValue, setPickerOpenValue] = useState<string | null>(null);
 
   const summary = linked;
+  const linkMutable = !summary || isCiProjectLinkableStatus(summary.status);
+  const canChangeLink = canEdit && linkMutable;
 
   const chipLabel = summary
     ? `${formatProjectReference(summary.project_number, summary.title)} · ${summary.title}`
@@ -98,7 +101,7 @@ export function ProjectLinkField({
         ) : (
           <span className="text-sm text-muted-foreground">Not linked</span>
         )}
-        {canEdit && summary ? (
+        {canChangeLink && summary ? (
           <Button
             type="button"
             size="sm"
@@ -114,7 +117,16 @@ export function ProjectLinkField({
         ) : null}
       </div>
 
-      {canEdit && !summary ? (
+      {summary && !linkMutable ? (
+        <p
+          className="text-xs text-muted-foreground"
+          data-testid={`${testId}-frozen`}
+        >
+          Link is read-only because this project is completed or cancelled.
+        </p>
+      ) : null}
+
+      {canChangeLink && !summary ? (
         requiresSiteSelection && options.length === 0 ? (
           <p
             className="text-sm text-muted-foreground"

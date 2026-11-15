@@ -1,6 +1,6 @@
 begin;
 
-select plan(8);
+select plan(11);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -165,6 +165,57 @@ select lives_ok(
     (select id from work_link_ids where key = 'case')
   ),
   'unlink_problem_solving_case_from_ci_project succeeds'
+);
+
+insert into work_link_ids (key, id)
+select 'cancelled_project', public.create_improvement_project(
+  'Cancelled link target',
+  (select id from work_link_ids where key = 'unit'),
+  'Problem',
+  'Objective',
+  'Impact'
+);
+
+select ok(
+  public.cancel_project(
+    (select id from work_link_ids where key = 'cancelled_project'),
+    'No longer pursuing'
+  ),
+  'second project is cancelled'
+);
+
+select throws_ok(
+  format(
+    'select public.link_action_to_ci_project(%L::uuid, %L::uuid)',
+    (select id from work_link_ids where key = 'action'),
+    (select id from work_link_ids where key = 'cancelled_project')
+  ),
+  'This project is completed or cancelled and cannot accept new links.',
+  '22023'
+);
+
+insert into work_link_ids (key, id)
+select 'completed_project', public.create_improvement_project(
+  'Completed link target',
+  (select id from work_link_ids where key = 'unit'),
+  'Problem',
+  'Objective',
+  'Impact'
+);
+
+update public.ci_projects
+set status = 'completed',
+    actual_end_at = statement_timestamp()
+where id = (select id from work_link_ids where key = 'completed_project');
+
+select throws_ok(
+  format(
+    'select public.link_action_to_ci_project(%L::uuid, %L::uuid)',
+    (select id from work_link_ids where key = 'action'),
+    (select id from work_link_ids where key = 'completed_project')
+  ),
+  'This project is completed or cancelled and cannot accept new links.',
+  '22023'
 );
 
 select * from finish();

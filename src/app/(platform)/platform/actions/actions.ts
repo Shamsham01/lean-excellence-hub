@@ -308,13 +308,22 @@ export async function loadActionCreateContext(): Promise<{
   labels: ActionLabel[];
   assignablePeople: AssignablePerson[];
   canManageLabels: boolean;
+  currentMembershipId: string | null;
 }> {
   const supabase = await createServerSupabaseClient();
-  const [labelsResult, canAssign, canUpdate] = await Promise.all([
-    listActionLabels(),
-    currentMemberHasPermission(ACTIONS_PERMISSIONS.assign),
-    currentMemberHasPermission(ACTIONS_PERMISSIONS.update),
-  ]);
+  const { listEligibleOrganisations } =
+    await import("@/modules/organisations/context");
+  const [labelsResult, canAssign, canUpdate, organisations] = await Promise.all(
+    [
+      listActionLabels(),
+      currentMemberHasPermission(ACTIONS_PERMISSIONS.assign),
+      currentMemberHasPermission(ACTIONS_PERMISSIONS.update),
+      listEligibleOrganisations(),
+    ],
+  );
+
+  const currentMembershipId =
+    organisations.find((row) => row.selected)?.membership_id ?? null;
 
   let assignablePeople: AssignablePerson[] = [];
   if (canAssign) {
@@ -341,7 +350,21 @@ export async function loadActionCreateContext(): Promise<{
     labels: labelsResult.labels ?? [],
     assignablePeople,
     canManageLabels: canUpdate,
+    currentMembershipId,
   };
+}
+
+function requireRaisedActionOwnership(input: {
+  dueAt: string | null;
+  assigneeMembershipId: string | null;
+}): { error?: string } {
+  if (!input.assigneeMembershipId) {
+    return { error: "Assignee is required." };
+  }
+  if (!input.dueAt?.trim()) {
+    return { error: "Due date is required." };
+  }
+  return {};
 }
 
 export async function createPlannerAction(input: {
@@ -437,6 +460,9 @@ export async function createFiveSPlannerAction(input: {
   const title = input.title.trim();
   if (!title) return { error: "Title is required." };
 
+  const ownership = requireRaisedActionOwnership(input);
+  if (ownership.error) return { error: ownership.error };
+
   const supabase = await createServerSupabaseClient();
   const rpcArgs: {
     target_title: string;
@@ -456,9 +482,7 @@ export async function createFiveSPlannerAction(input: {
   if (input.description.trim()) {
     rpcArgs.target_description = input.description.trim();
   }
-  if (input.dueAt) {
-    rpcArgs.target_due_at = input.dueAt;
-  }
+  rpcArgs.target_due_at = input.dueAt!;
 
   const { data, error } = await supabase.rpc("create_five_s_action", rpcArgs);
   if (error) return { error: mapActionMutationError(error) };
@@ -473,14 +497,12 @@ export async function createFiveSPlannerAction(input: {
     };
   }
 
-  if (input.assigneeMembershipId) {
-    const assignResult = await setActionAssignee({
-      actionId,
-      membershipId: input.assigneeMembershipId,
-    });
-    if (assignResult.error) {
-      return partialSuccess("Assignee", assignResult.error);
-    }
+  const assignResult = await setActionAssignee({
+    actionId,
+    membershipId: input.assigneeMembershipId!,
+  });
+  if (assignResult.error) {
+    return partialSuccess("Assignee", assignResult.error);
   }
 
   if (input.labelIds.length > 0) {
@@ -528,6 +550,9 @@ export async function createGembaPlannerAction(input: {
   const title = input.title.trim();
   if (!title) return { error: "Title is required." };
 
+  const ownership = requireRaisedActionOwnership(input);
+  if (ownership.error) return { error: ownership.error };
+
   const supabase = await createServerSupabaseClient();
   const rpcArgs: {
     target_title: string;
@@ -549,7 +574,7 @@ export async function createGembaPlannerAction(input: {
   if (input.description.trim()) {
     rpcArgs.target_description = input.description.trim();
   }
-  if (input.dueAt) rpcArgs.target_due_at = input.dueAt;
+  rpcArgs.target_due_at = input.dueAt!;
 
   const { data, error } = await supabase.rpc("create_gemba_action", rpcArgs);
   if (error) return { error: mapActionMutationError(error) };
@@ -564,14 +589,12 @@ export async function createGembaPlannerAction(input: {
     };
   }
 
-  if (input.assigneeMembershipId) {
-    const assignResult = await setActionAssignee({
-      actionId,
-      membershipId: input.assigneeMembershipId,
-    });
-    if (assignResult.error) {
-      return partialSuccess("Assignee", assignResult.error);
-    }
+  const assignResult = await setActionAssignee({
+    actionId,
+    membershipId: input.assigneeMembershipId!,
+  });
+  if (assignResult.error) {
+    return partialSuccess("Assignee", assignResult.error);
   }
 
   if (input.labelIds.length > 0) {
