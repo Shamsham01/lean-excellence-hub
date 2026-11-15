@@ -355,7 +355,8 @@ export function ActionCreateDialog({
     let createWarning: string | undefined;
 
     const idempotencyKey =
-      idempotencyKeyRef.current ?? (idempotencyKeyRef.current = crypto.randomUUID());
+      idempotencyKeyRef.current ??
+      (idempotencyKeyRef.current = crypto.randomUUID());
 
     try {
       if (!actionId) {
