@@ -47,11 +47,7 @@ test.describe("Milestone 12 closure", () => {
     page,
   }) => {
     await signInAsDemoUser(page, "manager");
-    await page.goto("/platform/problem-solving");
-    await page
-      .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
-      .click();
-    await expectGuidedProblemSolvingWorkspace(page);
+    await createActiveCaseAndOpenLeanAi(page);
     await leanAiPanel(page)
       .getByTestId("lean-ai-mode")
       .selectOption("challenge");
