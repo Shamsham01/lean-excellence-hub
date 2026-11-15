@@ -1,6 +1,6 @@
 begin;
 
-select plan(20);
+select plan(25);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -349,6 +349,100 @@ select throws_ok(
   '42501',
   'permission denied for function ci_project_link_summary',
   'authenticated cannot execute private ci_project_link_summary'
+);
+
+select ok(
+  (
+    select jsonb_array_length(
+      public.get_ci_projects_portfolio(
+        null,
+        null,
+        null,
+        null,
+        2,
+        1,
+        null,
+        true
+      ) -> 'items'
+    ) = 1
+  ),
+  'portfolio page 2 returns a single item when multiple linkable projects exist'
+);
+
+select is(
+  public.get_ci_projects_portfolio(
+    null,
+    null,
+    null,
+    null,
+    1,
+    500,
+    null,
+    true
+  ) ->> 'page_size',
+  '100',
+  'portfolio clamps page_size to 100'
+);
+
+select ok(
+  (
+    select count(*) = 0
+    from jsonb_array_elements(
+      public.get_ci_projects_portfolio(
+        null,
+        null,
+        null,
+        null,
+        1,
+        100,
+        null,
+        true
+      ) -> 'items'
+    ) portfolio_item
+    where portfolio_item ->> 'id' = (
+      select id::text from work_link_ids where key = 'completed_project'
+    )
+  ),
+  'target_linkable_only excludes completed projects'
+);
+
+select set_config(
+  'test.ci_work_link_action_id',
+  (select id::text from work_link_ids where key = 'action'),
+  true
+);
+select set_config(
+  'test.ci_work_link_project_id',
+  (select id::text from work_link_ids where key = 'project'),
+  true
+);
+
+set local role anon;
+
+select throws_ok(
+  format(
+    'select public.link_action_to_ci_project(%L::uuid, %L::uuid)',
+    current_setting('test.ci_work_link_action_id'),
+    current_setting('test.ci_work_link_project_id')
+  ),
+  '42501',
+  'permission denied for function link_action_to_ci_project',
+  'anon cannot execute link_action_to_ci_project'
+);
+
+set local role authenticated;
+
+select throws_ok(
+  format(
+    'select public.create_gemba_action(%L, %L::uuid, %L::uuid, null, %L)',
+    'Gemba action missing due',
+    gen_random_uuid(),
+    (select id from work_link_ids where key = 'owner_membership'),
+    'f2000000-0000-0000-0000-000000000099'
+  ),
+  '42501',
+  'gemba action creation is not authorised',
+  'create_gemba_action requires an authorised walk before due-date validation'
 );
 
 select * from finish();

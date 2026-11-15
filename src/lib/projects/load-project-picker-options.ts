@@ -1,5 +1,4 @@
 import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
-import { isCiProjectLinkableStatus } from "@/lib/projects/status";
 import { callProjectRpc } from "@/lib/projects/supabase-untyped";
 import type {
   ProjectPortfolioResponse,
@@ -12,7 +11,37 @@ export type ProjectPickerOptions = {
   requiresSiteSelection: boolean;
 };
 
-export async function loadProjectPickerOptions(): Promise<ProjectPickerOptions> {
+const PICKER_PAGE_SIZE = 100;
+const PICKER_MAX_PAGES = 50;
+
+async function fetchPortfolioPage(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  args: Record<string, unknown>,
+  page: number,
+): Promise<ProjectPortfolioResponse> {
+  const { data } = await callProjectRpc<ProjectPortfolioResponse>(
+    supabase,
+    "get_ci_projects_portfolio",
+    {
+      ...args,
+      target_page: page,
+      target_page_size: PICKER_PAGE_SIZE,
+      target_linkable_only: true,
+    },
+  );
+  return (
+    data ?? {
+      items: [],
+      total_count: 0,
+      page,
+      page_size: PICKER_PAGE_SIZE,
+    }
+  );
+}
+
+export async function loadProjectPickerOptions(
+  targetSearch?: string | null,
+): Promise<ProjectPickerOptions> {
   const supabase = await createServerSupabaseClient();
   const selectorOptions = await loadSiteScopedSelectorOptions({
     requireConcreteSite: true,
@@ -25,10 +54,11 @@ export async function loadProjectPickerOptions(): Promise<ProjectPickerOptions> 
     };
   }
 
-  const portfolioArgs: Record<string, unknown> = {
-    target_page: 1,
-    target_page_size: 500,
-  };
+  const portfolioArgs: Record<string, unknown> = {};
+  const trimmedSearch = targetSearch?.trim();
+  if (trimmedSearch) {
+    portfolioArgs.target_search = trimmedSearch;
+  }
 
   if (
     selectorOptions.context.mode === "site" &&
@@ -37,15 +67,22 @@ export async function loadProjectPickerOptions(): Promise<ProjectPickerOptions> 
     portfolioArgs.target_site_unit_id = selectorOptions.context.activeSiteId;
   }
 
-  const { data: portfolio } = await callProjectRpc<ProjectPortfolioResponse>(
-    supabase,
-    "get_ci_projects_portfolio",
-    portfolioArgs,
-  );
+  const projects: ProjectSelectorOption[] = [];
+  let page = 1;
+  let totalCount = Number.POSITIVE_INFINITY;
 
-  const projects = (portfolio?.items ?? []).filter((item) =>
-    isCiProjectLinkableStatus(item.status),
-  );
+  while (
+    projects.length < totalCount &&
+    page <= PICKER_MAX_PAGES
+  ) {
+    const portfolio = await fetchPortfolioPage(supabase, portfolioArgs, page);
+    totalCount = portfolio.total_count;
+    projects.push(...portfolio.items);
+    if (portfolio.items.length < PICKER_PAGE_SIZE) {
+      break;
+    }
+    page += 1;
+  }
 
   return {
     projects,

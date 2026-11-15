@@ -9,9 +9,13 @@ export function projectLinkSummaryFromServer(
   if (raw == null) return null;
   if (typeof raw !== "object") return null;
   const record = raw as Record<string, unknown>;
-  if (record.linked === true && record.can_open === false) {
+  if (
+    record.linked === true &&
+    (record.restricted === true || record.can_open === false)
+  ) {
     return {
       linked: true,
+      restricted: record.restricted === true,
       can_open: false,
       title: "Linked project (not available here)",
     };

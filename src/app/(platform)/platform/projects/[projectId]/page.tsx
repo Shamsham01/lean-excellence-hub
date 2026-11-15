@@ -275,13 +275,28 @@ export default async function ProjectDetailPage({
   }>(supabase, "get_project_benefits", { target_project_id: projectId });
   const benefits = projectBenefitsData?.items ?? [];
 
+  const { data: workItemLinks } = await untypedFrom(
+    supabase,
+    "ci_project_source_links",
+  )
+    .select("source_resource_id")
+    .eq("project_id", projectId)
+    .eq("link_kind", "work_item")
+    .limit(20);
+
+  const linkedCaseIds =
+    workItemLinks?.map(
+      (row: { source_resource_id: string }) => row.source_resource_id,
+    ) ?? [];
+
   const [{ data: linkedCaseRows }, { data: linkedObservationRows }] =
     await Promise.all([
-      supabase
-        .from("problem_solving_cases")
-        .select("id, title, case_number")
-        .eq("linked_ci_project_id", projectId)
-        .limit(20),
+      linkedCaseIds.length > 0
+        ? supabase
+            .from("problem_solving_cases")
+            .select("id, title, case_number")
+            .in("id", linkedCaseIds)
+        : Promise.resolve({ data: [] as { id: string; title: string; case_number: string | null }[] }),
       untypedFrom(supabase, "gemba_walk_observations")
         .select("id, observation_text, walk_id, linked_project_id")
         .eq("linked_project_id", projectId)

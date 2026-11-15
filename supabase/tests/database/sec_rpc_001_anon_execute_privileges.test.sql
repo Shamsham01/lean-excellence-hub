@@ -28,7 +28,7 @@ values
   ('public.create_benefit_overlap_group(text,text)'),
   ('public.create_five_s_action(text,uuid,uuid,uuid,uuid,text,text,timestamp with time zone)'),
   ('public.create_five_s_finding(uuid,text,uuid,uuid,text,text,boolean)'),
-  ('public.create_gemba_action(text,uuid,uuid,uuid,uuid,text,text,timestamp with time zone)'),
+  ('public.create_gemba_action(text,uuid,uuid,timestamp with time zone,text,uuid,uuid,uuid,text,text)'),
   ('public.create_improvement_project(text,uuid,text,text,text,uuid)'),
   ('public.create_improvement_project_from_suggestion(uuid)'),
   ('public.create_recognition_type(text,text,text)'),

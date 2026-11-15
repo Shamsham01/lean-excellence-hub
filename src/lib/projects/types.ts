@@ -95,6 +95,7 @@ export type ProjectLinkSummary = {
   href?: string;
   can_open: boolean;
   linked?: boolean;
+  restricted?: boolean;
 };
 
 export type ProjectLinkedWorkItem = {

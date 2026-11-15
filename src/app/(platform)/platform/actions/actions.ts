@@ -554,18 +554,24 @@ export async function createGembaPlannerAction(input: {
   if (ownership.error) return { error: ownership.error };
 
   const supabase = await createServerSupabaseClient();
+  const idempotencyKey = crypto.randomUUID();
   const rpcArgs: {
     target_title: string;
     target_walk_id: string;
-    target_priority?: string;
+    target_assignee_membership_id: string;
+    target_due_at: string;
+    target_idempotency_key: string;
     target_section_id?: string;
     target_question_id?: string;
     target_observation_id?: string;
     target_description?: string;
-    target_due_at?: string;
+    target_priority?: string;
   } = {
     target_title: title,
     target_walk_id: input.walkId,
+    target_assignee_membership_id: input.assigneeMembershipId!,
+    target_due_at: input.dueAt!,
+    target_idempotency_key: idempotencyKey,
     target_priority: "normal",
   };
   if (input.sectionId) rpcArgs.target_section_id = input.sectionId;
@@ -574,7 +580,6 @@ export async function createGembaPlannerAction(input: {
   if (input.description.trim()) {
     rpcArgs.target_description = input.description.trim();
   }
-  rpcArgs.target_due_at = input.dueAt!;
 
   const { data, error } = await supabase.rpc("create_gemba_action", rpcArgs);
   if (error) return { error: mapActionMutationError(error) };
@@ -587,14 +592,6 @@ export async function createGembaPlannerAction(input: {
       id: actionId,
       warning: `${failedStep} could not be applied: ${message} The action was created — open it to finish setup.`,
     };
-  }
-
-  const assignResult = await setActionAssignee({
-    actionId,
-    membershipId: input.assigneeMembershipId!,
-  });
-  if (assignResult.error) {
-    return partialSuccess("Assignee", assignResult.error);
   }
 
   if (input.labelIds.length > 0) {
