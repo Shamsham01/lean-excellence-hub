@@ -3276,6 +3276,7 @@ export type Database = {
           created_at: string
           created_by_membership_id: string
           id: string
+          linked_project_id: string | null
           observation: string
           organisation_id: string
           priority: string | null
@@ -3289,6 +3290,7 @@ export type Database = {
           created_at?: string
           created_by_membership_id: string
           id?: string
+          linked_project_id?: string | null
           observation: string
           organisation_id: string
           priority?: string | null
@@ -3302,6 +3304,7 @@ export type Database = {
           created_at?: string
           created_by_membership_id?: string
           id?: string
+          linked_project_id?: string | null
           observation?: string
           organisation_id?: string
           priority?: string | null
@@ -3322,6 +3325,13 @@ export type Database = {
             columns: ["organisation_id", "created_by_membership_id"]
             isOneToOne: false
             referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_audit_findings_linked_project_fkey"
+            columns: ["organisation_id", "linked_project_id"]
+            isOneToOne: false
+            referencedRelation: "ci_projects"
             referencedColumns: ["organisation_id", "id"]
           },
           {
@@ -4247,6 +4257,7 @@ export type Database = {
           created_at: string
           created_by_membership_id: string
           id: string
+          linked_project_id: string | null
           observation_text: string
           observation_type: string
           organisation_id: string
@@ -4261,6 +4272,7 @@ export type Database = {
           created_at?: string
           created_by_membership_id: string
           id?: string
+          linked_project_id?: string | null
           observation_text: string
           observation_type: string
           organisation_id: string
@@ -4275,6 +4287,7 @@ export type Database = {
           created_at?: string
           created_by_membership_id?: string
           id?: string
+          linked_project_id?: string | null
           observation_text?: string
           observation_type?: string
           organisation_id?: string
@@ -4290,6 +4303,13 @@ export type Database = {
             columns: ["organisation_id", "created_by_membership_id"]
             isOneToOne: false
             referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_walk_observations_linked_project_fkey"
+            columns: ["organisation_id", "linked_project_id"]
+            isOneToOne: false
+            referencedRelation: "ci_projects"
             referencedColumns: ["organisation_id", "id"]
           },
           {
@@ -13448,6 +13468,14 @@ export type Database = {
           provisioning_intent_id: string
         }[]
       }
+      clear_five_s_audit_finding_linked_project: {
+        Args: { target_finding_id: string }
+        Returns: boolean
+      }
+      clear_gemba_observation_linked_project: {
+        Args: { target_observation_id: string }
+        Returns: boolean
+      }
       clear_invitation_signup_binding_auth_user: {
         Args: { target_binding_id: string }
         Returns: boolean
@@ -15060,6 +15088,10 @@ export type Database = {
         }
         Returns: string
       }
+      link_action_to_ci_project: {
+        Args: { target_action_id: string; target_project_id: string }
+        Returns: boolean
+      }
       link_benefit_evidence: {
         Args: { target_attachment_id: string; target_benefit_id: string }
         Returns: string
@@ -15119,6 +15151,10 @@ export type Database = {
       }
       link_node_hypothesis: {
         Args: { target_hypothesis_id: string; target_node_id: string }
+        Returns: boolean
+      }
+      link_problem_solving_case_to_ci_project: {
+        Args: { target_case_id: string; target_project_id: string }
         Returns: boolean
       }
       link_problem_solving_evidence: {
@@ -15955,6 +15991,10 @@ export type Database = {
         Args: { target_action_id: string; target_label_ids: string[] }
         Returns: undefined
       }
+      set_five_s_audit_finding_linked_project: {
+        Args: { target_finding_id: string; target_project_id: string }
+        Returns: boolean
+      }
       set_five_s_section_weight: {
         Args: {
           target_section_id: string
@@ -15978,6 +16018,10 @@ export type Database = {
       }
       set_gemba_definition_applicable_units: {
         Args: { target_definition_id: string; target_unit_ids: string[] }
+        Returns: boolean
+      }
+      set_gemba_observation_linked_project: {
+        Args: { target_observation_id: string; target_project_id: string }
         Returns: boolean
       }
       set_maturity_model_version_assessment_scopes: {
@@ -16184,6 +16228,14 @@ export type Database = {
           target_reason?: string
           target_to_status: string
         }
+        Returns: boolean
+      }
+      unlink_action_from_ci_project: {
+        Args: { target_action_id: string }
+        Returns: boolean
+      }
+      unlink_problem_solving_case_from_ci_project: {
+        Args: { target_case_id: string }
         Returns: boolean
       }
       update_action: {

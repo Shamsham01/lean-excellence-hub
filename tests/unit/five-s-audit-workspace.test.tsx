@@ -28,10 +28,18 @@ vi.mock("@/app/(platform)/platform/5s/actions", () => ({
   initiateFiveSEvidenceUpload: vi.fn(),
   confirmFiveSEvidenceUpload: vi.fn(),
   linkFiveSEvidence: vi.fn(),
+  ensureFiveSAuditFinding: vi.fn().mockResolvedValue({
+    findingId: "finding-1",
+    linkedProject: null,
+  }),
 }));
 
 vi.mock("@/components/five-s/five-s-audit-raise-action", () => ({
   FiveSAuditRaiseAction: () => null,
+}));
+
+vi.mock("@/components/five-s/five-s-audit-finding-panel", () => ({
+  FiveSAuditFindingPanel: () => null,
 }));
 
 const saveAnswer = vi.mocked(saveFiveSAuditAnswer);
