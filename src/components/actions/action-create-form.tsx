@@ -105,9 +105,6 @@ export function ActionCreateDialog({
   const [checklistDraft, setChecklistDraft] = useState("");
   const [checklistTitles, setChecklistTitles] = useState<string[]>([]);
   const [createContextLoaded, setCreateContextLoaded] = useState(false);
-  const [currentMembershipId, setCurrentMembershipId] = useState<string | null>(
-    null,
-  );
   const [evidenceDrafts, setEvidenceDrafts] = useState<
     ActionCreateEvidenceDraft[]
   >([]);
@@ -134,13 +131,21 @@ export function ActionCreateDialog({
       if (cancelled) return;
       setCatalogLabels(ctx.labels);
       setAssignablePeople(ctx.assignablePeople);
-      setCurrentMembershipId(ctx.currentMembershipId);
+      if (
+        (fiveSLinkContext ?? gembaLinkContext) &&
+        ctx.currentMembershipId &&
+        ctx.assignablePeople.some(
+          (person) => person.membership_id === ctx.currentMembershipId,
+        )
+      ) {
+        setAssigneeId(ctx.currentMembershipId);
+      }
       setCreateContextLoaded(true);
     });
     return () => {
       cancelled = true;
     };
-  }, [open, plannerMode]);
+  }, [open, plannerMode, fiveSLinkContext, gembaLinkContext]);
 
   useEffect(() => {
     const linkContext = fiveSLinkContext ?? gembaLinkContext;
@@ -153,25 +158,6 @@ export function ActionCreateDialog({
       syncQueryFromForm();
     }
   }, [open, fiveSLinkContext, gembaLinkContext]);
-
-  useEffect(() => {
-    if (!open || !raisedFromAudit || !createContextLoaded || assigneeId) return;
-    if (
-      currentMembershipId &&
-      assignablePeople.some(
-        (person) => person.membership_id === currentMembershipId,
-      )
-    ) {
-      setAssigneeId(currentMembershipId);
-    }
-  }, [
-    open,
-    raisedFromAudit,
-    createContextLoaded,
-    currentMembershipId,
-    assignablePeople,
-    assigneeId,
-  ]);
 
   function syncQueryFromForm() {
     if (!formRef.current) return;
