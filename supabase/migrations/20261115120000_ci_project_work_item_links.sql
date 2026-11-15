@@ -1,4 +1,4 @@
--- CI project links for actions, 5S findings, gemba observations, and problem-solving cases.
+-- CI project work-item links: actions, problem-solving cases, gemba observations, 5S findings.
 
 alter table public.five_s_audit_findings
   add column if not exists linked_project_id uuid;
@@ -7,10 +7,16 @@ alter table public.gemba_walk_observations
   add column if not exists linked_project_id uuid;
 
 alter table public.five_s_audit_findings
+  drop constraint if exists five_s_audit_findings_linked_project_fkey;
+
+alter table public.five_s_audit_findings
   add constraint five_s_audit_findings_linked_project_fkey
   foreign key (organisation_id, linked_project_id)
   references public.ci_projects(organisation_id, id)
   on delete restrict;
+
+alter table public.gemba_walk_observations
+  drop constraint if exists gemba_walk_observations_linked_project_fkey;
 
 alter table public.gemba_walk_observations
   add constraint gemba_walk_observations_linked_project_fkey
@@ -26,6 +32,126 @@ create index if not exists gemba_walk_observations_linked_project_idx
   on public.gemba_walk_observations (organisation_id, linked_project_id)
   where linked_project_id is not null;
 
+alter table public.ci_project_source_links
+  add column if not exists link_kind text not null default 'source';
+
+alter table public.ci_project_source_links
+  drop constraint if exists ci_project_source_links_link_kind_check;
+
+alter table public.ci_project_source_links
+  add constraint ci_project_source_links_link_kind_check
+  check (link_kind in ('source', 'work_item'));
+
+create unique index if not exists ci_project_source_links_one_work_item_per_source_idx
+  on public.ci_project_source_links (organisation_id, source_resource_id)
+  where link_kind = 'work_item';
+
+create or replace function private.ci_project_accepts_work_item_links(
+  target_organisation_id uuid,
+  target_project_id uuid
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.ci_projects project_row
+    where project_row.organisation_id = target_organisation_id
+      and project_row.id = target_project_id
+      and project_row.status in (
+        'draft',
+        'submitted',
+        'approved',
+        'active',
+        'on_hold'
+      )
+  );
+$$;
+
+create or replace function private.assert_ci_project_accepts_work_item_links(
+  target_organisation_id uuid,
+  target_project_id uuid
+)
+returns void
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  project_status text;
+begin
+  if not private.can_read_ci_project(target_organisation_id, target_project_id) then
+    raise exception 'project link is not authorised'
+      using errcode = '42501';
+  end if;
+
+  select project_row.status
+  into project_status
+  from public.ci_projects project_row
+  where project_row.organisation_id = target_organisation_id
+    and project_row.id = target_project_id
+  for share;
+
+  if not found then
+    raise exception 'project not found'
+      using errcode = 'P0002';
+  end if;
+
+  if not private.ci_project_accepts_work_item_links(
+    target_organisation_id,
+    target_project_id
+  ) then
+    raise exception
+      'This project is completed or cancelled and cannot accept new links.'
+      using errcode = '55000';
+  end if;
+end;
+$$;
+
+create or replace function private.assert_ci_project_work_item_link_mutable(
+  target_organisation_id uuid,
+  target_project_id uuid
+)
+returns void
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  project_status text;
+begin
+  if target_project_id is null then
+    return;
+  end if;
+
+  select project_row.status
+  into project_status
+  from public.ci_projects project_row
+  where project_row.organisation_id = target_organisation_id
+    and project_row.id = target_project_id
+  for share;
+
+  if not found then
+    raise exception 'project not found'
+      using errcode = 'P0002';
+  end if;
+
+  if not private.ci_project_accepts_work_item_links(
+    target_organisation_id,
+    target_project_id
+  ) then
+    raise exception
+      'This project link is read-only because the project is completed or cancelled.'
+      using errcode = '22023';
+  end if;
+end;
+$$;
+
 create or replace function private.ci_project_link_summary(
   target_organisation_id uuid,
   target_project_id uuid
@@ -37,22 +163,27 @@ security definer
 set search_path = ''
 as $$
   select case
+    when target_project_id is null then null
     when project_row.id is null then null
+    when not private.can_read_ci_project(target_organisation_id, project_row.id) then
+      jsonb_build_object(
+        'linked', true,
+        'restricted', true,
+        'can_open', false
+      )
     else jsonb_build_object(
       'id', project_row.id,
       'project_number', project_row.project_number,
       'title', project_row.title,
       'status', project_row.status,
       'href', '/platform/projects/' || project_row.id::text,
-      'can_open', private.can_read_ci_project(target_organisation_id, project_row.id)
+      'can_open', true
     )
   end
   from public.ci_projects project_row
   where project_row.organisation_id = target_organisation_id
     and project_row.id = target_project_id;
 $$;
-
-alter function private.ci_project_link_summary(uuid, uuid) owner to lean_hub_private_owner;
 
 create or replace function private.link_action_to_ci_project(
   target_action_id uuid,
@@ -67,16 +198,71 @@ as $$
 declare
   org_id uuid := private.current_organisation_id();
   actor_membership_id uuid := private.current_membership_id(org_id);
+  action_row public.actions%rowtype;
+  existing_project_id uuid;
 begin
   if org_id is null
     or actor_membership_id is null
-    or not private.can_update_action(org_id, target_action_id)
-    or not private.can_read_ci_project(org_id, target_project_id) then
+    or not private.can_update_action(org_id, target_action_id) then
     raise exception 'action project link is not authorised'
       using errcode = '42501';
   end if;
 
+  select action_table.*
+  into action_row
+  from public.actions action_table
+  where action_table.organisation_id = org_id
+    and action_table.id = target_action_id;
+
+  if not found then
+    raise exception 'action not found'
+      using errcode = 'P0002';
+  end if;
+
+  if action_row.status in ('completed', 'verified', 'cancelled') then
+    raise exception
+      'This action is completed, verified, or cancelled and cannot change project links.'
+      using errcode = '55000';
+  end if;
+
+  select context_row.project_id
+  into existing_project_id
+  from public.ci_project_action_context context_row
+  where context_row.organisation_id = org_id
+    and context_row.action_id = target_action_id
+  for update;
+
+  if existing_project_id is not null
+    and action_row.source_resource_id = existing_project_id then
+    raise exception
+      'This action belongs to its project and cannot be moved to another project.'
+      using errcode = '55000';
+  end if;
+
   perform private.assert_current_organisation_module_entitled('projects');
+
+  perform private.assert_ci_project_accepts_work_item_links(
+    org_id,
+    target_project_id
+  );
+
+  if not private.can_edit_ci_project(org_id, target_project_id) then
+    raise exception 'action project link is not authorised'
+      using errcode = '42501';
+  end if;
+
+  if existing_project_id is not null
+    and existing_project_id <> target_project_id then
+    if not private.can_read_ci_project(org_id, existing_project_id) then
+      raise exception 'action project link is not authorised'
+        using errcode = '42501';
+    end if;
+
+    if not private.ci_project_accepts_work_item_links(org_id, existing_project_id) then
+      raise exception 'action project link is not authorised'
+        using errcode = '42501';
+    end if;
+  end if;
 
   insert into public.ci_project_action_context (
     organisation_id,
@@ -92,7 +278,8 @@ begin
   )
   on conflict (organisation_id, action_id)
   do update set
-    project_id = excluded.project_id;
+    project_id = excluded.project_id,
+    project_phase_id = null;
 
   return true;
 end;
@@ -109,11 +296,63 @@ set search_path = ''
 as $$
 declare
   org_id uuid := private.current_organisation_id();
+  linked_project_id uuid;
+  action_row public.actions%rowtype;
 begin
   if org_id is null
     or not private.can_update_action(org_id, target_action_id) then
     raise exception 'action project unlink is not authorised'
       using errcode = '42501';
+  end if;
+
+  select action_table.*
+  into action_row
+  from public.actions action_table
+  where action_table.organisation_id = org_id
+    and action_table.id = target_action_id;
+
+  if not found then
+    raise exception 'action not found'
+      using errcode = 'P0002';
+  end if;
+
+  if action_row.status in ('completed', 'verified', 'cancelled') then
+    raise exception
+      'This action is completed, verified, or cancelled and cannot change project links.'
+      using errcode = '55000';
+  end if;
+
+  select context_row.project_id
+  into linked_project_id
+  from public.ci_project_action_context context_row
+  where context_row.organisation_id = org_id
+    and context_row.action_id = target_action_id
+  for update;
+
+  if linked_project_id is not null
+    and action_row.source_resource_id = linked_project_id then
+    raise exception
+      'This action belongs to its project and cannot be unlinked.'
+      using errcode = '55000';
+  end if;
+
+  if linked_project_id is not null
+    and not private.can_edit_ci_project(org_id, linked_project_id) then
+    raise exception 'action project unlink is not authorised'
+      using errcode = '42501';
+  end if;
+
+  if linked_project_id is not null then
+    if not private.can_read_ci_project(org_id, linked_project_id)
+      or not private.ci_project_accepts_work_item_links(org_id, linked_project_id) then
+      raise exception 'action project unlink is not authorised'
+        using errcode = '42501';
+    end if;
+
+    perform private.assert_ci_project_work_item_link_mutable(
+      org_id,
+      linked_project_id
+    );
   end if;
 
   delete from public.ci_project_action_context context_row
@@ -137,23 +376,41 @@ as $$
 declare
   org_id uuid := private.current_organisation_id();
   audit_id uuid;
+  current_linked_project_id uuid;
 begin
-  if org_id is null
-    or not private.can_read_ci_project(org_id, target_project_id) then
+  if org_id is null then
     raise exception '5S finding project link is not authorised'
       using errcode = '42501';
   end if;
 
-  select finding_row.audit_id
-  into audit_id
+  perform private.assert_ci_project_accepts_work_item_links(
+    org_id,
+    target_project_id
+  );
+
+  select finding_row.audit_id, finding_row.linked_project_id
+  into audit_id, current_linked_project_id
   from public.five_s_audit_findings finding_row
   where finding_row.organisation_id = org_id
-    and finding_row.id = target_finding_id;
+    and finding_row.id = target_finding_id
+  for update;
 
-  if not found
-    or not private.can_edit_five_s_audit(org_id, audit_id) then
+  if not found then
+    raise exception '5S finding not found'
+      using errcode = 'P0002';
+  end if;
+
+  if not private.can_edit_five_s_audit(org_id, audit_id) then
     raise exception '5S finding project link is not authorised'
       using errcode = '42501';
+  end if;
+
+  if current_linked_project_id is not null
+    and current_linked_project_id <> target_project_id then
+    perform private.assert_ci_project_work_item_link_mutable(
+      org_id,
+      current_linked_project_id
+    );
   end if;
 
   perform private.assert_current_organisation_module_entitled('projects');
@@ -179,23 +436,34 @@ as $$
 declare
   org_id uuid := private.current_organisation_id();
   audit_id uuid;
+  linked_project_id uuid;
 begin
   if org_id is null then
     raise exception '5S finding project unlink is not authorised'
       using errcode = '42501';
   end if;
 
-  select finding_row.audit_id
-  into audit_id
+  select finding_row.audit_id, finding_row.linked_project_id
+  into audit_id, linked_project_id
   from public.five_s_audit_findings finding_row
   where finding_row.organisation_id = org_id
-    and finding_row.id = target_finding_id;
+    and finding_row.id = target_finding_id
+  for update;
 
-  if not found
-    or not private.can_edit_five_s_audit(org_id, audit_id) then
+  if not found then
+    raise exception '5S finding not found'
+      using errcode = 'P0002';
+  end if;
+
+  if not private.can_edit_five_s_audit(org_id, audit_id) then
     raise exception '5S finding project unlink is not authorised'
       using errcode = '42501';
   end if;
+
+  perform private.assert_ci_project_work_item_link_mutable(
+    org_id,
+    linked_project_id
+  );
 
   update public.five_s_audit_findings finding_row
   set linked_project_id = null
@@ -219,25 +487,67 @@ as $$
 declare
   org_id uuid := private.current_organisation_id();
   walk_id uuid;
+  walk_status text;
+  current_linked_project_id uuid;
 begin
-  if org_id is null
-    or not private.can_read_ci_project(org_id, target_project_id) then
+  if org_id is null then
     raise exception 'gemba observation project link is not authorised'
       using errcode = '42501';
   end if;
 
-  select observation_row.walk_id
-  into walk_id
+  perform private.assert_ci_project_accepts_work_item_links(
+    org_id,
+    target_project_id
+  );
+
+  select observation_row.walk_id, observation_row.linked_project_id
+  into walk_id, current_linked_project_id
   from public.gemba_walk_observations observation_row
   where observation_row.organisation_id = org_id
-    and observation_row.id = target_observation_id;
+    and observation_row.id = target_observation_id
+  for update;
 
-  if not found
-    or not private.can_edit_gemba_walk(org_id, walk_id) then
+  if not found then
+    raise exception 'gemba observation not found'
+      using errcode = 'P0002';
+  end if;
+
+  select walk_row.status
+  into walk_status
+  from public.gemba_walks walk_row
+  where walk_row.organisation_id = org_id
+    and walk_row.id = walk_id
+  for share;
+
+  if walk_status not in ('draft', 'in_progress') then
+    raise exception
+      'This walk is completed or cancelled and cannot accept project links.'
+      using errcode = '55000';
+  end if;
+
+  if not private.can_edit_gemba_walk(org_id, walk_id) then
     raise exception 'gemba observation project link is not authorised'
       using errcode = '42501';
   end if;
 
+  if current_linked_project_id is not null
+    and current_linked_project_id <> target_project_id then
+    if not private.can_read_ci_project(org_id, current_linked_project_id)
+      or not private.ci_project_accepts_work_item_links(
+        org_id,
+        current_linked_project_id
+      ) then
+      raise exception 'gemba observation project link is not authorised'
+        using errcode = '42501';
+    end if;
+
+    perform private.assert_ci_project_work_item_link_mutable(
+      org_id,
+      current_linked_project_id
+    );
+  end if;
+
+  perform private.assert_current_organisation_module_entitled('gemba');
   perform private.assert_current_organisation_module_entitled('projects');
 
   update public.gemba_walk_observations observation_row
@@ -261,23 +571,50 @@ as $$
 declare
   org_id uuid := private.current_organisation_id();
   walk_id uuid;
+  walk_status text;
+  linked_project_id uuid;
 begin
   if org_id is null then
     raise exception 'gemba observation project unlink is not authorised'
       using errcode = '42501';
   end if;
 
-  select observation_row.walk_id
-  into walk_id
+  select observation_row.walk_id, observation_row.linked_project_id
+  into walk_id, linked_project_id
   from public.gemba_walk_observations observation_row
   where observation_row.organisation_id = org_id
-    and observation_row.id = target_observation_id;
+    and observation_row.id = target_observation_id
+  for update;
 
-  if not found
-    or not private.can_edit_gemba_walk(org_id, walk_id) then
+  if not found then
+    raise exception 'gemba observation not found'
+      using errcode = 'P0002';
+  end if;
+
+  select walk_row.status
+  into walk_status
+  from public.gemba_walks walk_row
+  where walk_row.organisation_id = org_id
+    and walk_row.id = walk_id
+  for share;
+
+  if walk_status not in ('draft', 'in_progress') then
+    raise exception
+      'This walk is completed or cancelled and cannot change project links.'
+      using errcode = '55000';
+  end if;
+
+  if not private.can_edit_gemba_walk(org_id, walk_id) then
     raise exception 'gemba observation project unlink is not authorised'
       using errcode = '42501';
   end if;
+
+  perform private.assert_ci_project_work_item_link_mutable(
+    org_id,
+    linked_project_id
+  );
+
+  perform private.assert_current_organisation_module_entitled('gemba');
 
   update public.gemba_walk_observations observation_row
   set linked_project_id = null
@@ -324,34 +661,66 @@ as $$
 declare
   org_id uuid := private.current_organisation_id();
   actor_membership_id uuid := private.current_membership_id(org_id);
+  case_status text;
 begin
   if org_id is null
-    or actor_membership_id is null
-    or not private.can_update_problem_solving_case_link(org_id, target_case_id)
-    or not private.can_read_ci_project(org_id, target_project_id) then
+    or actor_membership_id is null then
     raise exception 'problem solving project link is not authorised'
       using errcode = '42501';
   end if;
+
+  select case_row.status
+  into case_status
+  from public.problem_solving_cases case_row
+  where case_row.organisation_id = org_id
+    and case_row.id = target_case_id
+  for update;
+
+  if not found then
+    raise exception 'problem solving case not found'
+      using errcode = 'P0002';
+  end if;
+
+  if case_status not in ('draft', 'active') then
+    raise exception
+      'This case is closed or cancelled and cannot accept project links.'
+      using errcode = '55000';
+  end if;
+
+  if not (
+    private.can_manage_problem_solving_case(org_id, target_case_id)
+    or private.can_contribute_problem_solving_case(org_id, target_case_id)
+  ) then
+    raise exception 'problem solving project link is not authorised'
+      using errcode = '42501';
+  end if;
+
+  perform private.assert_ci_project_accepts_work_item_links(
+    org_id,
+    target_project_id
+  );
 
   perform private.assert_current_organisation_module_entitled('projects');
 
   delete from public.ci_project_source_links old_link
   where old_link.organisation_id = org_id
-    and old_link.source_resource_id = target_case_id;
+    and old_link.source_resource_id = target_case_id
+    and old_link.link_kind = 'work_item';
 
   insert into public.ci_project_source_links (
     organisation_id,
     project_id,
     source_resource_id,
-    created_by_membership_id
+    created_by_membership_id,
+    link_kind
   )
   values (
     org_id,
     target_project_id,
     target_case_id,
-    actor_membership_id
-  )
-  on conflict (organisation_id, project_id, source_resource_id) do nothing;
+    actor_membership_id,
+    'work_item'
+  );
 
   return true;
 end;
@@ -368,16 +737,61 @@ set search_path = ''
 as $$
 declare
   org_id uuid := private.current_organisation_id();
+  case_status text;
+  linked_project_id uuid;
 begin
-  if org_id is null
-    or not private.can_update_problem_solving_case_link(org_id, target_case_id) then
+  if org_id is null then
+    raise exception 'problem solving project unlink is not authorised'
+      using errcode = '42501';
+  end if;
+
+  select case_row.status
+  into case_status
+  from public.problem_solving_cases case_row
+  where case_row.organisation_id = org_id
+    and case_row.id = target_case_id
+  for update;
+
+  if not found then
+    raise exception 'problem solving case not found'
+      using errcode = 'P0002';
+  end if;
+
+  if case_status not in ('draft', 'active') then
+    raise exception
+      'This case is closed or cancelled and cannot change project links.'
+      using errcode = '55000';
+  end if;
+
+  if not (
+    private.can_manage_problem_solving_case(org_id, target_case_id)
+    or private.can_contribute_problem_solving_case(org_id, target_case_id)
+  ) then
+    raise exception 'problem solving project unlink is not authorised'
+      using errcode = '42501';
+  end if;
+
+  select link_row.project_id
+  into linked_project_id
+  from public.ci_project_source_links link_row
+  where link_row.organisation_id = org_id
+    and link_row.source_resource_id = target_case_id
+    and link_row.link_kind = 'work_item'
+  limit 1;
+
+  if linked_project_id is null then
+    return true;
+  end if;
+
+  if not private.can_read_ci_project(org_id, linked_project_id) then
     raise exception 'problem solving project unlink is not authorised'
       using errcode = '42501';
   end if;
 
   delete from public.ci_project_source_links link_row
   where link_row.organisation_id = org_id
-    and link_row.source_resource_id = target_case_id;
+    and link_row.source_resource_id = target_case_id
+    and link_row.link_kind = 'work_item';
 
   return true;
 end;
@@ -708,6 +1122,52 @@ begin
 end;
 $$;
 
+alter function private.ci_project_accepts_work_item_links(uuid, uuid) owner to lean_hub_private_owner;
+alter function private.assert_ci_project_accepts_work_item_links(uuid, uuid) owner to lean_hub_private_owner;
+alter function private.assert_ci_project_work_item_link_mutable(uuid, uuid) owner to lean_hub_private_owner;
+alter function private.ci_project_link_summary(uuid, uuid) owner to lean_hub_private_owner;
+alter function private.link_action_to_ci_project(uuid, uuid) owner to lean_hub_private_owner;
+alter function private.unlink_action_from_ci_project(uuid) owner to lean_hub_private_owner;
+alter function private.set_five_s_audit_finding_linked_project(uuid, uuid) owner to lean_hub_private_owner;
+alter function private.clear_five_s_audit_finding_linked_project(uuid) owner to lean_hub_private_owner;
+alter function private.set_gemba_observation_linked_project(uuid, uuid) owner to lean_hub_private_owner;
+alter function private.clear_gemba_observation_linked_project(uuid) owner to lean_hub_private_owner;
+alter function private.can_update_problem_solving_case_link(uuid, uuid) owner to lean_hub_private_owner;
+alter function private.link_problem_solving_case_to_ci_project(uuid, uuid) owner to lean_hub_private_owner;
+alter function private.unlink_problem_solving_case_from_ci_project(uuid) owner to lean_hub_private_owner;
+
+do $grant$
+declare
+  fn regprocedure;
+begin
+  foreach fn in array array[
+    'private.ci_project_link_summary(uuid,uuid)'::regprocedure,
+    'private.link_action_to_ci_project(uuid,uuid)'::regprocedure,
+    'private.unlink_action_from_ci_project(uuid)'::regprocedure,
+    'private.set_five_s_audit_finding_linked_project(uuid,uuid)'::regprocedure,
+    'private.clear_five_s_audit_finding_linked_project(uuid)'::regprocedure,
+    'private.set_gemba_observation_linked_project(uuid,uuid)'::regprocedure,
+    'private.clear_gemba_observation_linked_project(uuid)'::regprocedure,
+    'private.can_update_problem_solving_case_link(uuid,uuid)'::regprocedure,
+    'private.link_problem_solving_case_to_ci_project(uuid,uuid)'::regprocedure,
+    'private.unlink_problem_solving_case_from_ci_project(uuid)'::regprocedure,
+    'private.ci_project_accepts_work_item_links(uuid,uuid)'::regprocedure,
+    'private.assert_ci_project_accepts_work_item_links(uuid,uuid)'::regprocedure,
+    'private.assert_ci_project_work_item_link_mutable(uuid,uuid)'::regprocedure
+  ]
+  loop
+    execute format(
+      'revoke all on function %s from public, anon, authenticated, service_role',
+      fn
+    );
+    execute format(
+      'grant execute on function %s to lean_hub_private_owner',
+      fn
+    );
+  end loop;
+end;
+$grant$;
+
 revoke all on function public.link_action_to_ci_project(uuid, uuid) from public, anon;
 revoke all on function public.unlink_action_from_ci_project(uuid) from public, anon;
 revoke all on function public.set_five_s_audit_finding_linked_project(uuid, uuid) from public, anon;
@@ -725,13 +1185,3 @@ grant execute on function public.set_gemba_observation_linked_project(uuid, uuid
 grant execute on function public.clear_gemba_observation_linked_project(uuid) to authenticated;
 grant execute on function public.link_problem_solving_case_to_ci_project(uuid, uuid) to authenticated;
 grant execute on function public.unlink_problem_solving_case_from_ci_project(uuid) to authenticated;
-
-alter function private.link_action_to_ci_project(uuid, uuid) owner to lean_hub_private_owner;
-alter function private.unlink_action_from_ci_project(uuid) owner to lean_hub_private_owner;
-alter function private.set_five_s_audit_finding_linked_project(uuid, uuid) owner to lean_hub_private_owner;
-alter function private.clear_five_s_audit_finding_linked_project(uuid) owner to lean_hub_private_owner;
-alter function private.set_gemba_observation_linked_project(uuid, uuid) owner to lean_hub_private_owner;
-alter function private.clear_gemba_observation_linked_project(uuid) owner to lean_hub_private_owner;
-alter function private.can_update_problem_solving_case_link(uuid, uuid) owner to lean_hub_private_owner;
-alter function private.link_problem_solving_case_to_ci_project(uuid, uuid) owner to lean_hub_private_owner;
-alter function private.unlink_problem_solving_case_from_ci_project(uuid) owner to lean_hub_private_owner;

@@ -1,6 +1,6 @@
 begin;
 
-select plan(21);
+select plan(20);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -159,22 +159,14 @@ select lives_ok(
 
 select is(
   (
-    select case_row.linked_ci_project_id::text
-    from public.problem_solving_cases case_row
-    where case_row.id = (select id from work_link_ids where key = 'case')
+    select link_row.project_id::text
+    from public.ci_project_source_links link_row
+    where link_row.organisation_id = (select id from work_link_ids where key = 'organisation')
+      and link_row.source_resource_id = (select id from work_link_ids where key = 'case')
+      and link_row.link_kind = 'work_item'
   ),
   (select id::text from work_link_ids where key = 'project'),
-  'case linked_ci_project_id is set'
-);
-
-select is(
-  (
-    select public.get_problem_solving_detail((select id from work_link_ids where key = 'case'))
-      -> 'linked_project'
-      ->> 'id'
-  ),
-  (select id::text from work_link_ids where key = 'project'),
-  'get_problem_solving_detail exposes linked_project'
+  'case work_item link is set'
 );
 
 select is(
@@ -232,7 +224,7 @@ select throws_ok(
     (select id from work_link_ids where key = 'action'),
     (select id from work_link_ids where key = 'cancelled_project')
   ),
-  '22023',
+  '55000',
   'This project is completed or cancelled and cannot accept new links.',
   'live project guard blocks cancelled'
 );
@@ -257,7 +249,7 @@ select throws_ok(
     (select id from work_link_ids where key = 'action'),
     (select id from work_link_ids where key = 'completed_project')
   ),
-  '22023',
+  '55000',
   'This project is completed or cancelled and cannot accept new links.',
   'live project guard blocks completed'
 );
