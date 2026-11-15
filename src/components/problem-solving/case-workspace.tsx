@@ -156,6 +156,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
   const storedCopilotPrefsRef = useRef<ReturnType<
     typeof readPpsCopilotPreference
   > | null>(null);
+  const pendingHydrationSaveSkipRef = useRef(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [pendingProposals, setPendingProposals] = useState<PendingProposal[]>(
     [],
@@ -207,6 +208,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     const storedCopilotPrefs = readPpsCopilotPreference(detail.id);
     storedCopilotPrefsRef.current = storedCopilotPrefs;
     if (storedCopilotPrefs) {
+      pendingHydrationSaveSkipRef.current = true;
       // Post-hydration read of localStorage; SSR and the first client paint use defaults above.
       // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional hydration-safe prefs apply
       setCopilotCollapsed(storedCopilotPrefs.dockCollapsed);
@@ -217,24 +219,26 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
   }, [detail.id]);
 
   useEffect(() => {
-    const stored = storedCopilotPrefsRef.current;
     const next = {
       mobileOpen: mobileCopilotOpen,
       dockCollapsed: copilotCollapsed,
     };
-    if (stored) {
-      const matchesStored =
-        stored.dockCollapsed === next.dockCollapsed &&
-        stored.mobileOpen === next.mobileOpen;
-      const awaitingHydratedPrefs =
-        !next.dockCollapsed &&
-        !next.mobileOpen &&
-        (stored.dockCollapsed || stored.mobileOpen);
-      if (awaitingHydratedPrefs || matchesStored) {
+    if (pendingHydrationSaveSkipRef.current) {
+      pendingHydrationSaveSkipRef.current = false;
+      if (!next.dockCollapsed && !next.mobileOpen) {
         return;
       }
     }
+    const stored = storedCopilotPrefsRef.current;
+    if (
+      stored &&
+      stored.dockCollapsed === next.dockCollapsed &&
+      stored.mobileOpen === next.mobileOpen
+    ) {
+      return;
+    }
     writePpsCopilotPreference(detail.id, next);
+    storedCopilotPrefsRef.current = next;
   }, [detail.id, mobileCopilotOpen, copilotCollapsed]);
 
   const leanAiPanelOpen = isMobileViewport
