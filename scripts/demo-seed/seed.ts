@@ -902,7 +902,13 @@ async function seedDemoProblemSolvingCase(
   const story = DEMO_PROBLEM_SOLVING_CASE;
 
   if (await isM11DemoComplete(managerClient)) {
-    return;
+    const activeForLeanAi = await findDemoProblemSolvingCase(managerClient, {
+      excludeClosed: true,
+    });
+    if (activeForLeanAi) {
+      return;
+    }
+    // M11 narrative closes the seeded title; keep an active copy for M12 Lean AI E2E.
   }
 
   const existing = await findDemoProblemSolvingCase(managerClient, {

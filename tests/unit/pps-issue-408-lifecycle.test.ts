@@ -56,28 +56,33 @@ describe("pps issue 408 lifecycle helpers", () => {
   });
 
   it("derives progress at cause analysis when hypotheses exist", () => {
-    const stage = deriveCaseProgressStage(stages, {
-      ...baseDetail,
-      hypotheses: [
-        {
-          id: "h1",
-          statement: "Bad seal",
-          category: "Machine",
-          status: "proposed",
-          rationale: null,
-          verification_rationale: null,
-          verified_by_membership_id: null,
-          verified_at: null,
-          rejection_rationale: null,
-          rejected_by_membership_id: null,
-          rejected_at: null,
-          parent_hypothesis_id: null,
-          created_by_membership_id: "m1",
-          created_at: "2026-01-01T00:00:00Z",
-          evidence_links: [],
-        },
-      ],
-    }, 0, 0);
+    const stage = deriveCaseProgressStage(
+      stages,
+      {
+        ...baseDetail,
+        hypotheses: [
+          {
+            id: "h1",
+            statement: "Bad seal",
+            category: "Machine",
+            status: "proposed",
+            rationale: null,
+            verification_rationale: null,
+            verified_by_membership_id: null,
+            verified_at: null,
+            rejection_rationale: null,
+            rejected_by_membership_id: null,
+            rejected_at: null,
+            parent_hypothesis_id: null,
+            created_by_membership_id: "m1",
+            created_at: "2026-01-01T00:00:00Z",
+            evidence_links: [],
+          },
+        ],
+      },
+      0,
+      0,
+    );
     expect(stage?.semantic_stage_key).toBe("ROOT_CAUSE_ANALYSIS");
   });
 });

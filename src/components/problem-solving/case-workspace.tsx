@@ -184,7 +184,8 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     [sortedStages, detail, currentConditionItems.length, analysisNodes.length],
   );
 
-  const caseAllowsAi = canUseAi && caseStatusAllowsLeanAiDrafting(detail.status);
+  const caseAllowsAi =
+    canUseAi && caseStatusAllowsLeanAiDrafting(detail.status);
 
   const urlStageSemanticKey = useMemo(() => {
     const raw = searchParams.get("stage")?.trim() ?? "";
@@ -577,8 +578,9 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
       currentStageKey={detail.current_stage?.semantic_stage_key ?? null}
       stageTitle={viewStage?.title ?? detail.current_stage?.title ?? null}
       caseStatus={detail.status}
-      canUseAi={caseAllowsAi}
+      canUseAi={canUseAi}
       providerAvailable={providerAvailable}
+      caseDraftingEnabled={caseAllowsAi}
       layout="dock"
       collapsed={copilotCollapsed}
       onCollapsedChange={(next) => {

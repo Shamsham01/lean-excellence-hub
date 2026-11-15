@@ -21,7 +21,6 @@ import {
   problemSolvingClientTurnError,
   retainProblemSolvingTurnKey,
 } from "@/platform/ai/ai-turn-messages";
-import { isProblemSolvingCaseOpenForAiDraft } from "@/lib/problem-solving/status";
 import type { AiSessionMode, FacilitatorEnvelope } from "@/platform/ai/types";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +35,8 @@ type AiFacilitatorPanelProps = {
   stageTitle?: string | null;
   caseStatus?: string;
   canUseAi: boolean;
+  /** When false, case is terminal: show copilot read-only but block sends. */
+  caseDraftingEnabled?: boolean;
   providerAvailable: boolean;
   layout?: "card" | "dock";
   collapsed?: boolean;
@@ -68,6 +69,7 @@ export function AiFacilitatorPanel({
   stageTitle,
   caseStatus,
   canUseAi,
+  caseDraftingEnabled = true,
   providerAvailable,
   layout = "dock",
   collapsed = false,
@@ -197,16 +199,11 @@ export function AiFacilitatorPanel({
     }
   }
 
-  const caseOpenForAi =
-    caseStatus === undefined || caseStatus === null
-      ? true
-      : isProblemSolvingCaseOpenForAiDraft(caseStatus);
-
   const disabledReason = !canUseAi
     ? "You do not have permission to use Lean AI on this case."
     : !providerAvailable
       ? "Lean AI is not enabled or configured for this environment."
-      : !caseOpenForAi
+      : !caseDraftingEnabled
         ? "This case is closed or cancelled; Lean AI is not available."
         : null;
 

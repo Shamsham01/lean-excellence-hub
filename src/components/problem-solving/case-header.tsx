@@ -284,7 +284,8 @@ export function CaseHeader({
   if (useWorkspaceHeader) {
     const eyebrowLabel = isTerminalCaseStatus(detail.status)
       ? problemSolvingStatusLabel(detail.status)
-      : (detail.case_number ?? (detail.status === "draft" ? "Draft case" : null));
+      : (detail.case_number ??
+        (detail.status === "draft" ? "Draft case" : null));
     const resolvedEyebrow =
       eyebrowLabel ?? problemSolvingStatusLabel(detail.status);
     const metaParts: ReactNode[] = [

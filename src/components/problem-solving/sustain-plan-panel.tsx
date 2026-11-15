@@ -75,10 +75,15 @@ export function SustainPlanPanel({
       </CardHeader>
       <CardContent>
         {readOnly && hasSavedPlan ? (
-          <dl className="grid gap-3 text-sm" data-testid="sustain-plan-readonly">
+          <dl
+            className="grid gap-3 text-sm"
+            data-testid="sustain-plan-readonly"
+          >
             <div>
-              <dt className="font-medium text-foreground">What will be standardised</dt>
-              <dd className="text-muted-foreground whitespace-pre-wrap">
+              <dt className="font-medium text-foreground">
+                What will be standardised
+              </dt>
+              <dd className="whitespace-pre-wrap text-muted-foreground">
                 {detail.sustain_plan_standardised}
               </dd>
             </div>
@@ -94,8 +99,10 @@ export function SustainPlanPanel({
               </dd>
             </div>
             <div>
-              <dt className="font-medium text-foreground">How it is monitored</dt>
-              <dd className="text-muted-foreground whitespace-pre-wrap">
+              <dt className="font-medium text-foreground">
+                How it is monitored
+              </dt>
+              <dd className="whitespace-pre-wrap text-muted-foreground">
                 {detail.sustain_plan_monitoring}
               </dd>
             </div>
@@ -107,7 +114,9 @@ export function SustainPlanPanel({
             </div>
           </dl>
         ) : readOnly ? (
-          <p className="text-sm text-muted-foreground">No sustain plan recorded.</p>
+          <p className="text-sm text-muted-foreground">
+            No sustain plan recorded.
+          </p>
         ) : (
           <form onSubmit={handleSave} className="flex flex-col gap-3 text-sm">
             <label className="flex flex-col gap-1">

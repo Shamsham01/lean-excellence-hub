@@ -61,10 +61,7 @@ export function deriveCaseProgressStage(
   if ((detail.target_condition?.trim().length ?? 0) > 0) {
     impliedKey = "TARGET_CONDITION";
   }
-  if (
-    analysisNodeCount > 0 ||
-    (detail.hypotheses?.length ?? 0) > 0
-  ) {
+  if (analysisNodeCount > 0 || (detail.hypotheses?.length ?? 0) > 0) {
     impliedKey = "ROOT_CAUSE_ANALYSIS";
   }
   if ((detail.countermeasures?.length ?? 0) > 0) {
@@ -127,8 +124,7 @@ export function resolveDisplayedCurrentStage(
   if (derived) return derived;
   if (detail.current_stage?.id) {
     return (
-      methodStages.find((row) => row.id === detail.current_stage?.id) ??
-      null
+      methodStages.find((row) => row.id === detail.current_stage?.id) ?? null
     );
   }
   return methodStages[0] ?? null;

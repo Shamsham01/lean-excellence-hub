@@ -322,6 +322,7 @@ export type Database = {
           created_by_membership_id: string
           description: string | null
           due_at: string | null
+          expected_result: string | null
           id: string
           idempotency_key: string | null
           organisation_id: string
@@ -343,6 +344,7 @@ export type Database = {
           created_by_membership_id: string
           description?: string | null
           due_at?: string | null
+          expected_result?: string | null
           id: string
           idempotency_key?: string | null
           organisation_id: string
@@ -364,6 +366,7 @@ export type Database = {
           created_by_membership_id?: string
           description?: string | null
           due_at?: string | null
+          expected_result?: string | null
           id?: string
           idempotency_key?: string | null
           organisation_id?: string
@@ -7640,6 +7643,10 @@ export type Database = {
           severity: string | null
           site_unit_id: string | null
           status: string
+          sustain_plan_monitoring: string | null
+          sustain_plan_owner_membership_id: string | null
+          sustain_plan_review_date: string | null
+          sustain_plan_standardised: string | null
           target_condition: string | null
           target_due_at: string | null
           title: string
@@ -7675,6 +7682,10 @@ export type Database = {
           severity?: string | null
           site_unit_id?: string | null
           status?: string
+          sustain_plan_monitoring?: string | null
+          sustain_plan_owner_membership_id?: string | null
+          sustain_plan_review_date?: string | null
+          sustain_plan_standardised?: string | null
           target_condition?: string | null
           target_due_at?: string | null
           title: string
@@ -7710,6 +7721,10 @@ export type Database = {
           severity?: string | null
           site_unit_id?: string | null
           status?: string
+          sustain_plan_monitoring?: string | null
+          sustain_plan_owner_membership_id?: string | null
+          sustain_plan_review_date?: string | null
+          sustain_plan_standardised?: string | null
           target_condition?: string | null
           target_due_at?: string | null
           title?: string
@@ -7781,10 +7796,55 @@ export type Database = {
             referencedColumns: ["organisation_id", "id"]
           },
           {
+            foreignKeyName: "problem_solving_cases_sustain_plan_owner_fkey"
+            columns: ["organisation_id", "sustain_plan_owner_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
             foreignKeyName: "problem_solving_cases_unit_fkey"
             columns: ["organisation_id", "organisation_unit_id"]
             isOneToOne: false
             referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_client_mutations: {
+        Row: {
+          case_id: string
+          created_at: string
+          id: string
+          mutation_key: string
+          organisation_id: string
+          resource_id: string
+          resource_type: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          id?: string
+          mutation_key: string
+          organisation_id: string
+          resource_id: string
+          resource_type: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          id?: string
+          mutation_key?: string
+          organisation_id?: string
+          resource_id?: string
+          resource_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_solving_client_mutations_case_fkey"
+            columns: ["organisation_id", "case_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_cases"
             referencedColumns: ["organisation_id", "id"]
           },
         ]
@@ -12958,6 +13018,7 @@ export type Database = {
           target_category?: string
           target_display_metadata?: Json
           target_label: string
+          target_mutation_key?: string
           target_parent_node_id?: string
           target_sort_order?: number
         }
@@ -13961,6 +14022,7 @@ export type Database = {
           target_expected_result?: string
           target_hypothesis_id: string
           target_method?: string
+          target_mutation_key?: string
           target_owner_membership_id?: string
           target_planned_date?: string
           target_test_question: string
@@ -14050,6 +14112,7 @@ export type Database = {
           target_countermeasure_id?: string
           target_description?: string
           target_due_at?: string
+          target_expected_result?: string
           target_priority?: string
           target_problem_solving_case_id: string
           target_sustainment_item_id?: string
@@ -14354,6 +14417,10 @@ export type Database = {
       delete_gemba_observations: {
         Args: { target_observation_ids: string[]; target_walk_id: string }
         Returns: number
+      }
+      delete_hypothesis_test: {
+        Args: { target_test_id: string }
+        Returns: boolean
       }
       delete_maturity_criterion: {
         Args: { target_criterion_id: string }
@@ -16617,6 +16684,16 @@ export type Database = {
           target_question_id: string
         }
         Returns: string
+      }
+      upsert_problem_solving_sustain_plan: {
+        Args: {
+          target_case_id: string
+          target_sustain_plan_monitoring?: string
+          target_sustain_plan_owner_membership_id?: string
+          target_sustain_plan_review_date?: string
+          target_sustain_plan_standardised?: string
+        }
+        Returns: boolean
       }
       upsert_template_answer: {
         Args: {

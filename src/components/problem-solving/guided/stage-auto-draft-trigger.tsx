@@ -238,8 +238,8 @@ export function StageAutoDraftTrigger({
           role="status"
           data-testid="pps-stage-auto-draft-status"
         >
-          {stagePendingCount} proposal(s) ready for {stageLabel} — review Pending
-          Lean AI proposals below.
+          {stagePendingCount} proposal(s) ready for {stageLabel} — review
+          Pending Lean AI proposals below.
         </p>
       ) : null}
     </div>
