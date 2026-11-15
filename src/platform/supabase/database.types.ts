@@ -7816,8 +7816,10 @@ export type Database = {
           case_id: string
           created_at: string
           id: string
+          membership_id: string
           mutation_key: string
           organisation_id: string
+          parent_id: string
           resource_id: string
           resource_type: string
         }
@@ -7825,8 +7827,10 @@ export type Database = {
           case_id: string
           created_at?: string
           id?: string
+          membership_id: string
           mutation_key: string
           organisation_id: string
+          parent_id: string
           resource_id: string
           resource_type: string
         }
@@ -7834,8 +7838,10 @@ export type Database = {
           case_id?: string
           created_at?: string
           id?: string
+          membership_id?: string
           mutation_key?: string
           organisation_id?: string
+          parent_id?: string
           resource_id?: string
           resource_type?: string
         }
@@ -7845,6 +7851,13 @@ export type Database = {
             columns: ["organisation_id", "case_id"]
             isOneToOne: false
             referencedRelation: "problem_solving_cases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_client_mutations_membership_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
             referencedColumns: ["organisation_id", "id"]
           },
         ]
