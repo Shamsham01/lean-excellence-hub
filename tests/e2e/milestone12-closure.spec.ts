@@ -20,7 +20,9 @@ const CONTAINMENT_DESCRIPTION =
   "Quarantine output from the last three hot-running batches.";
 const CURRENT_CONDITION_STATEMENT =
   "Hot-running defect rate is 2.4x the cold-start baseline.";
-const aiCurrentConditionCaseTitle = `M12 AI Current Condition ${Date.now().toString(36)}`;
+function uniqueActiveCaseTitle() {
+  return `M12 AI Current Condition ${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
 
 test.describe("Milestone 12 closure", () => {
   test.describe.configure({ mode: "serial" });
@@ -89,19 +91,13 @@ test.describe("Milestone 12 closure", () => {
   });
 
   async function openLeanAiPanel(page: Page) {
-    await page.goto("/platform/problem-solving");
-    await page
-      .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
-      .click();
-    await expectGuidedProblemSolvingWorkspace(page);
+    await createActiveCaseAndOpenLeanAi(page);
   }
 
   async function createActiveCaseAndOpenLeanAi(page: Page) {
     await page.goto("/platform/problem-solving/new");
     const wizard = page.getByTestId("create-problem-solving-wizard");
-    await page
-      .getByTestId("create-case-title")
-      .fill(aiCurrentConditionCaseTitle);
+    await page.getByTestId("create-case-title").fill(uniqueActiveCaseTitle());
     await wizard.getByTestId("case-unit-select").selectOption({ index: 1 });
     await wizard.getByTestId("create-case-owner").selectOption({ index: 1 });
     await wizard
