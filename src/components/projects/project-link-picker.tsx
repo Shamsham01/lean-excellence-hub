@@ -41,15 +41,15 @@ export function ProjectLinkPicker({
 
   return (
     <div data-testid="project-link-picker">
-    <Combobox
-      options={comboboxOptions}
-      value={value}
-      onChange={onChange}
-      disabled={disabled}
-      {...(className ? { className } : {})}
-      placeholder={placeholder}
-      searchPlaceholder="Search code, title, or status"
-    />
+      <Combobox
+        options={comboboxOptions}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        {...(className ? { className } : {})}
+        placeholder={placeholder}
+        searchPlaceholder="Search code, title, or status"
+      />
     </div>
   );
 }

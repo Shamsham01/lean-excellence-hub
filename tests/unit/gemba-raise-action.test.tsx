@@ -51,6 +51,8 @@ describe("GembaAuditRaiseAction", () => {
 
     fireEvent.click(screen.getByTestId("gemba-raise-action"));
     expect(screen.getByTestId("actions-create-dialog")).toBeVisible();
-    expect(screen.getByDisplayValue("Oil on floor near line 2")).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue("Oil on floor near line 2"),
+    ).toBeInTheDocument();
   });
 });

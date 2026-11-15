@@ -116,7 +116,10 @@ export function ProjectLinkField({
 
       {canEdit && !summary ? (
         requiresSiteSelection && options.length === 0 ? (
-          <p className="text-sm text-muted-foreground" data-testid={`${testId}-needs-site`}>
+          <p
+            className="text-sm text-muted-foreground"
+            data-testid={`${testId}-needs-site`}
+          >
             Select an active site in the sidebar before linking a project.
           </p>
         ) : (

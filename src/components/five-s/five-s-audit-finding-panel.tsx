@@ -89,7 +89,10 @@ export function FiveSAuditFindingPanel({
 
   if (!localFinding) {
     return ensuring ? (
-      <p className="text-sm text-muted-foreground" data-testid="five-s-finding-ensuring">
+      <p
+        className="text-sm text-muted-foreground"
+        data-testid="five-s-finding-ensuring"
+      >
         Preparing finding…
       </p>
     ) : null;
@@ -101,7 +104,9 @@ export function FiveSAuditFindingPanel({
       data-testid="five-s-audit-finding-panel"
     >
       <p className="mb-2 text-sm font-medium">Audit finding</p>
-      <p className="mb-3 text-sm text-muted-foreground">{localFinding.observation}</p>
+      <p className="mb-3 text-sm text-muted-foreground">
+        {localFinding.observation}
+      </p>
       <ProjectLinkField
         label="Project link"
         linked={linkedProject}

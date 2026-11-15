@@ -42,7 +42,10 @@ export function GembaAuditRaiseAction({
           Create action
         </Button>
         {actionCount > 0 ? (
-          <Badge variant="secondary" data-testid="gemba-observation-action-count">
+          <Badge
+            variant="secondary"
+            data-testid="gemba-observation-action-count"
+          >
             {actionCount} action{actionCount === 1 ? "" : "s"}
           </Badge>
         ) : null}

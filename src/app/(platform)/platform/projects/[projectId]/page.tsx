@@ -275,11 +275,7 @@ export default async function ProjectDetailPage({
   }>(supabase, "get_project_benefits", { target_project_id: projectId });
   const benefits = projectBenefitsData?.items ?? [];
 
-  const [
-    sourceLinks,
-    linkedFindings,
-    linkedObservations,
-  ] = await Promise.all([
+  const [sourceLinks, linkedFindings, linkedObservations] = await Promise.all([
     untypedFrom(supabase, "ci_project_source_links")
       .select("source_resource_id")
       .eq("project_id", projectId),
@@ -310,7 +306,7 @@ export default async function ProjectDetailPage({
   }
 
   const linkedWorkItems: ProjectLinkedWorkItem[] = [
-  ...linkedCases.map((caseRow) => ({
+    ...linkedCases.map((caseRow) => ({
       id: caseRow.id,
       kind: "problem_solving_case" as const,
       title: `${caseRow.case_number ? `${caseRow.case_number} · ` : ""}${caseRow.title}`,

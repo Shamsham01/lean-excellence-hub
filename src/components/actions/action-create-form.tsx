@@ -348,7 +348,9 @@ export function ActionCreateDialog({
             : await createPlannerAction({
                 title,
                 description,
-                dueAt: dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null,
+                dueAt: dueAt
+                  ? new Date(`${dueAt}T12:00:00`).toISOString()
+                  : null,
                 assigneeMembershipId: assigneeId || null,
                 labelIds: selectedLabelIds,
                 checklistTitles: allChecklist,

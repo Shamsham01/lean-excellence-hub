@@ -16,10 +16,14 @@ export async function linkActionToCiProject(
   projectId: string,
 ): Promise<LinkResult> {
   const supabase = await createServerSupabaseClient();
-  const { error } = await callProjectRpc(supabase, "link_action_to_ci_project", {
-    target_action_id: actionId,
-    target_project_id: projectId,
-  });
+  const { error } = await callProjectRpc(
+    supabase,
+    "link_action_to_ci_project",
+    {
+      target_action_id: actionId,
+      target_project_id: projectId,
+    },
+  );
   if (error) return { error: mapLinkError(error) };
   revalidatePath(`/platform/actions/${actionId}`);
   revalidatePath(`/platform/projects/${projectId}`);

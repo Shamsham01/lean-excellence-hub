@@ -43,9 +43,7 @@ describe("ProjectLinkField", () => {
     expect(screen.getByTestId("project-link-field-chip")).toHaveTextContent(
       "Active",
     );
-    expect(
-      screen.queryByTestId("project-link-picker"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("project-link-picker")).not.toBeInTheDocument();
   });
 
   it("opens combobox when editable and unlinked", () => {

@@ -176,8 +176,10 @@ export default async function GembaWalkPage({
       (actionCountsByObservation[row.observation_id] ?? 0) + 1;
   }
 
-  const linkedProjectsByObservationId: Record<string, ProjectLinkSummary | null> =
-    {};
+  const linkedProjectsByObservationId: Record<
+    string,
+    ProjectLinkSummary | null
+  > = {};
   for (const observation of observations ?? []) {
     linkedProjectsByObservationId[observation.id] = resolveProjectLinkSummary(
       observation.linked_project_id,

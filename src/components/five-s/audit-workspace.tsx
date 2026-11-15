@@ -163,9 +163,8 @@ export function FiveSAuditWorkspace({
   );
 
   const findingsFingerprint = JSON.stringify(findingsByQuestion);
-  const [syncedFindingsFingerprint, setSyncedFindingsFingerprint] = useState(
-    findingsFingerprint,
-  );
+  const [syncedFindingsFingerprint, setSyncedFindingsFingerprint] =
+    useState(findingsFingerprint);
   if (syncedFindingsFingerprint !== findingsFingerprint) {
     setSyncedFindingsFingerprint(findingsFingerprint);
     setLocalFindingsByQuestion(findingsByQuestion);
