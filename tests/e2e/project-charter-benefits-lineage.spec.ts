@@ -178,7 +178,9 @@ test.describe("Project charter lifecycle and benefits lineage", () => {
     await expect(
       page.getByPlaceholder("Search code, title, or status"),
     ).toBeVisible();
-    await expect(page.getByRole("button", { name: /PROJ-/ }).first()).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /PROJ-/ }).first(),
+    ).toBeVisible();
     await expect(page.getByText("Primary source resource ID")).toHaveCount(0);
   });
 
