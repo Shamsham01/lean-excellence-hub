@@ -126,6 +126,7 @@ describe("CaseHeader close dialog", () => {
     fireEvent.click(screen.getByTestId("problem-solving-close-button"));
 
     const select = screen.getByTestId("closure-outcome-select");
+    expect(select).toHaveValue("transferred");
     const options = within(select).getAllByRole("option");
     const resolvedVerified = options.find(
       (opt) => opt.getAttribute("value") === "resolved_verified_cause",
@@ -169,6 +170,7 @@ describe("CaseHeader close dialog", () => {
     fireEvent.click(screen.getByTestId("problem-solving-close-button"));
 
     const select = screen.getByTestId("closure-outcome-select");
+    expect(select).toHaveValue("transferred");
     const resolvedVerified = within(select)
       .getAllByRole("option")
       .find((opt) => opt.getAttribute("value") === "resolved_verified_cause");
@@ -176,8 +178,8 @@ describe("CaseHeader close dialog", () => {
     expect(screen.getByTestId("closure-resolved-blocked-reason")).toBeVisible();
   });
 
-  it("shows verified-cause note when no corrective countermeasure is in play", () => {
-    const withoutCorrective: ProblemSolvingCaseDetail = {
+  it("does not block resolved when no effectiveness checks exist", () => {
+    const withoutChecks: ProblemSolvingCaseDetail = {
       ...activeDetail,
       countermeasures: [
         {
@@ -190,7 +192,7 @@ describe("CaseHeader close dialog", () => {
 
     render(
       <CaseHeader
-        detail={withoutCorrective}
+        detail={withoutChecks}
         canManage
         canClose
         methods={[]}
@@ -200,9 +202,9 @@ describe("CaseHeader close dialog", () => {
 
     fireEvent.click(screen.getByTestId("problem-solving-close-button"));
 
-    expect(
-      screen.getByTestId("closure-verified-no-countermeasure-note"),
-    ).toBeVisible();
+    expect(screen.getByTestId("closure-outcome-select")).toHaveValue(
+      "resolved_verified_cause",
+    );
     expect(screen.queryByTestId("closure-resolved-blocked-reason")).toBeNull();
   });
 });

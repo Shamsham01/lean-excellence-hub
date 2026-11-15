@@ -47,6 +47,47 @@ alter table public.problem_solving_effectiveness_checks
 create index if not exists business_audit_events_org_resource_created_idx
   on public.business_audit_events (organisation_id, resource_record_id, created_at desc);
 
+-- Lock case row (any status) then reject closed/cancelled mutations.
+create or replace function private.require_problem_solving_case_open_for_mutation(
+  target_organisation_id uuid,
+  target_case_id uuid,
+  target_blocked_message text
+)
+returns void
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  case_status text;
+begin
+  select case_row.status
+  into case_status
+  from public.problem_solving_cases case_row
+  where case_row.organisation_id = target_organisation_id
+    and case_row.id = target_case_id
+  for share;
+
+  if not found then
+    raise exception 'problem solving case not found'
+      using errcode = 'P0002';
+  end if;
+
+  if case_status in ('closed', 'cancelled') then
+    raise exception '%', target_blocked_message
+      using errcode = '55000';
+  end if;
+end;
+$$;
+
+alter function private.require_problem_solving_case_open_for_mutation(uuid, uuid, text)
+  owner to lean_hub_private_owner;
+revoke all on function private.require_problem_solving_case_open_for_mutation(uuid, uuid, text)
+  from public, anon, authenticated, service_role;
+grant execute on function private.require_problem_solving_case_open_for_mutation(uuid, uuid, text)
+  to lean_hub_private_owner;
+
 -- ── Verify eligibility (mirrors app hypothesis-verification-rules) ───────────
 
 create or replace function private.hypothesis_verify_cause_allowed(
@@ -171,17 +212,11 @@ begin
       using errcode = '42501';
   end if;
 
-  if exists (
-    select 1
-    from public.problem_solving_cases case_row
-    where case_row.organisation_id = org_id
-      and case_row.id = hypothesis_row.problem_solving_case_id
-      and case_row.status in ('closed', 'cancelled')
-    for share
-  ) then
-    raise exception 'case is closed; hypothesis cannot be changed'
-      using errcode = '55000';
-  end if;
+  perform private.require_problem_solving_case_open_for_mutation(
+    org_id,
+    hypothesis_row.problem_solving_case_id,
+    'case is closed; hypothesis cannot be changed'
+  );
 
   if hypothesis_row.status = 'proposed' then
     raise exception 'proposed hypotheses cannot be directly verified; advance to testing or supported first'
@@ -318,17 +353,11 @@ begin
       using errcode = '42501';
   end if;
 
-  if exists (
-    select 1
-    from public.problem_solving_cases case_row
-    where case_row.organisation_id = org_id
-      and case_row.id = hypothesis_row.problem_solving_case_id
-      and case_row.status in ('closed', 'cancelled')
-    for share
-  ) then
-    raise exception 'case is closed; hypothesis cannot be changed'
-      using errcode = '55000';
-  end if;
+  perform private.require_problem_solving_case_open_for_mutation(
+    org_id,
+    hypothesis_row.problem_solving_case_id,
+    'case is closed; hypothesis cannot be changed'
+  );
 
   if hypothesis_row.status in ('verified', 'rejected', 'superseded') then
     raise exception 'cannot create tests for a hypothesis in terminal state'
@@ -473,17 +502,11 @@ begin
       using errcode = '42501';
   end if;
 
-  if exists (
-    select 1
-    from public.problem_solving_cases case_row
-    where case_row.organisation_id = org_id
-      and case_row.id = check_row.case_id
-      and case_row.status in ('closed', 'cancelled')
-    for share
-  ) then
-    raise exception 'case is closed; effectiveness cannot be changed'
-      using errcode = '55000';
-  end if;
+  perform private.require_problem_solving_case_open_for_mutation(
+    org_id,
+    check_row.case_id,
+    'case is closed; effectiveness cannot be changed'
+  );
 
   update public.problem_solving_effectiveness_checks eff
   set result = target_result,
@@ -566,17 +589,11 @@ begin
 
   perform private.assert_current_organisation_module_entitled('problem_solving');
 
-  if exists (
-    select 1
-    from public.problem_solving_cases case_row
-    where case_row.organisation_id = org_id
-      and case_row.id = target_problem_solving_case_id
-      and case_row.status in ('closed', 'cancelled')
-    for share
-  ) then
-    raise exception 'case is closed; problem-solving action cannot be created'
-      using errcode = '55000';
-  end if;
+  perform private.require_problem_solving_case_open_for_mutation(
+    org_id,
+    target_problem_solving_case_id,
+    'case is closed; problem-solving action cannot be created'
+  );
 
   if target_context_role not in ('containment', 'countermeasure', 'sustainment') then
     raise exception 'invalid context role'
@@ -1114,17 +1131,11 @@ begin
       using errcode = '42501';
   end if;
 
-  if exists (
-    select 1
-    from public.problem_solving_cases c
-    where c.organisation_id = org_id
-      and c.id = analysis_case_id
-      and c.status in ('closed', 'cancelled')
-    for share
-  ) then
-    raise exception 'case is closed; analysis cannot be changed'
-      using errcode = '55000';
-  end if;
+  perform private.require_problem_solving_case_open_for_mutation(
+    org_id,
+    analysis_case_id,
+    'case is closed; analysis cannot be changed'
+  );
 
   if node_row.linked_hypothesis_id is not null then
     raise exception 'this cause is already promoted to a hypothesis'

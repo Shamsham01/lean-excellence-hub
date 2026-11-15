@@ -1,6 +1,6 @@
 begin;
 
-select plan(25);
+select plan(29);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -357,12 +357,78 @@ select throws_ok(
 );
 
 select ok(
+  public.record_effectiveness_result(
+    (select id from pps_gap_ids where key = 'closure_eff'),
+    'pass',
+    null,
+    null
+  ),
+  'pass effectiveness re-check recorded for closure gate'
+);
+
+select ok(
   public.close_problem_solving_case(
     (select id from pps_gap_ids where key = 'closure_case'),
-    'transferred',
-    'Handed to line owner for sustained monitoring'
+    'resolved_verified_cause',
+    'All checks passed after fail re-check'
   ),
-  'transferred still allowed with inconclusive/fail effectiveness checks'
+  'resolved_verified allowed after effectiveness pass'
+);
+
+select set_config(
+  'pps_gap.closure_case_id',
+  (select id::text from pps_gap_ids where key = 'closure_case'),
+  true
+);
+select set_config(
+  'pps_gap.closure_eff_id',
+  (select id::text from pps_gap_ids where key = 'closure_eff'),
+  true
+);
+select set_config(
+  'pps_gap.closure_hypothesis_id',
+  (select id::text from pps_gap_ids where key = 'closure_hypothesis'),
+  true
+);
+select set_config(
+  'pps_gap.closure_cm_id',
+  (select id::text from pps_gap_ids where key = 'closure_cm'),
+  true
+);
+
+select throws_ok(
+  format(
+    'select public.verify_cause_hypothesis(%L::uuid, %L)',
+    current_setting('pps_gap.closure_hypothesis_id')::uuid,
+    'Verify after case closed'
+  ),
+  '55000',
+  'case is closed; hypothesis cannot be changed',
+  'verify blocked on closed case'
+);
+
+select throws_ok(
+  format(
+    'select public.record_effectiveness_result(%L::uuid, %L, null, null)',
+    current_setting('pps_gap.closure_eff_id')::uuid,
+    'pass'
+  ),
+  '55000',
+  'case is closed; effectiveness cannot be changed',
+  'record_effectiveness blocked on closed case'
+);
+
+select throws_ok(
+  format(
+    'select public.create_problem_solving_action(%L, %L::uuid, %L, null, %L::uuid, null)',
+    'Post-close countermeasure action',
+    current_setting('pps_gap.closure_case_id')::uuid,
+    'countermeasure',
+    current_setting('pps_gap.closure_cm_id')::uuid
+  ),
+  '55000',
+  'case is closed; problem-solving action cannot be created',
+  'create_problem_solving_action blocked on closed case'
 );
 
 select ok(

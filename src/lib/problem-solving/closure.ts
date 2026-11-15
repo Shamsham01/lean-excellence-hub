@@ -21,9 +21,6 @@ const CORRECTIVE_COUNTERMEASURE_STATUSES = new Set([
 export const RESOLVED_CLOSURE_EFFECTIVENESS_BLOCK_REASON =
   "All effectiveness checks must pass before closing as resolved.";
 
-export const RESOLVED_VERIFIED_CAUSE_NO_COUNTERMEASURE_NOTE =
-  "Resolved (verified cause) with no corrective countermeasure does not require an effectiveness check.";
-
 const CLOSURE_LABELS: Record<ClosureOutcome, string> = {
   resolved_verified_cause: "Resolved (verified cause)",
   resolved_without_verified_cause: "Resolved (unverified cause)",

@@ -13,9 +13,7 @@ import { Button } from "@/components/ui/button";
 import {
   CLOSURE_OUTCOMES,
   RESOLVED_CLOSURE_EFFECTIVENESS_BLOCK_REASON,
-  RESOLVED_VERIFIED_CAUSE_NO_COUNTERMEASURE_NOTE,
   closureOutcomeLabel,
-  hasCorrectiveCountermeasuresForClosure,
   isResolvedClosureOutcome,
   resolvedClosureBlockedByEffectiveness,
 } from "@/lib/problem-solving/closure";
@@ -39,7 +37,6 @@ type CloseCaseDialogFieldsProps = {
   closureRationale: string;
   onClosureRationaleChange: (value: string) => void;
   resolvedClosureBlocked: boolean;
-  hasCorrectiveCountermeasures: boolean;
 };
 
 function CloseCaseDialogFields({
@@ -48,18 +45,9 @@ function CloseCaseDialogFields({
   closureRationale,
   onClosureRationaleChange,
   resolvedClosureBlocked,
-  hasCorrectiveCountermeasures,
 }: CloseCaseDialogFieldsProps) {
   return (
     <div className="flex flex-col gap-3">
-      {!hasCorrectiveCountermeasures ? (
-        <p
-          className="text-xs text-muted-foreground"
-          data-testid="closure-verified-no-countermeasure-note"
-        >
-          {RESOLVED_VERIFIED_CAUSE_NO_COUNTERMEASURE_NOTE}
-        </p>
-      ) : null}
       <label className="flex flex-col gap-1 text-sm">
         <span>Closure outcome</span>
         <select
@@ -168,14 +156,22 @@ export function CaseHeader({
     canManage && detail.status === "draft" && methods.length > 0;
   const showClose = canClose && detail.status === "active";
   const showCancel = canManage && ["draft", "active"].includes(detail.status);
-  const hasCorrectiveCountermeasures = useMemo(
-    () => hasCorrectiveCountermeasuresForClosure(detail.countermeasures),
-    [detail.countermeasures],
-  );
   const resolvedClosureBlocked = useMemo(
     () => resolvedClosureBlockedByEffectiveness(detail.effectiveness_checks),
     [detail.effectiveness_checks],
   );
+  const closeConfirmDisabled =
+    loading ||
+    (resolvedClosureBlocked && isResolvedClosureOutcome(closureOutcome));
+
+  function openCloseDialog() {
+    setClosureRationale("");
+    setClosureOutcome(
+      resolvedClosureBlocked ? "transferred" : "resolved_verified_cause",
+    );
+    setShowCloseDialog(true);
+  }
+
   async function handleActivate() {
     const methodId =
       pinnedMethodView?.methodId || selectedMethodId || methods[0]?.id;
@@ -337,7 +333,7 @@ export function CaseHeader({
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setShowCloseDialog(true)}
+              onClick={openCloseDialog}
               disabled={loading}
               data-testid="problem-solving-close-button"
             >
@@ -369,12 +365,11 @@ export function CaseHeader({
               closureRationale={closureRationale}
               onClosureRationaleChange={setClosureRationale}
               resolvedClosureBlocked={resolvedClosureBlocked}
-              hasCorrectiveCountermeasures={hasCorrectiveCountermeasures}
             />
             <div className="mt-3 flex gap-2">
               <Button
                 size="sm"
-                disabled={loading}
+                disabled={closeConfirmDisabled}
                 onClick={handleClose}
                 data-testid="confirm-close-case"
               >
@@ -543,7 +538,7 @@ export function CaseHeader({
           {showClose ? (
             <Button
               size="sm"
-              onClick={() => setShowCloseDialog(true)}
+              onClick={openCloseDialog}
               disabled={loading}
               data-testid="problem-solving-close-button"
             >
@@ -575,12 +570,11 @@ export function CaseHeader({
             closureRationale={closureRationale}
             onClosureRationaleChange={setClosureRationale}
             resolvedClosureBlocked={resolvedClosureBlocked}
-            hasCorrectiveCountermeasures={hasCorrectiveCountermeasures}
           />
           <div className="mt-3 flex gap-2">
             <Button
               size="sm"
-              disabled={loading}
+              disabled={closeConfirmDisabled}
               onClick={handleClose}
               data-testid="confirm-close-case"
             >
