@@ -1,6 +1,6 @@
 begin;
 
-select plan(41);
+select plan(47);
 
 -- Privilege inventory after SEC-RPC-001. Signatures match hosted/local catalogs.
 create temporary table sec_rpc_restricted_sigs (
@@ -123,6 +123,60 @@ select ok(
     'EXECUTE'
   ),
   'anon cannot execute private workforce provision worker helper'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.namespaced_planner_action_idempotency_key(text,uuid,text)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute private namespaced_planner_action_idempotency_key'
+);
+
+select ok(
+  pg_catalog.has_function_privilege(
+    'lean_hub_private_owner',
+    'private.namespaced_planner_action_idempotency_key(text,uuid,text)',
+    'EXECUTE'
+  ),
+  'private owner retains EXECUTE on namespaced_planner_action_idempotency_key'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.assert_gemba_planner_action_idempotency_replay(uuid,uuid,uuid,uuid,uuid,uuid,uuid)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute private assert_gemba_planner_action_idempotency_replay'
+);
+
+select ok(
+  pg_catalog.has_function_privilege(
+    'lean_hub_private_owner',
+    'private.assert_gemba_planner_action_idempotency_replay(uuid,uuid,uuid,uuid,uuid,uuid,uuid)',
+    'EXECUTE'
+  ),
+  'private owner retains EXECUTE on assert_gemba_planner_action_idempotency_replay'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.assert_five_s_planner_action_idempotency_replay(uuid,uuid,uuid,uuid,uuid,uuid,uuid)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute private assert_five_s_planner_action_idempotency_replay'
+);
+
+select ok(
+  pg_catalog.has_function_privilege(
+    'lean_hub_private_owner',
+    'private.assert_five_s_planner_action_idempotency_replay(uuid,uuid,uuid,uuid,uuid,uuid,uuid)',
+    'EXECUTE'
+  ),
+  'private owner retains EXECUTE on assert_five_s_planner_action_idempotency_replay'
 );
 
 select ok(

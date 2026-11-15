@@ -756,6 +756,135 @@ begin
 end;
 $$;
 
+create or replace function private.set_action_assignee(
+  target_action_id uuid,
+  target_membership_id uuid default null
+)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
+  action_row public.actions%rowtype;
+  assignee_ok boolean;
+begin
+  if org_id is null or actor_membership_id is null then
+    raise exception 'action assignment is not authorised'
+      using errcode = '42501';
+  end if;
+
+  if not private.can_read_action(org_id, target_action_id) then
+    raise exception 'action assignment is not authorised'
+      using errcode = '42501';
+  end if;
+
+  if not private.can_assign_action(org_id, target_action_id) then
+    raise exception 'action assignment is not authorised'
+      using errcode = '42501';
+  end if;
+
+  select action_table.*
+  into action_row
+  from public.actions action_table
+  where action_table.organisation_id = org_id
+    and action_table.id = target_action_id
+  for update;
+
+  if not found then
+    raise exception 'action assignment is not authorised'
+      using errcode = '42501';
+  end if;
+
+  if action_row.status in ('completed', 'verified', 'cancelled') then
+    raise exception 'completed actions cannot be reassigned'
+      using errcode = '55000';
+  end if;
+
+  if target_membership_id is not null then
+    select exists (
+      select 1
+      from public.organisation_memberships membership_row
+      where membership_row.organisation_id = org_id
+        and membership_row.id = target_membership_id
+        and membership_row.status = 'active'
+        and (
+          action_row.unit_id is null
+          or private.membership_is_effective_owner(target_membership_id, org_id)
+          or private.membership_can_access_unit_site(
+            org_id,
+            target_membership_id,
+            action_row.unit_id
+          )
+        )
+    )
+    into assignee_ok;
+
+    if not assignee_ok then
+      raise exception 'action assignment is not authorised'
+        using errcode = '42501';
+    end if;
+  end if;
+
+  delete from public.action_assignees assignee_row
+  where assignee_row.organisation_id = org_id
+    and assignee_row.action_id = target_action_id
+    and (
+      target_membership_id is null
+      or assignee_row.membership_id is distinct from target_membership_id
+    );
+
+  if target_membership_id is not null then
+    insert into public.action_assignees (
+      organisation_id,
+      action_id,
+      membership_id,
+      assigned_by_membership_id
+    )
+    values (
+      org_id,
+      target_action_id,
+      target_membership_id,
+      actor_membership_id
+    )
+    on conflict (organisation_id, action_id, membership_id) do nothing;
+  end if;
+
+  update public.actions action_table
+  set version = action_row.version + 1,
+      updated_at = statement_timestamp()
+  where action_table.organisation_id = org_id
+    and action_table.id = target_action_id;
+
+  perform private.append_business_audit(
+    org_id,
+    'action.assigned',
+    target_action_id,
+    'succeeded',
+    jsonb_build_object(
+      'membership_id', target_membership_id,
+      'version', action_row.version + 1
+    )
+  );
+
+  perform private.enqueue_domain_event(
+    org_id,
+    target_action_id,
+    'ActionAssigned',
+    format('action-assigned:%s:%s', target_action_id, action_row.version + 1),
+    jsonb_build_object(
+      'action_id', target_action_id,
+      'membership_id', target_membership_id
+    )
+  );
+
+  return true;
+end;
+$$;
+
 alter function private.assign_planner_action_to_creator(uuid, uuid)
   owner to postgres;
 
@@ -2023,7 +2152,9 @@ revoke all on function public.create_five_s_action(
   text, uuid, uuid, timestamptz, text, uuid, uuid, uuid, text, text
 ) from public, anon;
 
-grant select on public.actions to lean_hub_private_owner;
+grant select, update on public.actions to lean_hub_private_owner;
+grant select, insert, update, delete on public.ci_project_action_context
+  to lean_hub_private_owner;
 
 create or replace function private.set_five_s_audit_finding_linked_project(
   target_finding_id uuid,
@@ -3073,13 +3204,9 @@ $$;
 
 
 alter function private.link_action_to_ci_project(uuid, uuid)
-  owner to postgres;
+  owner to lean_hub_private_owner;
 alter function private.unlink_action_from_ci_project(uuid)
-  owner to postgres;
-grant execute on function private.link_action_to_ci_project(uuid, uuid)
-  to lean_hub_private_owner;
-grant execute on function private.unlink_action_from_ci_project(uuid)
-  to lean_hub_private_owner;
+  owner to lean_hub_private_owner;
 
 alter function private.ci_project_accepts_work_item_links(uuid, uuid) owner to lean_hub_private_owner;
 alter function private.assert_ci_project_accepts_work_item_links(uuid, uuid) owner to lean_hub_private_owner;

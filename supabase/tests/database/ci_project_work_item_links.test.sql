@@ -1,6 +1,6 @@
 begin;
 
-select plan(105);
+select plan(106);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -1228,6 +1228,13 @@ select throws_ok(
   '42501',
   'action assignment is not authorised',
   'set_action_assignee rejects self-assign without actions.assign'
+);
+
+select throws_ok(
+  'select public.set_action_assignee(gen_random_uuid(), gen_random_uuid())',
+  '42501',
+  'action assignment is not authorised',
+  'set_action_assignee returns unified denial for non-existent action'
 );
 
 select throws_ok(
