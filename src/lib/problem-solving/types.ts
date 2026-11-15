@@ -305,9 +305,9 @@ export type ProblemSolvingAnalysisNode = {
   analysis_id: string;
   parent_node_id: string | null;
   label: string;
-  node_type: string;
+  category?: string | null;
   sort_order: number;
-  hypothesis_id: string | null;
+  linked_hypothesis_id: string | null;
   created_at: string;
 };
 

@@ -2,8 +2,22 @@
 
 import { revalidatePath } from "next/cache";
 
+import { assertCanEditCaseDefinition } from "@/lib/problem-solving/assert-can-edit-case-definition";
 import { evaluateVerifyEligibility } from "@/lib/problem-solving/hypothesis-verification-rules";
 import { loadHypothesisForVerification } from "@/lib/problem-solving/load-hypothesis-for-verification";
+import { normalizeFishboneCategory } from "@/lib/problem-solving/hypothesis";
+import {
+  CLOSED_CASE_FISHBONE_MUTATION_MESSAGE,
+  FISHBONE_CAUSE_LABEL_MAX_LENGTH,
+  PROMOTED_FISHBONE_CAUSE_LOCKED_MESSAGE,
+  validatePromotedFishboneCauseMutable,
+} from "@/lib/problem-solving/fishbone-cause-mutation-rules";
+import { validateFishboneCausePromotion } from "@/lib/problem-solving/promote-fishbone-cause";
+import {
+  callProblemSolvingRpc,
+  untypedFrom,
+} from "@/lib/problem-solving/supabase-untyped";
+import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
 import { assertPlanModuleWrite } from "@/modules/billing/assert-module-write";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -395,6 +409,9 @@ export async function createHypothesis(input: {
   rationale?: string;
 }): Promise<ActionResult> {
   try {
+    if (!input.statement.trim()) {
+      return { error: "Hypothesis statement is required." };
+    }
     const id = await callRpc<string>("create_hypothesis", {
       target_problem_solving_case_id: input.caseId,
       target_statement: input.statement,
@@ -651,6 +668,353 @@ export async function createAnalysis(input: {
   }
 }
 
+async function resolvePrimaryFishboneAnalysisId(
+  caseId: string,
+): Promise<string> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await untypedFrom(
+    supabase,
+    "problem_solving_analyses",
+  )
+    .select("id, created_at")
+    .eq("problem_solving_case_id", caseId)
+    .eq("analysis_type", "fishbone")
+    .order("created_at", { ascending: true });
+  if (error) {
+    throw error;
+  }
+  const rows = (data ?? []) as Array<{ id: string }>;
+  if (rows[0]?.id) {
+    return rows[0].id;
+  }
+  return callRpc<string>("create_analysis", {
+    target_problem_solving_case_id: caseId,
+    target_analysis_type: "fishbone",
+    target_title: "Fishbone analysis",
+  });
+}
+
+async function loadFishboneAnalysisNode(nodeId: string) {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await untypedFrom(
+    supabase,
+    "problem_solving_analysis_nodes",
+  )
+    .select("id, label, category, linked_hypothesis_id, analysis_id")
+    .eq("id", nodeId)
+    .maybeSingle();
+  if (error) {
+    throw error;
+  }
+  return data as {
+    id: string;
+    label: string;
+    category: string | null;
+    linked_hypothesis_id: string | null;
+    analysis_id: string;
+  } | null;
+}
+
+async function assertFishboneNodeInCase(
+  caseId: string,
+  analysisId: string,
+): Promise<void> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await untypedFrom(
+    supabase,
+    "problem_solving_analyses",
+  )
+    .select("id")
+    .eq("id", analysisId)
+    .eq("problem_solving_case_id", caseId)
+    .eq("analysis_type", "fishbone")
+    .maybeSingle();
+  if (error) {
+    throw error;
+  }
+  if (!data) {
+    throw new Error("Fishbone cause not found on this case.");
+  }
+}
+
+function mapCauseWorkRpcError(message: string): string {
+  const lower = message.toLowerCase();
+  if (
+    lower.includes("promoted fishbone") ||
+    lower.includes("already promoted") ||
+    lower.includes("different linked hypothesis")
+  ) {
+    return PROMOTED_FISHBONE_CAUSE_LOCKED_MESSAGE;
+  }
+  if (lower.includes("case is closed")) {
+    return CLOSED_CASE_FISHBONE_MUTATION_MESSAGE;
+  }
+  if (lower.includes("500 characters")) {
+    return `Keep the cause within ${FISHBONE_CAUSE_LABEL_MAX_LENGTH} characters.`;
+  }
+  if (lower.includes("analysis node not found")) {
+    return "Fishbone cause not found.";
+  }
+  if (lower.includes("not authorised") || lower.includes("not authorized")) {
+    return "You do not have permission to change this case.";
+  }
+  if (lower.includes("only fishbone")) {
+    return "Only fishbone causes can be changed here.";
+  }
+  if (lower.includes("hypothesis statement is required")) {
+    return "Hypothesis statement is required.";
+  }
+  return message;
+}
+
+async function assertCaseOpenForCauseWork(
+  caseId: string,
+): Promise<{ ok: true } | { error: string }> {
+  const supabase = await createServerSupabaseClient();
+  const detailResult = await callProblemSolvingRpc<ProblemSolvingCaseDetail>(
+    supabase,
+    "get_problem_solving_detail",
+    { target_case_id: caseId },
+  );
+  if (detailResult.error || !detailResult.data) {
+    return { error: "Problem solving case not found." };
+  }
+  if (["closed", "cancelled"].includes(detailResult.data.status)) {
+    return { error: CLOSED_CASE_FISHBONE_MUTATION_MESSAGE };
+  }
+  return { ok: true };
+}
+
+export async function addFishboneCause(input: {
+  caseId: string;
+  category: string;
+  label: string;
+}): Promise<ActionResult> {
+  try {
+    const access = await assertCanEditCaseDefinition(input.caseId);
+    if ("error" in access) {
+      return { error: access.error };
+    }
+    const caseOpen = await assertCaseOpenForCauseWork(input.caseId);
+    if ("error" in caseOpen) {
+      return { error: caseOpen.error };
+    }
+    const label = input.label.trim();
+    if (!label) {
+      return { error: "Cause description is required." };
+    }
+    if (label.length > FISHBONE_CAUSE_LABEL_MAX_LENGTH) {
+      return {
+        error: `Keep the cause within ${FISHBONE_CAUSE_LABEL_MAX_LENGTH} characters.`,
+      };
+    }
+    const category = normalizeFishboneCategory(input.category);
+    const analysisId = await resolvePrimaryFishboneAnalysisId(input.caseId);
+    const id = await callRpc<string>("add_analysis_node", {
+      target_analysis_id: analysisId,
+      target_label: label,
+      target_category: category,
+    });
+    revalidateCasePaths(input.caseId);
+    return { ok: true, id };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Fishbone cause create failed";
+    return { error: mapCauseWorkRpcError(message) };
+  }
+}
+
+export async function updateFishboneCause(input: {
+  caseId: string;
+  nodeId: string;
+  label: string;
+}): Promise<ActionResult> {
+  try {
+    const access = await assertCanEditCaseDefinition(input.caseId);
+    if ("error" in access) {
+      return { error: access.error };
+    }
+    const caseOpen = await assertCaseOpenForCauseWork(input.caseId);
+    if ("error" in caseOpen) {
+      return { error: caseOpen.error };
+    }
+    const label = input.label.trim();
+    if (!label) {
+      return { error: "Cause description is required." };
+    }
+    if (label.length > FISHBONE_CAUSE_LABEL_MAX_LENGTH) {
+      return {
+        error: `Keep the cause within ${FISHBONE_CAUSE_LABEL_MAX_LENGTH} characters.`,
+      };
+    }
+    const node = await loadFishboneAnalysisNode(input.nodeId);
+    if (!node) {
+      return { error: "Fishbone cause not found." };
+    }
+    await assertFishboneNodeInCase(input.caseId, node.analysis_id);
+    const mutable = validatePromotedFishboneCauseMutable(
+      node.linked_hypothesis_id,
+    );
+    if ("error" in mutable) {
+      return { error: mutable.error };
+    }
+    await callRpc("update_analysis_node", {
+      target_node_id: input.nodeId,
+      target_label: label,
+    });
+    revalidateCasePaths(input.caseId);
+    return { ok: true };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Fishbone cause update failed";
+    return { error: mapCauseWorkRpcError(message) };
+  }
+}
+
+export async function removeFishboneCause(input: {
+  caseId: string;
+  nodeId: string;
+}): Promise<ActionResult> {
+  try {
+    const access = await assertCanEditCaseDefinition(input.caseId);
+    if ("error" in access) {
+      return { error: access.error };
+    }
+    const caseOpen = await assertCaseOpenForCauseWork(input.caseId);
+    if ("error" in caseOpen) {
+      return { error: caseOpen.error };
+    }
+    const node = await loadFishboneAnalysisNode(input.nodeId);
+    if (!node) {
+      return { error: "Fishbone cause not found." };
+    }
+    await assertFishboneNodeInCase(input.caseId, node.analysis_id);
+    const mutable = validatePromotedFishboneCauseMutable(
+      node.linked_hypothesis_id,
+    );
+    if ("error" in mutable) {
+      return { error: mutable.error };
+    }
+    await callRpc("delete_analysis_node", {
+      target_node_id: input.nodeId,
+    });
+    revalidateCasePaths(input.caseId);
+    return { ok: true };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Fishbone cause remove failed";
+    return { error: mapCauseWorkRpcError(message) };
+  }
+}
+
+export async function promoteFishboneCauseToHypothesis(input: {
+  caseId: string;
+  nodeId: string;
+}): Promise<ActionResult> {
+  try {
+    const access = await assertCanEditCaseDefinition(input.caseId);
+    if ("error" in access) {
+      return { error: access.error };
+    }
+    const caseOpen = await assertCaseOpenForCauseWork(input.caseId);
+    if ("error" in caseOpen) {
+      return { error: caseOpen.error };
+    }
+    const node = await loadFishboneAnalysisNode(input.nodeId);
+    if (!node) {
+      return { error: "Fishbone cause not found." };
+    }
+    await assertFishboneNodeInCase(input.caseId, node.analysis_id);
+    const category = normalizeFishboneCategory(node.category ?? "other");
+    const promotionCheck = validateFishboneCausePromotion({
+      linkedHypothesisId: node.linked_hypothesis_id,
+      label: node.label,
+      category,
+    });
+    if ("error" in promotionCheck) {
+      return {
+        error: promotionCheck.error,
+        ...(node.linked_hypothesis_id ? { id: node.linked_hypothesis_id } : {}),
+      };
+    }
+    const hypothesisId = await callRpc<string>(
+      "promote_analysis_node_to_hypothesis",
+      {
+        target_node_id: input.nodeId,
+        target_category: category,
+      },
+    );
+    revalidateCasePaths(input.caseId);
+    return { ok: true, id: hypothesisId };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Promote to hypothesis failed";
+    return { error: mapCauseWorkRpcError(message) };
+  }
+}
+
+export async function createManualCauseHypothesis(input: {
+  caseId: string;
+  statement: string;
+  category?: string;
+  fishboneNodeId?: string;
+}): Promise<ActionResult> {
+  try {
+    const access = await assertCanEditCaseDefinition(input.caseId);
+    if ("error" in access) {
+      return { error: access.error };
+    }
+    const caseOpen = await assertCaseOpenForCauseWork(input.caseId);
+    if ("error" in caseOpen) {
+      return { error: caseOpen.error };
+    }
+    const statement = input.statement.trim();
+    if (!statement) {
+      return { error: "Hypothesis statement is required." };
+    }
+    const category = input.category
+      ? normalizeFishboneCategory(input.category)
+      : undefined;
+
+    if (input.fishboneNodeId) {
+      const node = await loadFishboneAnalysisNode(input.fishboneNodeId);
+      if (!node) {
+        return { error: "Linked fishbone cause not found." };
+      }
+      await assertFishboneNodeInCase(input.caseId, node.analysis_id);
+      const mutable = validatePromotedFishboneCauseMutable(
+        node.linked_hypothesis_id,
+      );
+      if ("error" in mutable) {
+        return { error: mutable.error };
+      }
+      const hypothesisId = await callRpc<string>(
+        "promote_analysis_node_to_hypothesis",
+        {
+          target_node_id: input.fishboneNodeId,
+          target_statement: statement,
+          ...(category ? { target_category: category } : {}),
+        },
+      );
+      revalidateCasePaths(input.caseId);
+      return { ok: true, id: hypothesisId };
+    }
+
+    const hypothesisId = await callRpc<string>("create_hypothesis", {
+      target_problem_solving_case_id: input.caseId,
+      target_statement: statement,
+      ...(category ? { target_category: category } : {}),
+    });
+
+    revalidateCasePaths(input.caseId);
+    return { ok: true, id: hypothesisId };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Hypothesis create failed";
+    return { error: mapCauseWorkRpcError(message) };
+  }
+}
+
 export async function addAnalysisNode(input: {
   analysisId: string;
   caseId: string;
@@ -659,9 +1023,12 @@ export async function addAnalysisNode(input: {
   sortOrder?: number;
 }): Promise<ActionResult> {
   try {
+    if (!input.label.trim()) {
+      return { error: "Cause description is required." };
+    }
     const id = await callRpc<string>("add_analysis_node", {
       target_analysis_id: input.analysisId,
-      target_label: input.label,
+      target_label: input.label.trim(),
       ...(input.category ? { target_category: input.category } : {}),
       ...(input.sortOrder != null
         ? { target_sort_order: input.sortOrder }

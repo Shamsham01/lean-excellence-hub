@@ -14304,6 +14304,10 @@ export type Database = {
         Args: { target_item_id: string }
         Returns: undefined
       }
+      delete_analysis_node: {
+        Args: { target_node_id: string }
+        Returns: boolean
+      }
       delete_gemba_observation: {
         Args: { target_observation_id: string; target_walk_id: string }
         Returns: boolean
@@ -15377,6 +15381,14 @@ export type Database = {
         Args: { target_bundle_id: string }
         Returns: Json
       }
+      promote_analysis_node_to_hypothesis: {
+        Args: {
+          target_category?: string
+          target_node_id: string
+          target_statement?: string
+        }
+        Returns: string
+      }
       provision_organisation: {
         Args: {
           organisation_code: string
@@ -16171,6 +16183,10 @@ export type Database = {
           target_priority?: string
           target_title?: string
         }
+        Returns: boolean
+      }
+      update_analysis_node: {
+        Args: { target_label: string; target_node_id: string }
         Returns: boolean
       }
       update_benefit_category: {
