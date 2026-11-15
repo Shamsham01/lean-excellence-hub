@@ -153,7 +153,9 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
   const [movingStage, setMovingStage] = useState(false);
   const [copilotCollapsed, setCopilotCollapsed] = useState(false);
   const [mobileCopilotOpen, setMobileCopilotOpen] = useState(false);
-  const copilotPrefsHydratedRef = useRef(false);
+  const storedCopilotPrefsRef = useRef<ReturnType<
+    typeof readPpsCopilotPreference
+  > | null>(null);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [pendingProposals, setPendingProposals] = useState<PendingProposal[]>(
     [],
@@ -203,25 +205,36 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     media.addEventListener("change", applyViewport);
 
     const storedCopilotPrefs = readPpsCopilotPreference(detail.id);
+    storedCopilotPrefsRef.current = storedCopilotPrefs;
     if (storedCopilotPrefs) {
       // Post-hydration read of localStorage; SSR and the first client paint use defaults above.
       // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional hydration-safe prefs apply
       setCopilotCollapsed(storedCopilotPrefs.dockCollapsed);
       setMobileCopilotOpen(storedCopilotPrefs.mobileOpen);
     }
-    copilotPrefsHydratedRef.current = true;
 
     return () => media.removeEventListener("change", applyViewport);
   }, [detail.id]);
 
   useEffect(() => {
-    if (!copilotPrefsHydratedRef.current) {
-      return;
-    }
-    writePpsCopilotPreference(detail.id, {
+    const stored = storedCopilotPrefsRef.current;
+    const next = {
       mobileOpen: mobileCopilotOpen,
       dockCollapsed: copilotCollapsed,
-    });
+    };
+    if (stored) {
+      const matchesStored =
+        stored.dockCollapsed === next.dockCollapsed &&
+        stored.mobileOpen === next.mobileOpen;
+      const awaitingHydratedPrefs =
+        !next.dockCollapsed &&
+        !next.mobileOpen &&
+        (stored.dockCollapsed || stored.mobileOpen);
+      if (awaitingHydratedPrefs || matchesStored) {
+        return;
+      }
+    }
+    writePpsCopilotPreference(detail.id, next);
   }, [detail.id, mobileCopilotOpen, copilotCollapsed]);
 
   const leanAiPanelOpen = isMobileViewport
@@ -655,7 +668,10 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
                   }
                 />
               ) : null}
-              <PpsStageBodyErrorBoundary stageKey={stageKey}>
+              <PpsStageBodyErrorBoundary
+                key={stageKey ?? "DEFINE"}
+                stageKey={stageKey}
+              >
                 {renderStageBody()}
               </PpsStageBodyErrorBoundary>
             </div>

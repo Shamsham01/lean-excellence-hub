@@ -4,7 +4,7 @@ import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const PROBLEM_SOLVING_CASE_CLOSED_AI_DRAFT_MESSAGE =
-  "This case is closed or cancelled; Lean AI stage drafts are not available.";
+  "This case is closed or cancelled; Lean AI is not available on this case.";
 
 export async function assertProblemSolvingCaseOpenForAiDraftWithClient(
   supabase: SupabaseClient,

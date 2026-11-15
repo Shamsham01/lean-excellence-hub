@@ -38,7 +38,7 @@ describe("draftProblemSolvingStage closed-case guard", () => {
       idempotencyKey: "idem-1",
     });
 
-    expect(result.error).toMatch(/closed or cancelled/i);
+    expect(result.error).toMatch(/Lean AI is not available/i);
     expect(result.ok).toBeUndefined();
     expect(rpcMock).toHaveBeenCalledWith("get_problem_solving_detail", {
       target_case_id: "case-closed",

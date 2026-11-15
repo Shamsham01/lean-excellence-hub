@@ -48,6 +48,13 @@ export async function createProblemSolvingAiSession(input: {
   if (!moduleGate.ok) return { error: moduleGate.error };
   try {
     const supabase = await createServerSupabaseClient();
+    const caseOpenResult = await assertProblemSolvingCaseOpenForAiDraftWithClient(
+      supabase,
+      input.caseId,
+    );
+    if ("error" in caseOpenResult) {
+      return { error: caseOpenResult.error };
+    }
     const { data, error } = await supabase.rpc("create_ai_session", {
       target_problem_solving_case_id: input.caseId,
       target_mode: input.mode,
@@ -94,6 +101,13 @@ export async function sendProblemSolvingAiMessage(input: {
 
   try {
     const supabase = await createServerSupabaseClient();
+    const caseOpenResult = await assertProblemSolvingCaseOpenForAiDraftWithClient(
+      supabase,
+      input.caseId,
+    );
+    if ("error" in caseOpenResult) {
+      return { error: caseOpenResult.error };
+    }
     await recoverProblemSolvingAiRunsForCase(supabase, input.caseId);
     const result = await runAiTurn({
       supabase,
