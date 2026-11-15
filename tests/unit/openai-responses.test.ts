@@ -171,7 +171,7 @@ describe("normalizeTransportEnvelope", () => {
             hypothesis_id: "00000000-0000-4000-8000-000000000001",
             test_question: "Does ppm increase under hot runs?",
             expected_result: "Higher ppm during hot runs.",
-            method: null,
+            method: "Measurement / data",
             explanation: "A hot-running test would isolate thermal drift.",
           },
         ],
@@ -184,6 +184,7 @@ describe("normalizeTransportEnvelope", () => {
       hypothesis_id: "00000000-0000-4000-8000-000000000001",
       test_question: "Does ppm increase under hot runs?",
       expected_result: "Higher ppm during hot runs.",
+      method: "Measurement / data",
     });
   });
 

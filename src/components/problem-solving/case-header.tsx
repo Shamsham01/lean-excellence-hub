@@ -243,16 +243,43 @@ export function CaseHeader({
       (detail.status === "draft"
         ? "Draft case"
         : problemSolvingStatusLabel(detail.status));
-    const metaParts = [
-      detail.unit_name ? `Unit: ${detail.unit_name}` : null,
-      ownerName ? `Owner: ${ownerName}` : null,
-      methodLabel ? `Method: ${methodLabel}` : null,
-      detail.status === "closed" && detail.closure_outcome
-        ? `Outcome: ${closureOutcomeLabel(detail.closure_outcome)}`
-        : null,
-      detail.status === "closed" && detail.closed_at
-        ? `Closed ${new Date(detail.closed_at).toLocaleDateString("en-GB")}`
-        : null,
+    const metaParts: ReactNode[] = [
+      detail.unit_name ? (
+        <span key="unit">Unit: {detail.unit_name}</span>
+      ) : null,
+      ownerName ? (
+        <span key="owner">
+          Owner:{" "}
+          <span
+            className="font-medium text-foreground"
+            data-testid="problem-solving-owner-name"
+          >
+            {ownerName}
+          </span>
+        </span>
+      ) : null,
+      facilitatorName ? (
+        <span key="facilitator">
+          Facilitator:{" "}
+          <span
+            className="font-medium text-foreground"
+            data-testid="problem-solving-facilitator-name"
+          >
+            {facilitatorName}
+          </span>
+        </span>
+      ) : null,
+      methodLabel ? <span key="method">Method: {methodLabel}</span> : null,
+      detail.status === "closed" && detail.closure_outcome ? (
+        <span key="outcome">
+          Outcome: {closureOutcomeLabel(detail.closure_outcome)}
+        </span>
+      ) : null,
+      detail.status === "closed" && detail.closed_at ? (
+        <span key="closed">
+          Closed {new Date(detail.closed_at).toLocaleDateString("en-GB")}
+        </span>
+      ) : null,
     ].filter(Boolean);
 
     return (
@@ -297,8 +324,13 @@ export function CaseHeader({
             </p>
           ) : null}
           {metaParts.length > 0 ? (
-            <p className="mt-1 text-xs text-muted-foreground">
-              {metaParts.join(" · ")}
+            <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+              {metaParts.map((part, index) => (
+                <span key={index} className="inline-flex items-center gap-x-2">
+                  {index > 0 ? <span aria-hidden="true">·</span> : null}
+                  {part}
+                </span>
+              ))}
             </p>
           ) : null}
         </div>
