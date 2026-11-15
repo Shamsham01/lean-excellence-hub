@@ -1,6 +1,6 @@
 begin;
 
-select plan(9);
+select plan(23);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -175,6 +175,196 @@ select throws_ok(
   '22023',
   'result note is required for fail and inconclusive',
   'fail effectiveness requires note'
+);
+
+insert into pps_gap_ids (key, id)
+select 'closure_case', public.create_problem_solving_case_draft(
+  'Closure inconclusive gate',
+  (select id from pps_gap_ids where key = 'unit')
+);
+
+select ok(
+  public.activate_problem_solving_case(
+    (select id from pps_gap_ids where key = 'closure_case'),
+    (select id from pps_gap_ids where key = 'method')
+  ),
+  'closure gate case activates'
+);
+
+insert into pps_gap_ids (key, id)
+select 'closure_cm', public.create_countermeasure(
+  (select id from pps_gap_ids where key = 'closure_case'),
+  'Stabilise process',
+  'Corrective change for closure test'
+);
+
+select ok(
+  public.select_countermeasure(
+    (select id from pps_gap_ids where key = 'closure_cm'),
+    'Selected for trial'
+  ),
+  'closure gate countermeasure selected'
+);
+
+insert into pps_gap_ids (key, id)
+select 'closure_eff', public.create_effectiveness_check(
+  (select id from pps_gap_ids where key = 'closure_case'),
+  'Throughput within target band'
+);
+
+select ok(
+  public.record_effectiveness_result(
+    (select id from pps_gap_ids where key = 'closure_eff'),
+    'inconclusive',
+    null,
+    'Sample window too short for a pass call'
+  ),
+  'inconclusive effectiveness recorded for closure gate'
+);
+
+select throws_ok(
+  format(
+    'select public.close_problem_solving_case(%L::uuid, %L, %L)',
+    (select id from pps_gap_ids where key = 'closure_case'),
+    'resolved_without_verified_cause',
+    'Should not close with inconclusive effectiveness'
+  ),
+  '22023',
+  'all effectiveness checks must pass before closing as resolved',
+  'inconclusive blocks resolved_without_verified_cause'
+);
+
+insert into pps_gap_ids (key, id)
+select 'closure_hypothesis', public.create_hypothesis(
+  (select id from pps_gap_ids where key = 'closure_case'),
+  'Fixture misalignment causes defects'
+);
+
+select ok(
+  public.update_hypothesis_status(
+    (select id from pps_gap_ids where key = 'closure_hypothesis'),
+    'supported',
+    'Data supports alignment issue'
+  ),
+  'closure gate hypothesis supported'
+);
+
+insert into pps_gap_ids (key, id)
+select 'closure_verify_test', public.create_hypothesis_test(
+  (select id from pps_gap_ids where key = 'closure_hypothesis'),
+  'Does alignment data match?',
+  'Defects drop when aligned',
+  'Measurement / data'
+);
+
+select ok(
+  public.complete_hypothesis_test(
+    (select id from pps_gap_ids where key = 'closure_verify_test'),
+    'Defect rate improved after alignment',
+    'supports'
+  ),
+  'closure gate verification test completed'
+);
+
+select ok(
+  public.verify_cause_hypothesis(
+    (select id from pps_gap_ids where key = 'closure_hypothesis'),
+    'Verified for closure gate'
+  ),
+  'closure gate hypothesis verified'
+);
+
+select throws_ok(
+  format(
+    'select public.close_problem_solving_case(%L::uuid, %L, %L)',
+    (select id from pps_gap_ids where key = 'closure_case'),
+    'resolved_verified_cause',
+    'Should not close with inconclusive effectiveness'
+  ),
+  '22023',
+  'all effectiveness checks must pass before closing as resolved',
+  'inconclusive blocks resolved_verified_cause'
+);
+
+select ok(
+  public.record_effectiveness_result(
+    (select id from pps_gap_ids where key = 'closure_eff'),
+    'fail',
+    null,
+    'Throughput still below target'
+  ),
+  'fail effectiveness recorded for closure gate'
+);
+
+select throws_ok(
+  format(
+    'select public.close_problem_solving_case(%L::uuid, %L, %L)',
+    (select id from pps_gap_ids where key = 'closure_case'),
+    'resolved_without_verified_cause',
+    'Should not close with fail effectiveness'
+  ),
+  '22023',
+  'all effectiveness checks must pass before closing as resolved',
+  'fail blocks resolved_without_verified_cause'
+);
+
+select ok(
+  public.close_problem_solving_case(
+    (select id from pps_gap_ids where key = 'closure_case'),
+    'transferred',
+    'Handed to line owner for sustained monitoring'
+  ),
+  'transferred still allowed with inconclusive/fail effectiveness checks'
+);
+
+select ok(
+  not has_function_privilege(
+    'authenticated',
+    'private.create_problem_solving_action(text, uuid, text, uuid, uuid, uuid, text, text, timestamptz, uuid)',
+    'execute'
+  ),
+  'authenticated cannot execute private create_problem_solving_action overload'
+);
+
+select set_config(
+  'pps_gap.case_id',
+  (select id::text from pps_gap_ids where key = 'case'),
+  true
+);
+
+set local role anon;
+select throws_ok(
+  format(
+    'select public.get_problem_solving_case_audit_activity(%L::uuid)',
+    current_setting('pps_gap.case_id')::uuid
+  ),
+  '42501',
+  null,
+  'anon cannot read case audit activity'
+);
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"b2900000-0000-0000-0000-000000000001","role":"authenticated","session_id":"b2910000-0000-0000-0000-000000000001","email":"pps-gap-owner@example.test"}',
+  true
+);
+
+select set_config(
+  'pps_gap.closure_hypothesis_id',
+  (select id::text from pps_gap_ids where key = 'closure_hypothesis'),
+  true
+);
+
+select throws_ok(
+  format(
+    'select public.create_hypothesis_test(%L::uuid, %L, null, %L)',
+    current_setting('pps_gap.closure_hypothesis_id')::uuid,
+    'Post-close test attempt',
+    'Measurement / data'
+  ),
+  '55000',
+  'case is closed; hypothesis cannot be changed',
+  'create_hypothesis_test blocked when case is closed'
 );
 
 select * from finish();

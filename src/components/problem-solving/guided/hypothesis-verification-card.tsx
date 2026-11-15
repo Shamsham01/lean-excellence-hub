@@ -240,7 +240,9 @@ export function HypothesisVerificationCard({
           <p className="text-xs font-medium text-muted-foreground">
             Verification rationale
           </p>
-          <p className="mt-1 whitespace-pre-wrap">{hypothesis.verification_rationale}</p>
+          <p className="mt-1 whitespace-pre-wrap">
+            {hypothesis.verification_rationale}
+          </p>
           <p className="mt-2 text-xs text-muted-foreground">
             {labelForMembershipId(
               membershipNameById,
@@ -261,7 +263,9 @@ export function HypothesisVerificationCard({
           <p className="text-xs font-medium text-muted-foreground">
             What disproved it?
           </p>
-          <p className="mt-1 whitespace-pre-wrap">{hypothesis.rejection_rationale}</p>
+          <p className="mt-1 whitespace-pre-wrap">
+            {hypothesis.rejection_rationale}
+          </p>
           <p className="mt-2 text-xs text-muted-foreground">
             {labelForMembershipId(
               membershipNameById,

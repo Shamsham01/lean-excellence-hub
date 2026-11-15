@@ -22,7 +22,9 @@ export function caseAuditEventLabel(action: string): string {
   return ACTION_LABELS[action] ?? action.replaceAll("_", " ");
 }
 
-export function parseCaseAuditActivity(payload: unknown): ProblemSolvingCaseAuditEvent[] {
+export function parseCaseAuditActivity(
+  payload: unknown,
+): ProblemSolvingCaseAuditEvent[] {
   if (!Array.isArray(payload)) {
     return [];
   }

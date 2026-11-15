@@ -91,6 +91,7 @@ const proposeHypothesisSchema = z
     category: z.enum(HYPOTHESIS_CATEGORIES).optional(),
     rationale: z.string().trim().max(2000).optional(),
     parent_hypothesis_id: z.string().uuid().optional(),
+    analysis_node_id: z.string().uuid().optional(),
     explanation: explanationField,
   })
   .strict();
@@ -263,6 +264,7 @@ export function getOpenAiToolParametersSchema(
           },
           rationale: { type: ["string", "null"] },
           parent_hypothesis_id: { type: ["string", "null"] },
+          analysis_node_id: { type: ["string", "null"] },
           explanation: { type: "string" },
         },
         [
@@ -270,6 +272,7 @@ export function getOpenAiToolParametersSchema(
           "category",
           "rationale",
           "parent_hypothesis_id",
+          "analysis_node_id",
           "explanation",
         ],
       );

@@ -942,6 +942,7 @@ export async function promoteFishboneCauseToHypothesis(input: {
       {
         target_node_id: input.nodeId,
         target_category: category,
+        target_problem_solving_case_id: input.caseId,
       },
     );
     revalidateCasePaths(input.caseId);
@@ -993,6 +994,7 @@ export async function createManualCauseHypothesis(input: {
         {
           target_node_id: input.fishboneNodeId,
           target_statement: statement,
+          target_problem_solving_case_id: input.caseId,
           ...(category ? { target_category: category } : {}),
         },
       );
@@ -1235,7 +1237,9 @@ export async function recordEffectivenessResult(input: {
       (input.result === "fail" || input.result === "inconclusive") &&
       !input.verificationRationale?.trim()
     ) {
-      return { error: "A note is required for Fail and Inconclusive outcomes." };
+      return {
+        error: "A note is required for Fail and Inconclusive outcomes.",
+      };
     }
     await callRpc("record_effectiveness_result", {
       target_effectiveness_check_id: input.effectivenessCheckId,

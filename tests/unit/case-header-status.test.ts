@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  closureOutcomeLabel,
-} from "@/lib/problem-solving/closure";
-import {
-  problemSolvingStatusLabel,
-} from "@/lib/problem-solving/status";
+import { closureOutcomeLabel } from "@/lib/problem-solving/closure";
+import { problemSolvingStatusLabel } from "@/lib/problem-solving/status";
 
 describe("case header status presentation", () => {
   it("maps closed resolved outcome labels", () => {

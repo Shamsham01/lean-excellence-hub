@@ -255,7 +255,7 @@ export function VerificationPanel({
                     Note: {check.result_rationale}
                   </p>
                 ) : null}
-                {canManage && !check.result ? (
+                {canManage ? (
                   <div
                     className="mt-3 flex flex-col gap-2 border-t border-border pt-3"
                     data-testid={`effectiveness-record-form-${check.id}`}

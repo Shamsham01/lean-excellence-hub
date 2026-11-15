@@ -155,7 +155,7 @@ select set_config(
 select ok(
   not pg_catalog.has_function_privilege(
     'anon',
-    'public.promote_analysis_node_to_hypothesis(uuid, text, text)',
+    'public.promote_analysis_node_to_hypothesis(uuid, text, text, uuid)',
     'execute'
   ),
   'anon role lacks execute privilege on promote_analysis_node_to_hypothesis'

@@ -66,7 +66,9 @@ export default async function ProblemSolvingCaseDetailPage({
       { target_case_id: caseId },
     ),
   ]);
-  const auditActivity = parseCaseAuditActivity(auditPayload);
+  const auditActivity = auditPayload.error
+    ? []
+    : parseCaseAuditActivity(auditPayload.data);
   const pendingAiProposals =
     canUseAi && isApplicationAiProviderAvailable()
       ? await loadCasePendingAiProposals(supabase, caseId, {

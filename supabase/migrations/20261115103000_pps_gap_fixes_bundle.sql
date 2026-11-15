@@ -33,6 +33,20 @@ alter table public.problem_solving_effectiveness_checks
       or char_length(result_rationale) between 1 and 4000
     );
 
+alter table public.problem_solving_effectiveness_checks
+  drop constraint if exists ps_effectiveness_checks_result_note_required;
+
+alter table public.problem_solving_effectiveness_checks
+  add constraint ps_effectiveness_checks_result_note_required
+    check (
+      result is null
+      or result = 'pass'
+      or (result_rationale is not null and btrim(result_rationale) <> '')
+    );
+
+create index if not exists business_audit_events_org_resource_created_idx
+  on public.business_audit_events (organisation_id, resource_record_id, created_at desc);
+
 -- ── Verify eligibility (mirrors app hypothesis-verification-rules) ───────────
 
 create or replace function private.hypothesis_verify_cause_allowed(
@@ -48,27 +62,7 @@ as $$
 declare
   interview_only_support boolean := false;
   latest_refutes_blocks boolean := false;
-  has_supporting_test boolean := false;
-  has_evidence boolean := false;
 begin
-  select exists (
-    select 1
-    from public.problem_solving_hypothesis_tests test_row
-    where test_row.organisation_id = target_organisation_id
-      and test_row.hypothesis_id = target_hypothesis_id
-      and test_row.completed_date is not null
-      and test_row.conclusion = 'supports'
-  )
-  into has_supporting_test;
-
-  select exists (
-    select 1
-    from public.problem_solving_evidence_links evidence_row
-    where evidence_row.organisation_id = target_organisation_id
-      and evidence_row.hypothesis_id = target_hypothesis_id
-  )
-  into has_evidence;
-
   select coalesce(
     (
       select bool_and(btrim(coalesce(test_row.method, '')) = 'Interview')
@@ -128,12 +122,6 @@ begin
       'The latest completed test refutes this hypothesis. Record a newer supporting test before verifying.'
       using errcode = '55000';
   end if;
-
-  if not has_supporting_test and not has_evidence then
-    raise exception
-      'Complete a test that supports this cause, or link evidence on the hypothesis, before verifying.'
-      using errcode = '55000';
-  end if;
 end;
 $$;
 
@@ -181,6 +169,18 @@ begin
   ) then
     raise exception 'verify_cause permission is required'
       using errcode = '42501';
+  end if;
+
+  if exists (
+    select 1
+    from public.problem_solving_cases case_row
+    where case_row.organisation_id = org_id
+      and case_row.id = hypothesis_row.problem_solving_case_id
+      and case_row.status in ('closed', 'cancelled')
+    for share
+  ) then
+    raise exception 'case is closed; hypothesis cannot be changed'
+      using errcode = '55000';
   end if;
 
   if hypothesis_row.status = 'proposed' then
@@ -318,6 +318,18 @@ begin
       using errcode = '42501';
   end if;
 
+  if exists (
+    select 1
+    from public.problem_solving_cases case_row
+    where case_row.organisation_id = org_id
+      and case_row.id = hypothesis_row.problem_solving_case_id
+      and case_row.status in ('closed', 'cancelled')
+    for share
+  ) then
+    raise exception 'case is closed; hypothesis cannot be changed'
+      using errcode = '55000';
+  end if;
+
   if hypothesis_row.status in ('verified', 'rejected', 'superseded') then
     raise exception 'cannot create tests for a hypothesis in terminal state'
       using errcode = '55000';
@@ -380,6 +392,31 @@ $$;
 alter function private.create_hypothesis_test(uuid, text, text, text, uuid, date)
   owner to lean_hub_private_owner;
 
+create or replace function public.create_hypothesis_test(
+  target_hypothesis_id uuid,
+  target_test_question text,
+  target_expected_result text default null,
+  target_method text default null,
+  target_owner_membership_id uuid default null,
+  target_planned_date date default null
+)
+returns uuid
+language sql
+volatile
+security definer
+set search_path = ''
+as $$ select private.create_hypothesis_test(
+  target_hypothesis_id,
+  target_test_question,
+  target_expected_result,
+  target_method,
+  target_owner_membership_id,
+  target_planned_date
+) $$;
+
+grant execute on function public.create_hypothesis_test(uuid, text, text, text, uuid, date) to authenticated;
+revoke all on function public.create_hypothesis_test(uuid, text, text, text, uuid, date) from public, anon;
+
 -- ── Effectiveness: require notes for fail / inconclusive ────────────────────
 
 create or replace function private.record_effectiveness_result(
@@ -434,6 +471,18 @@ begin
   if not private.can_manage_problem_solving_case(org_id, check_row.case_id) then
     raise exception 'effectiveness result recording is not authorised'
       using errcode = '42501';
+  end if;
+
+  if exists (
+    select 1
+    from public.problem_solving_cases case_row
+    where case_row.organisation_id = org_id
+      and case_row.id = check_row.case_id
+      and case_row.status in ('closed', 'cancelled')
+    for share
+  ) then
+    raise exception 'case is closed; effectiveness cannot be changed'
+      using errcode = '55000';
   end if;
 
   update public.problem_solving_effectiveness_checks eff
@@ -517,6 +566,18 @@ begin
 
   perform private.assert_current_organisation_module_entitled('problem_solving');
 
+  if exists (
+    select 1
+    from public.problem_solving_cases case_row
+    where case_row.organisation_id = org_id
+      and case_row.id = target_problem_solving_case_id
+      and case_row.status in ('closed', 'cancelled')
+    for share
+  ) then
+    raise exception 'case is closed; problem-solving action cannot be created'
+      using errcode = '55000';
+  end if;
+
   if target_context_role not in ('containment', 'countermeasure', 'sustainment') then
     raise exception 'invalid context role'
       using errcode = '22023';
@@ -582,6 +643,17 @@ $$;
 alter function private.create_problem_solving_action(
   text, uuid, text, uuid, uuid, uuid, text, text, timestamptz, uuid
 ) owner to lean_hub_private_owner;
+
+revoke all on function private.create_problem_solving_action(
+  text, uuid, text, uuid, uuid, uuid, text, text, timestamptz, uuid
+) from public, anon, authenticated, service_role;
+grant execute on function private.create_problem_solving_action(
+  text, uuid, text, uuid, uuid, uuid, text, text, timestamptz, uuid
+) to lean_hub_private_owner;
+
+drop function if exists private.create_problem_solving_action(
+  text, uuid, text, uuid, uuid, uuid, text, text, timestamptz
+);
 
 create or replace function public.create_problem_solving_action(
   target_title text,
@@ -976,10 +1048,14 @@ begin
 end;
 $$;
 
+drop function if exists public.promote_analysis_node_to_hypothesis(uuid, text, text);
+drop function if exists private.promote_analysis_node_to_hypothesis(uuid, text, text);
+
 create or replace function private.promote_analysis_node_to_hypothesis(
   target_node_id uuid,
   target_statement text default null,
-  target_category text default null
+  target_category text default null,
+  target_problem_solving_case_id uuid default null
 )
 returns uuid
 language plpgsql
@@ -1027,6 +1103,12 @@ begin
       using errcode = '55000';
   end if;
 
+  if target_problem_solving_case_id is not null
+     and analysis_case_id is distinct from target_problem_solving_case_id then
+    raise exception 'referenced cause is not valid for this case'
+      using errcode = '22023';
+  end if;
+
   if not private.can_manage_problem_solving_case(org_id, analysis_case_id) then
     raise exception 'hypothesis promotion is not authorised'
       using errcode = '42501';
@@ -1038,6 +1120,7 @@ begin
     where c.organisation_id = org_id
       and c.id = analysis_case_id
       and c.status in ('closed', 'cancelled')
+    for share
   ) then
     raise exception 'case is closed; analysis cannot be changed'
       using errcode = '55000';
@@ -1136,10 +1219,6 @@ begin
       using errcode = '55000';
   end if;
 
-  if node_row.linked_hypothesis_id = target_hypothesis_id then
-    return true;
-  end if;
-
   select a.problem_solving_case_id, a.analysis_type
   into analysis_case_id, analysis_type
   from public.problem_solving_analyses a
@@ -1165,6 +1244,10 @@ begin
   ) then
     raise exception 'case is closed; analysis cannot be changed'
       using errcode = '55000';
+  end if;
+
+  if node_row.linked_hypothesis_id = target_hypothesis_id then
+    return true;
   end if;
 
   select h.problem_solving_case_id
@@ -1202,15 +1285,53 @@ $$;
 
 alter function private.update_analysis_node(uuid, text) owner to lean_hub_private_owner;
 alter function private.delete_analysis_node(uuid) owner to lean_hub_private_owner;
-alter function private.promote_analysis_node_to_hypothesis(uuid, text, text) owner to lean_hub_private_owner;
+create or replace function public.promote_analysis_node_to_hypothesis(
+  target_node_id uuid,
+  target_statement text default null,
+  target_category text default null,
+  target_problem_solving_case_id uuid default null
+)
+returns uuid
+language sql
+volatile
+security definer
+set search_path = ''
+as $$
+  select private.promote_analysis_node_to_hypothesis(
+    target_node_id,
+    target_statement,
+    target_category,
+    target_problem_solving_case_id
+  )
+$$;
+
+grant execute on function public.promote_analysis_node_to_hypothesis(
+  uuid, text, text, uuid
+) to authenticated;
+revoke all on function public.promote_analysis_node_to_hypothesis(
+  uuid, text, text, uuid
+) from public, anon;
+revoke all on function private.promote_analysis_node_to_hypothesis(
+  uuid, text, text, uuid
+) from public;
+grant execute on function private.promote_analysis_node_to_hypothesis(
+  uuid, text, text, uuid
+) to lean_hub_private_owner;
+
+alter function private.promote_analysis_node_to_hypothesis(uuid, text, text, uuid) owner to lean_hub_private_owner;
 alter function private.link_node_hypothesis(uuid, uuid) owner to lean_hub_private_owner;
 alter function private.update_problem_solving_problem_statement(uuid, text) owner to lean_hub_private_owner;
 alter function private.update_problem_solving_target_condition(uuid, text) owner to lean_hub_private_owner;
 
 -- ── Case audit activity (for history view) ──────────────────────────────────
 
+drop function if exists public.get_problem_solving_case_audit_activity(uuid);
+drop function if exists private.list_problem_solving_case_audit_events(uuid);
+
 create or replace function private.list_problem_solving_case_audit_events(
-  target_case_id uuid
+  target_case_id uuid,
+  target_limit int default 50,
+  target_before timestamptz default null
 )
 returns jsonb
 language plpgsql
@@ -1220,55 +1341,74 @@ set search_path = ''
 as $$
 declare
   org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
+  page_limit int;
   result jsonb;
 begin
-  if org_id is null then
+  if org_id is null or actor_membership_id is null then
     raise exception 'case audit history is not authorised'
       using errcode = '42501';
   end if;
+
+  perform private.assert_current_organisation_module_entitled('problem_solving');
 
   if not private.can_read_problem_solving_case(org_id, target_case_id) then
     raise exception 'case audit history is not authorised'
       using errcode = '42501';
   end if;
 
+  page_limit := least(greatest(coalesce(target_limit, 50), 1), 200);
+
   select coalesce(
     jsonb_agg(
       jsonb_build_object(
-        'id', audit_event.id,
-        'event_action', audit_event.event_action,
-        'event_outcome', audit_event.event_outcome,
-        'actor_membership_id', audit_event.actor_membership_id,
-        'metadata', audit_event.metadata,
-        'created_at', audit_event.created_at
+        'id', audit_page.id,
+        'event_action', audit_page.event_action,
+        'event_outcome', audit_page.event_outcome,
+        'actor_membership_id', audit_page.actor_membership_id,
+        'metadata', audit_page.metadata,
+        'created_at', audit_page.created_at
       )
-      order by audit_event.created_at desc
+      order by audit_page.created_at desc, audit_page.id desc
     ),
     '[]'::jsonb
   )
   into result
-  from public.business_audit_events audit_event
-  where audit_event.organisation_id = org_id
-    and audit_event.resource_record_id = target_case_id
-    and audit_event.event_action = any (
-      array[
-        'problem_solving.problem_statement_updated',
-        'problem_solving.target_condition_updated',
-        'problem_solving.fishbone_cause_updated',
-        'problem_solving.fishbone_cause_removed',
-        'problem_solving.fishbone_cause_promoted',
-        'problem_solving.effectiveness_recorded',
-        'hypothesis.verified',
-        'hypothesis.rejected'
-      ]
-    );
+  from (
+    select audit_event.id,
+           audit_event.event_action,
+           audit_event.event_outcome,
+           audit_event.actor_membership_id,
+           audit_event.metadata,
+           audit_event.created_at
+    from public.business_audit_events audit_event
+    where audit_event.organisation_id = org_id
+      and audit_event.resource_record_id = target_case_id
+      and audit_event.event_action = any (
+        array[
+          'problem_solving.problem_statement_updated',
+          'problem_solving.target_condition_updated',
+          'problem_solving.fishbone_cause_updated',
+          'problem_solving.fishbone_cause_removed',
+          'problem_solving.fishbone_cause_promoted',
+          'problem_solving.effectiveness_recorded',
+          'hypothesis.verified',
+          'hypothesis.rejected'
+        ]
+      )
+      and (target_before is null or audit_event.created_at < target_before)
+    order by audit_event.created_at desc, audit_event.id desc
+    limit page_limit
+  ) audit_page;
 
   return result;
 end;
 $$;
 
 create or replace function public.get_problem_solving_case_audit_activity(
-  target_case_id uuid
+  target_case_id uuid,
+  target_limit int default 50,
+  target_before timestamptz default null
 )
 returns jsonb
 language sql
@@ -1276,14 +1416,20 @@ stable
 security definer
 set search_path = ''
 as $$
-  select private.list_problem_solving_case_audit_events(target_case_id)
+  select private.list_problem_solving_case_audit_events(
+    target_case_id,
+    target_limit,
+    target_before
+  )
 $$;
 
-grant execute on function public.get_problem_solving_case_audit_activity(uuid) to authenticated;
-revoke all on function public.get_problem_solving_case_audit_activity(uuid) from public, anon;
-alter function private.list_problem_solving_case_audit_events(uuid) owner to lean_hub_private_owner;
-revoke all on function private.list_problem_solving_case_audit_events(uuid) from public, anon, authenticated, service_role;
-grant execute on function private.list_problem_solving_case_audit_events(uuid) to lean_hub_private_owner;
+grant execute on function public.get_problem_solving_case_audit_activity(uuid, int, timestamptz) to authenticated;
+revoke all on function public.get_problem_solving_case_audit_activity(uuid, int, timestamptz) from public, anon;
+alter function private.list_problem_solving_case_audit_events(uuid, int, timestamptz) owner to lean_hub_private_owner;
+revoke all on function private.list_problem_solving_case_audit_events(uuid, int, timestamptz) from public, anon, authenticated, service_role;
+grant execute on function private.list_problem_solving_case_audit_events(uuid, int, timestamptz) to lean_hub_private_owner;
+
+revoke all on function private.hypothesis_has_verification_basis(uuid, uuid, text) from public;
 -- Include result_rationale on effectiveness checks in case detail.
 create or replace function public.get_problem_solving_detail(
   target_case_id uuid
@@ -1856,5 +2002,180 @@ begin
     'source_links', source_links,
     'membership_display_names', membership_display_names
   );
+end;
+$$;
+
+-- Closure: inconclusive / fail / pending effectiveness block resolved outcomes (not transfer).
+create or replace function private.close_problem_solving_case(
+  target_case_id uuid,
+  target_closure_outcome text,
+  target_closure_rationale text default null
+)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
+  case_row public.problem_solving_cases%rowtype;
+  has_verified_cause boolean;
+  has_corrective_countermeasures boolean;
+  has_effectiveness_checks boolean;
+  all_effectiveness_passed boolean;
+begin
+  if org_id is null or actor_membership_id is null then
+    raise exception 'case closure is not authorised'
+      using errcode = '42501';
+  end if;
+
+  perform private.assert_current_organisation_module_entitled('problem_solving');
+
+  select ps_case.*
+  into case_row
+  from public.problem_solving_cases ps_case
+  where ps_case.organisation_id = org_id
+    and ps_case.id = target_case_id
+  for update;
+
+  if not found then
+    raise exception 'problem solving case not found'
+      using errcode = 'P0002';
+  end if;
+
+  if case_row.status not in ('draft', 'active') then
+    raise exception 'case cannot be closed from current status'
+      using errcode = '55000';
+  end if;
+
+  if not private.can_close_problem_solving_case(org_id, target_case_id) then
+    raise exception 'case closure is not authorised'
+      using errcode = '42501';
+  end if;
+
+  if target_closure_outcome not in (
+    'resolved_verified_cause',
+    'resolved_without_verified_cause',
+    'transferred'
+  ) then
+    raise exception 'invalid closure outcome'
+      using errcode = '22023';
+  end if;
+
+  select exists (
+    select 1
+    from public.problem_solving_hypotheses h
+    where h.organisation_id = org_id
+      and h.problem_solving_case_id = target_case_id
+      and h.status = 'verified'
+  )
+  into has_verified_cause;
+
+  select exists (
+    select 1
+    from public.problem_solving_countermeasures cm
+    where cm.organisation_id = org_id
+      and cm.problem_solving_case_id = target_case_id
+      and cm.status in ('selected', 'implementing', 'implemented', 'effective')
+  )
+  into has_corrective_countermeasures;
+
+  if target_closure_outcome = 'resolved_verified_cause' then
+    if not has_verified_cause then
+      raise exception 'resolved_verified_cause requires at least one verified hypothesis'
+        using errcode = '22023';
+    end if;
+  end if;
+
+  if target_closure_outcome = 'resolved_without_verified_cause' then
+    if target_closure_rationale is null or btrim(target_closure_rationale) = '' then
+      raise exception 'resolved_without_verified_cause requires a closure rationale'
+        using errcode = '22023';
+    end if;
+
+    if has_corrective_countermeasures then
+      select exists (
+        select 1
+        from public.problem_solving_effectiveness_checks eff
+        where eff.organisation_id = org_id
+          and eff.case_id = target_case_id
+      )
+      into has_effectiveness_checks;
+
+      if not has_effectiveness_checks then
+        raise exception 'corrective countermeasures require effectiveness checks before closure'
+          using errcode = '22023';
+      end if;
+    end if;
+  end if;
+
+  if has_corrective_countermeasures then
+    select not exists (
+      select 1
+      from public.problem_solving_effectiveness_checks eff
+      where eff.organisation_id = org_id
+        and eff.case_id = target_case_id
+        and (eff.result is null or eff.result in ('fail', 'inconclusive'))
+    )
+    into all_effectiveness_passed;
+
+    if not all_effectiveness_passed and target_closure_outcome <> 'transferred' then
+      raise exception 'all effectiveness checks must pass before closing as resolved'
+        using errcode = '22023';
+    end if;
+  end if;
+
+  update public.problem_solving_cases ps_case
+  set status = 'closed',
+      closure_outcome = target_closure_outcome,
+      closure_rationale = target_closure_rationale,
+      closed_at = statement_timestamp(),
+      closed_by_membership_id = actor_membership_id,
+      updated_at = statement_timestamp()
+  where ps_case.organisation_id = org_id
+    and ps_case.id = target_case_id;
+
+  insert into public.problem_solving_status_history (
+    organisation_id,
+    case_id,
+    from_status,
+    to_status,
+    changed_by_membership_id,
+    rationale
+  )
+  values (
+    org_id,
+    target_case_id,
+    case_row.status,
+    'closed',
+    actor_membership_id,
+    target_closure_outcome || coalesce(': ' || target_closure_rationale, '')
+  );
+
+  perform private.append_business_audit(
+    org_id,
+    'problem_solving.case_closed',
+    target_case_id,
+    'succeeded',
+    jsonb_build_object(
+      'closure_outcome', target_closure_outcome,
+      'has_verified_cause', has_verified_cause
+    )
+  );
+
+  perform private.enqueue_domain_event(
+    org_id,
+    target_case_id,
+    'ProblemSolvingCaseClosed',
+    target_case_id::text,
+    jsonb_build_object(
+      'case_id', target_case_id,
+      'closure_outcome', target_closure_outcome
+    )
+  );
+
+  return true;
 end;
 $$;

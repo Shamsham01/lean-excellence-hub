@@ -13923,7 +13923,7 @@ export type Database = {
       }
       create_hypothesis_test: {
         Args: {
-          target_expected_result: string
+          target_expected_result?: string
           target_hypothesis_id: string
           target_method?: string
           target_owner_membership_id?: string
@@ -14808,7 +14808,11 @@ export type Database = {
         }[]
       }
       get_problem_solving_case_audit_activity: {
-        Args: { target_case_id: string }
+        Args: {
+          target_before?: string
+          target_case_id: string
+          target_limit?: number
+        }
         Returns: Json
       }
       get_problem_solving_detail: {
@@ -15393,6 +15397,7 @@ export type Database = {
         Args: {
           target_category?: string
           target_node_id: string
+          target_problem_solving_case_id?: string
           target_statement?: string
         }
         Returns: string

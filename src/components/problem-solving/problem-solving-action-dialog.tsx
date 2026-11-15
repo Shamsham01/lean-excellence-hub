@@ -50,6 +50,11 @@ export function ProblemSolvingActionDialog({
 
   useEffect(() => {
     if (!open) return;
+    setTitle(defaultTitle);
+    setDescription("");
+    setDueAt("");
+    setAssigneeId(defaultMembershipId ?? "");
+    setError(null);
     let cancelled = false;
     void loadActionCreateContext().then((ctx) => {
       if (cancelled) return;
@@ -60,7 +65,11 @@ export function ProblemSolvingActionDialog({
         })),
       );
       const solePerson = ctx.assignablePeople[0];
-      if (!defaultMembershipId && ctx.assignablePeople.length === 1 && solePerson) {
+      if (
+        !defaultMembershipId &&
+        ctx.assignablePeople.length === 1 &&
+        solePerson
+      ) {
         setAssigneeId(solePerson.membership_id);
       }
     });
@@ -101,9 +110,7 @@ export function ProblemSolvingActionDialog({
       ...(containmentId ? { containmentId } : {}),
       ...(countermeasureId ? { countermeasureId } : {}),
       dueAt: new Date(`${dueAt}T12:00:00`).toISOString(),
-      ...(resolvedAssignee
-        ? { assigneeMembershipId: resolvedAssignee }
-        : {}),
+      ...(resolvedAssignee ? { assigneeMembershipId: resolvedAssignee } : {}),
     });
     setLoading(false);
     if (result.error) {
@@ -174,7 +181,11 @@ export function ProblemSolvingActionDialog({
               {error}
             </p>
           ) : null}
-          <Button type="submit" disabled={loading} data-testid="pps-action-create-submit">
+          <Button
+            type="submit"
+            disabled={loading}
+            data-testid="pps-action-create-submit"
+          >
             {loading ? "Creating…" : "Create action"}
           </Button>
         </form>

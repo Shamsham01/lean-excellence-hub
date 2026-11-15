@@ -68,11 +68,15 @@ export async function acceptAiProposal(
     case "hypothesis": {
       await requirePermission(PROBLEM_SOLVING_PERMISSIONS.manage);
       const hyp = proposalPayloadSchemas.hypothesis.parse(editedPayload);
+      if (hyp.analysis_node_id) {
+        await assertAnalysisNodeInCase(supabase, caseId, hyp.analysis_node_id);
+      }
       const { data: hypId, error: hypError } = hyp.analysis_node_id
         ? await supabase.rpc("promote_analysis_node_to_hypothesis", {
             target_node_id: hyp.analysis_node_id,
             target_statement: hyp.statement,
             target_category: hyp.category ?? null,
+            target_problem_solving_case_id: caseId,
           })
         : await supabase.rpc("create_hypothesis", {
             target_problem_solving_case_id: caseId,
@@ -455,6 +459,22 @@ async function assertHypothesisInCase(
     .maybeSingle();
   if (error || !data) {
     throw new Error("Referenced hypothesis is not valid for this case.");
+  }
+}
+
+async function assertAnalysisNodeInCase(
+  supabase: SupabaseClient,
+  caseId: string,
+  nodeId: string,
+) {
+  const { data, error } = await supabase
+    .from("problem_solving_analysis_nodes")
+    .select("id, problem_solving_analyses!inner(problem_solving_case_id)")
+    .eq("id", nodeId)
+    .eq("problem_solving_analyses.problem_solving_case_id", caseId)
+    .maybeSingle();
+  if (error || !data) {
+    throw new Error("Referenced cause is not valid for this case.");
   }
 }
 
