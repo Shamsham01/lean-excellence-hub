@@ -235,7 +235,8 @@ test.describe("Milestone 12 closure", () => {
     page,
   }) => {
     await signInAsDemoUser(page, "manager");
-    await createActiveCaseAndOpenLeanAi(page);
+    await openDemoProblemSolvingCaseFromPortfolio(page);
+    await expectGuidedProblemSolvingWorkspace(page);
     await expect(page.getByTestId("pps-pending-ai-proposals")).toBeVisible();
     await page.getByTestId("pps-stage-auto-draft-button").click();
     await expect(
