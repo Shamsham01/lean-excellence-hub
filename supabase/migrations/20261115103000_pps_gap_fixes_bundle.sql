@@ -916,16 +916,11 @@ begin
       using errcode = '42501';
   end if;
 
-  if exists (
-    select 1
-    from public.problem_solving_cases c
-    where c.organisation_id = org_id
-      and c.id = analysis_case_id
-      and c.status in ('closed', 'cancelled')
-  ) then
-    raise exception 'case is closed; analysis cannot be changed'
-      using errcode = '55000';
-  end if;
+  perform private.require_problem_solving_case_open_for_mutation(
+    org_id,
+    analysis_case_id,
+    'case is closed; analysis cannot be changed'
+  );
 
   if node_row.linked_hypothesis_id is not null then
     raise exception 'promoted fishbone causes cannot be changed; edit the hypothesis instead'
@@ -1012,16 +1007,11 @@ begin
       using errcode = '42501';
   end if;
 
-  if exists (
-    select 1
-    from public.problem_solving_cases c
-    where c.organisation_id = org_id
-      and c.id = analysis_case_id
-      and c.status in ('closed', 'cancelled')
-  ) then
-    raise exception 'case is closed; analysis cannot be changed'
-      using errcode = '55000';
-  end if;
+  perform private.require_problem_solving_case_open_for_mutation(
+    org_id,
+    analysis_case_id,
+    'case is closed; analysis cannot be changed'
+  );
 
   if node_row.linked_hypothesis_id is not null then
     raise exception 'promoted fishbone causes cannot be removed; edit the hypothesis instead'
@@ -1246,16 +1236,11 @@ begin
       using errcode = '42501';
   end if;
 
-  if exists (
-    select 1
-    from public.problem_solving_cases c
-    where c.organisation_id = org_id
-      and c.id = analysis_case_id
-      and c.status in ('closed', 'cancelled')
-  ) then
-    raise exception 'case is closed; analysis cannot be changed'
-      using errcode = '55000';
-  end if;
+  perform private.require_problem_solving_case_open_for_mutation(
+    org_id,
+    analysis_case_id,
+    'case is closed; analysis cannot be changed'
+  );
 
   if node_row.linked_hypothesis_id = target_hypothesis_id then
     return true;
