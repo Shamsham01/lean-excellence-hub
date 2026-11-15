@@ -44,51 +44,44 @@ export function FiveSAuditFindingPanel({
   canEdit,
   onFindingEnsured,
 }: FiveSAuditFindingPanelProps) {
-  const [localFinding, setLocalFinding] = useState(finding);
-  const [ensuring, setEnsuring] = useState(false);
+  const [createdFinding, setCreatedFinding] =
+    useState<FiveSAuditFindingRow | null>(null);
+
+  const activeFinding = finding ?? createdFinding;
 
   useEffect(() => {
-    setLocalFinding(finding);
-  }, [finding]);
-
-  useEffect(() => {
-    if (!canEdit || localFinding || ensuring) return;
+    if (!canEdit || activeFinding) return;
     let cancelled = false;
-    setEnsuring(true);
     void ensureFiveSAuditFinding({
       auditId,
       sectionId,
       questionId,
       observation: questionPrompt,
     }).then((result) => {
-      if (cancelled) return;
-      setEnsuring(false);
-      if (result.id) {
-        const row: FiveSAuditFindingRow = {
-          id: result.id,
-          observation: questionPrompt,
-          linked_project_id: null,
-        };
-        setLocalFinding(row);
-        onFindingEnsured?.(row);
-      }
+      if (cancelled || !result.id) return;
+      const row: FiveSAuditFindingRow = {
+        id: result.id,
+        observation: questionPrompt,
+        linked_project_id: null,
+      };
+      setCreatedFinding(row);
+      onFindingEnsured?.(row);
     });
     return () => {
       cancelled = true;
     };
   }, [
+    activeFinding,
     auditId,
     canEdit,
-    ensuring,
-    localFinding,
     onFindingEnsured,
     questionId,
     questionPrompt,
     sectionId,
   ]);
 
-  if (!localFinding) {
-    return ensuring ? (
+  if (!activeFinding) {
+    return canEdit ? (
       <p
         className="text-sm text-muted-foreground"
         data-testid="five-s-finding-ensuring"
@@ -105,7 +98,7 @@ export function FiveSAuditFindingPanel({
     >
       <p className="mb-2 text-sm font-medium">Audit finding</p>
       <p className="mb-3 text-sm text-muted-foreground">
-        {localFinding.observation}
+        {activeFinding.observation}
       </p>
       <ProjectLinkField
         label="Project link"
@@ -115,10 +108,10 @@ export function FiveSAuditFindingPanel({
         requiresSiteSelection={requiresSiteSelection}
         testId="five-s-finding-project-link"
         onLink={(projectId) =>
-          linkFiveSFindingToCiProject(localFinding.id, projectId, auditId)
+          linkFiveSFindingToCiProject(activeFinding.id, projectId, auditId)
         }
         onUnlink={() =>
-          unlinkFiveSFindingFromCiProject(localFinding.id, auditId)
+          unlinkFiveSFindingFromCiProject(activeFinding.id, auditId)
         }
       />
     </div>
