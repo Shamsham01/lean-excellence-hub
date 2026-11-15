@@ -13,14 +13,29 @@ export function leanAiPanel(page: Page) {
   return page.getByTestId("lean-ai-panel");
 }
 
-/** Seeded demo case portfolio row that is still Active (ignores closed duplicates). */
-export function activeDemoCasePortfolioLink(page: Page) {
-  const title = DEMO_PROBLEM_SOLVING_CASE.title;
+function demoTitlePortfolioItems(page: Page) {
   return page
     .locator('[data-testid^="problem-solving-portfolio-item-"]')
-    .filter({ hasText: title })
+    .filter({ hasText: DEMO_PROBLEM_SOLVING_CASE.title });
+}
+
+/** Active demo row only — no closed fallback (M12 / Lean AI specs). */
+export function activeDemoCasePortfolioLink(page: Page) {
+  return demoTitlePortfolioItems(page).filter({ hasText: "Active" }).first();
+}
+
+/**
+ * Seeded Bodmin demo case for portfolio navigation specs: prefer an Active row
+ * that already has hypotheses (full M11 seed), otherwise the closed seeded row.
+ */
+export function richDemoCasePortfolioLink(page: Page) {
+  const activeWithHypotheses = demoTitlePortfolioItems(page)
     .filter({ hasText: "Active" })
-    .first();
+    .filter({ hasText: /[1-9]\d* hypotheses/ });
+  const closedWithHypotheses = demoTitlePortfolioItems(page)
+    .filter({ hasText: "Closed" })
+    .filter({ hasText: /[1-9]\d* hypotheses/ });
+  return activeWithHypotheses.first().or(closedWithHypotheses.first());
 }
 
 /** Opens the demo title case; fails when no Active row exists (no closed-case fallback). */

@@ -6,7 +6,7 @@ import {
 } from "../../scripts/demo-seed/constants";
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
-  activeDemoCasePortfolioLink,
+  richDemoCasePortfolioLink,
   disableProblemSolvingStageAutoDraft,
   expectProblemSolvingPortfolioNavigation,
   openProblemSolvingStage,
@@ -66,7 +66,7 @@ test.describe("Problem solving case detail reload reliability", () => {
       page.getByTestId("problem-solving-portfolio-page"),
     ).toBeVisible();
 
-    const caseRow = activeDemoCasePortfolioLink(page);
+    const caseRow = richDemoCasePortfolioLink(page);
     await expect(caseRow).toBeVisible();
     const caseHref = await caseRow.getAttribute("href");
     expect(caseHref).toMatch(/\/platform\/problem-solving\/[0-9a-f-]{36}$/);
@@ -111,7 +111,7 @@ test.describe("Problem solving case detail reload reliability", () => {
   }) => {
     await signInAsDemoUser(page, "manager");
     await page.goto("/platform/problem-solving");
-    const caseRow = activeDemoCasePortfolioLink(page);
+    const caseRow = richDemoCasePortfolioLink(page);
     const caseHref = await caseRow.getAttribute("href");
     expect(caseHref).toBeTruthy();
 
