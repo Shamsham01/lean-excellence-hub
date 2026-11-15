@@ -942,6 +942,7 @@ export async function promoteFishboneCauseToHypothesis(input: {
       {
         target_node_id: input.nodeId,
         target_category: category,
+        target_problem_solving_case_id: input.caseId,
       },
     );
     revalidateCasePaths(input.caseId);
@@ -993,6 +994,7 @@ export async function createManualCauseHypothesis(input: {
         {
           target_node_id: input.fishboneNodeId,
           target_statement: statement,
+          target_problem_solving_case_id: input.caseId,
           ...(category ? { target_category: category } : {}),
         },
       );
@@ -1072,15 +1074,23 @@ export async function createHypothesisTest(input: {
   hypothesisId: string;
   caseId: string;
   testQuestion: string;
-  expectedResult: string;
+  expectedResult?: string;
   method?: string;
 }): Promise<ActionResult> {
   try {
+    if (!input.testQuestion.trim()) {
+      return { error: "Test question is required." };
+    }
+    if (!input.method?.trim()) {
+      return { error: "Verification method is required." };
+    }
     const id = await callRpc<string>("create_hypothesis_test", {
       target_hypothesis_id: input.hypothesisId,
-      target_test_question: input.testQuestion,
-      target_expected_result: input.expectedResult,
-      ...(input.method ? { target_method: input.method } : {}),
+      target_test_question: input.testQuestion.trim(),
+      ...(input.expectedResult?.trim()
+        ? { target_expected_result: input.expectedResult.trim() }
+        : {}),
+      target_method: input.method.trim(),
     });
     revalidateCasePaths(input.caseId);
     return { ok: true, id };
@@ -1125,10 +1135,15 @@ export async function createProblemSolvingAction(input: {
   containmentId?: string;
   countermeasureId?: string;
   description?: string;
+  dueAt?: string;
+  assigneeMembershipId?: string;
 }): Promise<ActionResult> {
   try {
+    if (!input.title.trim()) {
+      return { error: "Action title is required." };
+    }
     const id = await callRpc<string>("create_problem_solving_action", {
-      target_title: input.title,
+      target_title: input.title.trim(),
       target_problem_solving_case_id: input.caseId,
       target_context_role: input.contextRole,
       ...(input.containmentId
@@ -1138,6 +1153,10 @@ export async function createProblemSolvingAction(input: {
         ? { target_countermeasure_id: input.countermeasureId }
         : {}),
       ...(input.description ? { target_description: input.description } : {}),
+      ...(input.dueAt ? { target_due_at: input.dueAt } : {}),
+      ...(input.assigneeMembershipId
+        ? { target_assignee_membership_id: input.assigneeMembershipId }
+        : {}),
     });
     revalidateCasePaths(input.caseId);
     return { ok: true, id };
@@ -1214,6 +1233,14 @@ export async function recordEffectivenessResult(input: {
   verificationRationale?: string;
 }): Promise<ActionResult> {
   try {
+    if (
+      (input.result === "fail" || input.result === "inconclusive") &&
+      !input.verificationRationale?.trim()
+    ) {
+      return {
+        error: "A note is required for Fail and Inconclusive outcomes.",
+      };
+    }
     await callRpc("record_effectiveness_result", {
       target_effectiveness_check_id: input.effectivenessCheckId,
       target_result: input.result,

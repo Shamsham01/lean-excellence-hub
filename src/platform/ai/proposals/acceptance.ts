@@ -68,16 +68,23 @@ export async function acceptAiProposal(
     case "hypothesis": {
       await requirePermission(PROBLEM_SOLVING_PERMISSIONS.manage);
       const hyp = proposalPayloadSchemas.hypothesis.parse(editedPayload);
-      const { data: hypId, error: hypError } = await supabase.rpc(
-        "create_hypothesis",
-        {
-          target_problem_solving_case_id: caseId,
-          target_statement: hyp.statement,
-          target_category: hyp.category ?? null,
-          target_rationale: hyp.rationale ?? null,
-          target_parent_hypothesis_id: hyp.parent_hypothesis_id ?? null,
-        },
-      );
+      if (hyp.analysis_node_id) {
+        await assertAnalysisNodeInCase(supabase, caseId, hyp.analysis_node_id);
+      }
+      const { data: hypId, error: hypError } = hyp.analysis_node_id
+        ? await supabase.rpc("promote_analysis_node_to_hypothesis", {
+            target_node_id: hyp.analysis_node_id,
+            target_statement: hyp.statement,
+            target_category: hyp.category ?? null,
+            target_problem_solving_case_id: caseId,
+          })
+        : await supabase.rpc("create_hypothesis", {
+            target_problem_solving_case_id: caseId,
+            target_statement: hyp.statement,
+            target_category: hyp.category ?? null,
+            target_rationale: hyp.rationale ?? null,
+            target_parent_hypothesis_id: hyp.parent_hypothesis_id ?? null,
+          });
       if (hypError) throw hypError;
       await recordAcceptance(supabase, proposal, {
         hypothesis_id: hypId as string,
@@ -94,8 +101,10 @@ export async function acceptAiProposal(
         {
           target_hypothesis_id: test.hypothesis_id,
           target_test_question: test.test_question,
-          target_expected_result: test.expected_result,
-          target_method: test.method ?? null,
+          ...(test.expected_result?.trim()
+            ? { target_expected_result: test.expected_result.trim() }
+            : {}),
+          target_method: test.method,
         },
       );
       if (testError) throw testError;
@@ -450,6 +459,22 @@ async function assertHypothesisInCase(
     .maybeSingle();
   if (error || !data) {
     throw new Error("Referenced hypothesis is not valid for this case.");
+  }
+}
+
+async function assertAnalysisNodeInCase(
+  supabase: SupabaseClient,
+  caseId: string,
+  nodeId: string,
+) {
+  const { data, error } = await supabase
+    .from("problem_solving_analysis_nodes")
+    .select("id, problem_solving_analyses!inner(problem_solving_case_id)")
+    .eq("id", nodeId)
+    .eq("problem_solving_analyses.problem_solving_case_id", caseId)
+    .maybeSingle();
+  if (error || !data) {
+    throw new Error("Referenced cause is not valid for this case.");
   }
 }
 

@@ -130,9 +130,10 @@ test.describe("Milestone 12 closure", () => {
     });
     await activateA3StructuredMethod(page);
     await expect(
-      page.getByTestId("problem-solving-header").getByText("Active", {
-        exact: true,
-      }),
+      page
+        .getByTestId("problem-solving-header")
+        .getByText("Active", { exact: true })
+        .first(),
     ).toBeVisible({ timeout: 15_000 });
     await expectGuidedProblemSolvingWorkspace(page);
   }

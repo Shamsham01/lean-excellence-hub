@@ -126,6 +126,7 @@ export type ProblemSolvingEffectivenessCheck = {
   observation_window_end: string | null;
   due_date: string | null;
   result: string | null;
+  result_rationale?: string | null;
   verified_by_membership_id: string | null;
   verified_at: string | null;
   created_by_membership_id: string;

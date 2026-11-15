@@ -58,6 +58,7 @@ import {
   sortMethodStages,
   type MethodStage,
 } from "@/lib/problem-solving/stages";
+import type { ProblemSolvingCaseAuditEvent } from "@/lib/problem-solving/case-audit-activity";
 import type {
   ProblemSolvingAnalysis,
   ProblemSolvingAnalysisNode,
@@ -82,6 +83,8 @@ type CaseWorkspaceProps = {
   comments: CommentRow[];
   evidence: EvidenceItem[];
   membershipNameById: Record<string, string>;
+  auditActivity: ProblemSolvingCaseAuditEvent[];
+  currentMembershipId?: string | null;
   ownerName?: string | null;
   facilitatorName?: string | null;
   canManage: boolean;
@@ -110,6 +113,8 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     comments,
     evidence,
     membershipNameById,
+    auditActivity,
+    currentMembershipId,
     ownerName,
     facilitatorName,
     canManage,
@@ -432,6 +437,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
           canManage={canManage}
           canVerifyCause={canVerifyCause}
           canEditCaseDefinition={canEditCaseDefinition}
+          membershipNameById={membershipNameById}
         />
       );
     }
@@ -447,6 +453,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
             caseId={detail.id}
             containments={containments}
             canContribute={canContribute || canManage}
+            defaultAssigneeMembershipId={currentMembershipId ?? null}
           />
         </>
       );
@@ -457,6 +464,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
           caseId={detail.id}
           containments={containments}
           canContribute={canContribute || canManage}
+          defaultAssigneeMembershipId={currentMembershipId ?? null}
         />
       );
     }
@@ -467,6 +475,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
           detail={detail}
           canContribute={canContribute || canManage}
           canManage={canManage}
+          defaultAssigneeMembershipId={currentMembershipId ?? null}
         />
       );
     }
@@ -558,6 +567,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
               detail={detail}
               membershipNameById={membershipNameById}
               pinnedMethodVersion={pinnedMethodVersion}
+              auditActivity={auditActivity}
             />
           }
           activitySlot={

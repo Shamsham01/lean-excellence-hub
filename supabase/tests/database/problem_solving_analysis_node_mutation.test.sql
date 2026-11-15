@@ -1,6 +1,6 @@
 begin;
 
-select plan(40);
+select plan(42);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -155,7 +155,7 @@ select set_config(
 select ok(
   not pg_catalog.has_function_privilege(
     'anon',
-    'public.promote_analysis_node_to_hypothesis(uuid, text, text)',
+    'public.promote_analysis_node_to_hypothesis(uuid, text, text, uuid)',
     'execute'
   ),
   'anon role lacks execute privilege on promote_analysis_node_to_hypothesis'
@@ -711,6 +711,33 @@ select ok(
     (select id from ps_node_mutation_ids where key = 'promoted_hypothesis')
   ),
   'linking same hypothesis again is a no-op'
+);
+
+insert into ps_node_mutation_ids (key, id)
+select 'deletable_node', public.add_analysis_node(
+  (select id from ps_node_mutation_ids where key = 'active_analysis'),
+  'Temporary fishbone cause',
+  null,
+  'method',
+  7
+);
+
+select ok(
+  public.delete_analysis_node(
+    (select id from ps_node_mutation_ids where key = 'deletable_node')
+  ),
+  'manager can delete non-promoted fishbone cause'
+);
+
+select throws_ok(
+  format(
+    'select public.link_node_hypothesis(%L::uuid, %L::uuid)',
+    (select id from ps_node_mutation_ids where key = 'non_fishbone_node'),
+    (select id from ps_node_mutation_ids where key = 'link_hypothesis_a')
+  ),
+  '55000',
+  'only fishbone causes can be linked to a hypothesis',
+  'non-fishbone link_node_hypothesis rejected'
 );
 
 select * from finish();

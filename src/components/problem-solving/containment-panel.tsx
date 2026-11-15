@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 
 import {
   createContainment,
-  createProblemSolvingAction,
   releaseContainment,
 } from "@/app/(platform)/platform/problem-solving/actions";
+import { ProblemSolvingActionDialog } from "@/components/problem-solving/problem-solving-action-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,17 +20,19 @@ type ContainmentPanelProps = {
   caseId: string;
   containments: ProblemSolvingContainment[];
   canContribute: boolean;
+  defaultAssigneeMembershipId?: string | null;
 };
 
 export function ContainmentPanel({
   caseId,
   containments,
   canContribute,
+  defaultAssigneeMembershipId,
 }: ContainmentPanelProps) {
   const router = useRouter();
   const [description, setDescription] = useState("");
   const [rationale, setRationale] = useState("");
-  const [actionTitles, setActionTitles] = useState<Record<string, string>>({});
+  const [actionDialogFor, setActionDialogFor] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -58,22 +60,6 @@ export function ContainmentPanel({
       "Released from workspace",
     );
     setMessage(result.error ?? "Containment released");
-    setLoading(false);
-    router.refresh();
-  }
-
-  async function handleLinkAction(containmentId: string) {
-    const title = actionTitles[containmentId]?.trim();
-    if (!title) return;
-    setLoading(true);
-    const result = await createProblemSolvingAction({
-      caseId,
-      title,
-      contextRole: "containment",
-      containmentId,
-      description: "Containment follow-up action",
-    });
-    setMessage(result.error ?? "Containment action linked");
     setLoading(false);
     router.refresh();
   }
@@ -152,28 +138,14 @@ export function ContainmentPanel({
                   ) : null}
                 </div>
                 {canContribute ? (
-                  <div className="flex flex-col gap-2 border-t border-border pt-2 sm:flex-row sm:items-end">
-                    <label className="flex flex-1 flex-col gap-1 text-xs">
-                      <span>Universal action for this containment</span>
-                      <Input
-                        value={actionTitles[item.id] ?? ""}
-                        onChange={(e) =>
-                          setActionTitles((current) => ({
-                            ...current,
-                            [item.id]: e.target.value,
-                          }))
-                        }
-                        data-testid={`containment-action-title-${item.id}`}
-                        placeholder="Action title"
-                      />
-                    </label>
+                  <div className="border-t border-border pt-2">
                     <Button
                       size="sm"
-                      disabled={loading}
-                      onClick={() => handleLinkAction(item.id)}
+                      variant="outline"
+                      onClick={() => setActionDialogFor(item.id)}
                       data-testid={`link-containment-action-${item.id}`}
                     >
-                      Link action
+                      Raise action
                     </Button>
                   </div>
                 ) : null}
@@ -186,6 +158,22 @@ export function ContainmentPanel({
       {message ? (
         <p className="text-sm text-muted-foreground">{message}</p>
       ) : null}
+      <ProblemSolvingActionDialog
+        key={actionDialogFor ?? "closed"}
+        open={actionDialogFor != null}
+        onOpenChange={(open) => {
+          if (!open) setActionDialogFor(null);
+        }}
+        caseId={caseId}
+        contextRole="containment"
+        containmentId={actionDialogFor}
+        defaultTitle="Containment follow-up"
+        defaultMembershipId={defaultAssigneeMembershipId ?? null}
+        onCreated={() => {
+          setMessage("Containment action linked");
+          router.refresh();
+        }}
+      />
     </div>
   );
 }

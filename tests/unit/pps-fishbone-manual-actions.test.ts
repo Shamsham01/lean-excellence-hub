@@ -114,6 +114,7 @@ describe("manual fishbone and hypothesis server actions", () => {
       {
         target_node_id: "node-1",
         target_category: "machine",
+        target_problem_solving_case_id: "case-1",
       },
     );
   });

@@ -82,6 +82,7 @@ describe("proposal contracts for all 11 types", () => {
         category: "technical",
         rationale: "Defect rate rises after sustained hot runs.",
         parent_hypothesis_id: null,
+        analysis_node_id: null,
         explanation: "Testable technical hypothesis.",
       },
       validPayload: {
@@ -97,13 +98,14 @@ describe("proposal contracts for all 11 types", () => {
         hypothesis_id: HYPOTHESIS_ID,
         test_question: "Does ppm increase under hot runs?",
         expected_result: "Higher ppm during hot runs.",
-        method: null,
+        method: "Measurement / data",
         explanation: "Controlled hot-running comparison.",
       },
       validPayload: {
         hypothesis_id: HYPOTHESIS_ID,
         test_question: "Does ppm increase under hot runs?",
         expected_result: "Higher ppm during hot runs.",
+        method: "Measurement / data",
       },
     },
     {

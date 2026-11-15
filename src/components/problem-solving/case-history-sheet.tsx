@@ -9,6 +9,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import type { ProblemSolvingCaseAuditEvent } from "@/lib/problem-solving/case-audit-activity";
 import type { PinnedMethodVersionContext } from "@/lib/problem-solving/load-case-workspace-data";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
 
@@ -16,12 +17,14 @@ type CaseHistorySheetProps = {
   detail: ProblemSolvingCaseDetail;
   membershipNameById: Record<string, string>;
   pinnedMethodVersion: PinnedMethodVersionContext | null;
+  auditActivity: ProblemSolvingCaseAuditEvent[];
 };
 
 export function CaseHistorySheet({
   detail,
   membershipNameById,
   pinnedMethodVersion,
+  auditActivity,
 }: CaseHistorySheetProps) {
   return (
     <Sheet>
@@ -53,6 +56,7 @@ export function CaseHistorySheet({
           <HistoryPanel
             detail={detail}
             membershipNameById={membershipNameById}
+            auditActivity={auditActivity}
           />
         </div>
       </SheetContent>

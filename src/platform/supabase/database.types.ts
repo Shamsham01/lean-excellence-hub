@@ -8056,6 +8056,7 @@ export type Database = {
           observation_window_start: string | null
           organisation_id: string
           result: string | null
+          result_rationale: string | null
           target_description: string | null
           target_numeric: number | null
           unit: string | null
@@ -8077,6 +8078,7 @@ export type Database = {
           observation_window_start?: string | null
           organisation_id: string
           result?: string | null
+          result_rationale?: string | null
           target_description?: string | null
           target_numeric?: number | null
           unit?: string | null
@@ -8098,6 +8100,7 @@ export type Database = {
           observation_window_start?: string | null
           organisation_id?: string
           result?: string | null
+          result_rationale?: string | null
           target_description?: string | null
           target_numeric?: number | null
           unit?: string | null
@@ -8474,7 +8477,7 @@ export type Database = {
           conclusion: string | null
           created_at: string
           created_by_membership_id: string
-          expected_result: string
+          expected_result: string | null
           hypothesis_id: string
           id: string
           method: string | null
@@ -8491,7 +8494,7 @@ export type Database = {
           conclusion?: string | null
           created_at?: string
           created_by_membership_id: string
-          expected_result: string
+          expected_result?: string | null
           hypothesis_id: string
           id?: string
           method?: string | null
@@ -8508,7 +8511,7 @@ export type Database = {
           conclusion?: string | null
           created_at?: string
           created_by_membership_id?: string
-          expected_result?: string
+          expected_result?: string | null
           hypothesis_id?: string
           id?: string
           method?: string | null
@@ -13920,7 +13923,7 @@ export type Database = {
       }
       create_hypothesis_test: {
         Args: {
-          target_expected_result: string
+          target_expected_result?: string
           target_hypothesis_id: string
           target_method?: string
           target_owner_membership_id?: string
@@ -14006,6 +14009,7 @@ export type Database = {
       }
       create_problem_solving_action: {
         Args: {
+          target_assignee_membership_id?: string
           target_containment_id?: string
           target_context_role: string
           target_countermeasure_id?: string
@@ -14803,6 +14807,14 @@ export type Database = {
           signal_type: string
         }[]
       }
+      get_problem_solving_case_audit_activity: {
+        Args: {
+          target_before?: string
+          target_case_id: string
+          target_limit?: number
+        }
+        Returns: Json
+      }
       get_problem_solving_detail: {
         Args: { target_case_id: string }
         Returns: Json
@@ -15385,6 +15397,7 @@ export type Database = {
         Args: {
           target_category?: string
           target_node_id: string
+          target_problem_solving_case_id?: string
           target_statement?: string
         }
         Returns: string

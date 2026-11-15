@@ -1,3 +1,8 @@
+import type {
+  ProblemSolvingCountermeasure,
+  ProblemSolvingEffectivenessCheck,
+} from "@/lib/problem-solving/types";
+
 export const CLOSURE_OUTCOMES = [
   "resolved_verified_cause",
   "resolved_without_verified_cause",
@@ -5,6 +10,16 @@ export const CLOSURE_OUTCOMES = [
 ] as const;
 
 export type ClosureOutcome = (typeof CLOSURE_OUTCOMES)[number];
+
+const CORRECTIVE_COUNTERMEASURE_STATUSES = new Set([
+  "selected",
+  "implementing",
+  "implemented",
+  "effective",
+]);
+
+export const RESOLVED_CLOSURE_EFFECTIVENESS_BLOCK_REASON =
+  "All effectiveness checks must pass before closing as resolved.";
 
 const CLOSURE_LABELS: Record<ClosureOutcome, string> = {
   resolved_verified_cause: "Resolved (verified cause)",
@@ -15,4 +30,33 @@ const CLOSURE_LABELS: Record<ClosureOutcome, string> = {
 export function closureOutcomeLabel(outcome: string | null): string {
   if (!outcome) return "—";
   return CLOSURE_LABELS[outcome as ClosureOutcome] ?? outcome;
+}
+
+export function hasCorrectiveCountermeasuresForClosure(
+  countermeasures: Pick<ProblemSolvingCountermeasure, "status">[],
+): boolean {
+  return countermeasures.some((cm) =>
+    CORRECTIVE_COUNTERMEASURE_STATUSES.has(cm.status),
+  );
+}
+
+export function resolvedClosureBlockedByEffectiveness(
+  effectivenessChecks: Pick<ProblemSolvingEffectivenessCheck, "result">[],
+): boolean {
+  if (effectivenessChecks.length === 0) {
+    return false;
+  }
+  return effectivenessChecks.some(
+    (check) =>
+      check.result === null ||
+      check.result === "fail" ||
+      check.result === "inconclusive",
+  );
+}
+
+export function isResolvedClosureOutcome(outcome: string): boolean {
+  return (
+    outcome === "resolved_verified_cause" ||
+    outcome === "resolved_without_verified_cause"
+  );
 }
