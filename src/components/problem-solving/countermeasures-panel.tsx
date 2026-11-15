@@ -15,6 +15,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { countermeasureStatusLabel } from "@/lib/problem-solving/effectiveness";
+import { AppLink } from "@/components/ui/app-link";
+import { actionStatusLabel } from "@/lib/actions/status";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
 
 type CountermeasuresPanelProps = {
@@ -40,6 +42,7 @@ export function CountermeasuresPanel({
   >({});
   const [actionDialogFor, setActionDialogFor] = useState<string | null>(null);
   const [actionDefaultTitle, setActionDefaultTitle] = useState("");
+  const [raiseAnotherFor, setRaiseAnotherFor] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -125,7 +128,12 @@ export function CountermeasuresPanel({
           {detail.countermeasures.length === 0 ? (
             <p className="text-muted-foreground">No countermeasures yet.</p>
           ) : (
-            detail.countermeasures.map((item) => (
+            detail.countermeasures.map((item) => {
+              const linkedActions = detail.actions.filter(
+                (action) => action.countermeasure_id === item.id,
+              );
+              const primaryLinked = linkedActions[0];
+              return (
               <div
                 key={item.id}
                 className="flex flex-col gap-2 rounded-md border border-border px-3 py-2"
@@ -198,21 +206,46 @@ export function CountermeasuresPanel({
                   "effective",
                 ].includes(item.status) ? (
                   <div className="border-t border-border pt-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setActionDefaultTitle(`Implement: ${item.title}`);
-                        setActionDialogFor(item.id);
-                      }}
-                      data-testid={`link-countermeasure-action-${item.id}`}
-                    >
-                      Raise action
-                    </Button>
+                    {primaryLinked && raiseAnotherFor !== item.id ? (
+                      <div className="flex flex-col gap-2 text-sm">
+                        <AppLink
+                          href={`/platform/actions/${primaryLinked.id}`}
+                          className="font-medium hover:underline"
+                          data-testid={`countermeasure-linked-action-${item.id}`}
+                        >
+                          {primaryLinked.title} ·{" "}
+                          {actionStatusLabel(primaryLinked.status)}
+                        </AppLink>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={loading}
+                          onClick={() => setRaiseAnotherFor(item.id)}
+                          data-testid={`countermeasure-raise-another-${item.id}`}
+                        >
+                          Raise another
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={loading}
+                        onClick={() => {
+                          setActionDefaultTitle(`Implement: ${item.title}`);
+                          setActionDialogFor(item.id);
+                          setRaiseAnotherFor(null);
+                        }}
+                        data-testid={`link-countermeasure-action-${item.id}`}
+                      >
+                        Raise action
+                      </Button>
+                    )}
                   </div>
                 ) : null}
               </div>
-            ))
+            );
+            })
           )}
         </CardContent>
       </Card>

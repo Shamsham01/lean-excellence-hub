@@ -47,9 +47,8 @@ async function callRpc<T = unknown>(fn: string, args?: RpcArgs): Promise<T> {
 
 function revalidateCasePaths(caseId?: string) {
   revalidatePath("/platform/problem-solving");
-  revalidatePath("/platform");
   if (caseId) {
-    revalidatePath(`/platform/problem-solving/${caseId}`);
+    revalidatePath(`/platform/problem-solving/${caseId}`, "page");
   }
 }
 
@@ -789,6 +788,7 @@ export async function addFishboneCause(input: {
   caseId: string;
   category: string;
   label: string;
+  mutationKey?: string;
 }): Promise<ActionResult> {
   try {
     const access = await assertCanEditCaseDefinition(input.caseId);
@@ -814,6 +814,9 @@ export async function addFishboneCause(input: {
       target_analysis_id: analysisId,
       target_label: label,
       target_category: category,
+      ...(input.mutationKey?.trim()
+        ? { target_mutation_key: input.mutationKey.trim() }
+        : {}),
     });
     revalidateCasePaths(input.caseId);
     return { ok: true, id };
@@ -1076,6 +1079,7 @@ export async function createHypothesisTest(input: {
   testQuestion: string;
   expectedResult?: string;
   method?: string;
+  mutationKey?: string;
 }): Promise<ActionResult> {
   try {
     if (!input.testQuestion.trim()) {
@@ -1091,6 +1095,9 @@ export async function createHypothesisTest(input: {
         ? { target_expected_result: input.expectedResult.trim() }
         : {}),
       target_method: input.method.trim(),
+      ...(input.mutationKey?.trim()
+        ? { target_mutation_key: input.mutationKey.trim() }
+        : {}),
     });
     revalidateCasePaths(input.caseId);
     return { ok: true, id };
@@ -1100,6 +1107,26 @@ export async function createHypothesisTest(input: {
         error instanceof Error
           ? error.message
           : "Hypothesis test create failed",
+    };
+  }
+}
+
+export async function deleteHypothesisTest(input: {
+  testId: string;
+  caseId: string;
+}): Promise<ActionResult> {
+  try {
+    await callRpc("delete_hypothesis_test", {
+      target_hypothesis_test_id: input.testId,
+    });
+    revalidateCasePaths(input.caseId);
+    return { ok: true };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Hypothesis test delete failed",
     };
   }
 }
@@ -1135,6 +1162,7 @@ export async function createProblemSolvingAction(input: {
   containmentId?: string;
   countermeasureId?: string;
   description?: string;
+  expectedResult?: string;
   dueAt?: string;
   assigneeMembershipId?: string;
 }): Promise<ActionResult> {
@@ -1153,6 +1181,9 @@ export async function createProblemSolvingAction(input: {
         ? { target_countermeasure_id: input.countermeasureId }
         : {}),
       ...(input.description ? { target_description: input.description } : {}),
+      ...(input.expectedResult?.trim()
+        ? { target_expected_result: input.expectedResult.trim() }
+        : {}),
       ...(input.dueAt ? { target_due_at: input.dueAt } : {}),
       ...(input.assigneeMembershipId
         ? { target_assignee_membership_id: input.assigneeMembershipId }
@@ -1163,6 +1194,40 @@ export async function createProblemSolvingAction(input: {
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : "Action create failed",
+    };
+  }
+}
+
+export async function upsertProblemSolvingSustainPlan(input: {
+  caseId: string;
+  standardised: string;
+  monitoring: string;
+  ownerMembershipId?: string;
+  reviewDate?: string;
+}): Promise<ActionResult> {
+  try {
+    const standardised = input.standardised.trim();
+    const monitoring = input.monitoring.trim();
+    if (!standardised || !monitoring) {
+      return { error: "Standardised practice and monitoring are required." };
+    }
+    await callRpc("upsert_problem_solving_sustain_plan", {
+      target_case_id: input.caseId,
+      target_sustain_plan_standardised: standardised,
+      target_sustain_plan_monitoring: monitoring,
+      ...(input.ownerMembershipId
+        ? { target_sustain_plan_owner_membership_id: input.ownerMembershipId }
+        : {}),
+      ...(input.reviewDate
+        ? { target_sustain_plan_review_date: input.reviewDate }
+        : {}),
+    });
+    revalidateCasePaths(input.caseId);
+    return { ok: true };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Sustain plan save failed",
     };
   }
 }

@@ -46,6 +46,11 @@ import { EphemeralToast } from "@/components/ui/ephemeral-toast";
 import { Button } from "@/components/ui/button";
 import { pendingAiProposalMatchesViewStage } from "@/lib/problem-solving/ai-proposal-stage";
 import {
+  caseStatusAllowsLeanAiDrafting,
+  isTerminalCaseStatus,
+} from "@/lib/problem-solving/case-lifecycle";
+import { resolveDisplayedCurrentStage } from "@/lib/problem-solving/derive-case-progress-stage";
+import {
   readPpsCopilotPreference,
   writePpsCopilotPreference,
 } from "@/lib/problem-solving/copilot-preference";
@@ -53,7 +58,6 @@ import {
   guidedStageConfig,
   resolveViewStage,
 } from "@/lib/problem-solving/guided-flow";
-import { isProblemSolvingCaseOpenForAiDraft } from "@/lib/problem-solving/status";
 import type { CasePendingAiProposal } from "@/lib/problem-solving/load-case-pending-ai-proposals";
 import type { PinnedMethodVersionContext } from "@/lib/problem-solving/load-case-workspace-data";
 import {
@@ -168,6 +172,19 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     () => sortMethodStages(methodStages),
     [methodStages],
   );
+
+  const displayedCurrentStage = useMemo(
+    () =>
+      resolveDisplayedCurrentStage(
+        sortedStages,
+        detail,
+        currentConditionItems.length,
+        analysisNodes.length,
+      ),
+    [sortedStages, detail, currentConditionItems.length, analysisNodes.length],
+  );
+
+  const caseAllowsAi = canUseAi && caseStatusAllowsLeanAiDrafting(detail.status);
 
   const urlStageSemanticKey = useMemo(() => {
     const raw = searchParams.get("stage")?.trim() ?? "";
@@ -374,16 +391,26 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     (detail.problem_statement && detail.problem_statement.trim().length > 0) ||
     currentConditionItems.length > 0,
   );
-  const caseOpenForAiDraft = isProblemSolvingCaseOpenForAiDraft(detail.status);
-
   const canMoveStage =
     (canManage || canFacilitate) &&
     detail.status === "active" &&
     sortedStages.length > 0;
 
+  const progressStageId =
+    displayedCurrentStage?.id ?? detail.current_method_stage_id;
+
   const isViewingCurrentStage =
-    viewStageId === detail.current_method_stage_id ||
-    (viewStageId == null && detail.current_method_stage_id == null);
+    viewStageId === progressStageId ||
+    (viewStageId == null && progressStageId == null);
+
+  const viewingFutureStage = useMemo(() => {
+    if (!viewStage || !progressStageId || detail.status !== "active") {
+      return false;
+    }
+    const progressRow = sortedStages.find((row) => row.id === progressStageId);
+    if (!progressRow) return false;
+    return viewStage.display_order > progressRow.display_order;
+  }, [viewStage, progressStageId, detail.status, sortedStages]);
 
   const notify = useCallback(
     (message: string, tone: "success" | "error" = "success") => {
@@ -410,7 +437,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
 
   const railProps = {
     stages: sortedStages,
-    currentStageId: detail.current_method_stage_id,
+    currentStageId: progressStageId,
     viewStageId,
     onViewStage: handleViewStage,
     canMoveStage,
@@ -513,6 +540,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
           caseId={detail.id}
           detail={detail}
           canManage={canManage}
+          membershipNameById={membershipNameById}
         />
       );
     }
@@ -549,7 +577,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
       currentStageKey={detail.current_stage?.semantic_stage_key ?? null}
       stageTitle={viewStage?.title ?? detail.current_stage?.title ?? null}
       caseStatus={detail.status}
-      canUseAi={canUseAi}
+      canUseAi={caseAllowsAi}
       providerAvailable={providerAvailable}
       layout="dock"
       collapsed={copilotCollapsed}
@@ -560,6 +588,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
         }
       }}
       pendingProposals={stageChatProposals}
+      visibleStagePendingCount={unifiedStagePendingProposals.length}
       onPendingProposalsChange={syncChatPendingProposals}
       {...(editDraft !== undefined ? { draftOverride: editDraft } : {})}
       onDraftOverrideConsumed={() => setEditDraft(undefined)}
@@ -589,11 +618,15 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
           facilitatorName={facilitatorName ?? null}
           targetDueDateLabel={targetDueDateLabel ?? null}
           methodLabel={pinnedMethodVersion?.methodName ?? null}
+          displayedCurrentStageTitle={displayedCurrentStage?.title ?? null}
           canManage={canManage}
           canClose={canClose}
           methods={methods}
           pinnedMethodVersion={pinnedMethodVersion}
           onMessage={notify}
+          onCaseStatusChanged={() => {
+            setPendingProposals([]);
+          }}
           historySlot={
             <CaseHistorySheet
               detail={detail}
@@ -627,10 +660,11 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
             <StageCanvasHeader
               config={stageConfig}
               isViewingCurrentStage={isViewingCurrentStage}
+              viewingFutureStage={viewingFutureStage}
               canMoveStage={canMoveStage}
               advancing={movingStage}
               leanAiOpen={leanAiPanelOpen}
-              canToggleLeanAi={canUseAi && providerAvailable}
+              canToggleLeanAi={caseAllowsAi && providerAvailable}
               onToggleLeanAi={toggleLeanAiPanel}
               {...(viewStageId && canMoveStage && !isViewingCurrentStage
                 ? {
@@ -641,24 +675,35 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
             />
 
             <div className="mt-3">
-              <StageAutoDraftTrigger
-                caseId={detail.id}
-                stageKey={stageKey ?? "DEFINE"}
-                stageTitle={stageConfig.title}
-                viewStageKey={stageKey ?? "DEFINE"}
-                currentStageKey={
-                  detail.current_stage?.semantic_stage_key ?? null
-                }
-                autoDraftPrompt={stageConfig.autoDraftPrompt}
-                canUseAi={canUseAi}
-                providerAvailable={providerAvailable}
-                hasProblemData={hasProblemData}
-                caseOpen={caseOpenForAiDraft}
-              />
+              {caseAllowsAi ? (
+                <StageAutoDraftTrigger
+                  caseId={detail.id}
+                  stageKey={stageKey ?? "DEFINE"}
+                  stageTitle={stageConfig.title}
+                  viewStageKey={stageKey ?? "DEFINE"}
+                  currentStageKey={
+                    detail.current_stage?.semantic_stage_key ?? null
+                  }
+                  autoDraftPrompt={stageConfig.autoDraftPrompt}
+                  canUseAi={canUseAi}
+                  providerAvailable={providerAvailable}
+                  hasProblemData={hasProblemData}
+                  caseStatus={detail.status}
+                  stagePendingCount={unifiedStagePendingProposals.length}
+                />
+              ) : isTerminalCaseStatus(detail.status) ? (
+                <p
+                  className="rounded-lg border border-dashed border-border/70 bg-muted/10 px-3 py-2 text-xs text-muted-foreground"
+                  data-testid="pps-lean-ai-closed-notice"
+                >
+                  Lean AI drafting is unavailable on closed or cancelled cases.
+                  Pending proposals from earlier work are no longer actionable.
+                </p>
+              ) : null}
             </div>
 
             <div className="mt-4 flex flex-col gap-4">
-              {canUseAi && providerAvailable ? (
+              {caseAllowsAi && providerAvailable ? (
                 <PendingAiProposalsList
                   caseId={detail.id}
                   initialProposals={unifiedStagePendingProposals}
@@ -696,7 +741,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
         ? createPortal(mobileCopilotSheet, document.body)
         : null}
 
-      {canUseAi && providerAvailable && !leanAiPanelOpen ? (
+      {caseAllowsAi && providerAvailable && !leanAiPanelOpen ? (
         <div className="pointer-events-none fixed right-4 bottom-4 z-20 flex max-w-[calc(100%-2rem)] gap-2 lg:hidden">
           <Button
             type="button"
@@ -711,7 +756,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
           </Button>
         </div>
       ) : null}
-      {canUseAi && providerAvailable && mobileCopilotOpen ? (
+      {caseAllowsAi && providerAvailable && mobileCopilotOpen ? (
         <div className="pointer-events-none fixed right-4 bottom-4 z-40 flex gap-2 lg:hidden">
           <Button
             type="button"

@@ -41,6 +41,8 @@ type AiFacilitatorPanelProps = {
   collapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
   pendingProposals: PendingProposal[];
+  /** Stage-scoped count shown in canvas (server + chat); aligns footer with pending list. */
+  visibleStagePendingCount?: number;
   onPendingProposalsChange: (proposals: PendingProposal[]) => void;
   draftOverride?: string;
   onDraftOverrideConsumed?: () => void;
@@ -71,6 +73,7 @@ export function AiFacilitatorPanel({
   collapsed = false,
   onCollapsedChange,
   pendingProposals,
+  visibleStagePendingCount,
   onPendingProposalsChange,
   draftOverride,
   onDraftOverrideConsumed,
@@ -463,12 +466,13 @@ export function AiFacilitatorPanel({
             ))}
             <div ref={messagesEndRef} />
           </div>
-          {pendingProposals.length > 0 ? (
+          {(visibleStagePendingCount ?? pendingProposals.length) > 0 ? (
             <p
               className="mt-3 text-xs text-muted-foreground"
               data-testid="lean-ai-proposals"
             >
-              {pendingProposals.length} proposal(s) waiting in the stage canvas.
+              {visibleStagePendingCount ?? pendingProposals.length} proposal(s)
+              waiting in the stage canvas.
             </p>
           ) : null}
         </div>

@@ -11,6 +11,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { isTerminalCaseStatus } from "@/lib/problem-solving/case-lifecycle";
+import {
   CLOSURE_OUTCOMES,
   RESOLVED_CLOSURE_EFFECTIVENESS_BLOCK_REASON,
   closureOutcomeLabel,
@@ -111,6 +119,8 @@ type CaseHeaderProps = {
   methods: ProblemSolvingMethod[];
   pinnedMethodVersion: PinnedMethodVersionContext | null;
   onMessage?: (message: string, tone?: "success" | "error") => void;
+  displayedCurrentStageTitle?: string | null;
+  onCaseStatusChanged?: () => void;
   historySlot?: ReactNode;
   activitySlot?: ReactNode;
 };
@@ -126,6 +136,8 @@ export function CaseHeader({
   methods,
   pinnedMethodVersion,
   onMessage,
+  displayedCurrentStageTitle,
+  onCaseStatusChanged,
   historySlot,
   activitySlot,
 }: CaseHeaderProps) {
@@ -201,14 +213,54 @@ export function CaseHeader({
       closureOutcome,
       closureRationale.trim() || undefined,
     );
-    onMessage?.(
-      result.error ?? "Case closed",
-      result.error ? "error" : "success",
-    );
+    if (result.error) {
+      onMessage?.(result.error, "error");
+      setLoading(false);
+      return;
+    }
+    onMessage?.("Case closed", "success");
     setShowCloseDialog(false);
+    onCaseStatusChanged?.();
+    await router.refresh();
     setLoading(false);
-    router.refresh();
   }
+
+  const closeCaseDialog = (
+    <Dialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
+      <DialogContent
+        className="max-w-lg"
+        data-testid="problem-solving-close-dialog"
+      >
+        <DialogHeader>
+          <DialogTitle>Close problem solving case</DialogTitle>
+        </DialogHeader>
+        <CloseCaseDialogFields
+          closureOutcome={closureOutcome}
+          onClosureOutcomeChange={setClosureOutcome}
+          closureRationale={closureRationale}
+          onClosureRationaleChange={setClosureRationale}
+          resolvedClosureBlocked={resolvedClosureBlocked}
+        />
+        <DialogFooter className="gap-2 sm:justify-end">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowCloseDialog(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            disabled={closeConfirmDisabled}
+            onClick={() => void handleClose()}
+            data-testid="confirm-close-case"
+          >
+            Confirm close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 
   async function handleCancel() {
     setLoading(true);
@@ -230,11 +282,11 @@ export function CaseHeader({
     detail.status === "cancelled";
 
   if (useWorkspaceHeader) {
-    const eyebrowLabel =
-      detail.case_number ??
-      (detail.status === "draft"
-        ? "Draft case"
-        : problemSolvingStatusLabel(detail.status));
+    const eyebrowLabel = isTerminalCaseStatus(detail.status)
+      ? problemSolvingStatusLabel(detail.status)
+      : (detail.case_number ?? (detail.status === "draft" ? "Draft case" : null));
+    const resolvedEyebrow =
+      eyebrowLabel ?? problemSolvingStatusLabel(detail.status);
     const metaParts: ReactNode[] = [
       detail.unit_name ? (
         <span key="unit">Unit: {detail.unit_name}</span>
@@ -284,7 +336,7 @@ export function CaseHeader({
             className="text-xs font-medium tracking-wide text-muted-foreground uppercase"
             data-testid="problem-solving-header-eyebrow"
           >
-            {eyebrowLabel}
+            {resolvedEyebrow}
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <Badge
@@ -307,13 +359,47 @@ export function CaseHeader({
               {detail.title}
             </h1>
           </div>
-          {detail.status === "active" && detail.current_stage ? (
+          {detail.status === "active" && displayedCurrentStageTitle ? (
             <p className="mt-1 text-xs text-muted-foreground">
               Current stage:{" "}
-              <span className="font-medium text-foreground">
-                {detail.current_stage.title}
+              <span
+                className="font-medium text-foreground"
+                data-testid="problem-solving-current-stage"
+              >
+                {displayedCurrentStageTitle}
               </span>
             </p>
+          ) : null}
+          {detail.status === "closed" || detail.status === "cancelled" ? (
+            <div
+              className="mt-2 rounded-md border border-border bg-muted/20 px-3 py-2 text-sm"
+              data-testid="problem-solving-closure-summary"
+            >
+              {detail.status === "closed" ? (
+                <>
+                  <p className="font-medium text-foreground">
+                    Outcome:{" "}
+                    {detail.closure_outcome
+                      ? closureOutcomeLabel(detail.closure_outcome)
+                      : "—"}
+                  </p>
+                  {detail.closure_rationale ? (
+                    <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
+                      {detail.closure_rationale}
+                    </p>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <p className="font-medium text-foreground">Case cancelled</p>
+                  {detail.cancellation_rationale ? (
+                    <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
+                      {detail.cancellation_rationale}
+                    </p>
+                  ) : null}
+                </>
+              )}
+            </div>
           ) : null}
           {metaParts.length > 0 ? (
             <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
@@ -351,40 +437,7 @@ export function CaseHeader({
             </Button>
           ) : null}
         </div>
-        {showCloseDialog ? (
-          <div
-            className="w-full rounded-md border border-border bg-muted/20 p-4"
-            data-testid="problem-solving-close-dialog"
-          >
-            <p className="mb-3 text-sm font-medium">
-              Close problem solving case
-            </p>
-            <CloseCaseDialogFields
-              closureOutcome={closureOutcome}
-              onClosureOutcomeChange={setClosureOutcome}
-              closureRationale={closureRationale}
-              onClosureRationaleChange={setClosureRationale}
-              resolvedClosureBlocked={resolvedClosureBlocked}
-            />
-            <div className="mt-3 flex gap-2">
-              <Button
-                size="sm"
-                disabled={closeConfirmDisabled}
-                onClick={handleClose}
-                data-testid="confirm-close-case"
-              >
-                Confirm close
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowCloseDialog(false)}
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        ) : null}
+        {closeCaseDialog}
       </div>
     );
   }
@@ -558,38 +611,7 @@ export function CaseHeader({
         </div>
       </div>
 
-      {showCloseDialog ? (
-        <div
-          className="rounded-md border border-border bg-muted/20 p-4"
-          data-testid="problem-solving-close-dialog"
-        >
-          <p className="mb-3 text-sm font-medium">Close problem solving case</p>
-          <CloseCaseDialogFields
-            closureOutcome={closureOutcome}
-            onClosureOutcomeChange={setClosureOutcome}
-            closureRationale={closureRationale}
-            onClosureRationaleChange={setClosureRationale}
-            resolvedClosureBlocked={resolvedClosureBlocked}
-          />
-          <div className="mt-3 flex gap-2">
-            <Button
-              size="sm"
-              disabled={closeConfirmDisabled}
-              onClick={handleClose}
-              data-testid="confirm-close-case"
-            >
-              Confirm close
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowCloseDialog(false)}
-            >
-              Cancel
-            </Button>
-          </div>
-        </div>
-      ) : null}
+      {closeCaseDialog}
     </div>
   );
 }

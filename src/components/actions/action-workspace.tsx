@@ -124,7 +124,7 @@ export function ActionWorkspace({
       setError(result.error);
       return;
     }
-    router.refresh();
+    await router.refresh();
   }
 
   return (

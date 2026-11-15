@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { labelForMembershipId } from "@/lib/identity/membership-display-label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { SustainPlanPanel } from "@/components/problem-solving/sustain-plan-panel";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
 
 type SustainmentPanelProps = {
@@ -51,6 +52,12 @@ export function SustainmentPanel({
       className="flex flex-col gap-4"
       data-testid="problem-solving-sustainment-panel"
     >
+      <SustainPlanPanel
+        caseId={caseId}
+        detail={detail}
+        membershipNameById={membershipNameById}
+        canManage={canManage}
+      />
       {canManage ? (
         <Card>
           <CardHeader>

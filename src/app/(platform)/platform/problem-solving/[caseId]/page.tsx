@@ -16,6 +16,9 @@ import { loadWorkplaceRecordView } from "@/modules/workplace/access";
 import { isApplicationAiProviderAvailable } from "@/platform/ai/config";
 import { recoverProblemSolvingAiRunsForCase } from "@/platform/ai/recover-problem-solving-ai-runs";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
+import { isTerminalCaseStatus } from "@/lib/problem-solving/case-lifecycle";
+
+export const dynamic = "force-dynamic";
 
 export default async function ProblemSolvingCaseDetailPage({
   params,
@@ -78,7 +81,9 @@ export default async function ProblemSolvingCaseDetailPage({
   const canEditProjectLink =
     (canManage || canContribute) && ["draft", "active"].includes(detail.status);
   const pendingAiProposals =
-    canUseAi && isApplicationAiProviderAvailable()
+    canUseAi &&
+    isApplicationAiProviderAvailable() &&
+    !isTerminalCaseStatus(detail.status)
       ? await loadCasePendingAiProposals(supabase, caseId, {
           canManage,
           canContribute,
@@ -101,7 +106,7 @@ export default async function ProblemSolvingCaseDetailPage({
       data-testid="problem-solving-detail-page"
     >
       <CaseWorkspace
-        key={caseId}
+        key={`${caseId}:${detail.status}:${detail.updated_at}`}
         detail={detail}
         targetDueDateLabel={targetDueDateLabel}
         currentConditionItems={workspaceData.currentConditionItems}

@@ -17,6 +17,7 @@ import type { GuidedStageConfig } from "@/lib/problem-solving/guided-flow";
 type StageCanvasHeaderProps = {
   config: GuidedStageConfig;
   isViewingCurrentStage: boolean;
+  viewingFutureStage?: boolean;
   canMoveStage: boolean;
   onAdvanceToViewedStage?: () => void;
   advancing?: boolean;
@@ -28,6 +29,7 @@ type StageCanvasHeaderProps = {
 export function StageCanvasHeader({
   config,
   isViewingCurrentStage,
+  viewingFutureStage = false,
   canMoveStage,
   onAdvanceToViewedStage,
   advancing,
@@ -77,6 +79,16 @@ export function StageCanvasHeader({
           </DialogContent>
         </Dialog>
       </div>
+      {viewingFutureStage ? (
+        <p
+          className="w-full rounded-md border border-dashed border-amber-500/40 bg-amber-500/5 px-3 py-2 text-xs text-muted-foreground"
+          data-testid="pps-stage-not-reached-notice"
+          role="status"
+        >
+          Not reached yet — this stage is read-only until the case progresses
+          here.
+        </p>
+      ) : null}
       <div className="flex shrink-0 flex-wrap items-center gap-2">
         {canToggleLeanAi && onToggleLeanAi ? (
           <Button

@@ -19,12 +19,14 @@ import {
   effectivenessResultLabel,
   type EffectivenessResult,
 } from "@/lib/problem-solving/effectiveness";
+import { SustainPlanPanel } from "@/components/problem-solving/sustain-plan-panel";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
 
 type VerificationPanelProps = {
   caseId: string;
   detail: ProblemSolvingCaseDetail;
   canManage: boolean;
+  membershipNameById?: Record<string, string>;
 };
 
 type RecordDraft = {
@@ -43,6 +45,7 @@ export function VerificationPanel({
   caseId,
   detail,
   canManage,
+  membershipNameById = {},
 }: VerificationPanelProps) {
   const router = useRouter();
   const [criterion, setCriterion] = useState("");
@@ -130,6 +133,12 @@ export function VerificationPanel({
       className="flex flex-col gap-4"
       data-testid="problem-solving-verification-panel"
     >
+      <SustainPlanPanel
+        caseId={caseId}
+        detail={detail}
+        membershipNameById={membershipNameById}
+        canManage={canManage}
+      />
       {pendingFail ? (
         <div
           className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-950 dark:text-amber-100"
@@ -339,7 +348,14 @@ export function VerificationPanel({
                 className="flex items-center justify-between rounded-md border border-border px-3 py-2 hover:bg-muted/40"
                 data-testid={`related-action-${action.id}`}
               >
-                <span>{action.title}</span>
+                <span>
+                  {action.title}
+                  {action.expected_result ? (
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      Expected: {action.expected_result}
+                    </span>
+                  ) : null}
+                </span>
                 <Badge variant="outline">{action.status}</Badge>
               </AppLink>
             ))

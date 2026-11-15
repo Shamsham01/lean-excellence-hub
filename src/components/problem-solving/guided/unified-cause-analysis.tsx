@@ -139,10 +139,16 @@ export function UnifiedCauseAnalysis({
       setFishboneMessage(null);
       return;
     }
+    if (loading) return;
     setLoading(true);
     setFishboneError(null);
     setFishboneMessage(null);
-    const result = await addFishboneCause({ caseId, category, label });
+    const result = await addFishboneCause({
+      caseId,
+      category,
+      label,
+      mutationKey: crypto.randomUUID(),
+    });
     setLoading(false);
     if (result.error) {
       setFishboneError(result.error);
