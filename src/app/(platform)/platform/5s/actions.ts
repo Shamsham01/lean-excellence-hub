@@ -386,29 +386,6 @@ export async function createFiveSFinding(
   return { findingId: data as string };
 }
 
-export async function createFiveSAction(
-  auditId: string,
-  title: string,
-  description?: string,
-) {
-  const supabase = await createServerSupabaseClient();
-  const rpcArgs: {
-    target_title: string;
-    target_audit_id: string;
-    target_description?: string;
-  } = {
-    target_title: title,
-    target_audit_id: auditId,
-  };
-  if (description) {
-    rpcArgs.target_description = description;
-  }
-
-  const { data, error } = await supabase.rpc("create_five_s_action", rpcArgs);
-  if (error) return { error: error.message };
-  return { actionId: data as string };
-}
-
 export async function startFiveSAuditFromForm(formData: FormData) {
   const standardId = String(formData.get("standardId"));
   const unitId = String(formData.get("unitId"));

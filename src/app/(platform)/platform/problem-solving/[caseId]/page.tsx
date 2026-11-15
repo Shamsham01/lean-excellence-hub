@@ -8,6 +8,8 @@ import { parseCaseAuditActivity } from "@/lib/problem-solving/case-audit-activit
 import { loadCaseWorkspaceData } from "@/lib/problem-solving/load-case-workspace-data";
 import { callProblemSolvingRpc } from "@/lib/problem-solving/supabase-untyped";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
+import { loadProjectPickerOptions } from "@/lib/projects/load-project-picker-options";
+import { projectLinkSummaryFromServer } from "@/lib/projects/project-link-summary";
 import { listEligibleOrganisations } from "@/modules/organisations/context";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { loadWorkplaceRecordView } from "@/modules/workplace/access";
@@ -40,6 +42,7 @@ export default async function ProblemSolvingCaseDetailPage({
     canVerifyCause,
     canClose,
     canUseAi,
+    projectPicker,
   ] = await Promise.all([
     callProblemSolvingRpc<ProblemSolvingCaseDetail>(
       supabase,
@@ -52,6 +55,7 @@ export default async function ProblemSolvingCaseDetailPage({
     currentMemberHasPermission("problem_solving.verify_cause"),
     currentMemberHasPermission("problem_solving.close"),
     currentMemberHasPermission("ai.use"),
+    loadProjectPickerOptions(),
   ]);
 
   const detail = await resolveProblemSolvingDetailAccess(detailResult);
@@ -69,6 +73,10 @@ export default async function ProblemSolvingCaseDetailPage({
   const auditActivity = auditPayload.error
     ? []
     : parseCaseAuditActivity(auditPayload.data);
+
+  const linkedProject = projectLinkSummaryFromServer(detail.linked_project);
+  const canEditProjectLink =
+    (canManage || canContribute) && ["draft", "active"].includes(detail.status);
   const pendingAiProposals =
     canUseAi && isApplicationAiProviderAvailable()
       ? await loadCasePendingAiProposals(supabase, caseId, {
@@ -132,6 +140,10 @@ export default async function ProblemSolvingCaseDetailPage({
         canUseAi={canUseAi}
         providerAvailable={providerAvailable}
         pendingAiProposals={pendingAiProposals}
+        linkedProject={linkedProject}
+        projectOptions={projectPicker.projects}
+        requiresSiteSelection={projectPicker.requiresSiteSelection}
+        canEditProjectLink={canEditProjectLink}
       />
       <AppLink
         href="/platform/problem-solving"

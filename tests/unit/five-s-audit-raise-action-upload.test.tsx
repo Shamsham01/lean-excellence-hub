@@ -41,8 +41,16 @@ afterEach(() => {
 beforeEach(() => {
   vi.mocked(loadActionCreateContext).mockResolvedValue({
     labels: [],
-    assignablePeople: [],
+    assignablePeople: [
+      {
+        membership_id: "member-1",
+        display_name: "Auditor",
+        avatar_url: null,
+      },
+    ],
     canManageLabels: false,
+    canAssign: true,
+    currentMembershipId: "member-1",
   });
   vi.mocked(createFiveSPlannerAction).mockResolvedValue({
     ok: true,
@@ -69,6 +77,17 @@ describe("FiveSAuditRaiseAction evidence upload failures", () => {
     expect(screen.getByTestId("actions-create-dialog")).toBeVisible();
 
     const dialog = screen.getByTestId("actions-create-dialog");
+    await waitFor(() => {
+      expect(screen.getByTestId("action-create-assignee")).toHaveValue(
+        "member-1",
+      );
+    });
+    fireEvent.change(screen.getByTestId("action-create-due"), {
+      target: { value: "2026-12-01" },
+    });
+    fireEvent.change(screen.getByTestId("action-create-assignee"), {
+      target: { value: "member-1" },
+    });
     fireEvent.change(screen.getByTestId("action-create-evidence-file"), {
       target: {
         files: [new File(["pixels"], "audit.jpg", { type: "image/jpeg" })],

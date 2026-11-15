@@ -142,6 +142,7 @@ export function FiveSAuditWorkspace({
   const [countsByQuestion, setCountsByQuestion] = useState(
     () => actionCountsByQuestion,
   );
+
   const [navigating, setNavigating] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [completeError, setCompleteError] = useState<string | null>(null);
@@ -365,25 +366,27 @@ export function FiveSAuditWorkspace({
 
           <div className="mt-6 flex flex-col gap-4">
             {current.question.question_type === "yes_no" ? (
-              <div className="flex gap-3">
-                {(["yes", "no"] as const).map((value) => {
-                  const selected = value === "yes" ? yesSelected : noSelected;
-                  return (
-                    <Button
-                      key={value}
-                      type="button"
-                      size="default"
-                      variant={selected ? "default" : "outline"}
-                      className="min-h-11 min-w-24"
-                      disabled={!canEdit}
-                      aria-pressed={selected}
-                      onClick={() => selectYesNo(current.question.id, value)}
-                    >
-                      {value === "yes" ? "Yes" : "No"}
-                    </Button>
-                  );
-                })}
-              </div>
+              <>
+                <div className="flex gap-3">
+                  {(["yes", "no"] as const).map((value) => {
+                    const selected = value === "yes" ? yesSelected : noSelected;
+                    return (
+                      <Button
+                        key={value}
+                        type="button"
+                        size="default"
+                        variant={selected ? "default" : "outline"}
+                        className="min-h-11 min-w-24"
+                        disabled={!canEdit}
+                        aria-pressed={selected}
+                        onClick={() => selectYesNo(current.question.id, value)}
+                      >
+                        {value === "yes" ? "Yes" : "No"}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </>
             ) : numericQuestion ? (
               <div>
                 <FiveSScoreControl

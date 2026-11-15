@@ -308,13 +308,23 @@ export async function loadActionCreateContext(): Promise<{
   labels: ActionLabel[];
   assignablePeople: AssignablePerson[];
   canManageLabels: boolean;
+  canAssign: boolean;
+  currentMembershipId: string | null;
 }> {
   const supabase = await createServerSupabaseClient();
-  const [labelsResult, canAssign, canUpdate] = await Promise.all([
-    listActionLabels(),
-    currentMemberHasPermission(ACTIONS_PERMISSIONS.assign),
-    currentMemberHasPermission(ACTIONS_PERMISSIONS.update),
-  ]);
+  const { listEligibleOrganisations } =
+    await import("@/modules/organisations/context");
+  const [labelsResult, canAssign, canUpdate, organisations] = await Promise.all(
+    [
+      listActionLabels(),
+      currentMemberHasPermission(ACTIONS_PERMISSIONS.assign),
+      currentMemberHasPermission(ACTIONS_PERMISSIONS.update),
+      listEligibleOrganisations(),
+    ],
+  );
+
+  const currentMembershipId =
+    organisations.find((row) => row.selected)?.membership_id ?? null;
 
   let assignablePeople: AssignablePerson[] = [];
   if (canAssign) {
@@ -341,7 +351,22 @@ export async function loadActionCreateContext(): Promise<{
     labels: labelsResult.labels ?? [],
     assignablePeople,
     canManageLabels: canUpdate,
+    canAssign,
+    currentMembershipId,
   };
+}
+
+function requireRaisedActionOwnership(input: {
+  dueAt: string | null;
+  assigneeMembershipId: string | null;
+}): { error?: string } {
+  if (!input.assigneeMembershipId) {
+    return { error: "Assignee is required." };
+  }
+  if (!input.dueAt?.trim()) {
+    return { error: "Due date is required." };
+  }
+  return {};
 }
 
 export async function createPlannerAction(input: {
@@ -424,6 +449,7 @@ export async function createFiveSPlannerAction(input: {
   description: string;
   dueAt: string | null;
   assigneeMembershipId: string | null;
+  idempotencyKey: string;
   labelIds: string[];
   checklistTitles: string[];
 }): Promise<ActionResult> {
@@ -437,27 +463,32 @@ export async function createFiveSPlannerAction(input: {
   const title = input.title.trim();
   if (!title) return { error: "Title is required." };
 
+  const ownership = requireRaisedActionOwnership(input);
+  if (ownership.error) return { error: ownership.error };
+
   const supabase = await createServerSupabaseClient();
   const rpcArgs: {
     target_title: string;
     target_audit_id: string;
+    target_assignee_membership_id: string;
+    target_due_at: string;
+    target_idempotency_key: string;
     target_section_id: string;
     target_question_id: string;
     target_description?: string;
     target_priority?: string;
-    target_due_at?: string;
   } = {
     target_title: title,
     target_audit_id: input.auditId,
+    target_assignee_membership_id: input.assigneeMembershipId!,
+    target_due_at: input.dueAt!,
+    target_idempotency_key: input.idempotencyKey,
     target_section_id: input.sectionId,
     target_question_id: input.questionId,
     target_priority: "normal",
   };
   if (input.description.trim()) {
     rpcArgs.target_description = input.description.trim();
-  }
-  if (input.dueAt) {
-    rpcArgs.target_due_at = input.dueAt;
   }
 
   const { data, error } = await supabase.rpc("create_five_s_action", rpcArgs);
@@ -473,14 +504,93 @@ export async function createFiveSPlannerAction(input: {
     };
   }
 
-  if (input.assigneeMembershipId) {
-    const assignResult = await setActionAssignee({
+  if (input.labelIds.length > 0) {
+    const labelResult = await setActionLabelsForAction(
       actionId,
-      membershipId: input.assigneeMembershipId,
-    });
-    if (assignResult.error) {
-      return partialSuccess("Assignee", assignResult.error);
+      input.labelIds,
+    );
+    if (labelResult.error) {
+      return partialSuccess("Labels", labelResult.error);
     }
+  }
+
+  for (const checklistTitle of input.checklistTitles) {
+    const trimmed = checklistTitle.trim();
+    if (!trimmed) continue;
+    const itemResult = await addActionChecklistItem(actionId, trimmed);
+    if (itemResult.error) {
+      return partialSuccess("Checklist", itemResult.error);
+    }
+  }
+
+  revalidateActionPaths(actionId);
+  return { ok: true, id: actionId };
+}
+
+export async function createGembaPlannerAction(input: {
+  walkId: string;
+  sectionId?: string | null;
+  questionId?: string | null;
+  observationId?: string | null;
+  title: string;
+  description: string;
+  dueAt: string | null;
+  assigneeMembershipId: string | null;
+  idempotencyKey: string;
+  labelIds: string[];
+  checklistTitles: string[];
+}): Promise<ActionResult> {
+  const canCreate = await currentMemberHasPermission(
+    ACTIONS_PERMISSIONS.create,
+  );
+  if (!canCreate) {
+    return { error: "You do not have permission to create actions." };
+  }
+
+  const title = input.title.trim();
+  if (!title) return { error: "Title is required." };
+
+  const ownership = requireRaisedActionOwnership(input);
+  if (ownership.error) return { error: ownership.error };
+
+  const supabase = await createServerSupabaseClient();
+  const rpcArgs: {
+    target_title: string;
+    target_walk_id: string;
+    target_assignee_membership_id: string;
+    target_due_at: string;
+    target_idempotency_key: string;
+    target_section_id?: string;
+    target_question_id?: string;
+    target_observation_id?: string;
+    target_description?: string;
+    target_priority?: string;
+  } = {
+    target_title: title,
+    target_walk_id: input.walkId,
+    target_assignee_membership_id: input.assigneeMembershipId!,
+    target_due_at: input.dueAt!,
+    target_idempotency_key: input.idempotencyKey,
+    target_priority: "normal",
+  };
+  if (input.sectionId) rpcArgs.target_section_id = input.sectionId;
+  if (input.questionId) rpcArgs.target_question_id = input.questionId;
+  if (input.observationId) rpcArgs.target_observation_id = input.observationId;
+  if (input.description.trim()) {
+    rpcArgs.target_description = input.description.trim();
+  }
+
+  const { data, error } = await supabase.rpc("create_gemba_action", rpcArgs);
+  if (error) return { error: mapActionMutationError(error) };
+  const actionId = data as string;
+
+  function partialSuccess(failedStep: string, message: string): ActionResult {
+    revalidateActionPaths(actionId);
+    return {
+      ok: true,
+      id: actionId,
+      warning: `${failedStep} could not be applied: ${message} The action was created — open it to finish setup.`,
+    };
   }
 
   if (input.labelIds.length > 0) {

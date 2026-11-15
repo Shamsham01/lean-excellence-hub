@@ -39,7 +39,13 @@ import {
   isActionEditable,
   toDateInputValue,
 } from "@/lib/actions/status";
+import {
+  linkActionToCiProject,
+  unlinkActionFromCiProject,
+} from "@/app/(platform)/platform/projects/linking-actions";
+import { ProjectLinkField } from "@/components/projects/project-link-field";
 import type { ActionDetail, AssignablePerson } from "@/lib/actions/types";
+import type { ProjectSelectorOption } from "@/lib/projects/types";
 
 function sourceLabel(source: ActionDetail["source"]): string {
   if (!source) return "";
@@ -59,6 +65,8 @@ export function ActionWorkspace({
   currentCommentAuthor = null,
   assigneeAvatarUrl = null,
   fiveSQuestionPrompt = null,
+  projectOptions = [],
+  requiresSiteSelection = false,
   onMutated,
   showBackLink = true,
 }: {
@@ -75,6 +83,8 @@ export function ActionWorkspace({
   } | null;
   assigneeAvatarUrl?: string | null;
   fiveSQuestionPrompt?: string | null;
+  projectOptions?: ProjectSelectorOption[];
+  requiresSiteSelection?: boolean;
   onMutated?: () => void;
   showBackLink?: boolean;
 }) {
@@ -339,6 +349,31 @@ export function ActionWorkspace({
                 items={detail.checklist_items ?? []}
                 canEdit={permissions.can_update && editable}
                 showWhenEmpty={permissions.can_update}
+              />
+              <ProjectLinkField
+                linked={detail.linked_project ?? null}
+                options={projectOptions}
+                canEdit={permissions.can_update && editable}
+                requiresSiteSelection={requiresSiteSelection}
+                testId="action-project-link"
+                onLink={(projectId) =>
+                  linkActionToCiProject(detail.id, projectId).then((result) => {
+                    if (!result.error) {
+                      router.refresh();
+                      onMutated?.();
+                    }
+                    return result;
+                  })
+                }
+                onUnlink={() =>
+                  unlinkActionFromCiProject(detail.id).then((result) => {
+                    if (!result.error) {
+                      router.refresh();
+                      onMutated?.();
+                    }
+                    return result;
+                  })
+                }
               />
               {permissions.can_update && editable ? (
                 <form

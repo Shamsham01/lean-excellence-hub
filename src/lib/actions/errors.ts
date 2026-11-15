@@ -33,6 +33,13 @@ export function mapActionMutationError(error: unknown): string {
     return "You do not have permission to change this action.";
   }
 
+  if (code === "23505" || /23505/.test(raw)) {
+    if (/idempotency key reuse mismatch/i.test(raw)) {
+      return "This request does not match the action already created for that id. Start a new action or retry without changing the walk or audit context.";
+    }
+    return "This action could not be saved because it conflicts with an existing record.";
+  }
+
   if (code === "P0002" || /P0002/i.test(raw)) {
     return "This action is no longer available.";
   }

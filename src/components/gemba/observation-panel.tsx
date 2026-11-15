@@ -12,6 +12,16 @@ import {
 } from "@/app/(platform)/platform/gemba/actions";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
 import { GembaEvidenceBlock } from "@/components/gemba/gemba-evidence-block";
+import { GembaAuditRaiseAction } from "@/components/gemba/gemba-audit-raise-action";
+import {
+  linkGembaObservationToCiProject,
+  unlinkGembaObservationFromCiProject,
+} from "@/app/(platform)/platform/projects/linking-actions";
+import { ProjectLinkField } from "@/components/projects/project-link-field";
+import type {
+  ProjectLinkSummary,
+  ProjectSelectorOption,
+} from "@/lib/projects/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -52,8 +62,13 @@ type GembaObservationPanelProps = {
   observations: WalkObservation[];
   evidence: EvidenceItem[];
   canEdit: boolean;
+  projectOptions?: ProjectSelectorOption[];
+  requiresSiteSelection?: boolean;
+  linkedProjectsByObservationId?: Record<string, ProjectLinkSummary | null>;
+  actionCountsByObservation?: Record<string, number>;
   onIntegrityChange?: (integrity: ObservationIntegrity) => void;
   onObservationsChange?: (observations: WalkObservation[]) => void;
+  onActionCountsChange?: () => void;
 };
 
 const CREATE_ERROR_MESSAGE = "Couldn't save this observation. Try again.";
@@ -77,8 +92,13 @@ export function GembaObservationPanel({
   observations,
   evidence,
   canEdit,
+  projectOptions = [],
+  requiresSiteSelection = false,
+  linkedProjectsByObservationId = {},
+  actionCountsByObservation = {},
   onIntegrityChange,
   onObservationsChange,
+  onActionCountsChange,
 }: GembaObservationPanelProps) {
   const [items, setItems] = useState(observations);
   const [captureOpen, setCaptureOpen] = useState(false);
@@ -659,6 +679,48 @@ export function GembaObservationPanel({
                           Delete
                         </Button>
                       </div>
+                    ) : null}
+
+                    <ProjectLinkField
+                      linked={
+                        linkedProjectsByObservationId[observation.id] ?? null
+                      }
+                      options={projectOptions}
+                      canEdit={canEdit}
+                      requiresSiteSelection={requiresSiteSelection}
+                      testId={`gemba-observation-project-link-${observation.id}`}
+                      onLink={(projectId) =>
+                        linkGembaObservationToCiProject(
+                          observation.id,
+                          projectId,
+                          walkId,
+                        )
+                      }
+                      onUnlink={() =>
+                        unlinkGembaObservationFromCiProject(
+                          observation.id,
+                          walkId,
+                        )
+                      }
+                    />
+
+                    {canEdit ? (
+                      <GembaAuditRaiseAction
+                        linkContext={{
+                          walkId,
+                          observationId: observation.id,
+                          defaultTitle: observation.observation_text.slice(
+                            0,
+                            120,
+                          ),
+                        }}
+                        actionCount={
+                          actionCountsByObservation[observation.id] ?? 0
+                        }
+                        {...(onActionCountsChange
+                          ? { onActionCreated: onActionCountsChange }
+                          : {})}
+                      />
                     ) : null}
 
                     <GembaEvidenceBlock

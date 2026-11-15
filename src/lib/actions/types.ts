@@ -1,4 +1,5 @@
 import type { ActionPriority, ActionStatus } from "@/lib/actions/status";
+import type { ProjectLinkSummary } from "@/lib/projects/types";
 
 export type ActionSourceSummary = {
   id: string;
@@ -81,6 +82,7 @@ export type ActionDetail = {
   checklist_items?: ActionChecklistItem[];
   comment_count?: number;
   card_cover_attachment?: ActionCardCoverAttachment | null;
+  linked_project?: ProjectLinkSummary | null;
 };
 
 export type LinkedSuggestionAction = {

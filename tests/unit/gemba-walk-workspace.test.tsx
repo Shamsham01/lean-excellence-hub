@@ -79,6 +79,15 @@ vi.mock("@/app/(platform)/platform/gemba/actions", () => ({
   deleteGembaObservations: vi.fn(),
 }));
 
+vi.mock("@/app/(platform)/platform/projects/linking-actions", () => ({
+  linkGembaObservationToCiProject: vi.fn(),
+  unlinkGembaObservationFromCiProject: vi.fn(),
+}));
+
+vi.mock("@/components/gemba/gemba-audit-raise-action", () => ({
+  GembaAuditRaiseAction: () => null,
+}));
+
 const saveAnswer = vi.mocked(saveGembaWalkAnswer);
 const completeWalk = vi.mocked(completeGembaWalk);
 const createObservation = vi.mocked(createGembaObservation);

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { loadActionSheetPayload } from "@/app/(platform)/platform/actions/actions";
 import { ActionWorkspace } from "@/components/actions/action-workspace";
+import { loadProjectPickerOptions } from "@/lib/projects/load-project-picker-options";
 import { ACTIONS_PERMISSIONS } from "@/modules/operational/permissions";
 import {
   loadWorkplaceRecordFallback,
@@ -24,7 +25,10 @@ export default async function ActionDetailPage({
   });
   if (workplaceView) return workplaceView;
 
-  const loaded = await loadActionSheetPayload(actionId);
+  const [loaded, projectPicker] = await Promise.all([
+    loadActionSheetPayload(actionId),
+    loadProjectPickerOptions(),
+  ]);
   if (loaded.error || !loaded.payload) {
     const workplaceRecord = await loadWorkplaceRecordFallback({
       module: "actions",
@@ -58,6 +62,8 @@ export default async function ActionDetailPage({
       currentCommentAuthor={currentCommentAuthor}
       assigneeAvatarUrl={assigneeAvatarUrl}
       fiveSQuestionPrompt={fiveSQuestionPrompt}
+      projectOptions={projectPicker.projects}
+      requiresSiteSelection={projectPicker.requiresSiteSelection}
     />
   );
 }

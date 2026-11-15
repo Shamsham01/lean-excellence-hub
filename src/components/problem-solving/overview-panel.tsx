@@ -13,16 +13,29 @@ import { CaseEvidenceBlock } from "@/components/problem-solving/case-evidence-bl
 import { CaseDefinitionField } from "@/components/problem-solving/case-definition-field";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
 import {
+  linkProblemSolvingCaseToCiProject,
+  unlinkProblemSolvingCaseFromCiProject,
+} from "@/app/(platform)/platform/projects/linking-actions";
+import {
   updateProblemSolvingCaseDraft,
   updateProblemSolvingProblemStatement,
   updateProblemSolvingTargetCondition,
 } from "@/app/(platform)/platform/problem-solving/actions";
+import { ProjectLinkField } from "@/components/projects/project-link-field";
+import type {
+  ProjectLinkSummary,
+  ProjectSelectorOption,
+} from "@/lib/projects/types";
 
 type OverviewPanelProps = {
   detail: ProblemSolvingCaseDetail;
   evidence: EvidenceItem[];
   canContribute: boolean;
   canEditCaseDefinition: boolean;
+  linkedProject?: ProjectLinkSummary | null;
+  projectOptions?: ProjectSelectorOption[];
+  requiresSiteSelection?: boolean;
+  canEditProjectLink?: boolean;
 };
 
 function normaliseSourceLinks(
@@ -37,6 +50,10 @@ export function OverviewPanel({
   evidence,
   canContribute,
   canEditCaseDefinition,
+  linkedProject = null,
+  projectOptions = [],
+  requiresSiteSelection = false,
+  canEditProjectLink = false,
 }: OverviewPanelProps) {
   const sourceLinks = normaliseSourceLinks(detail.source_links);
   const caseOpen = ["draft", "active"].includes(detail.status);
@@ -125,6 +142,18 @@ export function OverviewPanel({
               </p>
             </div>
           ) : null}
+          <ProjectLinkField
+            label="Linked CI project"
+            linked={linkedProject}
+            options={projectOptions}
+            canEdit={canEditProjectLink}
+            requiresSiteSelection={requiresSiteSelection}
+            testId="problem-solving-project-link"
+            onLink={(projectId) =>
+              linkProblemSolvingCaseToCiProject(detail.id, projectId)
+            }
+            onUnlink={() => unlinkProblemSolvingCaseFromCiProject(detail.id)}
+          />
           <div>
             <p className="mb-2 font-medium">Source links</p>
             {sourceLinks.length === 0 ? (

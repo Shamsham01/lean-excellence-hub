@@ -1,4 +1,5 @@
 import type { MethodStage } from "@/lib/problem-solving/stages";
+import type { ProjectLinkSummary } from "@/lib/projects/types";
 
 export type ProblemSolvingPortfolioItem = {
   id: string;
@@ -262,6 +263,7 @@ export type ProblemSolvingCaseDetail = {
   actions: ProblemSolvingActionSummary[];
   evidence_links: ProblemSolvingEvidenceLink[];
   source_links: ProblemSolvingSourceLinkSummary[] | Record<string, unknown>;
+  linked_project?: ProjectLinkSummary | null;
 };
 
 export type ProblemSolvingCurrentConditionItem = {

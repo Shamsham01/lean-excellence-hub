@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 
+import { linkProblemSolvingCaseToCiProject } from "@/app/(platform)/platform/projects/linking-actions";
 import {
   addProblemSolvingSourceLink,
   createProblemSolvingCaseDraft,
   updateProblemSolvingCaseDraft,
 } from "@/app/(platform)/platform/problem-solving/actions";
+import { ProjectSelect } from "@/components/projects/project-select";
 import { RelatedWorkPanel } from "@/components/problem-solving/related-work-panel";
 import { OrganisationalUnitSelect } from "@/components/organisation/organisational-unit-select";
 import { PersonSelect } from "@/components/people/person-select";
@@ -26,6 +28,7 @@ import {
   severityLabel,
 } from "@/lib/problem-solving/status";
 import type { ProblemSolvingMethod } from "@/lib/problem-solving/types";
+import type { ProjectSelectorOption } from "@/lib/projects/types";
 import { navigateTo } from "@/lib/navigation/navigate";
 import { WizardStepProgressNav } from "@/components/ui/wizard-step-progress-nav";
 
@@ -42,6 +45,7 @@ type CreateCaseWizardProps = {
   units: UnitSelectOption[];
   members: PersonSelectOption[];
   methods: ProblemSolvingMethod[];
+  projects: ProjectSelectorOption[];
   requiresSiteSelection?: boolean;
 };
 
@@ -49,6 +53,7 @@ export function CreateCaseWizard({
   units,
   members,
   methods,
+  projects,
   requiresSiteSelection = false,
 }: CreateCaseWizardProps) {
   const [step, setStep] = useState(0);
@@ -69,6 +74,7 @@ export function CreateCaseWizard({
   const [severity, setSeverity] = useState<string>(SEVERITIES[1]);
   const [priority, setPriority] = useState<string>(PRIORITIES[1]);
   const [methodVersionId, setMethodVersionId] = useState("");
+  const [linkedProjectId, setLinkedProjectId] = useState("");
   const [sourceResourceId, setSourceResourceId] = useState("");
 
   function nextStep() {
@@ -122,9 +128,6 @@ export function CreateCaseWizard({
         priority,
         ...(facilitatorId ? { facilitatorMembershipId: facilitatorId } : {}),
         ...(methodVersionId ? { methodVersionId } : {}),
-        ...(sourceResourceId.trim()
-          ? { sourceResourceId: sourceResourceId.trim() }
-          : {}),
       });
       if (draftResult.error || !draftResult.id) {
         throw new Error(draftResult.error ?? "Draft creation failed");
@@ -156,6 +159,14 @@ export function CreateCaseWizard({
         ...(methodVersionId ? { methodVersionId } : {}),
       });
       if (updateResult.error) throw new Error(updateResult.error);
+
+      if (linkedProjectId.trim()) {
+        const linkResult = await linkProblemSolvingCaseToCiProject(
+          caseId,
+          linkedProjectId.trim(),
+        );
+        if (linkResult.error) throw new Error(linkResult.error);
+      }
 
       if (sourceResourceId.trim()) {
         await addProblemSolvingSourceLink(
@@ -360,12 +371,19 @@ export function CreateCaseWizard({
                   )}
                 </select>
               </label>
+              <ProjectSelect
+                options={projects}
+                value={linkedProjectId}
+                onChange={setLinkedProjectId}
+                requiresSiteSelection={requiresSiteSelection}
+              />
               <label className="flex flex-col gap-1 text-sm">
-                <span>Source resource ID (optional)</span>
+                <span>Other source resource ID (optional)</span>
                 <Input
                   value={sourceResourceId}
                   onChange={(e) => setSourceResourceId(e.target.value)}
-                  placeholder="Link to suggestion or project"
+                  placeholder="Suggestion or other resource UUID"
+                  data-testid="create-case-other-source-id"
                 />
               </label>
             </>

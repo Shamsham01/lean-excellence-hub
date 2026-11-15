@@ -6,6 +6,7 @@ import { Plus, X } from "lucide-react";
 import {
   confirmActionEvidenceUpload,
   createFiveSPlannerAction,
+  createGembaPlannerAction,
   createPlannerAction,
   initiateActionEvidenceUpload,
   loadActionCreateContext,
@@ -48,6 +49,14 @@ export type FiveSActionLinkContext = {
   defaultTitle: string;
 };
 
+export type GembaActionLinkContext = {
+  walkId: string;
+  sectionId?: string | null;
+  questionId?: string | null;
+  observationId?: string | null;
+  defaultTitle: string;
+};
+
 type ActionCreateDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -57,6 +66,7 @@ type ActionCreateDialogProps = {
   onCreated?: (actionId: string) => void;
   maturityContext?: MaturityActionContext;
   fiveSLinkContext?: FiveSActionLinkContext;
+  gembaLinkContext?: GembaActionLinkContext;
 };
 
 function readDraftFromForm(form: HTMLFormElement | null) {
@@ -75,9 +85,11 @@ export function ActionCreateDialog({
   onCreated,
   maturityContext,
   fiveSLinkContext,
+  gembaLinkContext,
 }: ActionCreateDialogProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const wasOpenRef = useRef(false);
+  const idempotencyKeyRef = useRef<string | null>(null);
   const [queryText, setQueryText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -94,6 +106,7 @@ export function ActionCreateDialog({
   const [checklistDraft, setChecklistDraft] = useState("");
   const [checklistTitles, setChecklistTitles] = useState<string[]>([]);
   const [createContextLoaded, setCreateContextLoaded] = useState(false);
+  const [canAssignOthers, setCanAssignOthers] = useState(true);
   const [evidenceDrafts, setEvidenceDrafts] = useState<
     ActionCreateEvidenceDraft[]
   >([]);
@@ -101,11 +114,13 @@ export function ActionCreateDialog({
   const [createdActionId, setCreatedActionId] = useState<string | null>(null);
 
   const plannerMode = !maturityContext;
+  const raisedFromAudit = Boolean(fiveSLinkContext ?? gembaLinkContext);
   const labelsLoading = plannerMode && open && !createContextLoaded;
 
   useEffect(() => {
     if (open && !wasOpenRef.current) {
       resetForm();
+      idempotencyKeyRef.current = crypto.randomUUID();
     } else if (!open && wasOpenRef.current) {
       resetForm();
     }
@@ -118,24 +133,45 @@ export function ActionCreateDialog({
     void loadActionCreateContext().then((ctx) => {
       if (cancelled) return;
       setCatalogLabels(ctx.labels);
-      setAssignablePeople(ctx.assignablePeople);
+      setCanAssignOthers(ctx.canAssign);
+      const people =
+        raisedFromAudit && !ctx.canAssign && ctx.currentMembershipId
+          ? [
+              {
+                membership_id: ctx.currentMembershipId,
+                display_name: "You",
+                avatar_url: null,
+              },
+            ]
+          : ctx.assignablePeople;
+      setAssignablePeople(people);
+      if (
+        raisedFromAudit &&
+        ctx.currentMembershipId &&
+        people.some(
+          (person) => person.membership_id === ctx.currentMembershipId,
+        )
+      ) {
+        setAssigneeId(ctx.currentMembershipId);
+      }
       setCreateContextLoaded(true);
     });
     return () => {
       cancelled = true;
     };
-  }, [open, plannerMode]);
+  }, [open, plannerMode, fiveSLinkContext, gembaLinkContext]);
 
   useEffect(() => {
-    if (!open || !fiveSLinkContext || !formRef.current) return;
+    const linkContext = fiveSLinkContext ?? gembaLinkContext;
+    if (!open || !linkContext || !formRef.current) return;
     const titleInput = formRef.current.elements.namedItem(
       "title",
     ) as HTMLInputElement | null;
     if (titleInput && !titleInput.value.trim()) {
-      titleInput.value = fiveSLinkContext.defaultTitle;
+      titleInput.value = linkContext.defaultTitle;
       syncQueryFromForm();
     }
-  }, [open, fiveSLinkContext]);
+  }, [open, fiveSLinkContext, gembaLinkContext]);
 
   function syncQueryFromForm() {
     if (!formRef.current) return;
@@ -165,6 +201,8 @@ export function ActionCreateDialog({
     setDiscardConfirmOpen(false);
     resetPlannerFields();
     setCreateContextLoaded(false);
+    setCanAssignOthers(true);
+    idempotencyKeyRef.current = null;
   }
 
   function closeAndReset() {
@@ -260,6 +298,18 @@ export function ActionCreateDialog({
     }
 
     const { title, description } = readDraftFromForm(formRef.current);
+    if (raisedFromAudit) {
+      if (!assigneeId) {
+        setError("Assignee is required.");
+        setPending(false);
+        return;
+      }
+      if (!dueAt) {
+        setError("Due date is required.");
+        setPending(false);
+        return;
+      }
+    }
     const extraChecklist = checklistDraft.trim();
     const allChecklist = extraChecklist
       ? [...checklistTitles, extraChecklist]
@@ -304,6 +354,10 @@ export function ActionCreateDialog({
     let actionId = createdActionId;
     let createWarning: string | undefined;
 
+    const idempotencyKey =
+      idempotencyKeyRef.current ??
+      (idempotencyKeyRef.current = crypto.randomUUID());
+
     try {
       if (!actionId) {
         const result = fiveSLinkContext
@@ -315,17 +369,36 @@ export function ActionCreateDialog({
               description,
               dueAt: dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null,
               assigneeMembershipId: assigneeId || null,
+              idempotencyKey,
               labelIds: selectedLabelIds,
               checklistTitles: allChecklist,
             })
-          : await createPlannerAction({
-              title,
-              description,
-              dueAt: dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null,
-              assigneeMembershipId: assigneeId || null,
-              labelIds: selectedLabelIds,
-              checklistTitles: allChecklist,
-            });
+          : gembaLinkContext
+            ? await createGembaPlannerAction({
+                walkId: gembaLinkContext.walkId,
+                sectionId: gembaLinkContext.sectionId ?? null,
+                questionId: gembaLinkContext.questionId ?? null,
+                observationId: gembaLinkContext.observationId ?? null,
+                title,
+                description,
+                dueAt: dueAt
+                  ? new Date(`${dueAt}T12:00:00`).toISOString()
+                  : null,
+                assigneeMembershipId: assigneeId || null,
+                idempotencyKey,
+                labelIds: selectedLabelIds,
+                checklistTitles: allChecklist,
+              })
+            : await createPlannerAction({
+                title,
+                description,
+                dueAt: dueAt
+                  ? new Date(`${dueAt}T12:00:00`).toISOString()
+                  : null,
+                assigneeMembershipId: assigneeId || null,
+                labelIds: selectedLabelIds,
+                checklistTitles: allChecklist,
+              });
         if (result.error && !result.id) {
           setError(result.error);
           return;
@@ -354,6 +427,7 @@ export function ActionCreateDialog({
       }
 
       onCreated?.(actionId);
+      idempotencyKeyRef.current = null;
       onOpenChange(false);
       if (createWarning) {
         setToastMessage(createWarning);
@@ -396,7 +470,9 @@ export function ActionCreateDialog({
             <DialogTitle>Create action</DialogTitle>
             <DialogDescription>
               {plannerMode
-                ? "Add title, assignee, due date, labels, and checklist items."
+                ? raisedFromAudit
+                  ? "Assign an owner and due date before raising this corrective action."
+                  : "Add title, assignee, due date, labels, and checklist items."
                 : "Add a title and description. Save when you are ready."}
             </DialogDescription>
           </DialogHeader>
@@ -436,11 +512,17 @@ export function ActionCreateDialog({
                 required
                 placeholder="Action title"
                 disabled={pending || Boolean(createdActionId)}
-                defaultValue={fiveSLinkContext?.defaultTitle ?? undefined}
+                defaultValue={
+                  fiveSLinkContext?.defaultTitle ??
+                  gembaLinkContext?.defaultTitle ??
+                  undefined
+                }
                 key={
                   fiveSLinkContext
                     ? `five-s-title-${fiveSLinkContext.questionId}-${open ? "open" : "closed"}`
-                    : "planner-title"
+                    : gembaLinkContext
+                      ? `gemba-title-${gembaLinkContext.observationId ?? "walk"}-${open ? "open" : "closed"}`
+                      : "planner-title"
                 }
               />
             </div>
@@ -457,16 +539,25 @@ export function ActionCreateDialog({
             {plannerMode ? (
               <>
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="action-create-assignee">Assignee</Label>
+                  <Label htmlFor="action-create-assignee">
+                    Assignee{raisedFromAudit ? " *" : ""}
+                  </Label>
                   <select
                     id="action-create-assignee"
                     className="min-h-9 rounded-md border border-border bg-background px-3 text-sm"
                     value={assigneeId}
-                    disabled={pending || assignablePeople.length === 0}
+                    required={raisedFromAudit}
+                    disabled={
+                      pending ||
+                      assignablePeople.length === 0 ||
+                      (raisedFromAudit && !canAssignOthers)
+                    }
                     data-testid="action-create-assignee"
                     onChange={(event) => setAssigneeId(event.target.value)}
                   >
-                    <option value="">Unassigned</option>
+                    <option value="">
+                      {raisedFromAudit ? "Select assignee…" : "Unassigned"}
+                    </option>
                     {assignablePeople.map((person) => (
                       <option
                         key={person.membership_id}
@@ -478,11 +569,14 @@ export function ActionCreateDialog({
                   </select>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="action-create-due">Due date</Label>
+                  <Label htmlFor="action-create-due">
+                    Due date{raisedFromAudit ? " *" : ""}
+                  </Label>
                   <Input
                     id="action-create-due"
                     type="date"
                     value={dueAt}
+                    required={raisedFromAudit}
                     disabled={pending}
                     data-testid="action-create-due"
                     onChange={(event) => setDueAt(event.target.value)}

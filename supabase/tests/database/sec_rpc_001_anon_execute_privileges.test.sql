@@ -1,6 +1,6 @@
 begin;
 
-select plan(41);
+select plan(53);
 
 -- Privilege inventory after SEC-RPC-001. Signatures match hosted/local catalogs.
 create temporary table sec_rpc_restricted_sigs (
@@ -26,9 +26,9 @@ values
   ('public.create_benefit_from_ci_project(uuid,text,text,text,text,text,uuid,uuid,uuid)'),
   ('public.create_benefit_from_suggestion(uuid,text,text,text,text,text,uuid,uuid,uuid)'),
   ('public.create_benefit_overlap_group(text,text)'),
-  ('public.create_five_s_action(text,uuid,uuid,uuid,uuid,text,text,timestamp with time zone)'),
+  ('public.create_five_s_action(text,uuid,uuid,timestamp with time zone,text,uuid,uuid,uuid,text,text)'),
   ('public.create_five_s_finding(uuid,text,uuid,uuid,text,text,boolean)'),
-  ('public.create_gemba_action(text,uuid,uuid,uuid,uuid,text,text,timestamp with time zone)'),
+  ('public.create_gemba_action(text,uuid,uuid,timestamp with time zone,text,uuid,uuid,uuid,text,text)'),
   ('public.create_improvement_project(text,uuid,text,text,text,uuid)'),
   ('public.create_improvement_project_from_suggestion(uuid)'),
   ('public.create_recognition_type(text,text,text)'),
@@ -123,6 +123,114 @@ select ok(
     'EXECUTE'
   ),
   'anon cannot execute private workforce provision worker helper'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.namespaced_planner_action_idempotency_key(text,uuid,text)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute private namespaced_planner_action_idempotency_key'
+);
+
+select ok(
+  pg_catalog.has_function_privilege(
+    'lean_hub_private_owner',
+    'private.namespaced_planner_action_idempotency_key(text,uuid,text)',
+    'EXECUTE'
+  ),
+  'private owner retains EXECUTE on namespaced_planner_action_idempotency_key'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.assert_gemba_planner_action_idempotency_replay(uuid,uuid,uuid,uuid,uuid,uuid,uuid)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute private assert_gemba_planner_action_idempotency_replay'
+);
+
+select ok(
+  pg_catalog.has_function_privilege(
+    'lean_hub_private_owner',
+    'private.assert_gemba_planner_action_idempotency_replay(uuid,uuid,uuid,uuid,uuid,uuid,uuid)',
+    'EXECUTE'
+  ),
+  'private owner retains EXECUTE on assert_gemba_planner_action_idempotency_replay'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.assert_five_s_planner_action_idempotency_replay(uuid,uuid,uuid,uuid,uuid,uuid,uuid)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute private assert_five_s_planner_action_idempotency_replay'
+);
+
+select ok(
+  pg_catalog.has_function_privilege(
+    'lean_hub_private_owner',
+    'private.assert_five_s_planner_action_idempotency_replay(uuid,uuid,uuid,uuid,uuid,uuid,uuid)',
+    'EXECUTE'
+  ),
+  'private owner retains EXECUTE on assert_five_s_planner_action_idempotency_replay'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.assign_planner_action_to_creator(uuid,uuid)',
+    'EXECUTE'
+  ),
+  'authenticated cannot execute private assign_planner_action_to_creator'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'anon',
+    'private.assign_planner_action_to_creator(uuid,uuid)',
+    'EXECUTE'
+  ),
+  'anon cannot execute private assign_planner_action_to_creator'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'public',
+    'private.assign_planner_action_to_creator(uuid,uuid)',
+    'EXECUTE'
+  ),
+  'PUBLIC cannot execute private assign_planner_action_to_creator'
+);
+
+select ok(
+  pg_catalog.has_function_privilege(
+    'authenticated',
+    'public.get_ci_projects_portfolio(text,text,uuid,text,integer,integer,uuid,boolean)',
+    'EXECUTE'
+  ),
+  'authenticated can execute get_ci_projects_portfolio'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'anon',
+    'public.get_ci_projects_portfolio(text,text,uuid,text,integer,integer,uuid,boolean)',
+    'EXECUTE'
+  ),
+  'anon cannot execute get_ci_projects_portfolio'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'public',
+    'public.get_ci_projects_portfolio(text,text,uuid,text,integer,integer,uuid,boolean)',
+    'EXECUTE'
+  ),
+  'PUBLIC cannot execute get_ci_projects_portfolio'
 );
 
 select ok(

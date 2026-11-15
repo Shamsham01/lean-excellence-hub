@@ -13,6 +13,10 @@ import {
   loadWorkplaceRecordFallback,
   loadWorkplaceRecordView,
 } from "@/modules/workplace/access";
+import { loadProjectPickerOptions } from "@/lib/projects/load-project-picker-options";
+import { resolveProjectLinkSummary } from "@/lib/projects/project-link-summary";
+import type { ProjectLinkSummary } from "@/lib/projects/types";
+import { untypedFrom } from "@/lib/projects/supabase-untyped";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function GembaWalkPage({
@@ -149,11 +153,39 @@ export default async function GembaWalkPage({
     }
   }
 
-  const { data: observations } = await supabase
-    .from("gemba_walk_observations")
-    .select("id, observation_text, observation_type, created_at")
-    .eq("walk_id", id)
-    .order("created_at", { ascending: true });
+  const [projectPicker, observationsResult, gembaActionContexts] =
+    await Promise.all([
+      loadProjectPickerOptions(),
+      untypedFrom(supabase, "gemba_walk_observations")
+        .select(
+          "id, observation_text, observation_type, created_at, linked_project_id",
+        )
+        .eq("walk_id", id)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("gemba_action_context")
+        .select("observation_id")
+        .eq("walk_id", id),
+    ]);
+  const observations = observationsResult.data;
+
+  const actionCountsByObservation: Record<string, number> = {};
+  for (const row of gembaActionContexts.data ?? []) {
+    if (!row.observation_id) continue;
+    actionCountsByObservation[row.observation_id] =
+      (actionCountsByObservation[row.observation_id] ?? 0) + 1;
+  }
+
+  const linkedProjectsByObservationId: Record<
+    string,
+    ProjectLinkSummary | null
+  > = {};
+  for (const observation of observations ?? []) {
+    linkedProjectsByObservationId[observation.id] = resolveProjectLinkSummary(
+      observation.linked_project_id,
+      projectPicker.projects,
+    );
+  }
 
   if (walk.status === "completed") {
     return (
@@ -210,6 +242,10 @@ export default async function GembaWalkPage({
         canComplete={canEdit && walk.status === "in_progress"}
         initialPromptId={prompt ?? null}
         onComplete={completeGembaWalk}
+        projectOptions={projectPicker.projects}
+        requiresSiteSelection={projectPicker.requiresSiteSelection}
+        linkedProjectsByObservationId={linkedProjectsByObservationId}
+        actionCountsByObservation={actionCountsByObservation}
       />
     </div>
   );
