@@ -120,6 +120,7 @@ type CaseHeaderProps = {
   pinnedMethodVersion: PinnedMethodVersionContext | null;
   onMessage?: (message: string, tone?: "success" | "error") => void;
   displayedCurrentStageTitle?: string | null;
+  stageProgressNotice?: string | null;
   onCaseStatusChanged?: () => void;
   historySlot?: ReactNode;
   activitySlot?: ReactNode;
@@ -137,6 +138,7 @@ export function CaseHeader({
   pinnedMethodVersion,
   onMessage,
   displayedCurrentStageTitle,
+  stageProgressNotice,
   onCaseStatusChanged,
   historySlot,
   activitySlot,
@@ -369,6 +371,14 @@ export function CaseHeader({
               >
                 {displayedCurrentStageTitle}
               </span>
+            </p>
+          ) : null}
+          {stageProgressNotice ? (
+            <p
+              className="mt-1 text-xs text-amber-900 dark:text-amber-200"
+              data-testid="pps-countermeasures-before-verify-notice"
+            >
+              {stageProgressNotice}
             </p>
           ) : null}
           {detail.status === "closed" || detail.status === "cancelled" ? (

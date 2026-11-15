@@ -18,6 +18,13 @@ type SustainPlanPanelProps = {
   canManage: boolean;
 };
 
+type FieldErrors = Partial<
+  Record<
+    "standardised" | "monitoring" | "ownerMembershipId" | "reviewDate",
+    string
+  >
+>;
+
 export function SustainPlanPanel({
   caseId,
   detail,
@@ -32,38 +39,69 @@ export function SustainPlanPanel({
     detail.sustain_plan_monitoring ?? "",
   );
   const [ownerMembershipId, setOwnerMembershipId] = useState(
-    detail.sustain_plan_owner_membership_id ?? "",
+    detail.sustain_plan_owner_membership_id ??
+      detail.owner_membership_id ??
+      "",
   );
   const [reviewDate, setReviewDate] = useState(
     detail.sustain_plan_review_date ?? "",
   );
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   const hasSavedPlan =
-    Boolean(detail.sustain_plan_standardised?.trim()) ||
-    Boolean(detail.sustain_plan_monitoring?.trim());
+    Boolean(detail.sustain_plan_standardised?.trim()) &&
+    Boolean(detail.sustain_plan_monitoring?.trim()) &&
+    Boolean(detail.sustain_plan_owner_membership_id) &&
+    Boolean(detail.sustain_plan_review_date);
   const readOnly = !canManage;
+
+  function validateFields(): FieldErrors {
+    const errors: FieldErrors = {};
+    if (!standardised.trim()) {
+      errors.standardised = "Required";
+    }
+    if (!monitoring.trim()) {
+      errors.monitoring = "Required";
+    }
+    if (!ownerMembershipId.trim()) {
+      errors.ownerMembershipId = "Required";
+    }
+    if (!reviewDate) {
+      errors.reviewDate = "Required";
+    } else {
+      const today = new Date().toISOString().slice(0, 10);
+      if (reviewDate < today) {
+        errors.reviewDate = "Cannot be in the past";
+      }
+    }
+    return errors;
+  }
 
   async function handleSave(event: React.FormEvent) {
     event.preventDefault();
     if (readOnly) return;
+    const errors = validateFields();
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      return;
+    }
     setLoading(true);
     setMessage(null);
     const result = await upsertProblemSolvingSustainPlan({
       caseId,
       standardised,
       monitoring,
-      ...(ownerMembershipId.trim()
-        ? { ownerMembershipId: ownerMembershipId.trim() }
-        : {}),
-      ...(reviewDate ? { reviewDate } : {}),
+      ownerMembershipId,
+      reviewDate,
     });
     setLoading(false);
     if (result.error) {
       setMessage(result.error);
       return;
     }
+    setFieldErrors({});
     setMessage("Sustain plan saved");
     router.refresh();
   }
@@ -126,17 +164,29 @@ export function SustainPlanPanel({
                 value={standardised}
                 onChange={(e) => setStandardised(e.target.value)}
                 required
+                aria-invalid={Boolean(fieldErrors.standardised)}
                 data-testid="sustain-plan-standardised"
               />
+              {fieldErrors.standardised ? (
+                <span className="text-xs text-destructive" role="alert">
+                  {fieldErrors.standardised}
+                </span>
+              ) : null}
             </label>
             <label className="flex flex-col gap-1">
               <span>Owner (membership id)</span>
               <Input
                 value={ownerMembershipId}
                 onChange={(e) => setOwnerMembershipId(e.target.value)}
-                placeholder="Optional"
+                required
+                aria-invalid={Boolean(fieldErrors.ownerMembershipId)}
                 data-testid="sustain-plan-owner"
               />
+              {fieldErrors.ownerMembershipId ? (
+                <span className="text-xs text-destructive" role="alert">
+                  {fieldErrors.ownerMembershipId}
+                </span>
+              ) : null}
             </label>
             <label className="flex flex-col gap-1">
               <span>How it will be monitored</span>
@@ -145,8 +195,14 @@ export function SustainPlanPanel({
                 value={monitoring}
                 onChange={(e) => setMonitoring(e.target.value)}
                 required
+                aria-invalid={Boolean(fieldErrors.monitoring)}
                 data-testid="sustain-plan-monitoring"
               />
+              {fieldErrors.monitoring ? (
+                <span className="text-xs text-destructive" role="alert">
+                  {fieldErrors.monitoring}
+                </span>
+              ) : null}
             </label>
             <label className="flex flex-col gap-1">
               <span>Review date</span>
@@ -154,8 +210,15 @@ export function SustainPlanPanel({
                 type="date"
                 value={reviewDate}
                 onChange={(e) => setReviewDate(e.target.value)}
+                required
+                aria-invalid={Boolean(fieldErrors.reviewDate)}
                 data-testid="sustain-plan-review-date"
               />
+              {fieldErrors.reviewDate ? (
+                <span className="text-xs text-destructive" role="alert">
+                  {fieldErrors.reviewDate}
+                </span>
+              ) : null}
             </label>
             <Button
               type="submit"

@@ -1,5 +1,10 @@
 import type { MethodStage } from "@/lib/problem-solving/stages";
-import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
+import type {
+  ProblemSolvingActionSummary,
+  ProblemSolvingCaseDetail,
+  ProblemSolvingEffectivenessCheck,
+  ProblemSolvingHypothesis,
+} from "@/lib/problem-solving/types";
 
 const STAGE_PROGRESSION = [
   "DEFINE",
@@ -16,6 +21,14 @@ const STAGE_PROGRESSION = [
   "SUSTAIN",
 ] as const;
 
+export const PREMATURE_COUNTERMEASURES_NOTICE =
+  "Countermeasures started before a cause was verified.";
+
+export type CaseProgressDerivation = {
+  stage: MethodStage | null;
+  prematureCountermeasuresNotice: boolean;
+};
+
 function stageRank(semanticKey: string | null | undefined): number {
   if (!semanticKey) return 0;
   const index = STAGE_PROGRESSION.indexOf(
@@ -25,8 +38,52 @@ function stageRank(semanticKey: string | null | undefined): number {
   return 0;
 }
 
+export function hasVerifiedRootCause(
+  hypotheses: ProblemSolvingHypothesis[] | undefined,
+): boolean {
+  return (hypotheses ?? []).some((row) => row.status === "verified");
+}
+
+function hasCountermeasureActions(
+  actions: ProblemSolvingActionSummary[] | undefined,
+): boolean {
+  return (actions ?? []).some((row) => row.context_role === "countermeasure");
+}
+
+function hasPassingEffectivenessCheck(
+  checks: ProblemSolvingEffectivenessCheck[] | undefined,
+): boolean {
+  return (checks ?? []).some((row) => row.result === "pass");
+}
+
+function isTerminalCaseStatusForDerive(status: string): boolean {
+  return status === "closed" || status === "cancelled";
+}
+
+function resolveStageForImpliedKey(
+  methodStages: MethodStage[],
+  impliedKey: string,
+  pinned: MethodStage | null,
+): MethodStage | null {
+  const byKey =
+    methodStages.find((row) => row.semantic_stage_key === impliedKey) ??
+    methodStages.find(
+      (row) =>
+        row.semantic_stage_key === "ANALYSE" &&
+        impliedKey === "ROOT_CAUSE_ANALYSIS",
+    ) ??
+    methodStages.find(
+      (row) =>
+        row.semantic_stage_key === "VERIFY_EFFECT" &&
+        impliedKey === "EFFECTIVENESS_CHECK",
+    );
+
+  return byKey ?? pinned ?? methodStages[0] ?? null;
+}
+
 /**
- * Furthest method stage implied by case content — used for header display when
+ * Furthest method stage implied by case content gates (not mere record presence
+ * where Kaizen rules apply) — used for header display when
  * {@link ProblemSolvingCaseDetail.current_method_stage_id} was never advanced.
  */
 export function deriveCaseProgressStage(
@@ -45,10 +102,12 @@ export function deriveCaseProgressStage(
   >,
   currentConditionItemCount: number,
   analysisNodeCount: number,
-): MethodStage | null {
-  if (methodStages.length === 0) return null;
+): CaseProgressDerivation {
+  if (methodStages.length === 0) {
+    return { stage: null, prematureCountermeasuresNotice: false };
+  }
   if (isTerminalCaseStatusForDerive(detail.status)) {
-    return null;
+    return { stage: null, prematureCountermeasuresNotice: false };
   }
 
   let impliedKey: string = "DEFINE";
@@ -64,17 +123,32 @@ export function deriveCaseProgressStage(
   if (analysisNodeCount > 0 || (detail.hypotheses?.length ?? 0) > 0) {
     impliedKey = "ROOT_CAUSE_ANALYSIS";
   }
-  if ((detail.countermeasures?.length ?? 0) > 0) {
+
+  const verifiedCause = hasVerifiedRootCause(detail.hypotheses);
+  const hasCountermeasures = (detail.countermeasures?.length ?? 0) > 0;
+  const prematureCountermeasuresNotice = hasCountermeasures && !verifiedCause;
+
+  if (hasCountermeasures && verifiedCause) {
     impliedKey = "COUNTERMEASURES";
   }
-  if ((detail.actions?.length ?? 0) > 0) {
+
+  if (verifiedCause && hasCountermeasureActions(detail.actions)) {
     impliedKey = "IMPLEMENTATION";
   }
+
   if ((detail.effectiveness_checks?.length ?? 0) > 0) {
     impliedKey = "EFFECTIVENESS_CHECK";
   }
-  if ((detail.sustainment_items?.length ?? 0) > 0) {
+
+  if (
+    hasPassingEffectivenessCheck(detail.effectiveness_checks) &&
+    (detail.sustainment_items?.length ?? 0) > 0
+  ) {
     impliedKey = "SUSTAINMENT";
+  }
+
+  if (!verifiedCause && stageRank(impliedKey) > stageRank("ROOT_CAUSE_ANALYSIS")) {
+    impliedKey = "ROOT_CAUSE_ANALYSIS";
   }
 
   const pinned =
@@ -82,28 +156,25 @@ export function deriveCaseProgressStage(
       ? (methodStages.find((row) => row.id === detail.current_stage?.id) ??
         null)
       : null;
-  if (pinned && stageRank(pinned.semantic_stage_key) >= stageRank(impliedKey)) {
-    return pinned;
+
+  const pinnedAllowed =
+    pinned &&
+    (!prematureCountermeasuresNotice ||
+      stageRank(pinned.semantic_stage_key) <=
+        stageRank("ROOT_CAUSE_ANALYSIS"));
+
+  let stage: MethodStage | null;
+  if (
+    pinnedAllowed &&
+    pinned &&
+    stageRank(pinned.semantic_stage_key) >= stageRank(impliedKey)
+  ) {
+    stage = pinned;
+  } else {
+    stage = resolveStageForImpliedKey(methodStages, impliedKey, pinned);
   }
 
-  const byKey =
-    methodStages.find((row) => row.semantic_stage_key === impliedKey) ??
-    methodStages.find(
-      (row) =>
-        row.semantic_stage_key === "ANALYSE" &&
-        impliedKey === "ROOT_CAUSE_ANALYSIS",
-    ) ??
-    methodStages.find(
-      (row) =>
-        row.semantic_stage_key === "VERIFY_EFFECT" &&
-        impliedKey === "EFFECTIVENESS_CHECK",
-    );
-
-  return byKey ?? pinned ?? methodStages[0] ?? null;
-}
-
-function isTerminalCaseStatusForDerive(status: string): boolean {
-  return status === "closed" || status === "cancelled";
+  return { stage, prematureCountermeasuresNotice };
 }
 
 export function resolveDisplayedCurrentStage(
@@ -111,9 +182,9 @@ export function resolveDisplayedCurrentStage(
   detail: ProblemSolvingCaseDetail,
   currentConditionItemCount: number,
   analysisNodeCount: number,
-): MethodStage | null {
+): CaseProgressDerivation {
   if (isTerminalCaseStatusForDerive(detail.status)) {
-    return null;
+    return { stage: null, prematureCountermeasuresNotice: false };
   }
   const derived = deriveCaseProgressStage(
     methodStages,
@@ -121,11 +192,16 @@ export function resolveDisplayedCurrentStage(
     currentConditionItemCount,
     analysisNodeCount,
   );
-  if (derived) return derived;
+  if (derived.stage) return derived;
   if (detail.current_stage?.id) {
-    return (
-      methodStages.find((row) => row.id === detail.current_stage?.id) ?? null
-    );
+    return {
+      stage:
+        methodStages.find((row) => row.id === detail.current_stage?.id) ?? null,
+      prematureCountermeasuresNotice: derived.prematureCountermeasuresNotice,
+    };
   }
-  return methodStages[0] ?? null;
+  return {
+    stage: methodStages[0] ?? null,
+    prematureCountermeasuresNotice: derived.prematureCountermeasuresNotice,
+  };
 }

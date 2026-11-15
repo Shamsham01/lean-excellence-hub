@@ -1,6 +1,6 @@
 begin;
 
-select plan(19);
+select plan(24);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -99,6 +99,74 @@ select is(
   public.get_problem_solving_detail((select id from pps_408_ids where key = 'case'))->>'sustain_plan_standardised',
   'Updated work standard on line 3',
   'detail exposes sustain_plan_standardised on case'
+);
+
+select throws_ok(
+  format(
+    'select public.upsert_problem_solving_sustain_plan(%L::uuid, %L, null, %L, %L::date)',
+    (select id from pps_408_ids where key = 'case'),
+    'Standard work',
+    'Weekly audit',
+    '2027-06-01'
+  ),
+  '22023',
+  'sustain plan owner is required',
+  'sustain plan rejects missing owner'
+);
+
+select throws_ok(
+  format(
+    'select public.upsert_problem_solving_sustain_plan(%L::uuid, %L, %L, %L, null)',
+    (select id from pps_408_ids where key = 'case'),
+    'Standard work',
+    (select id from pps_408_ids where key = 'membership'),
+    'Weekly audit'
+  ),
+  '22023',
+  'sustain plan review date is required',
+  'sustain plan rejects missing review date'
+);
+
+select throws_ok(
+  format(
+    'select public.upsert_problem_solving_sustain_plan(%L::uuid, %L, %L, %L, %L::date)',
+    (select id from pps_408_ids where key = 'case'),
+    'Standard work',
+    (select id from pps_408_ids where key = 'membership'),
+    'Weekly audit',
+    '2020-01-01'
+  ),
+  '22023',
+  'sustain plan review date cannot be in the past',
+  'sustain plan rejects past review date'
+);
+
+select throws_ok(
+  format(
+    'select public.upsert_problem_solving_sustain_plan(%L::uuid, %L, %L, %L, %L::date)',
+    (select id from pps_408_ids where key = 'case'),
+    '   ',
+    (select id from pps_408_ids where key = 'membership'),
+    'Weekly audit',
+    '2027-06-01'
+  ),
+  '22023',
+  'sustain plan standardised text is required',
+  'sustain plan rejects missing standardised text'
+);
+
+select throws_ok(
+  format(
+    'select public.upsert_problem_solving_sustain_plan(%L::uuid, %L, %L, %L, %L::date)',
+    (select id from pps_408_ids where key = 'case'),
+    'Standard work',
+    (select id from pps_408_ids where key = 'membership'),
+    '   ',
+    '2027-06-01'
+  ),
+  '22023',
+  'sustain plan monitoring text is required',
+  'sustain plan rejects missing monitoring text'
 );
 
 insert into pps_408_ids (key, id)

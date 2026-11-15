@@ -49,7 +49,10 @@ import {
   caseStatusAllowsLeanAiDrafting,
   isTerminalCaseStatus,
 } from "@/lib/problem-solving/case-lifecycle";
-import { resolveDisplayedCurrentStage } from "@/lib/problem-solving/derive-case-progress-stage";
+import {
+  PREMATURE_COUNTERMEASURES_NOTICE,
+  resolveDisplayedCurrentStage,
+} from "@/lib/problem-solving/derive-case-progress-stage";
 import {
   readPpsCopilotPreference,
   writePpsCopilotPreference,
@@ -173,7 +176,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     [methodStages],
   );
 
-  const displayedCurrentStage = useMemo(
+  const displayedStageDerivation = useMemo(
     () =>
       resolveDisplayedCurrentStage(
         sortedStages,
@@ -183,6 +186,8 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
       ),
     [sortedStages, detail, currentConditionItems.length, analysisNodes.length],
   );
+
+  const displayedCurrentStage = displayedStageDerivation.stage;
 
   const caseAllowsAi =
     canUseAi && caseStatusAllowsLeanAiDrafting(detail.status);
@@ -621,6 +626,11 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
           targetDueDateLabel={targetDueDateLabel ?? null}
           methodLabel={pinnedMethodVersion?.methodName ?? null}
           displayedCurrentStageTitle={displayedCurrentStage?.title ?? null}
+          stageProgressNotice={
+            displayedStageDerivation.prematureCountermeasuresNotice
+              ? PREMATURE_COUNTERMEASURES_NOTICE
+              : null
+          }
           canManage={canManage}
           canClose={canClose}
           methods={methods}

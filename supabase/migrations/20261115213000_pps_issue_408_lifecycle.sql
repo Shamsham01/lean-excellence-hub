@@ -140,19 +140,43 @@ begin
     'case is closed; sustain plan cannot be changed'
   );
 
-  if target_sustain_plan_owner_membership_id is not null
-    and not exists (
-      select 1
-      from public.organisation_memberships member_row
-      where member_row.organisation_id = org_id
-        and member_row.id = target_sustain_plan_owner_membership_id
-    ) then
+  normalized_standardised := nullif(btrim(coalesce(target_sustain_plan_standardised, '')), '');
+  normalized_monitoring := nullif(btrim(coalesce(target_sustain_plan_monitoring, '')), '');
+
+  if normalized_standardised is null then
+    raise exception 'sustain plan standardised text is required'
+      using errcode = '22023';
+  end if;
+
+  if normalized_monitoring is null then
+    raise exception 'sustain plan monitoring text is required'
+      using errcode = '22023';
+  end if;
+
+  if target_sustain_plan_owner_membership_id is null then
+    raise exception 'sustain plan owner is required'
+      using errcode = '22023';
+  end if;
+
+  if not exists (
+    select 1
+    from public.organisation_memberships member_row
+    where member_row.organisation_id = org_id
+      and member_row.id = target_sustain_plan_owner_membership_id
+  ) then
     raise exception 'sustain plan owner membership not found'
       using errcode = 'P0002';
   end if;
 
-  normalized_standardised := nullif(btrim(coalesce(target_sustain_plan_standardised, '')), '');
-  normalized_monitoring := nullif(btrim(coalesce(target_sustain_plan_monitoring, '')), '');
+  if target_sustain_plan_review_date is null then
+    raise exception 'sustain plan review date is required'
+      using errcode = '22023';
+  end if;
+
+  if target_sustain_plan_review_date < current_date then
+    raise exception 'sustain plan review date cannot be in the past'
+      using errcode = '22023';
+  end if;
 
   if not exists (
     select 1

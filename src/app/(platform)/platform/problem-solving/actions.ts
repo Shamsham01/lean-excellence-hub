@@ -1208,19 +1208,30 @@ export async function upsertProblemSolvingSustainPlan(input: {
   try {
     const standardised = input.standardised.trim();
     const monitoring = input.monitoring.trim();
-    if (!standardised || !monitoring) {
-      return { error: "Standardised practice and monitoring are required." };
+    const ownerMembershipId = input.ownerMembershipId?.trim() ?? "";
+    const reviewDate = input.reviewDate?.trim() ?? "";
+    if (!standardised) {
+      return { error: "What will be standardised is required." };
+    }
+    if (!monitoring) {
+      return { error: "How it will be monitored is required." };
+    }
+    if (!ownerMembershipId) {
+      return { error: "Sustain plan owner is required." };
+    }
+    if (!reviewDate) {
+      return { error: "Review date is required." };
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    if (reviewDate < today) {
+      return { error: "Review date cannot be in the past." };
     }
     await callRpc("upsert_problem_solving_sustain_plan", {
       target_case_id: input.caseId,
       target_sustain_plan_standardised: standardised,
       target_sustain_plan_monitoring: monitoring,
-      ...(input.ownerMembershipId
-        ? { target_sustain_plan_owner_membership_id: input.ownerMembershipId }
-        : {}),
-      ...(input.reviewDate
-        ? { target_sustain_plan_review_date: input.reviewDate }
-        : {}),
+      target_sustain_plan_owner_membership_id: ownerMembershipId,
+      target_sustain_plan_review_date: reviewDate,
     });
     revalidateCasePaths(input.caseId);
     return { ok: true };
