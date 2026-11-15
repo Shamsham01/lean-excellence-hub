@@ -96,7 +96,9 @@ as $$
       'title', project_row.title,
       'status', project_row.status,
       'href', '/platform/projects/' || project_row.id::text,
-      'can_open', true
+      'can_open', true,
+      'linked', true,
+      'restricted', false
     )
   end
   from public.ci_projects project_row
@@ -591,6 +593,24 @@ begin
     project_id = excluded.project_id,
     project_phase_id = null;
 
+  perform private.append_business_audit(
+    org_id,
+    case
+      when existing_project_id is null then 'ci_project.work_item.linked'
+      when existing_project_id <> target_project_id then 'ci_project.work_item.relinked'
+      else 'ci_project.work_item.linked'
+    end,
+    target_action_id,
+    'succeeded',
+    jsonb_build_object(
+      'item_type', 'action',
+      'item_id', target_action_id,
+      'from_project_id', existing_project_id,
+      'to_project_id', target_project_id,
+      'occurred_at', statement_timestamp()
+    )
+  );
+
   return true;
 end;
 $$;
@@ -606,10 +626,12 @@ set search_path = ''
 as $$
 declare
   org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
   linked_project_id uuid;
   action_row public.actions%rowtype;
 begin
   if org_id is null
+    or actor_membership_id is null
     or not private.can_update_action(org_id, target_action_id) then
     raise exception 'action project unlink is not authorised'
       using errcode = '42501';
@@ -662,6 +684,22 @@ begin
   delete from public.ci_project_action_context context_row
   where context_row.organisation_id = org_id
     and context_row.action_id = target_action_id;
+
+  if linked_project_id is not null then
+    perform private.append_business_audit(
+      org_id,
+      'ci_project.work_item.unlinked',
+      target_action_id,
+      'succeeded',
+      jsonb_build_object(
+        'item_type', 'action',
+        'item_id', target_action_id,
+        'from_project_id', linked_project_id,
+        'to_project_id', null,
+        'occurred_at', statement_timestamp()
+      )
+    );
+  end if;
 
   return true;
 end;
@@ -1252,6 +1290,25 @@ begin
   where observation_row.organisation_id = org_id
     and observation_row.id = target_observation_id;
 
+  perform private.append_business_audit(
+    org_id,
+    case
+      when current_linked_project_id is null then 'ci_project.work_item.linked'
+      when current_linked_project_id <> target_project_id
+        then 'ci_project.work_item.relinked'
+      else 'ci_project.work_item.linked'
+    end,
+    null,
+    'succeeded',
+    jsonb_build_object(
+      'item_type', 'gemba_observation',
+      'item_id', target_observation_id,
+      'from_project_id', current_linked_project_id,
+      'to_project_id', target_project_id,
+      'occurred_at', statement_timestamp()
+    )
+  );
+
   return true;
 end;
 $$;
@@ -1338,6 +1395,22 @@ begin
   set linked_project_id = null
   where observation_row.organisation_id = org_id
     and observation_row.id = target_observation_id;
+
+  if linked_project_id is not null then
+    perform private.append_business_audit(
+      org_id,
+      'ci_project.work_item.unlinked',
+      null,
+      'succeeded',
+      jsonb_build_object(
+        'item_type', 'gemba_observation',
+        'item_id', target_observation_id,
+        'from_project_id', linked_project_id,
+        'to_project_id', null,
+        'occurred_at', statement_timestamp()
+      )
+    );
+  end if;
 
   return true;
 end;
@@ -1458,6 +1531,25 @@ begin
     'work_item'
   );
 
+  perform private.append_business_audit(
+    org_id,
+    case
+      when current_work_item_project_id is null then 'ci_project.work_item.linked'
+      when current_work_item_project_id <> target_project_id
+        then 'ci_project.work_item.relinked'
+      else 'ci_project.work_item.linked'
+    end,
+    target_case_id,
+    'succeeded',
+    jsonb_build_object(
+      'item_type', 'problem_solving_case',
+      'item_id', target_case_id,
+      'from_project_id', current_work_item_project_id,
+      'to_project_id', target_project_id,
+      'occurred_at', statement_timestamp()
+    )
+  );
+
   return true;
 end;
 $$;
@@ -1534,10 +1626,181 @@ begin
     and link_row.source_resource_id = target_case_id
     and link_row.link_kind = 'work_item';
 
+  perform private.append_business_audit(
+    org_id,
+    'ci_project.work_item.unlinked',
+    target_case_id,
+    'succeeded',
+    jsonb_build_object(
+      'item_type', 'problem_solving_case',
+      'item_id', target_case_id,
+      'from_project_id', linked_project_id,
+      'to_project_id', null,
+      'occurred_at', statement_timestamp()
+    )
+  );
+
   return true;
 end;
 $$;
 -- ── Planner actions: namespaced idempotency + FOR SHARE walk/audit ────────────
+
+create or replace function private.create_planner_context_action(
+  target_title text,
+  target_description text default null,
+  target_priority text default 'normal',
+  target_unit_id uuid default null,
+  target_source_resource_id uuid default null,
+  target_due_at timestamptz default null,
+  target_idempotency_key text default null,
+  target_planner_permission text default null
+)
+returns uuid
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  org_id uuid := private.current_organisation_id();
+  actor_membership_id uuid := private.current_membership_id(org_id);
+  new_action_id uuid;
+  allocated_action_number text;
+  create_authorised boolean;
+begin
+  if org_id is null or actor_membership_id is null then
+    raise exception 'action creation is not authorised'
+      using errcode = '42501';
+  end if;
+
+  create_authorised :=
+    private.has_scoped_permission(org_id, 'actions.create', null, target_unit_id)
+    or (
+      target_planner_permission is not null
+      and private.has_scoped_permission(
+        org_id,
+        target_planner_permission,
+        null,
+        target_unit_id
+      )
+    );
+
+  if not create_authorised then
+    raise exception 'action creation is not authorised'
+      using errcode = '42501';
+  end if;
+
+  if target_source_resource_id is not null
+    and not private.can_reference_source_resource(org_id, target_source_resource_id) then
+    raise exception 'source resource is not authorised'
+      using errcode = '42501';
+  end if;
+
+  if target_idempotency_key is not null then
+    select action_row.id
+    into new_action_id
+    from public.actions action_row
+    where action_row.organisation_id = org_id
+      and action_row.idempotency_key = target_idempotency_key;
+
+    if new_action_id is not null then
+      return new_action_id;
+    end if;
+  end if;
+
+  allocated_action_number := private.allocate_organisation_document_number(
+    org_id,
+    'action',
+    'ACT'
+  );
+
+  begin
+    new_action_id := private.register_resource_record(
+      org_id,
+      'action',
+      gen_random_uuid(),
+      actor_membership_id
+    );
+
+    insert into public.actions (
+      id,
+      organisation_id,
+      action_number,
+      title,
+      description,
+      priority,
+      unit_id,
+      source_resource_id,
+      created_by_membership_id,
+      due_at,
+      idempotency_key
+    )
+    values (
+      new_action_id,
+      org_id,
+      allocated_action_number,
+      target_title,
+      target_description,
+      target_priority,
+      target_unit_id,
+      target_source_resource_id,
+      actor_membership_id,
+      target_due_at,
+      target_idempotency_key
+    );
+  exception
+    when unique_violation then
+      if target_idempotency_key is not null then
+        select action_row.id
+        into new_action_id
+        from public.actions action_row
+        where action_row.organisation_id = org_id
+          and action_row.idempotency_key = target_idempotency_key;
+
+        if new_action_id is not null then
+          return new_action_id;
+        end if;
+      end if;
+      raise;
+  end;
+
+  insert into public.action_status_transitions (
+    organisation_id,
+    action_id,
+    from_status,
+    to_status,
+    actor_membership_id
+  )
+  values (
+    org_id,
+    new_action_id,
+    'open',
+    'open',
+    actor_membership_id
+  );
+
+  perform private.append_business_audit(
+    org_id,
+    'action.created',
+    new_action_id,
+    'succeeded',
+    jsonb_build_object('action_number', allocated_action_number)
+  );
+
+  perform private.enqueue_domain_event(
+    org_id,
+    new_action_id,
+    'ActionCreated',
+    coalesce(target_idempotency_key, new_action_id::text),
+    jsonb_build_object(
+      'action_id', new_action_id,
+      'action_number', allocated_action_number
+    )
+  );
+
+  return new_action_id;
+end;
+$$;
 
 create or replace function private.create_gemba_action(
   target_title text,
@@ -1715,14 +1978,15 @@ begin
     end if;
   end if;
 
-  new_action_id := private.create_action(
+  new_action_id := private.create_planner_context_action(
     target_title,
     target_description,
     target_priority,
     unit_id,
     target_walk_id,
     target_due_at,
-    namespaced_idempotency_key
+    namespaced_idempotency_key,
+    'gemba.walk.perform'
   );
 
   perform private.assert_gemba_planner_action_idempotency_replay(
@@ -1971,14 +2235,15 @@ begin
     end if;
   end if;
 
-  new_action_id := private.create_action(
+  new_action_id := private.create_planner_context_action(
     target_title,
     target_description,
     target_priority,
     unit_id,
     target_audit_id,
     target_due_at,
-    namespaced_idempotency_key
+    namespaced_idempotency_key,
+    'five_s.audit.perform'
   );
 
   perform private.assert_five_s_planner_action_idempotency_replay(
@@ -2066,6 +2331,18 @@ drop function if exists public.create_five_s_action(
 drop function if exists private.create_five_s_action(
   text, uuid, uuid, uuid, uuid, text, text, timestamptz
 );
+
+alter function private.create_planner_context_action(
+  text, text, text, uuid, uuid, timestamptz, text, text
+) owner to postgres;
+
+revoke all on function private.create_planner_context_action(
+  text, text, text, uuid, uuid, timestamptz, text, text
+) from public, anon, authenticated, service_role;
+
+grant execute on function private.create_planner_context_action(
+  text, text, text, uuid, uuid, timestamptz, text, text
+) to lean_hub_private_owner;
 
 alter function private.create_gemba_action(
   text, uuid, uuid, timestamptz, text, uuid, uuid, uuid, text, text
@@ -2232,6 +2509,25 @@ begin
   where finding_row.organisation_id = org_id
     and finding_row.id = target_finding_id;
 
+  perform private.append_business_audit(
+    org_id,
+    case
+      when current_linked_project_id is null then 'ci_project.work_item.linked'
+      when current_linked_project_id <> target_project_id
+        then 'ci_project.work_item.relinked'
+      else 'ci_project.work_item.linked'
+    end,
+    null,
+    'succeeded',
+    jsonb_build_object(
+      'item_type', 'five_s_finding',
+      'item_id', target_finding_id,
+      'from_project_id', current_linked_project_id,
+      'to_project_id', target_project_id,
+      'occurred_at', statement_timestamp()
+    )
+  );
+
   return true;
 end;
 $$;
@@ -2281,6 +2577,22 @@ begin
   set linked_project_id = null
   where finding_row.organisation_id = org_id
     and finding_row.id = target_finding_id;
+
+  if linked_project_id is not null then
+    perform private.append_business_audit(
+      org_id,
+      'ci_project.work_item.unlinked',
+      null,
+      'succeeded',
+      jsonb_build_object(
+        'item_type', 'five_s_finding',
+        'item_id', target_finding_id,
+        'from_project_id', linked_project_id,
+        'to_project_id', null,
+        'occurred_at', statement_timestamp()
+      )
+    );
+  end if;
 
   return true;
 end;
