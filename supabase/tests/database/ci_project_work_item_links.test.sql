@@ -1,6 +1,6 @@
 begin;
 
-select plan(70);
+select plan(73);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -488,6 +488,69 @@ select throws_ok(
   '55000',
   'This project is completed or cancelled and cannot accept new links.',
   'live project guard blocks completed'
+);
+
+insert into work_link_ids (key, id)
+select 'frozen_case_project', public.create_improvement_project(
+  'Case link frozen project',
+  (select id from work_link_ids where key = 'unit'),
+  'Problem',
+  'Objective',
+  'Impact'
+);
+
+insert into work_link_ids (key, id)
+select 'frozen_case', public.create_problem_solving_case_draft(
+  'Case on completing project',
+  (select id from work_link_ids where key = 'unit'),
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  (select id from work_link_ids where key = 'owner_membership'),
+  null,
+  null,
+  null
+);
+
+select lives_ok(
+  format(
+    'select public.link_problem_solving_case_to_ci_project(%L::uuid, %L::uuid)',
+    (select id from work_link_ids where key = 'frozen_case'),
+    (select id from work_link_ids where key = 'frozen_case_project')
+  ),
+  'frozen case links to project before completion'
+);
+
+update public.ci_projects
+set status = 'completed',
+    actual_end_at = statement_timestamp()
+where id = (select id from work_link_ids where key = 'frozen_case_project');
+
+select throws_ok(
+  format(
+    'select public.unlink_problem_solving_case_from_ci_project(%L::uuid)',
+    (select id from work_link_ids where key = 'frozen_case')
+  ),
+  '55000',
+  'This project link is read-only because the project is completed or cancelled.',
+  'case unlink refused when work_item project completed'
+);
+
+select throws_ok(
+  format(
+    'select public.link_problem_solving_case_to_ci_project(%L::uuid, %L::uuid)',
+    (select id from work_link_ids where key = 'frozen_case'),
+    (select id from work_link_ids where key = 'project')
+  ),
+  '55000',
+  'This project link is read-only because the project is completed or cancelled.',
+  'case relink from completed project refused'
 );
 
 insert into work_link_ids (key, id)
