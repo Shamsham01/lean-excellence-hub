@@ -48,10 +48,11 @@ export async function createProblemSolvingAiSession(input: {
   if (!moduleGate.ok) return { error: moduleGate.error };
   try {
     const supabase = await createServerSupabaseClient();
-    const caseOpenResult = await assertProblemSolvingCaseOpenForAiDraftWithClient(
-      supabase,
-      input.caseId,
-    );
+    const caseOpenResult =
+      await assertProblemSolvingCaseOpenForAiDraftWithClient(
+        supabase,
+        input.caseId,
+      );
     if ("error" in caseOpenResult) {
       return { error: caseOpenResult.error };
     }
@@ -101,10 +102,11 @@ export async function sendProblemSolvingAiMessage(input: {
 
   try {
     const supabase = await createServerSupabaseClient();
-    const caseOpenResult = await assertProblemSolvingCaseOpenForAiDraftWithClient(
-      supabase,
-      input.caseId,
-    );
+    const caseOpenResult =
+      await assertProblemSolvingCaseOpenForAiDraftWithClient(
+        supabase,
+        input.caseId,
+      );
     if ("error" in caseOpenResult) {
       return { error: caseOpenResult.error };
     }

@@ -149,15 +149,15 @@ describe("CaseWorkspace copilot preference persistence", () => {
 
     const defaultWrites = setItemSpy.mock.calls.filter(
       ([, value]: [string, string]) => {
-      try {
-        const parsed = JSON.parse(String(value)) as {
-          dockCollapsed?: boolean;
-          mobileOpen?: boolean;
-        };
-        return parsed.dockCollapsed === false && parsed.mobileOpen === false;
-      } catch {
-        return false;
-      }
+        try {
+          const parsed = JSON.parse(String(value)) as {
+            dockCollapsed?: boolean;
+            mobileOpen?: boolean;
+          };
+          return parsed.dockCollapsed === false && parsed.mobileOpen === false;
+        } catch {
+          return false;
+        }
       },
     );
 
