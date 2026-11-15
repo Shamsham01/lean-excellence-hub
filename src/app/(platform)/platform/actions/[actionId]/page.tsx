@@ -25,10 +25,7 @@ export default async function ActionDetailPage({
   });
   if (workplaceView) return workplaceView;
 
-  const [loaded, projectPicker] = await Promise.all([
-    loadActionSheetPayload(actionId),
-    loadProjectPickerOptions(),
-  ]);
+  const loaded = await loadActionSheetPayload(actionId);
   if (loaded.error || !loaded.payload) {
     const workplaceRecord = await loadWorkplaceRecordFallback({
       module: "actions",
@@ -38,6 +35,11 @@ export default async function ActionDetailPage({
     if (workplaceRecord) return workplaceRecord;
     notFound();
   }
+
+  const projectPicker = await loadProjectPickerOptions(undefined, {
+    siteUnitId: loaded.payload.detail.site_unit_id,
+    unitId: loaded.payload.detail.unit_id,
+  });
 
   const {
     detail,

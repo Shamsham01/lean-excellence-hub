@@ -63,9 +63,7 @@ alter table public.actions
 
 grant update (expected_result, updated_at) on public.actions to lean_hub_private_owner;
 
-drop table if exists public.problem_solving_client_mutations cascade;
-
-create table public.problem_solving_client_mutations (
+create table if not exists public.problem_solving_client_mutations (
   id uuid primary key default gen_random_uuid(),
   organisation_id uuid not null,
   membership_id uuid not null,
@@ -444,7 +442,7 @@ grant execute on function public.create_problem_solving_action(
 
 revoke all on function public.create_problem_solving_action(
   text, uuid, text, uuid, uuid, uuid, text, text, timestamptz, uuid, text
-) from public, anon;
+) from public, anon, service_role;
 
 -- ── Delete pending hypothesis tests ───────────────────────────────────────────
 

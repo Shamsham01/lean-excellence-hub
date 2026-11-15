@@ -96,13 +96,15 @@ export function ActionWorkspace({
   const [assigneeId, setAssigneeId] = useState(
     detail.assignees[0]?.membership_id ?? "",
   );
+  const [liveStatus, setLiveStatus] = useState(detail.status);
+  const [liveVersion, setLiveVersion] = useState(detail.version);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
   const [commentPostDelta, setCommentPostDelta] = useState(0);
   const commentCount = comments.length + commentPostDelta;
 
-  const editable = isActionEditable(detail.status);
+  const editable = isActionEditable(liveStatus);
   const permissions = detail.permissions;
   const reference = formatActionReference(detail.action_number, detail.title);
   const source = detail.source;
@@ -114,6 +116,7 @@ export function ActionWorkspace({
   async function run(
     key: string,
     task: () => Promise<{ error?: string; ok?: true }>,
+    onSuccess?: () => void,
   ) {
     setPending(key);
     setError(null);
@@ -124,7 +127,8 @@ export function ActionWorkspace({
       setError(result.error);
       return;
     }
-    await router.refresh();
+    onSuccess?.();
+    void router.refresh();
   }
 
   return (
@@ -150,10 +154,10 @@ export function ActionWorkspace({
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Badge
-            variant={actionStatusBadgeVariant(detail.status)}
+            variant={actionStatusBadgeVariant(liveStatus)}
             data-testid="action-status"
           >
-            {actionStatusLabel(detail.status)}
+            {actionStatusLabel(liveStatus)}
           </Badge>
           <Badge variant="secondary" data-testid="action-priority">
             {actionPriorityLabel(detail.priority)}
@@ -241,18 +245,24 @@ export function ActionWorkspace({
         className="flex flex-wrap gap-2"
         data-testid="action-lifecycle-actions"
       >
-        {permissions.can_start && detail.status === "open" ? (
+        {permissions.can_start && liveStatus === "open" ? (
           <Button
             size="sm"
             variant="outline"
             disabled={pending !== null}
             onClick={() =>
-              run("start", () =>
-                transitionActionStatus({
-                  actionId: detail.id,
-                  toStatus: "in_progress",
-                  expectedVersion: detail.version,
-                }),
+              run(
+                "start",
+                () =>
+                  transitionActionStatus({
+                    actionId: detail.id,
+                    toStatus: "in_progress",
+                    expectedVersion: liveVersion,
+                  }),
+                () => {
+                  setLiveStatus("in_progress");
+                  setLiveVersion((version) => version + 1);
+                },
               )
             }
             data-testid="action-start-button"
@@ -261,16 +271,22 @@ export function ActionWorkspace({
           </Button>
         ) : null}
         {permissions.can_complete &&
-        (detail.status === "open" || detail.status === "in_progress") ? (
+        (liveStatus === "open" || liveStatus === "in_progress") ? (
           <Button
             size="sm"
             disabled={pending !== null}
             onClick={() =>
-              run("complete", () =>
-                completeAction({
-                  actionId: detail.id,
-                  expectedVersion: detail.version,
-                }),
+              run(
+                "complete",
+                () =>
+                  completeAction({
+                    actionId: detail.id,
+                    expectedVersion: liveVersion,
+                  }),
+                () => {
+                  setLiveStatus("completed");
+                  setLiveVersion((version) => version + 1);
+                },
               )
             }
             data-testid="action-complete-button"
@@ -279,18 +295,24 @@ export function ActionWorkspace({
           </Button>
         ) : null}
         {permissions.can_cancel &&
-        (detail.status === "open" || detail.status === "in_progress") ? (
+        (liveStatus === "open" || liveStatus === "in_progress") ? (
           <Button
             size="sm"
             variant="outline"
             disabled={pending !== null}
             onClick={() =>
-              run("cancel", () =>
-                transitionActionStatus({
-                  actionId: detail.id,
-                  toStatus: "cancelled",
-                  expectedVersion: detail.version,
-                }),
+              run(
+                "cancel",
+                () =>
+                  transitionActionStatus({
+                    actionId: detail.id,
+                    toStatus: "cancelled",
+                    expectedVersion: liveVersion,
+                  }),
+                () => {
+                  setLiveStatus("cancelled");
+                  setLiveVersion((version) => version + 1);
+                },
               )
             }
             data-testid="action-cancel-button"
@@ -299,17 +321,23 @@ export function ActionWorkspace({
           </Button>
         ) : null}
         {permissions.can_reopen &&
-        (detail.status === "completed" || detail.status === "cancelled") ? (
+        (liveStatus === "completed" || liveStatus === "cancelled") ? (
           <Button
             size="sm"
             variant="outline"
             disabled={pending !== null}
             onClick={() =>
-              run("reopen", () =>
-                reopenAction({
-                  actionId: detail.id,
-                  expectedVersion: detail.version,
-                }),
+              run(
+                "reopen",
+                () =>
+                  reopenAction({
+                    actionId: detail.id,
+                    expectedVersion: liveVersion,
+                  }),
+                () => {
+                  setLiveStatus("open");
+                  setLiveVersion((version) => version + 1);
+                },
               )
             }
             data-testid="action-reopen-button"

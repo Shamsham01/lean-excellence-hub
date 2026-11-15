@@ -45,7 +45,6 @@ export default async function ProblemSolvingCaseDetailPage({
     canVerifyCause,
     canClose,
     canUseAi,
-    projectPicker,
   ] = await Promise.all([
     callProblemSolvingRpc<ProblemSolvingCaseDetail>(
       supabase,
@@ -58,10 +57,12 @@ export default async function ProblemSolvingCaseDetailPage({
     currentMemberHasPermission("problem_solving.verify_cause"),
     currentMemberHasPermission("problem_solving.close"),
     currentMemberHasPermission("ai.use"),
-    loadProjectPickerOptions(),
   ]);
 
   const detail = await resolveProblemSolvingDetailAccess(detailResult);
+  const projectPicker = await loadProjectPickerOptions(undefined, {
+    unitId: detail.organisation_unit_id,
+  });
   if (canUseAi) {
     await recoverProblemSolvingAiRunsForCase(supabase, caseId);
   }
@@ -106,7 +107,7 @@ export default async function ProblemSolvingCaseDetailPage({
       data-testid="problem-solving-detail-page"
     >
       <CaseWorkspace
-        key={`${caseId}:${detail.status}:${detail.updated_at}`}
+        key={`${caseId}:${detail.status}`}
         detail={detail}
         targetDueDateLabel={targetDueDateLabel}
         currentConditionItems={workspaceData.currentConditionItems}

@@ -29,10 +29,18 @@ export type CaseProgressDerivation = {
   prematureCountermeasuresNotice: boolean;
 };
 
+const STAGE_RANK_ALIASES: Record<string, string> = {
+  ANALYSE: "ROOT_CAUSE_ANALYSIS",
+  VERIFY_EFFECT: "EFFECTIVENESS_CHECK",
+  COUNTERMEASURE: "COUNTERMEASURES",
+  SUSTAIN: "SUSTAINMENT",
+};
+
 function stageRank(semanticKey: string | null | undefined): number {
   if (!semanticKey) return 0;
+  const normalized = STAGE_RANK_ALIASES[semanticKey] ?? semanticKey;
   const index = STAGE_PROGRESSION.indexOf(
-    semanticKey as (typeof STAGE_PROGRESSION)[number],
+    normalized as (typeof STAGE_PROGRESSION)[number],
   );
   if (index >= 0) return index;
   return 0;
@@ -65,20 +73,29 @@ function resolveStageForImpliedKey(
   impliedKey: string,
   pinned: MethodStage | null,
 ): MethodStage | null {
-  const byKey =
-    methodStages.find((row) => row.semantic_stage_key === impliedKey) ??
-    methodStages.find(
-      (row) =>
-        row.semantic_stage_key === "ANALYSE" &&
-        impliedKey === "ROOT_CAUSE_ANALYSIS",
-    ) ??
-    methodStages.find(
-      (row) =>
-        row.semantic_stage_key === "VERIFY_EFFECT" &&
-        impliedKey === "EFFECTIVENESS_CHECK",
-    );
+  const impliedRank = stageRank(impliedKey);
 
-  return byKey ?? pinned ?? methodStages[0] ?? null;
+  const exact = methodStages.find(
+    (row) => row.semantic_stage_key === impliedKey,
+  );
+  if (exact) {
+    return exact;
+  }
+
+  let bestAtOrBelow: MethodStage | null = null;
+  let bestRank = -1;
+  for (const row of methodStages) {
+    const rank = stageRank(row.semantic_stage_key);
+    if (rank <= impliedRank && rank > bestRank) {
+      bestAtOrBelow = row;
+      bestRank = rank;
+    }
+  }
+  if (bestAtOrBelow) {
+    return bestAtOrBelow;
+  }
+
+  return pinned ?? methodStages[0] ?? null;
 }
 
 /**

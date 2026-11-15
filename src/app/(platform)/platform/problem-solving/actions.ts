@@ -47,6 +47,7 @@ async function callRpc<T = unknown>(fn: string, args?: RpcArgs): Promise<T> {
 
 function revalidateCasePaths(caseId?: string) {
   revalidatePath("/platform/problem-solving");
+  revalidatePath("/platform");
   if (caseId) {
     revalidatePath(`/platform/problem-solving/${caseId}`, "page");
   }
@@ -1117,7 +1118,7 @@ export async function deleteHypothesisTest(input: {
 }): Promise<ActionResult> {
   try {
     await callRpc("delete_hypothesis_test", {
-      target_hypothesis_test_id: input.testId,
+      target_test_id: input.testId,
     });
     revalidateCasePaths(input.caseId);
     return { ok: true };

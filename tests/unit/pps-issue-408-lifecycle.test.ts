@@ -9,8 +9,25 @@ import {
   PREMATURE_COUNTERMEASURES_NOTICE,
   resolveDisplayedCurrentStage,
 } from "@/lib/problem-solving/derive-case-progress-stage";
+import { PROBLEM_SOLVING_BUILTIN_METHOD_STAGES } from "@/lib/problem-solving/stage-draft";
 import type { MethodStage } from "@/lib/problem-solving/stages";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
+
+function methodStagesFor(methodCode: string): MethodStage[] {
+  const config = PROBLEM_SOLVING_BUILTIN_METHOD_STAGES.find(
+    (row) => row.method === methodCode,
+  );
+  if (!config) {
+    throw new Error(`Unknown method ${methodCode}`);
+  }
+  return config.stages.map((semanticKey, index) => ({
+    id: `${methodCode}-${semanticKey}`,
+    title: semanticKey,
+    semantic_stage_key: semanticKey,
+    description: null,
+    display_order: index + 1,
+  }));
+}
 
 const stages: MethodStage[] = [
   {
@@ -329,5 +346,129 @@ describe("pps issue 408 lifecycle helpers", () => {
       0,
     );
     expect(stage?.semantic_stage_key).toBe("EFFECTIVENESS_CHECK");
+  });
+
+  describe.each([
+    "rapid_rca",
+    "five_why",
+    "rapid_improvement",
+  ] as const)("non-A3 method %s", (methodCode) => {
+    const methodStages = methodStagesFor(methodCode);
+
+    it("maps target condition progress to the furthest available stage below it", () => {
+      const { stage } = deriveCaseProgressStage(
+        methodStages,
+        {
+          ...baseDetail,
+          target_condition: "Within 2 ppm",
+          hypotheses: [],
+          current_stage: methodStages[0]!,
+        },
+        1,
+        0,
+      );
+      const expected =
+        methodCode === "rapid_rca" ? "CURRENT_CONDITION" : "DEFINE";
+      expect(stage?.semantic_stage_key).toBe(expected);
+    });
+
+    it("maps implementation progress to countermeasures when implementation is absent", () => {
+      const countermeasure = {
+        id: "cm1",
+        title: "Fix seal",
+        description: null,
+        rationale: null,
+        status: "proposed" as const,
+        proposed_by_membership_id: "m1",
+        selected_by_membership_id: null,
+        selected_at: null,
+        selected_rationale: null,
+        rejected_by_membership_id: null,
+        rejected_at: null,
+        rejected_rationale: null,
+        created_at: "2026-01-01T00:00:00Z",
+        cause_links: [],
+        evidence_links: [],
+      };
+      const countermeasureAction = {
+        id: "a1",
+        title: "Install fix",
+        description: null,
+        status: "open",
+        priority: "medium",
+        due_at: null,
+        completed_at: null,
+        created_by_membership_id: "m1",
+        context_role: "countermeasure" as const,
+        countermeasure_id: "cm1",
+        containment_id: null,
+        sustainment_item_id: null,
+        created_at: "2026-01-01T00:00:00Z",
+        assignees: [],
+      };
+      const { stage } = deriveCaseProgressStage(
+        methodStages,
+        {
+          ...baseDetail,
+          hypotheses: [hypothesisVerified],
+          countermeasures: [countermeasure],
+          actions: [countermeasureAction],
+          current_stage: methodStages[0]!,
+        },
+        0,
+        0,
+      );
+      expect(stage?.semantic_stage_key).toBe("COUNTERMEASURES");
+    });
+
+    it("maps sustainment progress to effectiveness check when sustainment stage is absent", () => {
+      const { stage } = deriveCaseProgressStage(
+        methodStages,
+        {
+          ...baseDetail,
+          hypotheses: [hypothesisVerified],
+          effectiveness_checks: [
+            {
+              id: "e1",
+              criterion: "Defect rate",
+              baseline_description: null,
+              target_description: null,
+              baseline_numeric: null,
+              target_numeric: null,
+              actual_numeric: null,
+              unit: null,
+              observation_window_start: null,
+              observation_window_end: null,
+              due_date: null,
+              result: "pass",
+              verified_by_membership_id: "m1",
+              verified_at: "2026-01-02T00:00:00Z",
+              created_by_membership_id: "m1",
+              created_at: "2026-01-01T00:00:00Z",
+              evidence_links: [],
+            },
+          ],
+          sustainment_items: [
+            {
+              id: "s1",
+              what: "Audit",
+              owner_membership_id: "m1",
+              check_method: "Walk",
+              follow_up_date: null,
+              result: null,
+              training_session_id: null,
+              schedule_definition_id: null,
+              evidence: null,
+              created_by_membership_id: "m1",
+              created_at: "2026-01-01T00:00:00Z",
+            },
+          ],
+          current_stage: methodStages[0]!,
+        },
+        0,
+        0,
+      );
+      expect(stage?.semantic_stage_key).toBe("EFFECTIVENESS_CHECK");
+    });
   });
 });

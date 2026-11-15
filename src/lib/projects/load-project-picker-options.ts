@@ -11,6 +11,12 @@ export type ProjectPickerOptions = {
   requiresSiteSelection: boolean;
 };
 
+export type ProjectPickerScope = {
+  /** Record site — used when session site is unset or wrong for this link target. */
+  siteUnitId?: string | null;
+  unitId?: string | null;
+};
+
 const PICKER_PAGE_SIZE = 100;
 const PICKER_MAX_PAGES = 2;
 
@@ -39,34 +45,10 @@ async function fetchPortfolioPage(
   );
 }
 
-export async function loadProjectPickerOptions(
-  targetSearch?: string | null,
-): Promise<ProjectPickerOptions> {
-  const supabase = await createServerSupabaseClient();
-  const selectorOptions = await loadSiteScopedSelectorOptions({
-    requireConcreteSite: true,
-  });
-
-  if (selectorOptions.requiresSiteSelection) {
-    return {
-      projects: [],
-      requiresSiteSelection: true,
-    };
-  }
-
-  const portfolioArgs: Record<string, unknown> = {};
-  const trimmedSearch = targetSearch?.trim();
-  if (trimmedSearch) {
-    portfolioArgs.target_search = trimmedSearch;
-  }
-
-  if (
-    selectorOptions.context.mode === "site" &&
-    selectorOptions.context.activeSiteId
-  ) {
-    portfolioArgs.target_site_unit_id = selectorOptions.context.activeSiteId;
-  }
-
+async function loadLinkableProjects(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  portfolioArgs: Record<string, unknown>,
+): Promise<ProjectSelectorOption[]> {
   const projects: ProjectSelectorOption[] = [];
   let page = 1;
   let totalCount = Number.POSITIVE_INFINITY;
@@ -79,6 +61,51 @@ export async function loadProjectPickerOptions(
       break;
     }
     page += 1;
+  }
+
+  return projects;
+}
+
+export async function loadProjectPickerOptions(
+  targetSearch?: string | null,
+  scope?: ProjectPickerScope,
+): Promise<ProjectPickerOptions> {
+  const supabase = await createServerSupabaseClient();
+  const recordSiteUnitId = scope?.siteUnitId?.trim() || null;
+  const selectorOptions = await loadSiteScopedSelectorOptions({
+    requireConcreteSite: !recordSiteUnitId,
+  });
+
+  if (selectorOptions.requiresSiteSelection && !recordSiteUnitId) {
+    return {
+      projects: [],
+      requiresSiteSelection: true,
+    };
+  }
+
+  const portfolioArgs: Record<string, unknown> = {};
+  const trimmedSearch = targetSearch?.trim();
+  if (trimmedSearch) {
+    portfolioArgs.target_search = trimmedSearch;
+  }
+
+  const sessionSiteId =
+    selectorOptions.context.mode === "site"
+      ? selectorOptions.context.activeSiteId
+      : null;
+  const siteUnitId = recordSiteUnitId ?? sessionSiteId;
+  if (siteUnitId) {
+    portfolioArgs.target_site_unit_id = siteUnitId;
+  }
+  if (scope?.unitId) {
+    portfolioArgs.target_unit_id = scope.unitId;
+  }
+
+  let projects = await loadLinkableProjects(supabase, portfolioArgs);
+
+  if (projects.length === 0 && siteUnitId && !recordSiteUnitId) {
+    const { target_site_unit_id: _omit, ...withoutSite } = portfolioArgs;
+    projects = await loadLinkableProjects(supabase, withoutSite);
   }
 
   return {

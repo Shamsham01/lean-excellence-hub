@@ -22,6 +22,7 @@ import {
   retainProblemSolvingTurnKey,
 } from "@/platform/ai/ai-turn-messages";
 import type { AiSessionMode, FacilitatorEnvelope } from "@/platform/ai/types";
+import { isProblemSolvingCaseOpenForAiDraft } from "@/lib/problem-solving/status";
 import { cn } from "@/lib/utils";
 
 export type PendingProposal = InlineAiProposal;
@@ -69,7 +70,7 @@ export function AiFacilitatorPanel({
   stageTitle,
   caseStatus,
   canUseAi,
-  caseDraftingEnabled = true,
+  caseDraftingEnabled,
   providerAvailable,
   layout = "dock",
   collapsed = false,
@@ -199,11 +200,15 @@ export function AiFacilitatorPanel({
     }
   }
 
+  const draftingEnabled =
+    caseDraftingEnabled ??
+    isProblemSolvingCaseOpenForAiDraft(caseStatus ?? "");
+
   const disabledReason = !canUseAi
     ? "You do not have permission to use Lean AI on this case."
     : !providerAvailable
       ? "Lean AI is not enabled or configured for this environment."
-      : !caseDraftingEnabled
+      : !draftingEnabled
         ? "This case is closed or cancelled; Lean AI is not available."
         : null;
 

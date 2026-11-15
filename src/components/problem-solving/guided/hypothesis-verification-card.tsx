@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -78,6 +78,7 @@ export function HypothesisVerificationCard({
   const [completeForm, setCompleteForm] = useState<
     Pick<TestFormState, "actual" | "conclusion">
   >({ actual: "", conclusion: "supports" });
+  const createTestMutationKeyRef = useRef<string | null>(null);
 
   const pendingTest = tests.find((test) => !test.completed_date);
   const canRunTestWorkflow =
@@ -126,6 +127,9 @@ export function HypothesisVerificationCard({
     }
     setActionError(null);
     setLoading(true);
+    if (!createTestMutationKeyRef.current) {
+      createTestMutationKeyRef.current = crypto.randomUUID();
+    }
     const trimmedExpected = createForm.expected.trim();
     const result = await createHypothesisTest({
       hypothesisId: hypothesis.id,
@@ -133,13 +137,14 @@ export function HypothesisVerificationCard({
       testQuestion: createForm.question.trim(),
       ...(trimmedExpected ? { expectedResult: trimmedExpected } : {}),
       method: createForm.method.trim(),
-      mutationKey: crypto.randomUUID(),
+      mutationKey: createTestMutationKeyRef.current,
     });
     setLoading(false);
     if (result.error) {
       setActionError(result.error);
       return;
     }
+    createTestMutationKeyRef.current = null;
     setCreateForm(defaultTestForm());
     router.refresh();
   }

@@ -7,7 +7,6 @@ import {
   expectGuidedProblemSolvingWorkspace,
   fillLeanAiPrompt,
   leanAiPanel,
-  openDemoProblemSolvingCaseFromPortfolio,
   openProblemSolvingStage,
   sendLeanAiPrompt,
 } from "./helpers/guided-problem-solving-workspace";
@@ -36,18 +35,16 @@ test.describe("Milestone 12 closure", () => {
     await disableProblemSolvingStageAutoDraft(page);
   });
 
-  test("manager opens Lean AI on seeded case", async ({ page }) => {
+  test("manager opens Lean AI on active case", async ({ page }) => {
     await signInAsDemoUser(page, "manager");
-    await openDemoProblemSolvingCaseFromPortfolio(page);
-    await expectGuidedProblemSolvingWorkspace(page);
+    await createActiveCaseAndOpenLeanAi(page);
   });
 
   test("challenge mode distinguishes assumptions using fake provider", async ({
     page,
   }) => {
     await signInAsDemoUser(page, "manager");
-    await openDemoProblemSolvingCaseFromPortfolio(page);
-    await expectGuidedProblemSolvingWorkspace(page);
+    await createActiveCaseAndOpenLeanAi(page);
     await leanAiPanel(page)
       .getByTestId("lean-ai-mode")
       .selectOption("challenge");
@@ -89,8 +86,7 @@ test.describe("Milestone 12 closure", () => {
   });
 
   async function openLeanAiPanel(page: Page) {
-    await openDemoProblemSolvingCaseFromPortfolio(page);
-    await expectGuidedProblemSolvingWorkspace(page);
+    await createActiveCaseAndOpenLeanAi(page);
   }
 
   async function createActiveCaseAndOpenLeanAi(page: Page) {
@@ -235,8 +231,7 @@ test.describe("Milestone 12 closure", () => {
     page,
   }) => {
     await signInAsDemoUser(page, "manager");
-    await openDemoProblemSolvingCaseFromPortfolio(page);
-    await expectGuidedProblemSolvingWorkspace(page);
+    await createActiveCaseAndOpenLeanAi(page);
     await expect(page.getByTestId("pps-pending-ai-proposals")).toBeVisible();
     await page.getByTestId("pps-stage-auto-draft-button").click();
     await expect(

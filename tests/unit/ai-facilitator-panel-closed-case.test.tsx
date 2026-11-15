@@ -31,7 +31,6 @@ describe("AiFacilitatorPanel on closed cases", () => {
         caseTitle="Seal defects"
         caseStatus="closed"
         canUseAi
-        caseDraftingEnabled={false}
         providerAvailable
         pendingProposals={[]}
         onPendingProposalsChange={vi.fn()}

@@ -25,11 +25,8 @@ export async function openDemoProblemSolvingCaseFromPortfolio(page: Page) {
     .filter({ hasText: title })
     .filter({ hasText: "Active" })
     .first();
-  if ((await activeItem.count()) > 0) {
-    await activeItem.click();
-    return;
-  }
-  await page.getByRole("link", { name: title }).first().click();
+  await expect(activeItem).toBeVisible({ timeout: 30_000 });
+  await activeItem.click();
 }
 
 export async function ensureLeanAiPanelOpen(page: Page) {

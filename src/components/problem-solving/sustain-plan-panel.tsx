@@ -1,15 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { loadActionCreateContext } from "@/app/(platform)/platform/actions/actions";
 import { upsertProblemSolvingSustainPlan } from "@/app/(platform)/platform/problem-solving/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { labelForMembershipId } from "@/lib/identity/membership-display-label";
+import { isTerminalCaseStatus } from "@/lib/problem-solving/case-lifecycle";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
+
+const SUSTAIN_PLAN_TIME_ZONE = "Europe/London";
+
+function todayIsoInLondon(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: SUSTAIN_PLAN_TIME_ZONE,
+  }).format(new Date());
+}
 
 type SustainPlanPanelProps = {
   caseId: string;
@@ -32,6 +42,7 @@ export function SustainPlanPanel({
   canManage,
 }: SustainPlanPanelProps) {
   const router = useRouter();
+  const terminal = isTerminalCaseStatus(detail.status);
   const [standardised, setStandardised] = useState(
     detail.sustain_plan_standardised ?? "",
   );
@@ -44,16 +55,35 @@ export function SustainPlanPanel({
   const [reviewDate, setReviewDate] = useState(
     detail.sustain_plan_review_date ?? "",
   );
+  const [assignablePeople, setAssignablePeople] = useState<
+    Array<{ membership_id: string; display_name: string }>
+  >([]);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadActionCreateContext().then((ctx) => {
+      if (cancelled) return;
+      setAssignablePeople(
+        ctx.assignablePeople.map((person) => ({
+          membership_id: person.membership_id,
+          display_name: person.display_name,
+        })),
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const hasSavedPlan =
     Boolean(detail.sustain_plan_standardised?.trim()) &&
     Boolean(detail.sustain_plan_monitoring?.trim()) &&
     Boolean(detail.sustain_plan_owner_membership_id) &&
     Boolean(detail.sustain_plan_review_date);
-  const readOnly = !canManage;
+  const readOnly = !canManage || terminal;
 
   function validateFields(): FieldErrors {
     const errors: FieldErrors = {};
@@ -69,7 +99,7 @@ export function SustainPlanPanel({
     if (!reviewDate) {
       errors.reviewDate = "Required";
     } else {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = todayIsoInLondon();
       if (reviewDate < today) {
         errors.reviewDate = "Cannot be in the past";
       }
@@ -172,14 +202,25 @@ export function SustainPlanPanel({
               ) : null}
             </label>
             <label className="flex flex-col gap-1">
-              <span>Owner (membership id)</span>
-              <Input
+              <span>Owner</span>
+              <select
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
                 value={ownerMembershipId}
                 onChange={(e) => setOwnerMembershipId(e.target.value)}
                 required
                 aria-invalid={Boolean(fieldErrors.ownerMembershipId)}
                 data-testid="sustain-plan-owner"
-              />
+              >
+                <option value="">Select owner…</option>
+                {assignablePeople.map((person) => (
+                  <option
+                    key={person.membership_id}
+                    value={person.membership_id}
+                  >
+                    {person.display_name}
+                  </option>
+                ))}
+              </select>
               {fieldErrors.ownerMembershipId ? (
                 <span className="text-xs text-destructive" role="alert">
                   {fieldErrors.ownerMembershipId}
@@ -218,21 +259,23 @@ export function SustainPlanPanel({
                 </span>
               ) : null}
             </label>
-            <Button
-              type="submit"
-              size="sm"
-              disabled={loading}
-              data-testid="save-sustain-plan"
-            >
-              Save sustain plan
+            {message ? (
+              <p
+                className={
+                  message === "Sustain plan saved"
+                    ? "text-sm text-muted-foreground"
+                    : "text-sm text-destructive"
+                }
+                role="status"
+              >
+                {message}
+              </p>
+            ) : null}
+            <Button type="submit" disabled={loading} size="sm">
+              {loading ? "Saving…" : "Save sustain plan"}
             </Button>
           </form>
         )}
-        {message ? (
-          <p className="mt-2 text-xs text-muted-foreground" role="status">
-            {message}
-          </p>
-        ) : null}
       </CardContent>
     </Card>
   );
