@@ -48,6 +48,7 @@ describe("5S audit raise action", () => {
         },
       ],
       canManageLabels: false,
+      canAssign: true,
       currentMembershipId: "member-1",
     });
     createFiveSAction.mockReset();
@@ -86,17 +87,20 @@ describe("5S audit raise action", () => {
       expect(createFiveSAction).toHaveBeenCalledTimes(1);
     });
 
-    expect(createFiveSAction).toHaveBeenCalledWith({
-      auditId: "audit-1",
-      sectionId: "section-sort",
-      questionId: "question-visibility",
-      title: linkContext.defaultTitle,
-      description: "",
-      dueAt: new Date("2026-12-01T12:00:00").toISOString(),
-      assigneeMembershipId: "member-1",
-      labelIds: [],
-      checklistTitles: [],
-    });
+    expect(createFiveSAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        auditId: "audit-1",
+        sectionId: "section-sort",
+        questionId: "question-visibility",
+        title: linkContext.defaultTitle,
+        description: "",
+        dueAt: new Date("2026-12-01T12:00:00").toISOString(),
+        assigneeMembershipId: "member-1",
+        idempotencyKey: expect.any(String),
+        labelIds: [],
+        checklistTitles: [],
+      }),
+    );
   });
 
   it("blocks submit without assignee and due date from audit", async () => {
@@ -104,6 +108,7 @@ describe("5S audit raise action", () => {
       labels: [],
       assignablePeople: [],
       canManageLabels: false,
+      canAssign: true,
       currentMembershipId: null,
     });
 

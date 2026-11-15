@@ -99,16 +99,23 @@ export function mapCiProjectLinkError(error: unknown): string {
     return "You do not have permission to change this project link.";
   }
 
+  if (code === "23505" || /23505/.test(raw)) {
+    return "This record is already linked to that project.";
+  }
+
   if (code === "22023" || /22023/.test(raw)) {
+    if (/already raised this project/i.test(raw)) {
+      return "This case already raised this project.";
+    }
+  }
+
+  if (code === "55000" || /55000/.test(raw)) {
     if (/completed or cancelled and cannot accept new links/i.test(raw)) {
       return "This project is completed or cancelled and cannot accept new links.";
     }
     if (/read-only because the project is completed or cancelled/i.test(raw)) {
       return "This project link is read-only because the project is completed or cancelled.";
     }
-  }
-
-  if (code === "55000" || /55000/.test(raw)) {
     if (/belongs to its project/i.test(raw)) {
       return "This action belongs to its project and cannot be moved or unlinked.";
     }
@@ -128,7 +135,7 @@ export function mapCiProjectLinkError(error: unknown): string {
     return "The project link could not be saved.";
   }
 
-  if (/postgres|supabase|rpc|uuid|\{.*\}|42501|22023|55000|P0002/i.test(raw)) {
+  if (/postgres|supabase|rpc|uuid|\{.*\}|42501|22023|55000|23505|P0002/i.test(raw)) {
     return "The project link could not be saved.";
   }
 

@@ -13837,10 +13837,12 @@ export type Database = {
       }
       create_five_s_action: {
         Args: {
+          target_assignee_membership_id: string
           target_audit_id: string
           target_description?: string
-          target_due_at?: string
+          target_due_at: string
           target_finding_id?: string
+          target_idempotency_key: string
           target_priority?: string
           target_question_id?: string
           target_section_id?: string

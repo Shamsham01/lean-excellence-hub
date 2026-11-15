@@ -89,6 +89,7 @@ export function ActionCreateDialog({
 }: ActionCreateDialogProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const wasOpenRef = useRef(false);
+  const idempotencyKeyRef = useRef<string | null>(null);
   const [queryText, setQueryText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -105,6 +106,7 @@ export function ActionCreateDialog({
   const [checklistDraft, setChecklistDraft] = useState("");
   const [checklistTitles, setChecklistTitles] = useState<string[]>([]);
   const [createContextLoaded, setCreateContextLoaded] = useState(false);
+  const [canAssignOthers, setCanAssignOthers] = useState(true);
   const [evidenceDrafts, setEvidenceDrafts] = useState<
     ActionCreateEvidenceDraft[]
   >([]);
@@ -118,6 +120,7 @@ export function ActionCreateDialog({
   useEffect(() => {
     if (open && !wasOpenRef.current) {
       resetForm();
+      idempotencyKeyRef.current = crypto.randomUUID();
     } else if (!open && wasOpenRef.current) {
       resetForm();
     }
@@ -130,11 +133,22 @@ export function ActionCreateDialog({
     void loadActionCreateContext().then((ctx) => {
       if (cancelled) return;
       setCatalogLabels(ctx.labels);
-      setAssignablePeople(ctx.assignablePeople);
+      setCanAssignOthers(ctx.canAssign);
+      const people =
+        raisedFromAudit && !ctx.canAssign && ctx.currentMembershipId
+          ? [
+              {
+                membership_id: ctx.currentMembershipId,
+                display_name: "You",
+                avatar_url: null,
+              },
+            ]
+          : ctx.assignablePeople;
+      setAssignablePeople(people);
       if (
-        (fiveSLinkContext ?? gembaLinkContext) &&
+        raisedFromAudit &&
         ctx.currentMembershipId &&
-        ctx.assignablePeople.some(
+        people.some(
           (person) => person.membership_id === ctx.currentMembershipId,
         )
       ) {
@@ -187,6 +201,8 @@ export function ActionCreateDialog({
     setDiscardConfirmOpen(false);
     resetPlannerFields();
     setCreateContextLoaded(false);
+    setCanAssignOthers(true);
+    idempotencyKeyRef.current = null;
   }
 
   function closeAndReset() {
@@ -338,6 +354,9 @@ export function ActionCreateDialog({
     let actionId = createdActionId;
     let createWarning: string | undefined;
 
+    const idempotencyKey =
+      idempotencyKeyRef.current ?? (idempotencyKeyRef.current = crypto.randomUUID());
+
     try {
       if (!actionId) {
         const result = fiveSLinkContext
@@ -349,6 +368,7 @@ export function ActionCreateDialog({
               description,
               dueAt: dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null,
               assigneeMembershipId: assigneeId || null,
+              idempotencyKey,
               labelIds: selectedLabelIds,
               checklistTitles: allChecklist,
             })
@@ -364,6 +384,7 @@ export function ActionCreateDialog({
                   ? new Date(`${dueAt}T12:00:00`).toISOString()
                   : null,
                 assigneeMembershipId: assigneeId || null,
+                idempotencyKey,
                 labelIds: selectedLabelIds,
                 checklistTitles: allChecklist,
               })
@@ -405,6 +426,7 @@ export function ActionCreateDialog({
       }
 
       onCreated?.(actionId);
+      idempotencyKeyRef.current = null;
       onOpenChange(false);
       if (createWarning) {
         setToastMessage(createWarning);
@@ -524,7 +546,11 @@ export function ActionCreateDialog({
                     className="min-h-9 rounded-md border border-border bg-background px-3 text-sm"
                     value={assigneeId}
                     required={raisedFromAudit}
-                    disabled={pending || assignablePeople.length === 0}
+                    disabled={
+                      pending ||
+                      assignablePeople.length === 0 ||
+                      (raisedFromAudit && !canAssignOthers)
+                    }
                     data-testid="action-create-assignee"
                     onChange={(event) => setAssigneeId(event.target.value)}
                   >

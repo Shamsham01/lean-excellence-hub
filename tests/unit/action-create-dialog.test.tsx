@@ -36,6 +36,7 @@ beforeEach(() => {
     labels: [],
     assignablePeople: [],
     canManageLabels: false,
+    canAssign: true,
     currentMembershipId: null,
   });
 });

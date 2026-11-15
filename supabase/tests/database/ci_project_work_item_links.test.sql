@@ -1,6 +1,6 @@
 begin;
 
-select plan(73);
+select plan(79);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -417,6 +417,17 @@ select is(
   'charter source link remains after work-item link'
 );
 
+select throws_ok(
+  format(
+    'select public.link_problem_solving_case_to_ci_project(%L::uuid, %L::uuid)',
+    (select id from work_link_ids where key = 'case'),
+    (select id from work_link_ids where key = 'charter_project')
+  ),
+  '22023',
+  'This case already raised this project',
+  'case cannot work_item link to its charter project'
+);
+
 select lives_ok(
   format(
     'select public.unlink_problem_solving_case_from_ci_project(%L::uuid)',
@@ -551,6 +562,48 @@ select throws_ok(
   '55000',
   'This project link is read-only because the project is completed or cancelled.',
   'case relink from completed project refused'
+);
+
+select lives_ok(
+  format(
+    'select public.link_problem_solving_case_to_ci_project(%L::uuid, %L::uuid)',
+    (select id from work_link_ids where key = 'case'),
+    (select id from work_link_ids where key = 'project_site_b')
+  ),
+  'owner links case to site B project for unreadable relink guard'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1000000-0000-0000-0000-000000000002","role":"authenticated","session_id":"f1100000-0000-0000-0000-000000000002","email":"ci-work-link-site-mgr@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from work_link_ids where key = 'organisation')),
+  'site manager session for case relink denial'
+);
+
+select throws_ok(
+  format(
+    'select public.link_problem_solving_case_to_ci_project(%L::uuid, %L::uuid)',
+    (select id from work_link_ids where key = 'case'),
+    (select id from work_link_ids where key = 'project')
+  ),
+  '42501',
+  'problem solving project link is not authorised',
+  'case relink from unreadable project refused'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f1000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"f1100000-0000-0000-0000-000000000001","email":"ci-work-link-owner@example.test"}',
+  true
+);
+
+select ok(
+  public.switch_organisation((select id from work_link_ids where key = 'organisation')),
+  'owner returns after case unreadable relink denial'
 );
 
 insert into work_link_ids (key, id)
@@ -1119,6 +1172,20 @@ select throws_ok(
   '42501',
   'assignee is not authorised',
   'create_gemba_action rejects unknown assignee membership'
+);
+
+select throws_ok(
+  format(
+    'select private.create_gemba_action(%L, %L::uuid, %L::uuid, %L::timestamptz, %L)',
+    'Denied private gemba action',
+    (select id from work_link_ids where key = 'active_walk'),
+    (select id from work_link_ids where key = 'owner_membership'),
+    statement_timestamp() + interval '2 days',
+    'f3000000-0000-0000-0000-000000000099'
+  ),
+  '42501',
+  'permission denied for function create_gemba_action',
+  'authenticated cannot execute private create_gemba_action'
 );
 
 select set_config(

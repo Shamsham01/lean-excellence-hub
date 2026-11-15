@@ -49,6 +49,7 @@ beforeEach(() => {
       },
     ],
     canManageLabels: false,
+    canAssign: true,
     currentMembershipId: "member-1",
   });
   vi.mocked(createFiveSPlannerAction).mockResolvedValue({

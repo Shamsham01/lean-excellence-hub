@@ -142,6 +142,25 @@ export function ProjectLinkField({
           >
             Select an active site in the sidebar before linking a project.
           </p>
+        ) : options.length === 0 ? (
+          <>
+            <p
+              className="text-sm text-muted-foreground"
+              data-testid={`${testId}-no-projects`}
+            >
+              No live projects in your current scope. Try another site or create
+              a project first.
+            </p>
+            <ProjectLinkPicker
+              options={options}
+              value={pickerOpenValue}
+              onChange={(next) => {
+                setPickerOpenValue(next);
+                if (next) void handleLink(next);
+              }}
+              disabled
+            />
+          </>
         ) : (
           <ProjectLinkPicker
             options={options}
@@ -150,7 +169,7 @@ export function ProjectLinkField({
               setPickerOpenValue(next);
               if (next) void handleLink(next);
             }}
-            disabled={pending || options.length === 0}
+            disabled={pending}
           />
         )
       ) : null}

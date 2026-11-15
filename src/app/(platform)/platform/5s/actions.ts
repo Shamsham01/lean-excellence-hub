@@ -386,29 +386,6 @@ export async function createFiveSFinding(
   return { findingId: data as string };
 }
 
-export async function createFiveSAction(
-  auditId: string,
-  title: string,
-  description?: string,
-) {
-  const supabase = await createServerSupabaseClient();
-  const rpcArgs: {
-    target_title: string;
-    target_audit_id: string;
-    target_description?: string;
-  } = {
-    target_title: title,
-    target_audit_id: auditId,
-  };
-  if (description) {
-    rpcArgs.target_description = description;
-  }
-
-  const { data, error } = await supabase.rpc("create_five_s_action", rpcArgs);
-  if (error) return { error: error.message };
-  return { actionId: data as string };
-}
-
 export async function startFiveSAuditFromForm(formData: FormData) {
   const standardId = String(formData.get("standardId"));
   const unitId = String(formData.get("unitId"));
@@ -633,43 +610,6 @@ export async function removeFiveSSectionFromForm(formData: FormData) {
   throwIfActionError(await removeFiveSSection(sectionId));
   revalidatePath("/platform/5s");
   revalidatePath(`/platform/5s/standards/${standardId}`);
-}
-
-export async function ensureFiveSAuditFinding(input: {
-  auditId: string;
-  sectionId: string;
-  questionId: string;
-  observation: string;
-}): Promise<{ id?: string; error?: string }> {
-  const supabase = await createServerSupabaseClient();
-  const observation = input.observation.trim();
-  if (!observation) {
-    return { error: "Finding observation is required." };
-  }
-
-  const { data: existing } = await supabase
-    .from("five_s_audit_findings")
-    .select("id")
-    .eq("audit_id", input.auditId)
-    .eq("question_id", input.questionId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (existing?.id) {
-    return { id: existing.id };
-  }
-
-  const { data, error } = await supabase.rpc("create_five_s_finding", {
-    target_audit_id: input.auditId,
-    target_observation: observation,
-    target_section_id: input.sectionId,
-    target_question_id: input.questionId,
-    target_action_required: true,
-  });
-
-  if (error) return { error: error.message };
-  return { id: data as string };
 }
 
 export async function discardFiveSStandardDraftFromForm(formData: FormData) {

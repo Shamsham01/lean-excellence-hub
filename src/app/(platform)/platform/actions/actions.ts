@@ -308,6 +308,7 @@ export async function loadActionCreateContext(): Promise<{
   labels: ActionLabel[];
   assignablePeople: AssignablePerson[];
   canManageLabels: boolean;
+  canAssign: boolean;
   currentMembershipId: string | null;
 }> {
   const supabase = await createServerSupabaseClient();
@@ -350,6 +351,7 @@ export async function loadActionCreateContext(): Promise<{
     labels: labelsResult.labels ?? [],
     assignablePeople,
     canManageLabels: canUpdate,
+    canAssign,
     currentMembershipId,
   };
 }
@@ -447,6 +449,7 @@ export async function createFiveSPlannerAction(input: {
   description: string;
   dueAt: string | null;
   assigneeMembershipId: string | null;
+  idempotencyKey: string;
   labelIds: string[];
   checklistTitles: string[];
 }): Promise<ActionResult> {
@@ -467,14 +470,19 @@ export async function createFiveSPlannerAction(input: {
   const rpcArgs: {
     target_title: string;
     target_audit_id: string;
+    target_assignee_membership_id: string;
+    target_due_at: string;
+    target_idempotency_key: string;
     target_section_id: string;
     target_question_id: string;
     target_description?: string;
     target_priority?: string;
-    target_due_at?: string;
   } = {
     target_title: title,
     target_audit_id: input.auditId,
+    target_assignee_membership_id: input.assigneeMembershipId!,
+    target_due_at: input.dueAt!,
+    target_idempotency_key: input.idempotencyKey,
     target_section_id: input.sectionId,
     target_question_id: input.questionId,
     target_priority: "normal",
@@ -482,7 +490,6 @@ export async function createFiveSPlannerAction(input: {
   if (input.description.trim()) {
     rpcArgs.target_description = input.description.trim();
   }
-  rpcArgs.target_due_at = input.dueAt!;
 
   const { data, error } = await supabase.rpc("create_five_s_action", rpcArgs);
   if (error) return { error: mapActionMutationError(error) };
@@ -495,14 +502,6 @@ export async function createFiveSPlannerAction(input: {
       id: actionId,
       warning: `${failedStep} could not be applied: ${message} The action was created — open it to finish setup.`,
     };
-  }
-
-  const assignResult = await setActionAssignee({
-    actionId,
-    membershipId: input.assigneeMembershipId!,
-  });
-  if (assignResult.error) {
-    return partialSuccess("Assignee", assignResult.error);
   }
 
   if (input.labelIds.length > 0) {
@@ -537,6 +536,7 @@ export async function createGembaPlannerAction(input: {
   description: string;
   dueAt: string | null;
   assigneeMembershipId: string | null;
+  idempotencyKey: string;
   labelIds: string[];
   checklistTitles: string[];
 }): Promise<ActionResult> {
@@ -554,7 +554,6 @@ export async function createGembaPlannerAction(input: {
   if (ownership.error) return { error: ownership.error };
 
   const supabase = await createServerSupabaseClient();
-  const idempotencyKey = crypto.randomUUID();
   const rpcArgs: {
     target_title: string;
     target_walk_id: string;
@@ -571,7 +570,7 @@ export async function createGembaPlannerAction(input: {
     target_walk_id: input.walkId,
     target_assignee_membership_id: input.assigneeMembershipId!,
     target_due_at: input.dueAt!,
-    target_idempotency_key: idempotencyKey,
+    target_idempotency_key: input.idempotencyKey,
     target_priority: "normal",
   };
   if (input.sectionId) rpcArgs.target_section_id = input.sectionId;
