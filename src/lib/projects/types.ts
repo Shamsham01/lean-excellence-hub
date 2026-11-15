@@ -87,6 +87,23 @@ export type ProjectSelectorOption = {
   site_unit_id?: string | null;
 };
 
+export type ProjectLinkSummary = {
+  id: string;
+  project_number: string;
+  title: string;
+  status: string;
+  href: string;
+  can_open: boolean;
+};
+
+export type ProjectLinkedWorkItem = {
+  id: string;
+  kind: "problem_solving_case" | "five_s_finding" | "gemba_observation";
+  title: string;
+  href: string;
+  kindLabel: string;
+};
+
 export type ProjectDetail = {
   id: string;
   project_number: string;

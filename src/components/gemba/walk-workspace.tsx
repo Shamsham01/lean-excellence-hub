@@ -60,6 +60,10 @@ import {
   countUnansweredRequiredGembaPrompts,
   hasUsableGembaPromptAnswer,
 } from "@/modules/operational/gemba-walk-completion";
+import type {
+  ProjectLinkSummary,
+  ProjectSelectorOption,
+} from "@/lib/projects/types";
 import {
   buildGembaWalkPromptSearch,
   clearStoredGembaWalkPromptId,
@@ -105,6 +109,10 @@ type GembaWalkWorkspaceProps = {
   canComplete?: boolean;
   initialPromptId?: string | null;
   onComplete?: typeof completeGembaWalk;
+  projectOptions?: ProjectSelectorOption[];
+  requiresSiteSelection?: boolean;
+  linkedProjectsByObservationId?: Record<string, ProjectLinkSummary | null>;
+  actionCountsByObservation?: Record<string, number>;
 };
 
 export const DIRTY_OBSERVATION_COMPLETE_MESSAGE =
@@ -197,6 +205,10 @@ export function GembaWalkWorkspace({
   canComplete = false,
   initialPromptId = null,
   onComplete = completeGembaWalk,
+  projectOptions = [],
+  requiresSiteSelection = false,
+  linkedProjectsByObservationId = {},
+  actionCountsByObservation = {},
 }: GembaWalkWorkspaceProps) {
   const router = useRouter();
   const pathname = usePathname() ?? "";
@@ -571,8 +583,13 @@ export function GembaWalkWorkspace({
           observations={observations}
           evidence={evidence}
           canEdit={canEdit}
+          projectOptions={projectOptions}
+          requiresSiteSelection={requiresSiteSelection}
+          linkedProjectsByObservationId={linkedProjectsByObservationId}
+          actionCountsByObservation={actionCountsByObservation}
           onIntegrityChange={handleObservationIntegrity}
           onObservationsChange={handleObservationsChange}
+          onActionCountsChange={() => router.refresh()}
         />
 
         <div className="rounded-lg border border-border bg-surface p-4 sm:p-6">

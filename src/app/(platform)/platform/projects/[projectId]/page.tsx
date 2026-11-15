@@ -8,7 +8,10 @@ import { callBenefitRpc } from "@/lib/benefits/supabase-untyped";
 import type { LinkedBenefitSummary } from "@/lib/benefits/types";
 import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
 import { callProjectRpc, untypedFrom } from "@/lib/projects/supabase-untyped";
-import type { ProjectDetail } from "@/lib/projects/types";
+import type {
+  ProjectDetail,
+  ProjectLinkedWorkItem,
+} from "@/lib/projects/types";
 import { resolvePersonDisplayName } from "@/modules/organisation/site-context";
 import { PROJECTS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
@@ -272,6 +275,76 @@ export default async function ProjectDetailPage({
   }>(supabase, "get_project_benefits", { target_project_id: projectId });
   const benefits = projectBenefitsData?.items ?? [];
 
+  const [
+    sourceLinks,
+    linkedFindings,
+    linkedObservations,
+  ] = await Promise.all([
+    untypedFrom(supabase, "ci_project_source_links")
+      .select("source_resource_id")
+      .eq("project_id", projectId),
+    untypedFrom(supabase, "five_s_audit_findings")
+      .select("id, observation, audit_id, linked_project_id")
+      .eq("linked_project_id", projectId)
+      .limit(20),
+    untypedFrom(supabase, "gemba_walk_observations")
+      .select("id, observation_text, walk_id, linked_project_id")
+      .eq("linked_project_id", projectId)
+      .limit(20),
+  ]);
+
+  const caseIds = (
+    (sourceLinks.data as Array<{ source_resource_id: string }> | null) ?? []
+  ).map((row) => row.source_resource_id);
+  let linkedCases: Array<{
+    id: string;
+    title: string;
+    case_number: string | null;
+  }> = [];
+  if (caseIds.length > 0) {
+    const { data: caseRows } = await supabase
+      .from("problem_solving_cases")
+      .select("id, title, case_number")
+      .in("id", caseIds);
+    linkedCases = caseRows ?? [];
+  }
+
+  const linkedWorkItems: ProjectLinkedWorkItem[] = [
+  ...linkedCases.map((caseRow) => ({
+      id: caseRow.id,
+      kind: "problem_solving_case" as const,
+      title: `${caseRow.case_number ? `${caseRow.case_number} · ` : ""}${caseRow.title}`,
+      href: `/platform/problem-solving/${caseRow.id}`,
+      kindLabel: "Problem solving case",
+    })),
+    ...(
+      (linkedFindings.data as Array<{
+        id: string;
+        observation: string;
+        audit_id: string;
+      }> | null) ?? []
+    ).map((finding) => ({
+      id: finding.id,
+      kind: "five_s_finding" as const,
+      title: finding.observation,
+      href: `/platform/5s/audits/${finding.audit_id}`,
+      kindLabel: "5S audit finding",
+    })),
+    ...(
+      (linkedObservations.data as Array<{
+        id: string;
+        observation_text: string;
+        walk_id: string;
+      }> | null) ?? []
+    ).map((observation) => ({
+      id: observation.id,
+      kind: "gemba_observation" as const,
+      title: observation.observation_text,
+      href: `/platform/gemba/walks/${observation.walk_id}`,
+      kindLabel: "Gemba observation",
+    })),
+  ];
+
   return (
     <div data-testid="project-detail-page">
       <ProjectWorkspace
@@ -291,6 +364,7 @@ export default async function ProjectDetailPage({
         people={selectorOptions.people}
         methodologies={methodologyOptions}
         requiresSiteSelection={selectorOptions.requiresSiteSelection}
+        linkedWorkItems={linkedWorkItems}
       />
       <AppLink
         href="/platform/projects"

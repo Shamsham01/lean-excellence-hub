@@ -15,6 +15,11 @@ import {
 import { loadFiveSAuditLinkedActions } from "@/modules/5s/load-audit-linked-actions";
 import { resolveFiveSScoringScale } from "@/modules/5s/scoring-scale";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadProjectPickerOptions } from "@/lib/projects/load-project-picker-options";
+import { resolveProjectLinkSummary } from "@/lib/projects/project-link-summary";
+import type { FiveSAuditFindingRow } from "@/components/five-s/five-s-audit-finding-panel";
+import type { ProjectLinkSummary } from "@/lib/projects/types";
+import { untypedFrom } from "@/lib/projects/supabase-untyped";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function FiveSAuditPage({
@@ -166,6 +171,30 @@ export default async function FiveSAuditPage({
     }
   }
 
+  const projectPicker = await loadProjectPickerOptions();
+  const { data: findingRows } = await untypedFrom(
+    supabase,
+    "five_s_audit_findings",
+  )
+    .select("id, question_id, observation, linked_project_id")
+    .eq("audit_id", id);
+
+  const findingsByQuestion: Record<string, FiveSAuditFindingRow> = {};
+  const linkedProjectsByQuestion: Record<string, ProjectLinkSummary | null> =
+    {};
+  for (const finding of findingRows ?? []) {
+    if (!finding.question_id) continue;
+    findingsByQuestion[finding.question_id] = {
+      id: finding.id,
+      observation: finding.observation,
+      linked_project_id: finding.linked_project_id,
+    };
+    linkedProjectsByQuestion[finding.question_id] = resolveProjectLinkSummary(
+      finding.linked_project_id,
+      projectPicker.projects,
+    );
+  }
+
   const linkedActions =
     audit.status === "completed" ? await loadFiveSAuditLinkedActions(id) : [];
 
@@ -225,6 +254,10 @@ export default async function FiveSAuditPage({
         scoringScale={resolveFiveSScoringScale(version?.scoring_scale)}
         onComplete={completeFiveSAudit}
         actionCountsByQuestion={actionCountsByQuestion}
+        findingsByQuestion={findingsByQuestion}
+        linkedProjectsByQuestion={linkedProjectsByQuestion}
+        projectOptions={projectPicker.projects}
+        requiresSiteSelection={projectPicker.requiresSiteSelection}
       />
     </div>
   );

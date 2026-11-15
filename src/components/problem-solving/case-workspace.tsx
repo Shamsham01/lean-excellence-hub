@@ -60,6 +60,10 @@ import {
 } from "@/lib/problem-solving/stages";
 import type { ProblemSolvingCaseAuditEvent } from "@/lib/problem-solving/case-audit-activity";
 import type {
+  ProjectLinkSummary,
+  ProjectSelectorOption,
+} from "@/lib/projects/types";
+import type {
   ProblemSolvingAnalysis,
   ProblemSolvingAnalysisNode,
   ProblemSolvingCaseDetail,
@@ -96,6 +100,10 @@ type CaseWorkspaceProps = {
   canUseAi: boolean;
   providerAvailable: boolean;
   pendingAiProposals?: CasePendingAiProposal[];
+  linkedProject?: ProjectLinkSummary | null;
+  projectOptions?: ProjectSelectorOption[];
+  requiresSiteSelection?: boolean;
+  canEditProjectLink?: boolean;
 };
 
 export function CaseWorkspace(props: CaseWorkspaceProps) {
@@ -126,6 +134,10 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     canUseAi,
     providerAvailable,
     pendingAiProposals = [],
+    linkedProject = null,
+    projectOptions = [],
+    requiresSiteSelection = false,
+    canEditProjectLink = false,
   } = props;
   const router = useRouter();
   const pathname = usePathname();
@@ -504,6 +516,10 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
         evidence={evidence}
         canContribute={canContribute || canManage}
         canEditCaseDefinition={canEditCaseDefinition}
+        linkedProject={linkedProject}
+        projectOptions={projectOptions}
+        requiresSiteSelection={requiresSiteSelection}
+        canEditProjectLink={canEditProjectLink}
       />
     );
   }

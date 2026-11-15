@@ -635,6 +635,43 @@ export async function removeFiveSSectionFromForm(formData: FormData) {
   revalidatePath(`/platform/5s/standards/${standardId}`);
 }
 
+export async function ensureFiveSAuditFinding(input: {
+  auditId: string;
+  sectionId: string;
+  questionId: string;
+  observation: string;
+}): Promise<{ id?: string; error?: string }> {
+  const supabase = await createServerSupabaseClient();
+  const observation = input.observation.trim();
+  if (!observation) {
+    return { error: "Finding observation is required." };
+  }
+
+  const { data: existing } = await supabase
+    .from("five_s_audit_findings")
+    .select("id")
+    .eq("audit_id", input.auditId)
+    .eq("question_id", input.questionId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existing?.id) {
+    return { id: existing.id };
+  }
+
+  const { data, error } = await supabase.rpc("create_five_s_finding", {
+    target_audit_id: input.auditId,
+    target_observation: observation,
+    target_section_id: input.sectionId,
+    target_question_id: input.questionId,
+    target_action_required: true,
+  });
+
+  if (error) return { error: error.message };
+  return { id: data as string };
+}
+
 export async function discardFiveSStandardDraftFromForm(formData: FormData) {
   const versionId = String(formData.get("versionId") ?? "").trim();
   const standardId = String(formData.get("standardId") ?? "").trim();

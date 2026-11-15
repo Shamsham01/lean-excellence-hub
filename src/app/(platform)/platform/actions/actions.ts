@@ -506,6 +506,97 @@ export async function createFiveSPlannerAction(input: {
   return { ok: true, id: actionId };
 }
 
+export async function createGembaPlannerAction(input: {
+  walkId: string;
+  sectionId?: string | null;
+  questionId?: string | null;
+  observationId?: string | null;
+  title: string;
+  description: string;
+  dueAt: string | null;
+  assigneeMembershipId: string | null;
+  labelIds: string[];
+  checklistTitles: string[];
+}): Promise<ActionResult> {
+  const canCreate = await currentMemberHasPermission(
+    ACTIONS_PERMISSIONS.create,
+  );
+  if (!canCreate) {
+    return { error: "You do not have permission to create actions." };
+  }
+
+  const title = input.title.trim();
+  if (!title) return { error: "Title is required." };
+
+  const supabase = await createServerSupabaseClient();
+  const rpcArgs: {
+    target_title: string;
+    target_walk_id: string;
+    target_priority?: string;
+    target_section_id?: string;
+    target_question_id?: string;
+    target_observation_id?: string;
+    target_description?: string;
+    target_due_at?: string;
+  } = {
+    target_title: title,
+    target_walk_id: input.walkId,
+    target_priority: "normal",
+  };
+  if (input.sectionId) rpcArgs.target_section_id = input.sectionId;
+  if (input.questionId) rpcArgs.target_question_id = input.questionId;
+  if (input.observationId) rpcArgs.target_observation_id = input.observationId;
+  if (input.description.trim()) {
+    rpcArgs.target_description = input.description.trim();
+  }
+  if (input.dueAt) rpcArgs.target_due_at = input.dueAt;
+
+  const { data, error } = await supabase.rpc("create_gemba_action", rpcArgs);
+  if (error) return { error: mapActionMutationError(error) };
+  const actionId = data as string;
+
+  function partialSuccess(failedStep: string, message: string): ActionResult {
+    revalidateActionPaths(actionId);
+    return {
+      ok: true,
+      id: actionId,
+      warning: `${failedStep} could not be applied: ${message} The action was created — open it to finish setup.`,
+    };
+  }
+
+  if (input.assigneeMembershipId) {
+    const assignResult = await setActionAssignee({
+      actionId,
+      membershipId: input.assigneeMembershipId,
+    });
+    if (assignResult.error) {
+      return partialSuccess("Assignee", assignResult.error);
+    }
+  }
+
+  if (input.labelIds.length > 0) {
+    const labelResult = await setActionLabelsForAction(
+      actionId,
+      input.labelIds,
+    );
+    if (labelResult.error) {
+      return partialSuccess("Labels", labelResult.error);
+    }
+  }
+
+  for (const checklistTitle of input.checklistTitles) {
+    const trimmed = checklistTitle.trim();
+    if (!trimmed) continue;
+    const itemResult = await addActionChecklistItem(actionId, trimmed);
+    if (itemResult.error) {
+      return partialSuccess("Checklist", itemResult.error);
+    }
+  }
+
+  revalidateActionPaths(actionId);
+  return { ok: true, id: actionId };
+}
+
 export async function initiateActionEvidenceUpload(
   actionId: string,
   filename: string,

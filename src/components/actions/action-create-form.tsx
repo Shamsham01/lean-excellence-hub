@@ -6,6 +6,7 @@ import { Plus, X } from "lucide-react";
 import {
   confirmActionEvidenceUpload,
   createFiveSPlannerAction,
+  createGembaPlannerAction,
   createPlannerAction,
   initiateActionEvidenceUpload,
   loadActionCreateContext,
@@ -48,6 +49,14 @@ export type FiveSActionLinkContext = {
   defaultTitle: string;
 };
 
+export type GembaActionLinkContext = {
+  walkId: string;
+  sectionId?: string | null;
+  questionId?: string | null;
+  observationId?: string | null;
+  defaultTitle: string;
+};
+
 type ActionCreateDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -57,6 +66,7 @@ type ActionCreateDialogProps = {
   onCreated?: (actionId: string) => void;
   maturityContext?: MaturityActionContext;
   fiveSLinkContext?: FiveSActionLinkContext;
+  gembaLinkContext?: GembaActionLinkContext;
 };
 
 function readDraftFromForm(form: HTMLFormElement | null) {
@@ -75,6 +85,7 @@ export function ActionCreateDialog({
   onCreated,
   maturityContext,
   fiveSLinkContext,
+  gembaLinkContext,
 }: ActionCreateDialogProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const wasOpenRef = useRef(false);
@@ -127,15 +138,16 @@ export function ActionCreateDialog({
   }, [open, plannerMode]);
 
   useEffect(() => {
-    if (!open || !fiveSLinkContext || !formRef.current) return;
+    const linkContext = fiveSLinkContext ?? gembaLinkContext;
+    if (!open || !linkContext || !formRef.current) return;
     const titleInput = formRef.current.elements.namedItem(
       "title",
     ) as HTMLInputElement | null;
     if (titleInput && !titleInput.value.trim()) {
-      titleInput.value = fiveSLinkContext.defaultTitle;
+      titleInput.value = linkContext.defaultTitle;
       syncQueryFromForm();
     }
-  }, [open, fiveSLinkContext]);
+  }, [open, fiveSLinkContext, gembaLinkContext]);
 
   function syncQueryFromForm() {
     if (!formRef.current) return;
@@ -318,14 +330,29 @@ export function ActionCreateDialog({
               labelIds: selectedLabelIds,
               checklistTitles: allChecklist,
             })
-          : await createPlannerAction({
-              title,
-              description,
-              dueAt: dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null,
-              assigneeMembershipId: assigneeId || null,
-              labelIds: selectedLabelIds,
-              checklistTitles: allChecklist,
-            });
+          : gembaLinkContext
+            ? await createGembaPlannerAction({
+                walkId: gembaLinkContext.walkId,
+                sectionId: gembaLinkContext.sectionId ?? null,
+                questionId: gembaLinkContext.questionId ?? null,
+                observationId: gembaLinkContext.observationId ?? null,
+                title,
+                description,
+                dueAt: dueAt
+                  ? new Date(`${dueAt}T12:00:00`).toISOString()
+                  : null,
+                assigneeMembershipId: assigneeId || null,
+                labelIds: selectedLabelIds,
+                checklistTitles: allChecklist,
+              })
+            : await createPlannerAction({
+                title,
+                description,
+                dueAt: dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null,
+                assigneeMembershipId: assigneeId || null,
+                labelIds: selectedLabelIds,
+                checklistTitles: allChecklist,
+              });
         if (result.error && !result.id) {
           setError(result.error);
           return;
@@ -436,11 +463,17 @@ export function ActionCreateDialog({
                 required
                 placeholder="Action title"
                 disabled={pending || Boolean(createdActionId)}
-                defaultValue={fiveSLinkContext?.defaultTitle ?? undefined}
+                defaultValue={
+                  fiveSLinkContext?.defaultTitle ??
+                  gembaLinkContext?.defaultTitle ??
+                  undefined
+                }
                 key={
                   fiveSLinkContext
                     ? `five-s-title-${fiveSLinkContext.questionId}-${open ? "open" : "closed"}`
-                    : "planner-title"
+                    : gembaLinkContext
+                      ? `gemba-title-${gembaLinkContext.observationId ?? "walk"}-${open ? "open" : "closed"}`
+                      : "planner-title"
                 }
               />
             </div>
