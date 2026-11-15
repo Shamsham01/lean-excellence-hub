@@ -20,14 +20,15 @@ export const proposalPayloadSchemas = {
       category: z.string().optional(),
       rationale: z.string().optional(),
       parent_hypothesis_id: z.string().uuid().optional(),
+      analysis_node_id: z.string().uuid().optional(),
     })
     .strict(),
   hypothesis_test: z
     .object({
       hypothesis_id: z.string().uuid(),
       test_question: z.string().min(1),
-      expected_result: z.string().min(1),
-      method: z.string().optional(),
+      expected_result: z.string().min(1).optional(),
+      method: z.string().min(1),
     })
     .strict(),
   containment: z

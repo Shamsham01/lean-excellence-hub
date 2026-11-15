@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 
 import {
   createCountermeasure,
-  createProblemSolvingAction,
   linkCountermeasureCauses,
   selectCountermeasure,
 } from "@/app/(platform)/platform/problem-solving/actions";
+import { ProblemSolvingActionDialog } from "@/components/problem-solving/problem-solving-action-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +22,7 @@ type CountermeasuresPanelProps = {
   detail: ProblemSolvingCaseDetail;
   canContribute: boolean;
   canManage: boolean;
+  defaultAssigneeMembershipId?: string | null;
 };
 
 export function CountermeasuresPanel({
@@ -29,6 +30,7 @@ export function CountermeasuresPanel({
   detail,
   canContribute,
   canManage,
+  defaultAssigneeMembershipId,
 }: CountermeasuresPanelProps) {
   const router = useRouter();
   const [title, setTitle] = useState("");
@@ -36,7 +38,8 @@ export function CountermeasuresPanel({
   const [selectedCauseIds, setSelectedCauseIds] = useState<
     Record<string, string>
   >({});
-  const [actionTitles, setActionTitles] = useState<Record<string, string>>({});
+  const [actionDialogFor, setActionDialogFor] = useState<string | null>(null);
+  const [actionDefaultTitle, setActionDefaultTitle] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -72,22 +75,6 @@ export function CountermeasuresPanel({
       "Selected from workspace",
     );
     setMessage(result.error ?? "Countermeasure selected");
-    setLoading(false);
-    router.refresh();
-  }
-
-  async function handleLinkAction(countermeasureId: string) {
-    const actionTitle = actionTitles[countermeasureId]?.trim();
-    if (!actionTitle) return;
-    setLoading(true);
-    const result = await createProblemSolvingAction({
-      caseId,
-      title: actionTitle,
-      contextRole: "countermeasure",
-      countermeasureId,
-      description: "Countermeasure implementation action",
-    });
-    setMessage(result.error ?? "Countermeasure action linked");
     setLoading(false);
     router.refresh();
   }
@@ -210,28 +197,17 @@ export function CountermeasuresPanel({
                   "implemented",
                   "effective",
                 ].includes(item.status) ? (
-                  <div className="flex flex-col gap-2 border-t border-border pt-2 sm:flex-row sm:items-end">
-                    <label className="flex flex-1 flex-col gap-1 text-xs">
-                      <span>Universal action for this countermeasure</span>
-                      <Input
-                        value={actionTitles[item.id] ?? ""}
-                        onChange={(e) =>
-                          setActionTitles((current) => ({
-                            ...current,
-                            [item.id]: e.target.value,
-                          }))
-                        }
-                        data-testid={`countermeasure-action-title-${item.id}`}
-                        placeholder="Action title"
-                      />
-                    </label>
+                  <div className="border-t border-border pt-2">
                     <Button
                       size="sm"
-                      disabled={loading}
-                      onClick={() => handleLinkAction(item.id)}
+                      variant="outline"
+                      onClick={() => {
+                        setActionDefaultTitle(`Implement: ${item.title}`);
+                        setActionDialogFor(item.id);
+                      }}
                       data-testid={`link-countermeasure-action-${item.id}`}
                     >
-                      Link action
+                      Raise action
                     </Button>
                   </div>
                 ) : null}
@@ -244,6 +220,21 @@ export function CountermeasuresPanel({
       {message ? (
         <p className="text-sm text-muted-foreground">{message}</p>
       ) : null}
+      <ProblemSolvingActionDialog
+        open={actionDialogFor != null}
+        onOpenChange={(next) => {
+          if (!next) setActionDialogFor(null);
+        }}
+        caseId={caseId}
+        contextRole="countermeasure"
+        countermeasureId={actionDialogFor}
+        defaultTitle={actionDefaultTitle}
+        defaultMembershipId={defaultAssigneeMembershipId ?? null}
+        onCreated={() => {
+          setMessage("Countermeasure action linked");
+          router.refresh();
+        }}
+      />
     </div>
   );
 }

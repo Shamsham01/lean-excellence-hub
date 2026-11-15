@@ -25,6 +25,7 @@ import {
   HYPOTHESIS_VERIFICATION_METHODS,
   hypothesisTestMethodLabel,
 } from "@/lib/problem-solving/hypothesis-verification-rules";
+import { labelForMembershipId } from "@/lib/identity/membership-display-label";
 import type {
   ProblemSolvingHypothesis,
   ProblemSolvingHypothesisTest,
@@ -38,6 +39,7 @@ type HypothesisVerificationCardProps = {
   canManage: boolean;
   canVerifyCause: boolean;
   canEditCaseDefinition: boolean;
+  membershipNameById: Record<string, string>;
 };
 
 type TestFormState = {
@@ -62,6 +64,7 @@ export function HypothesisVerificationCard({
   tests,
   canEditCaseDefinition,
   canVerifyCause,
+  membershipNameById,
 }: HypothesisVerificationCardProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -114,20 +117,17 @@ export function HypothesisVerificationCard({
   }
 
   async function handleCreateTest() {
-    if (
-      !testForm.question.trim() ||
-      !testForm.expected.trim() ||
-      !testForm.method.trim()
-    ) {
+    if (!testForm.question.trim() || !testForm.method.trim()) {
       return;
     }
     setActionError(null);
     setLoading(true);
+    const trimmedExpected = testForm.expected.trim();
     const result = await createHypothesisTest({
       hypothesisId: hypothesis.id,
       caseId,
       testQuestion: testForm.question.trim(),
-      expectedResult: testForm.expected.trim(),
+      ...(trimmedExpected ? { expectedResult: trimmedExpected } : {}),
       method: testForm.method.trim(),
     });
     setLoading(false);
@@ -232,6 +232,48 @@ export function HypothesisVerificationCard({
         ) : null}
       </div>
 
+      {hypothesis.status === "verified" && hypothesis.verification_rationale ? (
+        <div
+          className="mt-2 rounded-md border border-border bg-muted/20 px-3 py-2 text-sm"
+          data-testid={`hypothesis-verified-rationale-${hypothesis.id}`}
+        >
+          <p className="text-xs font-medium text-muted-foreground">
+            Verification rationale
+          </p>
+          <p className="mt-1 whitespace-pre-wrap">{hypothesis.verification_rationale}</p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {labelForMembershipId(
+              membershipNameById,
+              hypothesis.verified_by_membership_id,
+            )}
+            {hypothesis.verified_at
+              ? ` · ${new Date(hypothesis.verified_at).toLocaleString("en-GB")}`
+              : null}
+          </p>
+        </div>
+      ) : null}
+
+      {hypothesis.status === "rejected" && hypothesis.rejection_rationale ? (
+        <div
+          className="mt-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm"
+          data-testid={`hypothesis-rejection-rationale-${hypothesis.id}`}
+        >
+          <p className="text-xs font-medium text-muted-foreground">
+            What disproved it?
+          </p>
+          <p className="mt-1 whitespace-pre-wrap">{hypothesis.rejection_rationale}</p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {labelForMembershipId(
+              membershipNameById,
+              hypothesis.rejected_by_membership_id,
+            )}
+            {hypothesis.rejected_at
+              ? ` · ${new Date(hypothesis.rejected_at).toLocaleString("en-GB")}`
+              : null}
+          </p>
+        </div>
+      ) : null}
+
       {tests.length > 0 ? (
         <ul
           className="mt-2 space-y-1 text-sm text-muted-foreground"
@@ -284,7 +326,10 @@ export function HypothesisVerificationCard({
                 />
               </label>
               <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
-                Expected result
+                Expected result{" "}
+                <span className="font-normal text-muted-foreground/80">
+                  (recommended for falsifiable tests)
+                </span>
                 <Input
                   value={testForm.expected}
                   onChange={(event) =>
@@ -292,6 +337,7 @@ export function HypothesisVerificationCard({
                   }
                   data-testid={`hypothesis-test-expected-${hypothesis.id}`}
                   aria-label="Expected result"
+                  placeholder="What should happen if the cause is real?"
                 />
               </label>
               <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
@@ -320,7 +366,6 @@ export function HypothesisVerificationCard({
                 disabled={
                   loading ||
                   !testForm.question.trim() ||
-                  !testForm.expected.trim() ||
                   !testForm.method.trim()
                 }
                 onClick={handleCreateTest}

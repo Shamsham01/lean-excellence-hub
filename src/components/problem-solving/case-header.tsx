@@ -136,13 +136,27 @@ export function CaseHeader({
     router.refresh();
   }
 
-  const flagshipActive = detail.status === "active" && !showActivate;
+  const useWorkspaceHeader =
+    (detail.status === "active" && !showActivate) ||
+    detail.status === "closed" ||
+    detail.status === "cancelled";
 
-  if (flagshipActive) {
-    const metaParts = [
+  if (useWorkspaceHeader) {
+    const eyebrowLabel =
+      detail.case_number ??
+      (detail.status === "draft"
+        ? "Draft case"
+        : problemSolvingStatusLabel(detail.status));
+  const metaParts = [
       detail.unit_name ? `Unit: ${detail.unit_name}` : null,
       ownerName ? `Owner: ${ownerName}` : null,
       methodLabel ? `Method: ${methodLabel}` : null,
+      detail.status === "closed" && detail.closure_outcome
+        ? `Outcome: ${closureOutcomeLabel(detail.closure_outcome)}`
+        : null,
+      detail.status === "closed" && detail.closed_at
+        ? `Closed ${new Date(detail.closed_at).toLocaleDateString("en-GB")}`
+        : null,
     ].filter(Boolean);
 
     return (
@@ -151,7 +165,13 @@ export function CaseHeader({
         data-testid="problem-solving-header"
       >
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
+          <p
+            className="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+            data-testid="problem-solving-header-eyebrow"
+          >
+            {eyebrowLabel}
+          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
             <Badge
               variant={problemSolvingStatusBadgeVariant(detail.status)}
               className="font-mono-data text-[10px] uppercase"
@@ -163,10 +183,23 @@ export function CaseHeader({
                 {detail.case_number}
               </span>
             ) : null}
+            {detail.closure_outcome ? (
+              <Badge variant="secondary" className="text-[10px]">
+                {closureOutcomeLabel(detail.closure_outcome)}
+              </Badge>
+            ) : null}
             <h1 className="text-lg font-semibold tracking-tight text-foreground">
               {detail.title}
             </h1>
           </div>
+          {detail.status === "active" && detail.current_stage ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Current stage:{" "}
+              <span className="font-medium text-foreground">
+                {detail.current_stage.title}
+              </span>
+            </p>
+          ) : null}
           {metaParts.length > 0 ? (
             <p className="mt-1 text-xs text-muted-foreground">
               {metaParts.join(" · ")}

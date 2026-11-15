@@ -4,6 +4,7 @@ import { formatLongDate } from "@/lib/dates/format-long-date";
 import { membershipDisplayLabel } from "@/lib/identity/membership-display-label";
 import { resolveProblemSolvingDetailAccess } from "@/lib/problem-solving/detail-access";
 import { loadCasePendingAiProposals } from "@/lib/problem-solving/load-case-pending-ai-proposals";
+import { parseCaseAuditActivity } from "@/lib/problem-solving/case-audit-activity";
 import { loadCaseWorkspaceData } from "@/lib/problem-solving/load-case-workspace-data";
 import { callProblemSolvingRpc } from "@/lib/problem-solving/supabase-untyped";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
@@ -57,7 +58,15 @@ export default async function ProblemSolvingCaseDetailPage({
   if (canUseAi) {
     await recoverProblemSolvingAiRunsForCase(supabase, caseId);
   }
-  const workspaceData = await loadCaseWorkspaceData(supabase, caseId, detail);
+  const [workspaceData, auditPayload] = await Promise.all([
+    loadCaseWorkspaceData(supabase, caseId, detail),
+    callProblemSolvingRpc<unknown>(
+      supabase,
+      "get_problem_solving_case_audit_activity",
+      { target_case_id: caseId },
+    ),
+  ]);
+  const auditActivity = parseCaseAuditActivity(auditPayload);
   const pendingAiProposals =
     canUseAi && isApplicationAiProviderAvailable()
       ? await loadCasePendingAiProposals(supabase, caseId, {
@@ -96,6 +105,8 @@ export default async function ProblemSolvingCaseDetailPage({
         comments={workspaceData.comments}
         evidence={workspaceData.evidence}
         membershipNameById={workspaceData.membershipNameById}
+        auditActivity={auditActivity}
+        currentMembershipId={currentMembershipId ?? null}
         ownerName={membershipDisplayLabel(
           detail.owner_display_name,
           workspaceData.membershipNameById[detail.owner_membership_id],
