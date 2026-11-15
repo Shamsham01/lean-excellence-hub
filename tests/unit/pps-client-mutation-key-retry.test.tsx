@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const { createHypothesisTestMock } = vi.hoisted(() => ({
@@ -62,21 +68,31 @@ describe("client mutation keys on retry", () => {
       />,
     );
 
-    const question = screen.getByTestId(`hypothesis-test-question-${hypothesis.id}`);
-    const method = screen.getByTestId(`hypothesis-test-method-${hypothesis.id}`);
-    fireEvent.change(question, { target: { value: "Does heat enlarge the gap?" } });
+    const question = screen.getByTestId(
+      `hypothesis-test-question-${hypothesis.id}`,
+    );
+    const method = screen.getByTestId(
+      `hypothesis-test-method-${hypothesis.id}`,
+    );
+    fireEvent.change(question, {
+      target: { value: "Does heat enlarge the gap?" },
+    });
     fireEvent.change(method, { target: { value: "Measurement / data" } });
 
-  const submit = () =>
+    const submit = () =>
       fireEvent.click(
         screen.getByTestId(`create-hypothesis-test-${hypothesis.id}`),
       );
 
     submit();
-    await waitFor(() => expect(createHypothesisTestMock).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(createHypothesisTestMock).toHaveBeenCalledTimes(1),
+    );
 
     submit();
-    await waitFor(() => expect(createHypothesisTestMock).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(createHypothesisTestMock).toHaveBeenCalledTimes(2),
+    );
 
     const firstKey = createHypothesisTestMock.mock.calls[0]![0].mutationKey;
     const secondKey = createHypothesisTestMock.mock.calls[1]![0].mutationKey;

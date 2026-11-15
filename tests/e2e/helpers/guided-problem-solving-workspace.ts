@@ -13,18 +13,23 @@ export function leanAiPanel(page: Page) {
   return page.getByTestId("lean-ai-panel");
 }
 
-/** Opens the demo title case; when M11 closure left a closed row, picks the Active portfolio item. */
+/** Seeded demo case portfolio row that is still Active (ignores closed duplicates). */
+export function activeDemoCasePortfolioLink(page: Page) {
+  const title = DEMO_PROBLEM_SOLVING_CASE.title;
+  return page
+    .locator('[data-testid^="problem-solving-portfolio-item-"]')
+    .filter({ hasText: title })
+    .filter({ hasText: "Active" })
+    .first();
+}
+
+/** Opens the demo title case; fails when no Active row exists (no closed-case fallback). */
 export async function openDemoProblemSolvingCaseFromPortfolio(page: Page) {
   await page.goto("/platform/problem-solving");
   await expect(
     page.getByTestId("problem-solving-portfolio-page"),
   ).toBeVisible();
-  const title = DEMO_PROBLEM_SOLVING_CASE.title;
-  const activeItem = page
-    .locator('[data-testid^="problem-solving-portfolio-item-"]')
-    .filter({ hasText: title })
-    .filter({ hasText: "Active" })
-    .first();
+  const activeItem = activeDemoCasePortfolioLink(page);
   await expect(activeItem).toBeVisible({ timeout: 30_000 });
   await activeItem.click();
 }

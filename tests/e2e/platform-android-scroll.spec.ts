@@ -5,6 +5,7 @@ import {
   DEMO_PROBLEM_SOLVING_CASE,
 } from "../../scripts/demo-seed/constants";
 import { signInAsDemoUser } from "./helpers/demo-auth";
+import { activeDemoCasePortfolioLink } from "./helpers/guided-problem-solving-workspace";
 import { openMobileDrawer } from "./helpers/open-mobile-drawer";
 import {
   programmaticScrollLocator,
@@ -120,9 +121,7 @@ function defineMobilePlatformScrollSuite(deviceName: "Pixel 7" | "iPhone 13") {
     }, testInfo) => {
       await signInAsDemoUser(page, "manager");
       await page.goto("/platform/problem-solving");
-      await page
-        .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
-        .click();
+      await activeDemoCasePortfolioLink(page).click();
       await expect(page.getByTestId("problem-solving-workspace")).toBeVisible({
         timeout: 30_000,
       });

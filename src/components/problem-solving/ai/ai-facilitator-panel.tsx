@@ -201,8 +201,7 @@ export function AiFacilitatorPanel({
   }
 
   const draftingEnabled =
-    caseDraftingEnabled ??
-    isProblemSolvingCaseOpenForAiDraft(caseStatus ?? "");
+    caseDraftingEnabled ?? isProblemSolvingCaseOpenForAiDraft(caseStatus ?? "");
 
   const disabledReason = !canUseAi
     ? "You do not have permission to use Lean AI on this case."

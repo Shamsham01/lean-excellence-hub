@@ -204,7 +204,7 @@ export function SustainPlanPanel({
             <label className="flex flex-col gap-1">
               <span>Owner</span>
               <select
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                className="border-input flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm"
                 value={ownerMembershipId}
                 onChange={(e) => setOwnerMembershipId(e.target.value)}
                 required
