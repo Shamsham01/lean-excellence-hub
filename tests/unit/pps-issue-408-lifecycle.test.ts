@@ -220,7 +220,7 @@ describe("pps issue 408 lifecycle helpers", () => {
             evidence_links: [],
           },
         ],
-      },
+      } as unknown as ProblemSolvingCaseDetail,
       0,
       0,
     );

@@ -39,9 +39,7 @@ export function SustainPlanPanel({
     detail.sustain_plan_monitoring ?? "",
   );
   const [ownerMembershipId, setOwnerMembershipId] = useState(
-    detail.sustain_plan_owner_membership_id ??
-      detail.owner_membership_id ??
-      "",
+    detail.sustain_plan_owner_membership_id ?? detail.owner_membership_id ?? "",
   );
   const [reviewDate, setReviewDate] = useState(
     detail.sustain_plan_review_date ?? "",

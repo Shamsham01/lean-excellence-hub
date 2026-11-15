@@ -63,21 +63,29 @@ alter table public.actions
 
 grant update (expected_result, updated_at) on public.actions to lean_hub_private_owner;
 
-create table if not exists public.problem_solving_client_mutations (
+drop table if exists public.problem_solving_client_mutations cascade;
+
+create table public.problem_solving_client_mutations (
   id uuid primary key default gen_random_uuid(),
   organisation_id uuid not null,
+  membership_id uuid not null,
   case_id uuid not null,
+  parent_id uuid not null,
   mutation_key text not null,
   resource_type text not null,
   resource_id uuid not null,
   created_at timestamptz not null default statement_timestamp(),
   constraint problem_solving_client_mutations_organisation_id_id_key
     unique (organisation_id, id),
-  constraint problem_solving_client_mutations_org_mutation_key
-    unique (organisation_id, mutation_key),
+  constraint problem_solving_client_mutations_org_member_mutation_key
+    unique (organisation_id, membership_id, mutation_key),
   constraint problem_solving_client_mutations_case_fkey
     foreign key (organisation_id, case_id)
     references public.problem_solving_cases(organisation_id, id)
+    on delete restrict,
+  constraint problem_solving_client_mutations_membership_fkey
+    foreign key (organisation_id, membership_id)
+    references public.organisation_memberships(organisation_id, id)
     on delete restrict,
   constraint problem_solving_client_mutations_mutation_key_check
     check (
@@ -96,6 +104,9 @@ alter table public.problem_solving_client_mutations force row level security;
 
 revoke all on public.problem_solving_client_mutations from public, anon, authenticated, service_role;
 grant select, insert, update, delete on public.problem_solving_client_mutations to lean_hub_private_owner;
+
+drop policy if exists private_owner_all_problem_solving_client_mutations
+  on public.problem_solving_client_mutations;
 
 create policy private_owner_all_problem_solving_client_mutations
 on public.problem_solving_client_mutations for all to lean_hub_private_owner
@@ -121,6 +132,7 @@ declare
   actor_membership_id uuid := private.current_membership_id(org_id);
   normalized_standardised text;
   normalized_monitoring text;
+  case_status text;
 begin
   if org_id is null or actor_membership_id is null then
     raise exception 'sustain plan update is not authorised'
@@ -134,11 +146,22 @@ begin
       using errcode = '42501';
   end if;
 
-  perform private.require_problem_solving_case_open_for_mutation(
-    org_id,
-    target_case_id,
-    'case is closed; sustain plan cannot be changed'
-  );
+  select case_row.status
+  into case_status
+  from public.problem_solving_cases case_row
+  where case_row.organisation_id = org_id
+    and case_row.id = target_case_id
+  for update;
+
+  if not found then
+    raise exception 'sustain plan update is not authorised'
+      using errcode = '42501';
+  end if;
+
+  if case_status in ('closed', 'cancelled') then
+    raise exception 'case is closed; sustain plan cannot be changed'
+      using errcode = '55000';
+  end if;
 
   normalized_standardised := nullif(btrim(coalesce(target_sustain_plan_standardised, '')), '');
   normalized_monitoring := nullif(btrim(coalesce(target_sustain_plan_monitoring, '')), '');
@@ -163,9 +186,10 @@ begin
     from public.organisation_memberships member_row
     where member_row.organisation_id = org_id
       and member_row.id = target_sustain_plan_owner_membership_id
+      and member_row.status = 'active'
   ) then
-    raise exception 'sustain plan owner membership not found'
-      using errcode = 'P0002';
+    raise exception 'sustain plan owner must be an active organisation member'
+      using errcode = '22023';
   end if;
 
   if target_sustain_plan_review_date is null then
@@ -176,16 +200,6 @@ begin
   if target_sustain_plan_review_date < current_date then
     raise exception 'sustain plan review date cannot be in the past'
       using errcode = '22023';
-  end if;
-
-  if not exists (
-    select 1
-    from public.problem_solving_cases case_row
-    where case_row.organisation_id = org_id
-      and case_row.id = target_case_id
-  ) then
-    raise exception 'problem solving case not found'
-      using errcode = 'P0002';
   end if;
 
   update public.problem_solving_cases case_row
@@ -254,7 +268,7 @@ grant execute on function public.upsert_problem_solving_sustain_plan(
 
 revoke all on function public.upsert_problem_solving_sustain_plan(
   uuid, text, uuid, text, date
-) from public, anon;
+) from public, anon, service_role;
 
 -- ── Problem-solving actions: expected result on countermeasure actions ────────
 
@@ -460,24 +474,13 @@ begin
   into test_row
   from public.problem_solving_hypothesis_tests test_table
   where test_table.organisation_id = org_id
-    and test_table.id = target_test_id
-  for update;
+    and test_table.id = target_test_id;
 
-  if not found then
-    raise exception 'hypothesis test not found'
-      using errcode = 'P0002';
-  end if;
-
-  select hypothesis_table.*
-  into hypothesis_row
-  from public.problem_solving_hypotheses hypothesis_table
-  where hypothesis_table.organisation_id = org_id
-    and hypothesis_table.id = test_row.hypothesis_id;
-
-  if not private.can_manage_problem_solving_case(
-    org_id,
-    test_row.problem_solving_case_id
-  ) then
+  if not found
+    or not private.can_manage_problem_solving_case(
+      org_id,
+      test_row.problem_solving_case_id
+    ) then
     raise exception 'hypothesis test deletion is not authorised'
       using errcode = '42501';
   end if;
@@ -487,6 +490,24 @@ begin
     test_row.problem_solving_case_id,
     'case is closed; hypothesis cannot be changed'
   );
+
+  select test_table.*
+  into test_row
+  from public.problem_solving_hypothesis_tests test_table
+  where test_table.organisation_id = org_id
+    and test_table.id = target_test_id
+  for update;
+
+  if not found then
+    raise exception 'hypothesis test deletion is not authorised'
+      using errcode = '42501';
+  end if;
+
+  select hypothesis_table.*
+  into hypothesis_row
+  from public.problem_solving_hypotheses hypothesis_table
+  where hypothesis_table.organisation_id = org_id
+    and hypothesis_table.id = test_row.hypothesis_id;
 
   if hypothesis_row.status in ('verified', 'rejected', 'superseded') then
     raise exception 'cannot delete tests for a hypothesis in terminal state'
@@ -498,6 +519,33 @@ begin
       using errcode = '55000';
   end if;
 
+  if exists (
+    select 1
+    from public.problem_solving_evidence_links link_row
+    where link_row.organisation_id = org_id
+      and link_row.hypothesis_test_id = target_test_id
+  )
+  or exists (
+    select 1
+    from public.ai_source_references ref_row
+    where ref_row.organisation_id = org_id
+      and ref_row.hypothesis_test_id = target_test_id
+  )
+  or exists (
+    select 1
+    from public.ai_acceptance_provenance prov_row
+    where prov_row.organisation_id = org_id
+      and prov_row.hypothesis_test_id = target_test_id
+  ) then
+    raise exception 'hypothesis test has linked evidence or AI provenance and cannot be deleted'
+      using errcode = '55000';
+  end if;
+
+  delete from public.problem_solving_client_mutations mutation_row
+  where mutation_row.organisation_id = org_id
+    and mutation_row.resource_type = 'hypothesis_test'
+    and mutation_row.resource_id = target_test_id;
+
   delete from public.problem_solving_hypothesis_tests test_table
   where test_table.organisation_id = org_id
     and test_table.id = target_test_id
@@ -508,6 +556,18 @@ begin
     'hypothesis_test.deleted',
     test_row.problem_solving_case_id,
     'succeeded',
+    jsonb_build_object(
+      'test_id', target_test_id,
+      'hypothesis_id', test_row.hypothesis_id,
+      'case_id', test_row.problem_solving_case_id
+    )
+  );
+
+  perform private.enqueue_domain_event(
+    org_id,
+    test_row.problem_solving_case_id,
+    'HypothesisTestDeleted',
+    target_test_id::text,
     jsonb_build_object(
       'test_id', target_test_id,
       'hypothesis_id', test_row.hypothesis_id,
@@ -538,7 +598,8 @@ as $$ select private.delete_hypothesis_test(target_test_id) $$;
 
 grant execute on function public.delete_hypothesis_test(uuid) to authenticated;
 
-revoke all on function public.delete_hypothesis_test(uuid) from public, anon;
+revoke all on function public.delete_hypothesis_test(uuid)
+  from public, anon, service_role;
 
 -- ── Client mutation idempotency ─────────────────────────────────────────────
 
@@ -564,7 +625,7 @@ declare
   actor_membership_id uuid := private.current_membership_id(org_id);
   analysis_row public.problem_solving_analyses%rowtype;
   normalized_mutation_key text;
-  replay_resource_id uuid;
+  mapping_row public.problem_solving_client_mutations%rowtype;
   new_id uuid;
 begin
   if org_id is null or actor_membership_id is null then
@@ -575,26 +636,6 @@ begin
   perform private.assert_current_organisation_module_entitled('problem_solving');
 
   normalized_mutation_key := nullif(btrim(coalesce(target_mutation_key, '')), '');
-
-  if normalized_mutation_key is not null then
-    select mutation_row.resource_id
-    into replay_resource_id
-    from public.problem_solving_client_mutations mutation_row
-    where mutation_row.organisation_id = org_id
-      and mutation_row.mutation_key = normalized_mutation_key
-      and mutation_row.resource_type = 'analysis_node';
-
-    if replay_resource_id is not null then
-      if exists (
-        select 1
-        from public.problem_solving_analysis_nodes node_row
-        where node_row.organisation_id = org_id
-          and node_row.id = replay_resource_id
-      ) then
-        return replay_resource_id;
-      end if;
-    end if;
-  end if;
 
   select analysis_table.*
   into analysis_row
@@ -615,6 +656,12 @@ begin
       using errcode = '42501';
   end if;
 
+  perform private.require_problem_solving_case_open_for_mutation(
+    org_id,
+    analysis_row.problem_solving_case_id,
+    'case is closed; analysis cannot be changed'
+  );
+
   if target_parent_node_id is not null then
     if not exists (
       select 1
@@ -628,58 +675,113 @@ begin
     end if;
   end if;
 
-  insert into public.problem_solving_analysis_nodes (
-    organisation_id,
-    analysis_id,
-    parent_node_id,
-    category,
-    label,
-    sort_order,
-    display_metadata,
-    created_by_membership_id
-  )
-  values (
-    org_id,
-    target_analysis_id,
-    target_parent_node_id,
-    target_category,
-    btrim(target_label),
-    target_sort_order,
-    target_display_metadata,
-    actor_membership_id
-  )
-  returning id into new_id;
-
   if normalized_mutation_key is not null then
-    begin
-      insert into public.problem_solving_client_mutations (
-        organisation_id,
-        case_id,
-        mutation_key,
-        resource_type,
-        resource_id
-      )
-      values (
-        org_id,
-        analysis_row.problem_solving_case_id,
-        normalized_mutation_key,
-        'analysis_node',
-        new_id
-      );
-    exception
-      when unique_violation then
-        select mutation_row.resource_id
-        into replay_resource_id
-        from public.problem_solving_client_mutations mutation_row
-        where mutation_row.organisation_id = org_id
-          and mutation_row.mutation_key = normalized_mutation_key;
+    new_id := gen_random_uuid();
 
-        if replay_resource_id is not null then
-          return replay_resource_id;
-        end if;
-        raise;
-    end;
+    insert into public.problem_solving_client_mutations (
+      organisation_id,
+      membership_id,
+      case_id,
+      parent_id,
+      mutation_key,
+      resource_type,
+      resource_id
+    )
+    values (
+      org_id,
+      actor_membership_id,
+      analysis_row.problem_solving_case_id,
+      target_analysis_id,
+      normalized_mutation_key,
+      'analysis_node',
+      new_id
+    )
+    on conflict (organisation_id, membership_id, mutation_key) do nothing;
+
+    if not found then
+      select mutation_row.*
+      into mapping_row
+      from public.problem_solving_client_mutations mutation_row
+      where mutation_row.organisation_id = org_id
+        and mutation_row.membership_id = actor_membership_id
+        and mutation_row.mutation_key = normalized_mutation_key;
+
+      if mapping_row.resource_type <> 'analysis_node'
+        or mapping_row.parent_id <> target_analysis_id then
+        raise exception 'mutation key reused for a different request'
+          using errcode = '23505';
+      end if;
+
+      if not exists (
+        select 1
+        from public.problem_solving_analysis_nodes node_row
+        where node_row.organisation_id = org_id
+          and node_row.id = mapping_row.resource_id
+      ) then
+        raise exception 'mutation already applied; resource was removed'
+          using errcode = '55000';
+      end if;
+
+      return mapping_row.resource_id;
+    end if;
+
+    insert into public.problem_solving_analysis_nodes (
+      id,
+      organisation_id,
+      analysis_id,
+      parent_node_id,
+      category,
+      label,
+      sort_order,
+      display_metadata,
+      created_by_membership_id
+    )
+    values (
+      new_id,
+      org_id,
+      target_analysis_id,
+      target_parent_node_id,
+      target_category,
+      btrim(target_label),
+      target_sort_order,
+      target_display_metadata,
+      actor_membership_id
+    );
+  else
+    insert into public.problem_solving_analysis_nodes (
+      organisation_id,
+      analysis_id,
+      parent_node_id,
+      category,
+      label,
+      sort_order,
+      display_metadata,
+      created_by_membership_id
+    )
+    values (
+      org_id,
+      target_analysis_id,
+      target_parent_node_id,
+      target_category,
+      btrim(target_label),
+      target_sort_order,
+      target_display_metadata,
+      actor_membership_id
+    )
+    returning id into new_id;
   end if;
+
+  perform private.append_business_audit(
+    org_id,
+    'problem_solving.analysis_node_added',
+    analysis_row.problem_solving_case_id,
+    'succeeded',
+    jsonb_build_object(
+      'node_id', new_id,
+      'analysis_id', target_analysis_id,
+      'case_id', analysis_row.problem_solving_case_id
+    )
+  );
 
   return new_id;
 end;
@@ -729,7 +831,7 @@ grant execute on function public.add_analysis_node(
 
 revoke all on function public.add_analysis_node(
   uuid, text, uuid, text, integer, jsonb, text
-) from public, anon;
+) from public, anon, service_role;
 
 drop function if exists public.create_hypothesis_test(uuid, text, text, text, uuid, date);
 
@@ -756,7 +858,7 @@ declare
   normalized_expected text;
   normalized_method text;
   normalized_mutation_key text;
-  replay_resource_id uuid;
+  mapping_row public.problem_solving_client_mutations%rowtype;
   new_id uuid;
 begin
   if org_id is null or actor_membership_id is null then
@@ -767,26 +869,6 @@ begin
   perform private.assert_current_organisation_module_entitled('problem_solving');
 
   normalized_mutation_key := nullif(btrim(coalesce(target_mutation_key, '')), '');
-
-  if normalized_mutation_key is not null then
-    select mutation_row.resource_id
-    into replay_resource_id
-    from public.problem_solving_client_mutations mutation_row
-    where mutation_row.organisation_id = org_id
-      and mutation_row.mutation_key = normalized_mutation_key
-      and mutation_row.resource_type = 'hypothesis_test';
-
-    if replay_resource_id is not null then
-      if exists (
-        select 1
-        from public.problem_solving_hypothesis_tests test_row
-        where test_row.organisation_id = org_id
-          and test_row.id = replay_resource_id
-      ) then
-        return replay_resource_id;
-      end if;
-    end if;
-  end if;
 
   if btrim(coalesce(target_test_question, '')) = '' then
     raise exception 'test question is required'
@@ -833,59 +915,104 @@ begin
 
   resolved_owner_membership_id := coalesce(target_owner_membership_id, actor_membership_id);
 
-  insert into public.problem_solving_hypothesis_tests (
-    organisation_id,
-    problem_solving_case_id,
-    hypothesis_id,
-    test_question,
-    expected_result,
-    method,
-    owner_membership_id,
-    planned_date,
-    created_by_membership_id
-  )
-  values (
-    org_id,
-    hypothesis_row.problem_solving_case_id,
-    target_hypothesis_id,
-    btrim(target_test_question),
-    normalized_expected,
-    normalized_method,
-    resolved_owner_membership_id,
-    target_planned_date,
-    actor_membership_id
-  )
-  returning id into new_id;
-
   if normalized_mutation_key is not null then
-    begin
-      insert into public.problem_solving_client_mutations (
-        organisation_id,
-        case_id,
-        mutation_key,
-        resource_type,
-        resource_id
-      )
-      values (
-        org_id,
-        hypothesis_row.problem_solving_case_id,
-        normalized_mutation_key,
-        'hypothesis_test',
-        new_id
-      );
-    exception
-      when unique_violation then
-        select mutation_row.resource_id
-        into replay_resource_id
-        from public.problem_solving_client_mutations mutation_row
-        where mutation_row.organisation_id = org_id
-          and mutation_row.mutation_key = normalized_mutation_key;
+    new_id := gen_random_uuid();
 
-        if replay_resource_id is not null then
-          return replay_resource_id;
-        end if;
-        raise;
-    end;
+    insert into public.problem_solving_client_mutations (
+      organisation_id,
+      membership_id,
+      case_id,
+      parent_id,
+      mutation_key,
+      resource_type,
+      resource_id
+    )
+    values (
+      org_id,
+      actor_membership_id,
+      hypothesis_row.problem_solving_case_id,
+      target_hypothesis_id,
+      normalized_mutation_key,
+      'hypothesis_test',
+      new_id
+    )
+    on conflict (organisation_id, membership_id, mutation_key) do nothing;
+
+    if not found then
+      select mutation_row.*
+      into mapping_row
+      from public.problem_solving_client_mutations mutation_row
+      where mutation_row.organisation_id = org_id
+        and mutation_row.membership_id = actor_membership_id
+        and mutation_row.mutation_key = normalized_mutation_key;
+
+      if mapping_row.resource_type <> 'hypothesis_test'
+        or mapping_row.parent_id <> target_hypothesis_id then
+        raise exception 'mutation key reused for a different request'
+          using errcode = '23505';
+      end if;
+
+      if not exists (
+        select 1
+        from public.problem_solving_hypothesis_tests test_row
+        where test_row.organisation_id = org_id
+          and test_row.id = mapping_row.resource_id
+      ) then
+        raise exception 'mutation already applied; resource was removed'
+          using errcode = '55000';
+      end if;
+
+      return mapping_row.resource_id;
+    end if;
+
+    insert into public.problem_solving_hypothesis_tests (
+      id,
+      organisation_id,
+      problem_solving_case_id,
+      hypothesis_id,
+      test_question,
+      expected_result,
+      method,
+      owner_membership_id,
+      planned_date,
+      created_by_membership_id
+    )
+    values (
+      new_id,
+      org_id,
+      hypothesis_row.problem_solving_case_id,
+      target_hypothesis_id,
+      btrim(target_test_question),
+      normalized_expected,
+      normalized_method,
+      resolved_owner_membership_id,
+      target_planned_date,
+      actor_membership_id
+    );
+  else
+    insert into public.problem_solving_hypothesis_tests (
+      organisation_id,
+      problem_solving_case_id,
+      hypothesis_id,
+      test_question,
+      expected_result,
+      method,
+      owner_membership_id,
+      planned_date,
+      created_by_membership_id
+    )
+    values (
+      org_id,
+      hypothesis_row.problem_solving_case_id,
+      target_hypothesis_id,
+      btrim(target_test_question),
+      normalized_expected,
+      normalized_method,
+      resolved_owner_membership_id,
+      target_planned_date,
+      actor_membership_id
+    )
+    returning id into new_id;
   end if;
 
   perform private.append_business_audit(
@@ -960,7 +1087,7 @@ grant execute on function public.create_hypothesis_test(
 
 revoke all on function public.create_hypothesis_test(
   uuid, text, text, text, uuid, date, text
-) from public, anon;
+) from public, anon, service_role;
 
 -- ── Case detail: sustain plan fields ────────────────────────────────────────
 
@@ -1340,6 +1467,7 @@ begin
         'due_at', a.due_at,
         'completed_at', a.completed_at,
         'created_by_membership_id', a.created_by_membership_id,
+        'expected_result', a.expected_result,
         'context_role', ac.context_role,
         'countermeasure_id', ac.countermeasure_id,
         'containment_id', ac.containment_id,

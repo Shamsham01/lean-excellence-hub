@@ -36,7 +36,7 @@ describe("StageAutoDraftTrigger on closed cases", () => {
         canUseAi
         providerAvailable
         hasProblemData
-        caseOpen={false}
+        caseStatus="closed"
       />,
     );
 

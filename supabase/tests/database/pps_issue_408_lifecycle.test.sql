@@ -1,6 +1,6 @@
 begin;
 
-select plan(24);
+select plan(40);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -279,6 +279,106 @@ select is(
   'create_hypothesis_test replays same test id for mutation key'
 );
 
+select throws_ok(
+  format(
+    'select public.create_hypothesis_test(%L::uuid, %L, %L, %L, null, null, %L)',
+    (select id from pps_408_ids where key = 'hypothesis'),
+    'Cross-type reuse attempt',
+    null,
+    'Observation',
+    'pps-408-node-mutation-1'
+  ),
+  '23505',
+  'mutation key reused for a different request',
+  'mutation key cannot cross resource types'
+);
+
+insert into pps_408_ids (key, id)
+select 'fishbone_b', public.create_analysis(
+  (select id from pps_408_ids where key = 'case'),
+  'fishbone',
+  'Second fishbone for parent mismatch'
+);
+
+select throws_ok(
+  format(
+    'select public.add_analysis_node(%L::uuid, %L, null, %L, 1, %L::jsonb, %L)',
+    (select id from pps_408_ids where key = 'fishbone_b'),
+    'Different analysis parent',
+    'Machine',
+    '{}',
+    'pps-408-node-mutation-1'
+  ),
+  '23505',
+  'mutation key reused for a different request',
+  'mutation key rejects different parent on replay'
+);
+
+insert into pps_408_ids (key, id)
+select 'stale_test', public.create_hypothesis_test(
+  (select id from pps_408_ids where key = 'hypothesis'),
+  'Stale mapping question',
+  null,
+  'Observation',
+  null,
+  null,
+  'pps-408-stale-mutation'
+);
+
+select ok(
+  public.delete_hypothesis_test((select id from pps_408_ids where key = 'stale_test')),
+  'stale mapping test deleted to clear resource'
+);
+
+select ok(
+  public.create_hypothesis_test(
+    (select id from pps_408_ids where key = 'hypothesis'),
+    'Stale mapping recreate',
+    null,
+    'Observation',
+    null,
+    null,
+    'pps-408-stale-mutation'
+  ) is not null,
+  'mutation key can create a new resource after prior delete'
+);
+
+insert into pps_408_ids (key, id)
+select 'provenance_test', public.create_hypothesis_test(
+  (select id from pps_408_ids where key = 'hypothesis'),
+  'AI-linked pending test',
+  null,
+  'Observation',
+  null,
+  null,
+  'pps-408-provenance-block'
+);
+
+set local role lean_hub_private_owner;
+
+insert into public.ai_source_references (organisation_id, hypothesis_test_id)
+values (
+  (select id from pps_408_ids where key = 'organisation'),
+  (select id from pps_408_ids where key = 'provenance_test')
+);
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"b2a00000-0000-0000-0000-000000000001","role":"authenticated","session_id":"b2a10000-0000-0000-0000-000000000001","email":"pps-408-owner@example.test"}',
+  true
+);
+
+select throws_ok(
+  format(
+    'select public.delete_hypothesis_test(%L::uuid)',
+    (select id from pps_408_ids where key = 'provenance_test')
+  ),
+  '55000',
+  'hypothesis test has linked evidence or AI provenance and cannot be deleted',
+  'delete rejects hypothesis test with AI source reference'
+);
+
 insert into pps_408_ids (key, id)
 select 'countermeasure', public.create_countermeasure(
   (select id from pps_408_ids where key = 'case'),
@@ -311,6 +411,110 @@ select is(
   'create_problem_solving_action persists expected_result on action'
 );
 
+select is(
+  public.get_problem_solving_detail((select id from pps_408_ids where key = 'case'))
+    #>> '{actions,0,expected_result}',
+  'No runout over 0.05 mm after changeover',
+  'get_problem_solving_detail includes expected_result on actions'
+);
+
+select throws_ok(
+  $$ select public.delete_hypothesis_test('00000000-0000-0000-0000-000000000099'::uuid) $$,
+  '42501',
+  'hypothesis test deletion is not authorised',
+  'delete hypothesis test rejects unknown id with 42501'
+);
+
+insert into pps_408_ids (key, id)
+select 'closed_guard_case', public.create_problem_solving_case_draft(
+  'PPS 408 closed guard case',
+  (select id from pps_408_ids where key = 'unit')
+);
+
+select ok(
+  public.activate_problem_solving_case(
+    (select id from pps_408_ids where key = 'closed_guard_case'),
+    (select id from pps_408_ids where key = 'method')
+  ),
+  'closed-guard case activated'
+);
+
+insert into pps_408_ids (key, id)
+select 'closed_guard_hypothesis', public.create_hypothesis(
+  (select id from pps_408_ids where key = 'closed_guard_case'),
+  'Closed-case hypothesis'
+);
+
+insert into pps_408_ids (key, id)
+select 'closed_guard_test', public.create_hypothesis_test(
+  (select id from pps_408_ids where key = 'closed_guard_hypothesis'),
+  'Closed-case pending test',
+  null,
+  'Observation'
+);
+
+insert into pps_408_ids (key, id)
+select 'closed_guard_fishbone', public.create_analysis(
+  (select id from pps_408_ids where key = 'closed_guard_case'),
+  'fishbone',
+  'Closed-case fishbone'
+);
+
+select ok(
+  public.cancel_problem_solving_case(
+    (select id from pps_408_ids where key = 'closed_guard_case'),
+    'Cancelled for RPC guard coverage'
+  ),
+  'closed-guard case cancelled'
+);
+
+select throws_ok(
+  format(
+    'select public.upsert_problem_solving_sustain_plan(%L::uuid, %L, %L, %L, %L::date)',
+    (select id from pps_408_ids where key = 'closed_guard_case'),
+    'Standard',
+    (select id from pps_408_ids where key = 'membership'),
+    'Weekly audit',
+    '2027-06-01'
+  ),
+  '55000',
+  'case is closed; sustain plan cannot be changed',
+  'sustain plan rejects closed case'
+);
+
+select throws_ok(
+  format(
+    'select public.add_analysis_node(%L::uuid, %L)',
+    (select id from pps_408_ids where key = 'closed_guard_fishbone'),
+    'Closed case node'
+  ),
+  '55000',
+  'case is closed; analysis cannot be changed',
+  'add_analysis_node rejects closed case'
+);
+
+select throws_ok(
+  format(
+    'select public.create_hypothesis_test(%L::uuid, %L, null, %L)',
+    (select id from pps_408_ids where key = 'closed_guard_hypothesis'),
+    'Closed case test',
+    'Observation'
+  ),
+  '55000',
+  'case is closed; hypothesis cannot be changed',
+  'create_hypothesis_test rejects closed case'
+);
+
+select throws_ok(
+  format(
+    'select public.delete_hypothesis_test(%L::uuid)',
+    (select id from pps_408_ids where key = 'closed_guard_test')
+  ),
+  '55000',
+  'case is closed; hypothesis cannot be changed',
+  'delete_hypothesis_test rejects closed case'
+);
+
 select ok(
   not has_function_privilege(
     'authenticated',
@@ -336,6 +540,33 @@ select ok(
     'execute'
   ),
   'authenticated cannot execute private add_analysis_node with mutation key'
+);
+
+select ok(
+  not has_function_privilege(
+    'service_role',
+    'public.upsert_problem_solving_sustain_plan(uuid, text, uuid, text, date)',
+    'execute'
+  ),
+  'service_role cannot execute upsert_problem_solving_sustain_plan'
+);
+
+select ok(
+  not has_function_privilege(
+    'service_role',
+    'public.delete_hypothesis_test(uuid)',
+    'execute'
+  ),
+  'service_role cannot execute delete_hypothesis_test'
+);
+
+select ok(
+  not has_function_privilege(
+    'anon',
+    'private.delete_hypothesis_test(uuid)',
+    'execute'
+  ),
+  'anon cannot execute private delete_hypothesis_test'
 );
 
 select set_config(

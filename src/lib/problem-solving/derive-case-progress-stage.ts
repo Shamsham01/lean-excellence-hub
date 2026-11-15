@@ -147,7 +147,10 @@ export function deriveCaseProgressStage(
     impliedKey = "SUSTAINMENT";
   }
 
-  if (!verifiedCause && stageRank(impliedKey) > stageRank("ROOT_CAUSE_ANALYSIS")) {
+  if (
+    !verifiedCause &&
+    stageRank(impliedKey) > stageRank("ROOT_CAUSE_ANALYSIS")
+  ) {
     impliedKey = "ROOT_CAUSE_ANALYSIS";
   }
 
@@ -160,8 +163,7 @@ export function deriveCaseProgressStage(
   const pinnedAllowed =
     pinned &&
     (!prematureCountermeasuresNotice ||
-      stageRank(pinned.semantic_stage_key) <=
-        stageRank("ROOT_CAUSE_ANALYSIS"));
+      stageRank(pinned.semantic_stage_key) <= stageRank("ROOT_CAUSE_ANALYSIS"));
 
   let stage: MethodStage | null;
   if (
