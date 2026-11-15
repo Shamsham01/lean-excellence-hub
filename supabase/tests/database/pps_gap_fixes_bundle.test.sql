@@ -1,6 +1,6 @@
 begin;
 
-select plan(23);
+select plan(25);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -306,6 +306,54 @@ select throws_ok(
   '22023',
   'all effectiveness checks must pass before closing as resolved',
   'fail blocks resolved_without_verified_cause'
+);
+
+set local role postgres;
+update public.problem_solving_countermeasures
+set status = 'ineffective',
+    updated_at = statement_timestamp()
+where id = (select id from pps_gap_ids where key = 'closure_cm');
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"b2900000-0000-0000-0000-000000000001","role":"authenticated","session_id":"b2910000-0000-0000-0000-000000000001","email":"pps-gap-owner@example.test"}',
+  true
+);
+
+select throws_ok(
+  format(
+    'select public.close_problem_solving_case(%L::uuid, %L, %L)',
+    (select id from pps_gap_ids where key = 'closure_case'),
+    'resolved_verified_cause',
+    'Should not close with fail check after cm ineffective'
+  ),
+  '22023',
+  'all effectiveness checks must pass before closing as resolved',
+  'fail blocks resolved_verified when countermeasure is ineffective'
+);
+
+set local role postgres;
+update public.problem_solving_countermeasures
+set status = 'superseded',
+    updated_at = statement_timestamp()
+where id = (select id from pps_gap_ids where key = 'closure_cm');
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"b2900000-0000-0000-0000-000000000001","role":"authenticated","session_id":"b2910000-0000-0000-0000-000000000001","email":"pps-gap-owner@example.test"}',
+  true
+);
+
+select throws_ok(
+  format(
+    'select public.close_problem_solving_case(%L::uuid, %L, %L)',
+    (select id from pps_gap_ids where key = 'closure_case'),
+    'resolved_verified_cause',
+    'Should not close with fail check after cm superseded'
+  ),
+  '22023',
+  'all effectiveness checks must pass before closing as resolved',
+  'fail blocks resolved_verified when countermeasure is superseded'
 );
 
 select ok(

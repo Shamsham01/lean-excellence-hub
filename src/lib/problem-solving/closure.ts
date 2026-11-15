@@ -19,7 +19,7 @@ const CORRECTIVE_COUNTERMEASURE_STATUSES = new Set([
 ]);
 
 export const RESOLVED_CLOSURE_EFFECTIVENESS_BLOCK_REASON =
-  "All effectiveness checks must pass before closing as resolved when corrective countermeasures are in place.";
+  "All effectiveness checks must pass before closing as resolved.";
 
 export const RESOLVED_VERIFIED_CAUSE_NO_COUNTERMEASURE_NOTE =
   "Resolved (verified cause) with no corrective countermeasure does not require an effectiveness check.";
@@ -45,9 +45,8 @@ export function hasCorrectiveCountermeasuresForClosure(
 
 export function resolvedClosureBlockedByEffectiveness(
   effectivenessChecks: Pick<ProblemSolvingEffectivenessCheck, "result">[],
-  hasCorrectiveCountermeasures: boolean,
 ): boolean {
-  if (!hasCorrectiveCountermeasures) {
+  if (effectivenessChecks.length === 0) {
     return false;
   }
   return effectivenessChecks.some(

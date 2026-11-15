@@ -18,26 +18,24 @@ describe("closure outcome eligibility", () => {
 
   it("blocks resolved closure when any check is inconclusive or fail", () => {
     expect(
-      resolvedClosureBlockedByEffectiveness(
-        [{ result: "pass" }, { result: "inconclusive" }],
-        true,
-      ),
+      resolvedClosureBlockedByEffectiveness([
+        { result: "pass" },
+        { result: "inconclusive" },
+      ]),
     ).toBe(true);
-    expect(
-      resolvedClosureBlockedByEffectiveness([{ result: "fail" }], true),
-    ).toBe(true);
-    expect(
-      resolvedClosureBlockedByEffectiveness([{ result: null }], true),
-    ).toBe(true);
+    expect(resolvedClosureBlockedByEffectiveness([{ result: "fail" }])).toBe(
+      true,
+    );
+    expect(resolvedClosureBlockedByEffectiveness([{ result: null }])).toBe(
+      true,
+    );
   });
 
-  it("does not block resolved closure without corrective countermeasures", () => {
+  it("blocks resolved closure when checks exist regardless of countermeasure status", () => {
     expect(
-      resolvedClosureBlockedByEffectiveness(
-        [{ result: "inconclusive" }],
-        false,
-      ),
-    ).toBe(false);
+      resolvedClosureBlockedByEffectiveness([{ result: "inconclusive" }]),
+    ).toBe(true);
+    expect(resolvedClosureBlockedByEffectiveness([])).toBe(false);
   });
 
   it("exposes a stable user-facing block reason", () => {

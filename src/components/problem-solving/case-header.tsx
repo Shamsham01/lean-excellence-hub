@@ -173,12 +173,8 @@ export function CaseHeader({
     [detail.countermeasures],
   );
   const resolvedClosureBlocked = useMemo(
-    () =>
-      resolvedClosureBlockedByEffectiveness(
-        detail.effectiveness_checks,
-        hasCorrectiveCountermeasures,
-      ),
-    [detail.effectiveness_checks, hasCorrectiveCountermeasures],
+    () => resolvedClosureBlockedByEffectiveness(detail.effectiveness_checks),
+    [detail.effectiveness_checks],
   );
   async function handleActivate() {
     const methodId =

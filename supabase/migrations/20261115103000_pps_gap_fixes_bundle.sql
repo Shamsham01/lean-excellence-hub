@@ -2111,7 +2111,15 @@ begin
     end if;
   end if;
 
-  if has_corrective_countermeasures then
+  select exists (
+    select 1
+    from public.problem_solving_effectiveness_checks eff
+    where eff.organisation_id = org_id
+      and eff.case_id = target_case_id
+  )
+  into has_effectiveness_checks;
+
+  if has_effectiveness_checks then
     select not exists (
       select 1
       from public.problem_solving_effectiveness_checks eff

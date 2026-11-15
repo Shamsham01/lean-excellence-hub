@@ -145,6 +145,37 @@ describe("CaseHeader close dialog", () => {
     ).toHaveTextContent(RESOLVED_CLOSURE_EFFECTIVENESS_BLOCK_REASON);
   });
 
+  it("disables resolved outcomes when effectiveness checks exist and cm is ineffective", () => {
+    const ineffectiveCm: ProblemSolvingCaseDetail = {
+      ...activeDetail,
+      countermeasures: [
+        {
+          ...activeDetail.countermeasures[0]!,
+          status: "ineffective",
+        },
+      ],
+    };
+
+    render(
+      <CaseHeader
+        detail={ineffectiveCm}
+        canManage
+        canClose
+        methods={[]}
+        pinnedMethodVersion={null}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("problem-solving-close-button"));
+
+    const select = screen.getByTestId("closure-outcome-select");
+    const resolvedVerified = within(select)
+      .getAllByRole("option")
+      .find((opt) => opt.getAttribute("value") === "resolved_verified_cause");
+    expect(resolvedVerified).toBeDisabled();
+    expect(screen.getByTestId("closure-resolved-blocked-reason")).toBeVisible();
+  });
+
   it("shows verified-cause note when no corrective countermeasure is in play", () => {
     const withoutCorrective: ProblemSolvingCaseDetail = {
       ...activeDetail,
