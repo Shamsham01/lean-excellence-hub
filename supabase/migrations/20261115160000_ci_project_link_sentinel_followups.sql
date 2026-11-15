@@ -509,6 +509,15 @@ begin
     target_idempotency_key
   );
 
+  if exists (
+    select 1
+    from public.gemba_action_context context_row
+    where context_row.organisation_id = org_id
+      and context_row.action_id = new_action_id
+  ) then
+    return new_action_id;
+  end if;
+
   perform private.set_action_assignee(new_action_id, resolved_assignee);
 
   insert into public.gemba_action_context (
