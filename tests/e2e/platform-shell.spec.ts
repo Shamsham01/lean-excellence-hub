@@ -288,7 +288,7 @@ test.describe("authenticated platform shell", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await signInAsDemoUser(page, "manager");
     await page.goto("/platform/problem-solving");
-    await richDemoCasePortfolioLink(page).click();
+    await (await richDemoCasePortfolioLink(page)).click();
     await expect(page.getByTestId("problem-solving-workspace")).toBeVisible({
       timeout: 30_000,
     });

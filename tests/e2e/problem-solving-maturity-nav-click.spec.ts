@@ -76,7 +76,7 @@ test.describe("NAV-CLICK-001 Problem Solving and Maturity navigation", () => {
     ).toBeVisible();
 
     await openProblemSolvingHub(page);
-    const caseRow = richDemoCasePortfolioLink(page);
+    const caseRow = await richDemoCasePortfolioLink(page);
     await expect(caseRow).toBeVisible();
     const caseHref = await caseRow.getAttribute("href");
     expect(caseHref).toMatch(/\/platform\/problem-solving\/[0-9a-f-]{36}$/);

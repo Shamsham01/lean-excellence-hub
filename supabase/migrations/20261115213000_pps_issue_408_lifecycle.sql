@@ -75,8 +75,8 @@ create table if not exists public.problem_solving_client_mutations (
   created_at timestamptz not null default statement_timestamp(),
   constraint problem_solving_client_mutations_organisation_id_id_key
     unique (organisation_id, id),
-  constraint problem_solving_client_mutations_org_member_mutation_key
-    unique (organisation_id, membership_id, mutation_key),
+  constraint problem_solving_client_mutations_org_mutation_key
+    unique (organisation_id, mutation_key),
   constraint problem_solving_client_mutations_case_fkey
     foreign key (organisation_id, case_id)
     references public.problem_solving_cases(organisation_id, id)
@@ -694,17 +694,17 @@ begin
       'analysis_node',
       new_id
     )
-    on conflict (organisation_id, membership_id, mutation_key) do nothing;
+    on conflict (organisation_id, mutation_key) do nothing;
 
     if not found then
       select mutation_row.*
       into mapping_row
       from public.problem_solving_client_mutations mutation_row
       where mutation_row.organisation_id = org_id
-        and mutation_row.membership_id = actor_membership_id
         and mutation_row.mutation_key = normalized_mutation_key;
 
-      if mapping_row.resource_type <> 'analysis_node'
+      if mapping_row.membership_id <> actor_membership_id
+        or mapping_row.resource_type <> 'analysis_node'
         or mapping_row.parent_id <> target_analysis_id then
         raise exception 'mutation key reused for a different request'
           using errcode = '23505';
@@ -715,6 +715,8 @@ begin
         from public.problem_solving_analysis_nodes node_row
         where node_row.organisation_id = org_id
           and node_row.id = mapping_row.resource_id
+          and node_row.analysis_id = target_analysis_id
+          and node_row.parent_node_id is not distinct from target_parent_node_id
       ) then
         raise exception 'mutation already applied; resource was removed'
           using errcode = '55000';
@@ -934,17 +936,17 @@ begin
       'hypothesis_test',
       new_id
     )
-    on conflict (organisation_id, membership_id, mutation_key) do nothing;
+    on conflict (organisation_id, mutation_key) do nothing;
 
     if not found then
       select mutation_row.*
       into mapping_row
       from public.problem_solving_client_mutations mutation_row
       where mutation_row.organisation_id = org_id
-        and mutation_row.membership_id = actor_membership_id
         and mutation_row.mutation_key = normalized_mutation_key;
 
-      if mapping_row.resource_type <> 'hypothesis_test'
+      if mapping_row.membership_id <> actor_membership_id
+        or mapping_row.resource_type <> 'hypothesis_test'
         or mapping_row.parent_id <> target_hypothesis_id then
         raise exception 'mutation key reused for a different request'
           using errcode = '23505';

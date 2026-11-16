@@ -1,6 +1,6 @@
 begin;
 
-select plan(40);
+select plan(44);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -30,6 +30,23 @@ values (
   )
 );
 
+insert into auth.users (id, email, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data, is_sso_user, is_anonymous)
+values
+  ('b2a00000-0000-0000-0000-000000000002', 'pps-408-member@example.test', statement_timestamp(), statement_timestamp(), statement_timestamp(), '{"provider":"email","providers":["email"]}', '{}', false, false),
+  ('b2a00000-0000-0000-0000-000000000003', 'pps-408-inactive@example.test', statement_timestamp(), statement_timestamp(), statement_timestamp(), '{"provider":"email","providers":["email"]}', '{}', false, false);
+insert into public.organisation_memberships (organisation_id, user_id, status, activated_at)
+values
+  ((select id from pps_408_ids where key = 'organisation'), 'b2a00000-0000-0000-0000-000000000002', 'active', statement_timestamp()),
+  ((select id from pps_408_ids where key = 'organisation'), 'b2a00000-0000-0000-0000-000000000003', 'inactive', statement_timestamp());
+update private.identity_controls set status = 'active', enrolment_status = 'complete', enrolment_completed_at = statement_timestamp()
+where user_id = 'b2a00000-0000-0000-0000-000000000002';
+insert into pps_408_ids (key, id)
+select case when user_id = 'b2a00000-0000-0000-0000-000000000002' then 'member_b' else 'inactive' end, id
+from public.organisation_memberships where organisation_id = (select id from pps_408_ids where key = 'organisation')
+  and user_id in ('b2a00000-0000-0000-0000-000000000002', 'b2a00000-0000-0000-0000-000000000003');
+insert into auth.sessions (id, user_id, created_at, updated_at)
+values ('b2a10000-0000-0000-0000-000000000002', 'b2a00000-0000-0000-0000-000000000002', statement_timestamp(), statement_timestamp());
+
 insert into auth.sessions (id, user_id, created_at, updated_at)
 values (
   'b2a10000-0000-0000-0000-000000000001',
@@ -56,6 +73,14 @@ select 'unit', public.create_organisation_unit(
   'pps-408-site',
   'PPS 408 Site',
   'site'
+);
+
+select public.grant_role_version(
+  (select id from pps_408_ids where key = 'organisation'),
+  (select id from pps_408_ids where key = 'member_b'),
+  (select rv.id from public.role_versions rv join public.roles r on r.id = rv.role_id
+   where rv.organisation_id = (select id from pps_408_ids where key = 'organisation') and r.canonical_name = 'manager' and rv.status = 'published'),
+  'unit_subtree', (select id from pps_408_ids where key = 'unit')
 );
 
 insert into pps_408_ids (key, id)
@@ -90,7 +115,7 @@ select ok(
     'Updated work standard on line 3',
     (select id from pps_408_ids where key = 'membership'),
     'Weekly gemba audit of standard adherence',
-    '2027-01-15'::date
+    (current_date + 30)
   ),
   'sustain plan upserted on open case'
 );
@@ -107,7 +132,7 @@ select throws_ok(
     (select id from pps_408_ids where key = 'case'),
     'Standard work',
     'Weekly audit',
-    '2027-06-01'
+    (current_date + 30)::text
   ),
   '22023',
   'sustain plan owner is required',
@@ -148,7 +173,7 @@ select throws_ok(
     '   ',
     (select id from pps_408_ids where key = 'membership'),
     'Weekly audit',
-    '2027-06-01'
+    (current_date + 30)::text
   ),
   '22023',
   'sustain plan standardised text is required',
@@ -162,11 +187,17 @@ select throws_ok(
     'Standard work',
     (select id from pps_408_ids where key = 'membership'),
     '   ',
-    '2027-06-01'
+    (current_date + 30)::text
   ),
   '22023',
   'sustain plan monitoring text is required',
   'sustain plan rejects missing monitoring text'
+);
+
+select throws_ok(
+  format('select public.upsert_problem_solving_sustain_plan(%L::uuid, %L, %L::uuid, %L, %L::date)',
+    (select id from pps_408_ids where key = 'case'), 'Standard', (select id from pps_408_ids where key = 'inactive'), 'Weekly audit', (current_date + 30)::text),
+  '22023', 'sustain plan owner must be an active organisation member', 'inactive sustain owner is rejected'
 );
 
 insert into pps_408_ids (key, id)
@@ -255,6 +286,29 @@ select is(
     'pps-408-node-mutation-1'
   ),
   'add_analysis_node replays same node id for mutation key'
+);
+
+-- A second authorised member cannot claim or replay the first member's key.
+select set_config('request.jwt.claims', '{"sub":"b2a00000-0000-0000-0000-000000000002","role":"authenticated","session_id":"b2a10000-0000-0000-0000-000000000002","email":"pps-408-member@example.test"}', true);
+select public.switch_organisation((select id from pps_408_ids where key = 'organisation'));
+select throws_ok(
+  format('select public.add_analysis_node(%L::uuid, %L, null, %L, 1, %L::jsonb, %L)',
+    (select id from pps_408_ids where key = 'fishbone'), 'Other member', 'Machine', '{}', 'pps-408-node-mutation-1'),
+  '23505', 'mutation key reused for a different request', 'cross-member key reuse is rejected'
+);
+select set_config('request.jwt.claims', '{"sub":"b2a00000-0000-0000-0000-000000000001","role":"authenticated","session_id":"b2a10000-0000-0000-0000-000000000001","email":"pps-408-owner@example.test"}', true);
+select public.switch_organisation((select id from pps_408_ids where key = 'organisation'));
+
+insert into pps_408_ids (key, id)
+select 'stale_node', public.add_analysis_node((select id from pps_408_ids where key = 'fishbone'), 'Stale node', null, 'Machine', 1, '{}'::jsonb, 'pps-408-stale-node');
+set local role lean_hub_private_owner;
+update public.problem_solving_client_mutations set resource_id = gen_random_uuid()
+where organisation_id = (select id from pps_408_ids where key = 'organisation') and mutation_key = 'pps-408-stale-node';
+set local role authenticated;
+select throws_ok(
+  format('select public.add_analysis_node(%L::uuid, %L, null, %L, 1, %L::jsonb, %L)',
+    (select id from pps_408_ids where key = 'fishbone'), 'Stale node', 'Machine', '{}', 'pps-408-stale-node'),
+  '55000', 'mutation already applied; resource was removed', 'stale node mapping is rejected'
 );
 
 select is(
@@ -475,7 +529,7 @@ select throws_ok(
     'Standard',
     (select id from pps_408_ids where key = 'membership'),
     'Weekly audit',
-    '2027-06-01'
+    (current_date + 30)::text
   ),
   '55000',
   'case is closed; sustain plan cannot be changed',
@@ -514,6 +568,28 @@ select throws_ok(
   'case is closed; hypothesis cannot be changed',
   'delete_hypothesis_test rejects closed case'
 );
+
+-- anon/authenticated inherit PUBLIC; check PUBLIC ACL directly as well.
+select ok(not exists (
+  select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+  cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) acl
+  where n.nspname = 'private' and p.oid in (
+    'private.upsert_problem_solving_sustain_plan(uuid,text,uuid,text,date)'::regprocedure,
+    'private.create_problem_solving_action(text,uuid,text,uuid,uuid,uuid,text,text,timestamptz,uuid,text)'::regprocedure,
+    'private.delete_hypothesis_test(uuid)'::regprocedure,
+    'private.add_analysis_node(uuid,text,uuid,text,integer,jsonb,text)'::regprocedure,
+    'private.create_hypothesis_test(uuid,text,text,text,uuid,date,text)'::regprocedure
+  ) and acl.grantee = 0 and acl.privilege_type = 'EXECUTE'
+) and not exists (
+  select 1 from unnest(array[
+    'private.upsert_problem_solving_sustain_plan(uuid,text,uuid,text,date)',
+    'private.create_problem_solving_action(text,uuid,text,uuid,uuid,uuid,text,text,timestamptz,uuid,text)',
+    'private.delete_hypothesis_test(uuid)',
+    'private.add_analysis_node(uuid,text,uuid,text,integer,jsonb,text)',
+    'private.create_hypothesis_test(uuid,text,text,text,uuid,date,text)'
+  ]) f(signature) cross join unnest(array['anon','authenticated']) r(role_name)
+  where has_function_privilege(r.role_name, f.signature, 'EXECUTE')
+), 'PUBLIC, anon and authenticated cannot execute private lifecycle functions');
 
 select ok(
   not has_function_privilege(

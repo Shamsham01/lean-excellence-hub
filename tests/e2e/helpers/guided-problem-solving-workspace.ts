@@ -28,14 +28,15 @@ export function activeDemoCasePortfolioLink(page: Page) {
  * Seeded Bodmin demo case for portfolio navigation specs: prefer an Active row
  * that already has hypotheses (full M11 seed), otherwise the closed seeded row.
  */
-export function richDemoCasePortfolioLink(page: Page) {
+export async function richDemoCasePortfolioLink(page: Page) {
   const activeWithHypotheses = demoTitlePortfolioItems(page)
     .filter({ hasText: "Active" })
     .filter({ hasText: /[1-9]\d* hypotheses/ });
   const closedWithHypotheses = demoTitlePortfolioItems(page)
     .filter({ hasText: "Closed" })
     .filter({ hasText: /[1-9]\d* hypotheses/ });
-  return activeWithHypotheses.first().or(closedWithHypotheses.first());
+  if (await activeWithHypotheses.count()) return activeWithHypotheses.first();
+  return closedWithHypotheses.first();
 }
 
 /** Opens the demo title case; fails when no Active row exists (no closed-case fallback). */

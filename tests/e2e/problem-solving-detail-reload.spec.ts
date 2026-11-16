@@ -66,7 +66,7 @@ test.describe("Problem solving case detail reload reliability", () => {
       page.getByTestId("problem-solving-portfolio-page"),
     ).toBeVisible();
 
-    const caseRow = richDemoCasePortfolioLink(page);
+    const caseRow = await richDemoCasePortfolioLink(page);
     await expect(caseRow).toBeVisible();
     const caseHref = await caseRow.getAttribute("href");
     expect(caseHref).toMatch(/\/platform\/problem-solving\/[0-9a-f-]{36}$/);
@@ -111,7 +111,7 @@ test.describe("Problem solving case detail reload reliability", () => {
   }) => {
     await signInAsDemoUser(page, "manager");
     await page.goto("/platform/problem-solving");
-    const caseRow = richDemoCasePortfolioLink(page);
+    const caseRow = await richDemoCasePortfolioLink(page);
     const caseHref = await caseRow.getAttribute("href");
     expect(caseHref).toBeTruthy();
 

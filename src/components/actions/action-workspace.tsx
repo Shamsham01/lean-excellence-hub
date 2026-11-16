@@ -55,21 +55,7 @@ function sourceLabel(source: ActionDetail["source"]): string {
   return reference || title || "Source record";
 }
 
-export function ActionWorkspace({
-  detail,
-  comments,
-  evidence,
-  assignablePeople,
-  canUploadEvidence,
-  canPostComments = false,
-  currentCommentAuthor = null,
-  assigneeAvatarUrl = null,
-  fiveSQuestionPrompt = null,
-  projectOptions = [],
-  requiresSiteSelection = false,
-  onMutated,
-  showBackLink = true,
-}: {
+type ActionWorkspaceProps = {
   detail: ActionDetail;
   comments: ActionPlannerComment[];
   evidence: EvidenceItem[];
@@ -87,7 +73,32 @@ export function ActionWorkspace({
   requiresSiteSelection?: boolean;
   onMutated?: () => void;
   showBackLink?: boolean;
-}) {
+};
+
+export function ActionWorkspace(props: ActionWorkspaceProps) {
+  return (
+    <ActionWorkspaceContent
+      key={`${props.detail.id}:${props.detail.version}`}
+      {...props}
+    />
+  );
+}
+
+function ActionWorkspaceContent({
+  detail,
+  comments,
+  evidence,
+  assignablePeople,
+  canUploadEvidence,
+  canPostComments = false,
+  currentCommentAuthor = null,
+  assigneeAvatarUrl = null,
+  fiveSQuestionPrompt = null,
+  projectOptions = [],
+  requiresSiteSelection = false,
+  onMutated,
+  showBackLink = true,
+}: ActionWorkspaceProps) {
   const router = useRouter();
   const [title, setTitle] = useState(detail.title);
   const [description, setDescription] = useState(detail.description ?? "");
@@ -416,9 +427,10 @@ export function ActionWorkspace({
                         description,
                         priority,
                         dueAt: dateInputToDueAt(dueDate),
-                        expectedVersion: detail.version,
+                        expectedVersion: liveVersion,
                       });
                       if (!result.error) {
+                        setLiveVersion((version) => version + 1);
                         setMessage("Changes saved.");
                       }
                       return result;
@@ -510,6 +522,7 @@ export function ActionWorkspace({
                         membershipId: assigneeId || null,
                       });
                       if (!result.error) {
+                        setLiveVersion((version) => version + 1);
                         setMessage(
                           assigneeId
                             ? "Assignee updated."

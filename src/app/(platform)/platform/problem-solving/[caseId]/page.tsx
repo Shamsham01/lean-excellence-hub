@@ -10,6 +10,8 @@ import { callProblemSolvingRpc } from "@/lib/problem-solving/supabase-untyped";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
 import { loadProjectPickerOptions } from "@/lib/projects/load-project-picker-options";
 import { projectLinkSummaryFromServer } from "@/lib/projects/project-link-summary";
+import { resolveSiteUnitId } from "@/modules/organisation/applicability-unit-tree";
+import { loadAccessibleOrganisationUnits } from "@/modules/organisation/site-context-server";
 import { listEligibleOrganisations } from "@/modules/organisations/context";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { loadWorkplaceRecordView } from "@/modules/workplace/access";
@@ -60,9 +62,11 @@ export default async function ProblemSolvingCaseDetailPage({
   ]);
 
   const detail = await resolveProblemSolvingDetailAccess(detailResult);
-  const projectPicker = await loadProjectPickerOptions(undefined, {
-    unitId: detail.organisation_unit_id,
-  });
+  const units = await loadAccessibleOrganisationUnits();
+  const siteUnitId = resolveSiteUnitId(detail.organisation_unit_id, units);
+  const projectPicker = siteUnitId
+    ? await loadProjectPickerOptions(undefined, { siteUnitId })
+    : { projects: [], requiresSiteSelection: true };
   if (canUseAi) {
     await recoverProblemSolvingAiRunsForCase(supabase, caseId);
   }

@@ -78,7 +78,10 @@ export function HypothesisVerificationCard({
   const [completeForm, setCompleteForm] = useState<
     Pick<TestFormState, "actual" | "conclusion">
   >({ actual: "", conclusion: "supports" });
-  const createTestMutationKeyRef = useRef<string | null>(null);
+  const createTestMutationKeyRef = useRef<{
+    fingerprint: string;
+    key: string;
+  } | null>(null);
 
   const pendingTest = tests.find((test) => !test.completed_date);
   const canRunTestWorkflow =
@@ -127,17 +130,27 @@ export function HypothesisVerificationCard({
     }
     setActionError(null);
     setLoading(true);
-    if (!createTestMutationKeyRef.current) {
-      createTestMutationKeyRef.current = crypto.randomUUID();
-    }
     const trimmedExpected = createForm.expected.trim();
+    const fingerprint = JSON.stringify([
+      caseId,
+      hypothesis.id,
+      createForm.question.trim(),
+      createForm.method.trim(),
+      trimmedExpected,
+    ]);
+    if (createTestMutationKeyRef.current?.fingerprint !== fingerprint) {
+      createTestMutationKeyRef.current = {
+        fingerprint,
+        key: crypto.randomUUID(),
+      };
+    }
     const result = await createHypothesisTest({
       hypothesisId: hypothesis.id,
       caseId,
       testQuestion: createForm.question.trim(),
       ...(trimmedExpected ? { expectedResult: trimmedExpected } : {}),
       method: createForm.method.trim(),
-      mutationKey: createTestMutationKeyRef.current,
+      mutationKey: createTestMutationKeyRef.current.key,
     });
     setLoading(false);
     if (result.error) {

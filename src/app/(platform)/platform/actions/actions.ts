@@ -330,7 +330,7 @@ export async function loadActionCreateContext(): Promise<{
   if (canAssign) {
     const { data: directory } = await supabase.rpc("get_people_directory", {
       target_page: 1,
-      target_page_size: 200,
+      target_page_size: 100,
     });
     type DirectoryPayload = {
       people?: Array<{

@@ -83,7 +83,10 @@ export function UnifiedCauseAnalysis({
   const [manualStatement, setManualStatement] = useState("");
   const [manualCategory, setManualCategory] = useState<string>("");
   const [manualFishboneNodeId, setManualFishboneNodeId] = useState("");
-  const fishboneAddMutationKeyRef = useRef<string | null>(null);
+  const fishboneAddMutationKeyRef = useRef<{
+    fingerprint: string;
+    key: string;
+  } | null>(null);
 
   const fishboneAnalysis = useMemo(() => {
     const fishbones = analyses.filter(
@@ -144,14 +147,18 @@ export function UnifiedCauseAnalysis({
     setLoading(true);
     setFishboneError(null);
     setFishboneMessage(null);
-    if (!fishboneAddMutationKeyRef.current) {
-      fishboneAddMutationKeyRef.current = crypto.randomUUID();
+    const fingerprint = JSON.stringify([caseId, category, label]);
+    if (fishboneAddMutationKeyRef.current?.fingerprint !== fingerprint) {
+      fishboneAddMutationKeyRef.current = {
+        fingerprint,
+        key: crypto.randomUUID(),
+      };
     }
     const result = await addFishboneCause({
       caseId,
       category,
       label,
-      mutationKey: fishboneAddMutationKeyRef.current,
+      mutationKey: fishboneAddMutationKeyRef.current.key,
     });
     setLoading(false);
     if (result.error) {

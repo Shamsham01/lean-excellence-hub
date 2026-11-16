@@ -38,7 +38,6 @@ export default async function ActionDetailPage({
 
   const projectPicker = await loadProjectPickerOptions(undefined, {
     siteUnitId: loaded.payload.detail.site_unit_id,
-    unitId: loaded.payload.detail.unit_id,
   });
 
   const {
@@ -55,6 +54,7 @@ export default async function ActionDetailPage({
 
   return (
     <ActionWorkspace
+      key={`${detail.id}:${detail.version}`}
       detail={detail}
       comments={comments}
       evidence={evidence}
