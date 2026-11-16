@@ -34,10 +34,10 @@ insert into auth.users (id, email, email_confirmed_at, created_at, updated_at, r
 values
   ('b2a00000-0000-0000-0000-000000000002', 'pps-408-member@example.test', statement_timestamp(), statement_timestamp(), statement_timestamp(), '{"provider":"email","providers":["email"]}', '{}', false, false),
   ('b2a00000-0000-0000-0000-000000000003', 'pps-408-inactive@example.test', statement_timestamp(), statement_timestamp(), statement_timestamp(), '{"provider":"email","providers":["email"]}', '{}', false, false);
-insert into public.organisation_memberships (organisation_id, user_id, status, activated_at)
+insert into public.organisation_memberships (organisation_id, user_id, status, activated_at, inactivated_at, status_reason)
 values
-  ((select id from pps_408_ids where key = 'organisation'), 'b2a00000-0000-0000-0000-000000000002', 'active', statement_timestamp()),
-  ((select id from pps_408_ids where key = 'organisation'), 'b2a00000-0000-0000-0000-000000000003', 'inactive', statement_timestamp());
+  ((select id from pps_408_ids where key = 'organisation'), 'b2a00000-0000-0000-0000-000000000002', 'active', statement_timestamp(), null, null),
+  ((select id from pps_408_ids where key = 'organisation'), 'b2a00000-0000-0000-0000-000000000003', 'inactive', statement_timestamp(), statement_timestamp(), 'Test inactive member');
 update private.identity_controls set status = 'active', enrolment_status = 'complete', enrolment_completed_at = statement_timestamp()
 where user_id = 'b2a00000-0000-0000-0000-000000000002';
 insert into pps_408_ids (key, id)
