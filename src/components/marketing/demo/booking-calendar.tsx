@@ -7,7 +7,6 @@ import {
   demoEmbedConfig,
   demoEmbedUi,
   type DemoBookingReady,
-  type DemoEmbedTheme,
 } from "@/lib/marketing/demo-booking";
 
 type CalFn = {
@@ -45,24 +44,9 @@ export function DemoBookingCalendar({
 }) {
   const headingId = useId();
   const mountRef = useRef<HTMLDivElement>(null);
-  const [theme, setTheme] = useState<DemoEmbedTheme | null>(null);
   const [phase, setPhase] = useState<"loading" | "ready" | "failed">("loading");
 
   useEffect(() => {
-    const apply = () => setTheme(resolvedTheme());
-    apply();
-    const root = document.documentElement;
-    const observer = new MutationObserver(apply);
-    observer.observe(root, { attributes: true, attributeFilter: ["class"] });
-    const stopScheme = watchColorScheme(apply);
-    return () => {
-      observer.disconnect();
-      stopScheme();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!theme) return;
     const element = mountRef.current;
     if (!element) return;
 
@@ -89,7 +73,7 @@ export function DemoBookingCalendar({
     api?.("inline", {
       elementOrSelector: element,
       calLink: booking.calLink,
-      config: demoEmbedConfig(theme),
+      config: demoEmbedConfig("dark"),
     });
     api?.("on", {
       action: "linkFailed",
@@ -103,7 +87,7 @@ export function DemoBookingCalendar({
         if (alive) setPhase("ready");
       },
     });
-    api?.("ui", demoEmbedUi(theme));
+    api?.("ui", demoEmbedUi("dark"));
 
     // The script tag is inserted on the first queued call, so listen after it.
     const script = embedScriptElement(booking.embedScriptUrl);
@@ -121,13 +105,13 @@ export function DemoBookingCalendar({
       frameObserver.disconnect();
       element.replaceChildren();
     };
-  }, [booking.calLink, booking.embedScriptUrl, booking.origin, theme]);
+  }, [booking.calLink, booking.embedScriptUrl, booking.origin]);
 
   const status =
     phase === "failed"
       ? "The Cal.com calendar did not load. Open the booking page to choose a time. This page has not confirmed a meeting."
       : phase === "ready"
-        ? "Times below come from Cal.com and use your local timezone, including daylight-saving changes. Choosing a time does not confirm the meeting until Cal.com says it is booked."
+        ? "Times below come from Cal.com and use your local timezone, including daylight-saving changes. Cal.com reserves your booking when you pick a time."
         : "Loading the calendar from Cal.com. No times are shown until the provider responds.";
 
   return (
@@ -159,23 +143,6 @@ export function DemoBookingCalendar({
       </noscript>
     </section>
   );
-}
-
-function resolvedTheme(): DemoEmbedTheme {
-  const root = document.documentElement;
-  if (root.classList.contains("dark")) return "dark";
-  if (root.classList.contains("light")) return "light";
-  if (typeof window.matchMedia !== "function") return "light";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
-}
-
-function watchColorScheme(onChange: () => void) {
-  if (typeof window.matchMedia !== "function") return () => undefined;
-  const media = window.matchMedia("(prefers-color-scheme: dark)");
-  media.addEventListener("change", onChange);
-  return () => media.removeEventListener("change", onChange);
 }
 
 function embedScriptElement(embedJsUrl: string) {

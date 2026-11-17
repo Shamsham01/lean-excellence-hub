@@ -34,6 +34,7 @@ const SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,80}$/;
 export const DEMO_EMBED_NAMESPACE = "leh-demo";
 
 export const DEMO_BOOKING_CTA = "Book a live demo";
+export const REQUEST_FREE_ACCESS_CTA = "Request free access";
 
 /**
  * Playwright sends this header only when `DEMO_BOOKING_E2E=1`.
