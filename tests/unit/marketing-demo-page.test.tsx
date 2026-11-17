@@ -108,6 +108,16 @@ describe("demo booking page", () => {
   it("explains the walkthrough without inventing times when unconfigured", () => {
     render(<MarketingDemoPage booking={{ status: "unconfigured" }} />);
 
+    expect(screen.getByText("30-minute walkthrough")).toBeVisible();
+    expect(
+      screen.getByText(/Cal.com reserves your booking when you pick a time/),
+    ).toBeVisible();
+    expect(
+      document.querySelector('a[href="/signup"], a[href="/pricing"]'),
+    ).toBeNull();
+    expect(
+      screen.queryByText(/Create an account|Appearance|45-minute/i),
+    ).toBeNull();
     expect(
       screen.getByRole("heading", {
         name: "See operational excellence connected.",
@@ -136,9 +146,6 @@ describe("demo booking page", () => {
     expect(
       within(article).getByRole("link", { name: "Explore the platform" }),
     ).toHaveAttribute("href", "/#platform");
-    expect(
-      within(article).getByRole("link", { name: "Sign in" }),
-    ).toHaveAttribute("href", "/login");
     expect(
       screen.getByRole("link", { name: "Cal.com privacy notice" }),
     ).toHaveAttribute("href", "https://cal.com/privacy");
@@ -211,6 +218,7 @@ describe("demo booking page", () => {
     const inline = commands.find((args) => args[0] === "inline");
     expect(inline?.[1]).toMatchObject({
       calLink: "fixture-organiser/product-demonstration",
+      config: { theme: "dark" },
     });
     const actions = commands
       .filter((args) => args[0] === "on")

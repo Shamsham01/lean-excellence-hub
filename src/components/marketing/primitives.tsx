@@ -3,7 +3,10 @@ import type { HTMLAttributes, ReactNode } from "react";
 
 import { LehBrand } from "@/components/brand/leh-brand";
 import { Button } from "@/components/ui/button";
-import { DEMO_BOOKING_CTA } from "@/lib/marketing/demo-booking";
+import {
+  DEMO_BOOKING_CTA,
+  REQUEST_FREE_ACCESS_CTA,
+} from "@/lib/marketing/demo-booking";
 import { cn } from "@/lib/utils";
 
 export function MarketingContainer({
@@ -71,10 +74,11 @@ export function MarketingWordmark({
 }) {
   return (
     <LehBrand
+      className={compact ? undefined : "leh-brand--contained-lockup"}
       decorative={decorative}
+      lockupOnDarkSurface={!compact}
       lockupRasterOnly={!compact}
       priority={priority}
-      responsive={!compact}
       strapline={!compact}
       variant={compact ? "compact" : "full"}
     />
@@ -91,6 +95,14 @@ export function RequestDemoControl({
   return (
     <Button asChild size={size} className={cn("marketing-cta", className)}>
       <Link href="/demo">{DEMO_BOOKING_CTA}</Link>
+    </Button>
+  );
+}
+
+export function RequestFreeAccessControl() {
+  return (
+    <Button asChild variant="outline" className="marketing-cta-outline">
+      <Link href="/demo">{REQUEST_FREE_ACCESS_CTA}</Link>
     </Button>
   );
 }

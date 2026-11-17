@@ -110,19 +110,22 @@ export function LehBrand({
     >
       {showLockup ? (
         <span className="leh-brand-lockup">
-          <LehBrandPicture
-            alt={lockupAlt}
-            asset={LEH_BRAND.horizontalLight}
-            imgClassName="leh-brand-lockup-img"
-            themeClassName="leh-brand-lockup-light"
-            priority={priority}
-            rasterOnly={lockupRasterOnly}
-          />
+          {!lockupOnDarkSurface && (
+            <LehBrandPicture
+              alt={lockupAlt}
+              asset={LEH_BRAND.horizontalLight}
+              imgClassName="leh-brand-lockup-img"
+              themeClassName="leh-brand-lockup-light"
+              priority={priority}
+              rasterOnly={lockupRasterOnly}
+            />
+          )}
           <LehBrandPicture
             alt={lockupAlt}
             asset={LEH_BRAND.horizontalDark}
             imgClassName="leh-brand-lockup-img"
             themeClassName="leh-brand-lockup-dark"
+            priority={priority && lockupOnDarkSurface}
             rasterOnly={lockupRasterOnly}
           />
         </span>
