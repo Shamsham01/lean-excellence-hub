@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test.use({ colorScheme: "dark", reducedMotion: "reduce" });
+test.use({ colorScheme: "dark" });
 
 for (const { width, height } of [
   { width: 1440, height: 900 },
@@ -9,6 +9,7 @@ for (const { width, height } of [
   test(`captures the dark landing at ${width}px`, async ({
     page,
   }, testInfo) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await page.setViewportSize({ width, height });
     await page.goto("/");
     await expect(page.locator("#hero").getByRole("status")).toHaveText(

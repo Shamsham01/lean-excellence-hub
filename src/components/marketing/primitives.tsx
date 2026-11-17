@@ -74,7 +74,7 @@ export function MarketingWordmark({
 }) {
   return (
     <LehBrand
-      className={compact ? undefined : "leh-brand--contained-lockup"}
+      className={cn(!compact && "leh-brand--contained-lockup")}
       decorative={decorative}
       lockupOnDarkSurface={!compact}
       lockupRasterOnly={!compact}
