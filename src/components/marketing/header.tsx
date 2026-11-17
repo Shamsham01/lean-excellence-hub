@@ -46,7 +46,7 @@ export function MarketingHeader() {
             className="leh-brand-link marketing-home-link"
             aria-label={LEH_BRAND_HOME_LABEL}
           >
-            <MarketingWordmark decorative priority />
+            <MarketingWordmark decorative priority responsive />
           </Link>
 
           <nav
