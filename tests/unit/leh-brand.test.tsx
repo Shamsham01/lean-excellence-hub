@@ -333,6 +333,15 @@ describe("LehBrand", () => {
       (node) => node.getAttribute("src"),
     );
     expect(lockupSrcs).toEqual(["/brand/leh-horizontal-dark.png"]);
+    // Phones collapse to the dark mark plus the name, without a strapline.
+    expect(brand).toHaveAttribute("data-responsive", "true");
+    expect(brand.querySelector(".leh-brand-name")).toHaveTextContent(
+      "Lean Excellence Hub",
+    );
+    const markSrcs = [
+      ...brand.querySelectorAll(".leh-brand-fallback .leh-brand-mark-dark img"),
+    ].map((node) => node.getAttribute("src"));
+    expect(markSrcs).toEqual(["/brand/leh-icon-dark.png"]);
   });
 
   it("exposes a home link with a decorative mark", () => {

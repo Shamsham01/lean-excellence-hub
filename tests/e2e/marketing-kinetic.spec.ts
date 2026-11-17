@@ -63,9 +63,22 @@ test("mobile CTAs fit, the thread scrolls within the page and the audit stays in
   ).toBeGreaterThan(await thread.evaluate((element) => element.clientWidth));
   const audit = page.locator("#five-s img");
   await audit.scrollIntoViewIfNeeded();
+  // A 390 px phone gets the 780 w variant, not the 1170 px master.
   await expect
-    .poll(() => audit.evaluate((image: HTMLImageElement) => image.naturalWidth))
-    .toBe(1170);
+    .poll(() => audit.evaluate((image: HTMLImageElement) => image.currentSrc))
+    .toMatch(/\/v2-five-s-raise-phone-dark-780w\.(avif|webp)$/);
+  await expect
+    .poll(() => audit.evaluate((image: HTMLImageElement) => image.complete))
+    .toBe(true);
+  expect(
+    await audit.evaluate((image: HTMLImageElement) => image.naturalWidth),
+  ).toBeGreaterThan(0);
+  // Desktop masters (2400 px) are never chosen on a phone.
+  const finding = page.locator("#connect img").first();
+  await finding.scrollIntoViewIfNeeded();
+  await expect
+    .poll(() => finding.evaluate((image: HTMLImageElement) => image.currentSrc))
+    .toMatch(/\/v6-gemba-finding-dark-(800|1200)w\.(avif|webp)$/);
   const ratio = await audit.evaluate(
     (image) => image.clientWidth / image.clientHeight,
   );

@@ -812,6 +812,19 @@ html:has(> body > .marketing) {
   overflow-x: visible;
 }
 
+/* Marketing is always dark. Paint the root and body dark as well, so iOS
+   overscroll bounce and the root scrollbar never show a stored light theme. */
+html:has(> body > .marketing),
+html:has(> body > .marketing) > body {
+  background: #090e17;
+  color-scheme: dark;
+}
+
+/* next-themes writes an inline `color-scheme` on <html> for the stored theme. */
+html:has(> body > .marketing) {
+  color-scheme: dark !important;
+}
+
 .marketing-skip {
   position: absolute;
   left: 1rem;
@@ -4096,13 +4109,17 @@ html:has(> body > .marketing) {
   overflow: hidden;
 }
 
+/* Phones: the horizontal lockup would shrink until its strapline is
+   unreadable, so the header collapses to the dark mark plus the product name
+   (LehBrand `responsive`, below 40rem) and drops the strapline. */
 @media (max-width: 639px) {
   .marketing .marketing-home-link {
-    max-width: 36vw;
+    flex-shrink: 1;
   }
 
-  .marketing .marketing-header .leh-brand-lockup {
-    width: 36vw;
-    max-width: 100%;
+  .marketing .marketing-header .leh-brand-name {
+    color: var(--leh-on-canvas-dark);
+    font-size: 0.875rem;
+    line-height: 1.15;
   }
 }

@@ -67,10 +67,13 @@ export function MarketingWordmark({
   compact = false,
   decorative = false,
   priority = false,
+  responsive = false,
 }: {
   compact?: boolean;
   decorative?: boolean;
   priority?: boolean;
+  /** Collapse to the mark plus the name on phones (no strapline). */
+  responsive?: boolean;
 }) {
   return (
     <LehBrand
@@ -79,6 +82,7 @@ export function MarketingWordmark({
       lockupOnDarkSurface={!compact}
       lockupRasterOnly={!compact}
       priority={priority}
+      responsive={responsive}
       strapline={!compact}
       variant={compact ? "compact" : "full"}
     />

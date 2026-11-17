@@ -1,5 +1,3 @@
-import Image from "next/image";
-
 import { HERO_HEADLINE, landingCopy } from "@/lib/marketing/landing-copy";
 
 import {
@@ -24,6 +22,27 @@ const captures = {
   dashboard: ["v5-dashboard-home-desktop-dark", 2400, 1200],
   finding: ["v6-gemba-finding-dark", 2400, 1600],
 } as const;
+
+/**
+ * Smaller copies sit next to each master as `<basename>-<width>w.<ext>`, so a
+ * phone never has to download a 2400 px desktop master.
+ */
+const PHONE_VARIANT_WIDTHS = [780] as const;
+const DESKTOP_VARIANT_WIDTHS = [800, 1200] as const;
+
+export function captureSrcSet(
+  basename: string,
+  masterWidth: number,
+  extension: "avif" | "webp",
+) {
+  const src = `/marketing/captures/v2/${basename}`;
+  const variants =
+    masterWidth >= 2400 ? DESKTOP_VARIANT_WIDTHS : PHONE_VARIANT_WIDTHS;
+  return [
+    ...variants.map((width) => `${src}-${width}w.${extension} ${width}w`),
+    `${src}.${extension} ${masterWidth}w`,
+  ].join(", ");
+}
 
 function Capture({
   slot,
@@ -52,15 +71,21 @@ function Capture({
       <picture
         className={slot === "phone" ? "editorial-phone-glow" : undefined}
       >
-        <source srcSet={`${src}.avif`} type="image/avif" sizes={sizes} />
-        <Image
+        <source
+          srcSet={captureSrcSet(basename, width, "avif")}
+          type="image/avif"
+          sizes={sizes}
+        />
+        {/* Pre-sized variants via srcset; next/image would need a runtime optimiser. */}
+        <img
           src={`${src}.webp`}
+          srcSet={captureSrcSet(basename, width, "webp")}
+          sizes={sizes}
           alt={slot === "phone" ? copy.phoneAlt : ""}
           width={width}
           height={height}
-          sizes={sizes}
           loading="lazy"
-          unoptimized
+          decoding="async"
         />
       </picture>
       <figcaption>{copy.captions[slot]}</figcaption>
@@ -110,6 +135,12 @@ export function EditorialHome() {
           </div>
         </MarketingContainer>
       </MarketingSection>
+
+      <div className="editorial-statement">
+        <MarketingContainer>
+          <p>{copy.close.title}</p>
+        </MarketingContainer>
+      </div>
 
       <MarketingSection id="connect">
         <MarketingContainer>
@@ -212,12 +243,6 @@ export function EditorialHome() {
           </div>
         </MarketingContainer>
       </MarketingSection>
-
-      <div className="editorial-statement">
-        <MarketingContainer>
-          <p>{copy.close.title}</p>
-        </MarketingContainer>
-      </div>
 
       <MarketingSection id="close">
         <MarketingContainer className="editorial-split">

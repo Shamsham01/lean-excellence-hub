@@ -135,8 +135,8 @@ export const landingCopy = {
     action: "ACT-2026-0019 · Restore missing tools on Line 2 shadow board",
   },
   captions: {
-    phone: "Harbourfield Operating Standard · shop-floor light mode",
-    audit: "Raise action · Bodmin Bakery Packing 5S Standard",
+    phone: "Maturity assessment on the floor · light mode",
+    audit: "Raise action · LEH Workplace 5S Standard",
     case: "Recurring film wander on Packing Line 1",
     analysis: "Cause analysis",
     action: "Realign the film guide and confirm the first-off pack",
@@ -144,5 +144,5 @@ export const landingCopy = {
     finding: "Packaging film misaligned on Packing Line 1",
   },
   phoneAlt:
-    "A phone in light mode, showing an in-progress self-assessment against the Harbourfield Operating Standard. Example data from a fictional demo site.",
+    "A phone in light mode, showing an in-progress formal maturity assessment on the Daily Management / LDMS criterion of the Operations pillar. Example data from a fictional demo site.",
 } as const;

@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import type { ReactNode } from "react";
 import {
   cleanup,
@@ -133,9 +134,13 @@ describe("public marketing homepage", () => {
 
     expect(
       section("hero").getByRole("heading", {
+        level: 3,
         name: landingCopy.captions.action,
       }),
     ).toBeVisible();
+    expect(
+      section("hero").queryAllByRole("heading", { level: 2 }),
+    ).toHaveLength(0);
     expect(section("hero").getByText("Harbourfield Manager")).toBeVisible();
     expect(section("hero").getByText(landingCopy.audit.title)).toBeVisible();
     const thread = section("connect");
@@ -213,6 +218,100 @@ describe("public marketing homepage", () => {
     const mobile = screen.getByRole("navigation", { name: "Mobile" });
     fireEvent.click(within(mobile).getByRole("link", { name: "LeanAI" }));
     expect(screen.queryByRole("navigation", { name: "Mobile" })).toBeNull();
+  });
+
+  it("captions the real captures by what they show", () => {
+    render(<MarketingHome />);
+
+    const captions = [...document.querySelectorAll("figcaption")].map(
+      (node) => node.textContent,
+    );
+    expect(captions).toEqual([
+      "Packaging film misaligned on Packing Line 1",
+      "Realign the film guide and confirm the first-off pack",
+      "Recurring film wander on Packing Line 1",
+      "Maturity assessment on the floor · light mode",
+      "Harbourfield Foods Group · platform home",
+      "Raise action · LEH Workplace 5S Standard",
+      "Realign the film guide and confirm the first-off pack",
+      "Cause analysis",
+    ]);
+    // V1 is an in-progress formal assessment, and V2 uses the LEH Workplace
+    // 5S Standard, so neither may be described as anything else.
+    expect(landingCopy.phoneAlt).toMatch(
+      /in-progress formal maturity assessment/,
+    );
+    for (const text of [landingCopy.phoneAlt, ...captions]) {
+      expect(text).not.toMatch(
+        /self-assessment|Harbourfield Operating Standard|overdue/i,
+      );
+    }
+    expect(
+      section("five-s").getByText("Raise action · LEH Workplace 5S Standard"),
+    ).toBeVisible();
+  });
+
+  it("serves width-described capture variants so phones skip the 2400 px masters", () => {
+    render(<MarketingHome />);
+
+    const images = [
+      ...document.querySelectorAll<HTMLImageElement>("figure picture img"),
+    ];
+    expect(images).toHaveLength(8);
+    for (const image of images) {
+      const picture = image.closest("picture")!;
+      const avif = picture.querySelector('source[type="image/avif"]')!;
+      const master = image.getAttribute("src")!;
+      expect(master).toMatch(
+        /^\/marketing\/captures\/v2\/v[1-6]b?-[a-z0-9-]+\.webp$/,
+      );
+      const base = master.replace(/\.webp$/, "");
+      const width = Number(image.getAttribute("width"));
+      const expected =
+        width >= 2400
+          ? [
+              `${base}-800w.webp 800w`,
+              `${base}-1200w.webp 1200w`,
+              `${base}.webp ${width}w`,
+            ]
+          : [`${base}-780w.webp 780w`, `${base}.webp ${width}w`];
+      expect(image.getAttribute("srcset")).toBe(expected.join(", "));
+      expect(avif.getAttribute("srcset")).toBe(
+        expected.join(", ").replaceAll(".webp", ".avif"),
+      );
+      for (const candidate of [
+        ...expected,
+        ...expected.map((entry) => entry.replaceAll(".webp", ".avif")),
+      ]) {
+        expect(existsSync(`public${candidate.split(" ")[0]}`)).toBe(true);
+      }
+      expect(image.getAttribute("sizes")).toBeTruthy();
+      expect(avif.getAttribute("sizes")).toBe(image.getAttribute("sizes"));
+      expect(image).toHaveAttribute("loading", "lazy");
+      expect(image.getAttribute("height")).toBeTruthy();
+    }
+  });
+
+  it("shows the closing statement once, under the hero, not beside the close heading", () => {
+    render(<MarketingHome />);
+
+    const statement = landingCopy.close.title;
+    const bands = [...document.querySelectorAll(".editorial-statement")];
+    const closingBand = bands.find((band) =>
+      band.textContent?.includes(statement),
+    );
+    expect(closingBand).toBeDefined();
+    expect(closingBand?.previousElementSibling?.id).toBe("hero");
+    expect(closingBand?.nextElementSibling?.id).toBe("connect");
+    expect(
+      bands.filter((band) => band.textContent?.includes(statement)),
+    ).toHaveLength(1);
+    expect(document.getElementById("close")?.previousElementSibling?.id).toBe(
+      "faq",
+    );
+    expect(
+      section("close").getByRole("heading", { level: 2, name: statement }),
+    ).toBeVisible();
   });
 });
 

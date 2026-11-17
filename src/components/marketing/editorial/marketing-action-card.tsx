@@ -14,7 +14,7 @@ export function MarketingActionCard() {
         <p className="editorial-label">{action.label}</p>
         <HeroStatusCycle />
       </div>
-      <h2 id="hero-action-title">{captions.action}</h2>
+      <h3 id="hero-action-title">{captions.action}</h3>
       <dl>
         <div>
           <dt>{action.sourceLabel}</dt>
