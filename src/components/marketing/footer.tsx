@@ -22,11 +22,11 @@ export function MarketingFooter() {
             <ul className="marketing-footer-list" role="list">
               {landingNav.map((item) => (
                 <li key={item.href}>
-                  <a href={item.href}>{item.label}</a>
+                  <Link href={item.href}>{item.label}</Link>
                 </li>
               ))}
               <li>
-                <a href="/#five-s">{landingCopy.fiveS.kicker}</a>
+                <Link href="/#five-s">{landingCopy.fiveS.kicker}</Link>
               </li>
             </ul>
           </nav>
