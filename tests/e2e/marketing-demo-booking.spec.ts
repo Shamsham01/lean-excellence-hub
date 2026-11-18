@@ -110,14 +110,15 @@ test("demo page has no horizontal overflow at mobile, tablet and desktop", async
   }
 });
 
-test("mobile header books a demo and reduced motion still shows the page", async ({
+test("mobile menu books a demo and reduced motion still shows the page", async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
+  await page.getByRole("button", { name: "Open menu" }).click();
   await page
-    .getByRole("banner")
+    .locator(".marketing-mobile-panel")
     .getByRole("link", { name: "Book a live demo" })
     .click();
   await expect(page).toHaveURL(/\/demo$/);
@@ -206,15 +207,10 @@ test("a blocked embed script keeps the direct booking link", async ({
 
 test("demo page stays readable in dark theme", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.addInitScript(() => localStorage.setItem("theme", "light"));
   await page.goto("/demo");
-  await expect(page.locator("html")).toHaveClass(/\blight\b/);
-  await expect(page.locator(".marketing")).toHaveCSS(
-    "background-color",
-    "rgb(9, 14, 23)",
-  );
-  await expect(page.getByRole("button", { name: /Appearance/ })).toHaveCount(0);
-  await expect(page.getByText("30-minute walkthrough")).toBeVisible();
+  await page.getByRole("button", { name: "Appearance" }).first().click();
+  await page.getByRole("menuitemradio", { name: "Dark" }).click();
+  await expect(page.locator("html")).toHaveClass(/dark/);
   await expect(
     page.getByRole("heading", { name: "Live booking is not connected" }),
   ).toBeVisible();

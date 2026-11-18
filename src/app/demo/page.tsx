@@ -6,7 +6,7 @@ import { readDemoBooking } from "@/lib/marketing/demo-booking";
 export const metadata: Metadata = {
   title: "Book a live demo — Lean Excellence Hub",
   description:
-    "Book a 30-minute walkthrough of Lean Excellence Hub. Choose a time on Cal.com or use the same booking page to request free access for your team or site during early access.",
+    "Book a 30-minute live walkthrough of Lean Excellence Hub. Available times come from Cal.com when a booking link is configured. This page does not invent availability.",
 };
 
 export default async function DemoPage() {

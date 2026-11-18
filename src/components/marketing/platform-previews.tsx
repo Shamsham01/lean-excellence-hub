@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 import {
   MarketingContainer,
   MarketingSection,
-  PreviewCaption,
   SectionIntro,
   StatusChip,
 } from "./primitives";
@@ -44,7 +43,6 @@ function PreviewFrame({
   route,
   chromeBadge,
   children,
-  caption,
   className,
   bodyClassName,
 }: {
@@ -53,7 +51,8 @@ function PreviewFrame({
   route: string;
   chromeBadge?: ReactNode;
   children: ReactNode;
-  caption: string;
+  /** Kept for reference; captions are not rendered on the landing page. */
+  caption?: string;
   className?: string;
   bodyClassName?: string;
 }) {
@@ -69,10 +68,6 @@ function PreviewFrame({
           {children}
         </div>
       </div>
-      <p className="marketing-preview-aux-note">
-        Example data · fictional site
-      </p>
-      <PreviewCaption>{caption}</PreviewCaption>
     </figure>
   );
 }

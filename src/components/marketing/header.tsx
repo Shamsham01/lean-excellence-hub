@@ -2,24 +2,31 @@
 
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-import { landingNav } from "@/lib/marketing/landing-copy";
+import { MarketingAppearanceMenu } from "./appearance-menu";
 import { LEH_BRAND_HOME_LABEL } from "@/components/brand/brand-assets";
 
 import {
   MarketingContainer,
   MarketingWordmark,
   RequestDemoControl,
+  RequestFreeAccessControl,
 } from "./primitives";
+
+const NAV_LINKS = [
+  { href: "/#platform", label: "Platform" },
+  { href: "/#why", label: "Why LEH" },
+  { href: "/#leanai", label: "LeanAI" },
+  { href: "/#faq", label: "FAQ" },
+] as const;
 
 export function MarketingHeader() {
   const [open, setOpen] = useState(false);
   const panelId = useId();
-  const menuTrigger = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) {
@@ -29,7 +36,6 @@ export function MarketingHeader() {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setOpen(false);
-        menuTrigger.current?.focus();
       }
     }
 
@@ -40,10 +46,10 @@ export function MarketingHeader() {
   return (
     <header className="marketing-header">
       <div className="marketing-header-bar">
-        <MarketingContainer className="flex items-center gap-2 py-3 sm:gap-4">
+        <MarketingContainer className="flex items-center gap-3 py-3 sm:gap-4">
           <Link
             href="/"
-            className="leh-brand-link marketing-home-link"
+            className="leh-brand-link shrink-0"
             aria-label={LEH_BRAND_HOME_LABEL}
           >
             <MarketingWordmark decorative priority />
@@ -53,7 +59,7 @@ export function MarketingHeader() {
             aria-label="Primary"
             className="ml-2 hidden items-center gap-6 lg:flex lg:gap-7"
           >
-            {landingNav.map((item) => (
+            {NAV_LINKS.map((item) => (
               <a
                 key={item.href}
                 href={item.href}
@@ -65,17 +71,15 @@ export function MarketingHeader() {
           </nav>
 
           <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+            <MarketingAppearanceMenu />
+            <div className="hidden items-center gap-2 lg:flex">
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/login">Sign in</Link>
+              </Button>
+              <RequestFreeAccessControl size="sm" />
+              <RequestDemoControl size="sm" />
+            </div>
             <Button
-              asChild
-              variant="ghost"
-              size="sm"
-              className="hidden lg:inline-flex"
-            >
-              <Link href="/login">Sign in</Link>
-            </Button>
-            <RequestDemoControl size="sm" />
-            <Button
-              ref={menuTrigger}
               type="button"
               variant="outline"
               size="icon"
@@ -104,7 +108,7 @@ export function MarketingHeader() {
         >
           <MarketingContainer className="flex flex-col gap-4 py-4">
             <nav aria-label="Mobile" className="flex flex-col gap-1">
-              {landingNav.map((item) => (
+              {NAV_LINKS.map((item) => (
                 <a
                   key={item.href}
                   href={item.href}
@@ -116,7 +120,11 @@ export function MarketingHeader() {
               ))}
             </nav>
             <div className="flex flex-col gap-3">
-              <Button asChild variant="ghost">
+              <p className="marketing-footer-heading">Appearance</p>
+              <MarketingAppearanceMenu variant="labeled" />
+              <RequestDemoControl />
+              <RequestFreeAccessControl />
+              <Button asChild variant="outline">
                 <Link href="/login">Sign in</Link>
               </Button>
             </div>

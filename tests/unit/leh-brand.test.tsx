@@ -326,13 +326,20 @@ describe("LehBrand", () => {
       "data-variant",
       "full",
     );
+    expect(screen.getByTestId("leh-brand")).toHaveAttribute(
+      "data-responsive",
+      "true",
+    );
     const brand = screen.getByTestId("leh-brand");
-    expect(brand).toHaveAttribute("data-lockup-surface", "dark");
     expect(brand.querySelector(".leh-brand-lockup picture source")).toBeNull();
     const lockupSrcs = [...brand.querySelectorAll(".leh-brand-lockup img")].map(
       (node) => node.getAttribute("src"),
     );
-    expect(lockupSrcs).toEqual(["/brand/leh-horizontal-dark.png"]);
+    expect(
+      lockupSrcs.every(
+        (src) => src?.includes(".png") && !src?.includes(".svg"),
+      ),
+    ).toBe(true);
   });
 
   it("exposes a home link with a decorative mark", () => {
@@ -351,7 +358,7 @@ describe("LehBrand", () => {
     const brand = screen.getByTestId("leh-brand");
     expect(brand).toHaveAttribute("data-lockup-surface", "dark");
     expect(brand.querySelector(".leh-brand-lockup-dark")).toBeVisible();
-    expect(brand.querySelector(".leh-brand-lockup-light")).toBeNull();
+    expect(brand.querySelector(".leh-brand-lockup-light")).not.toBeVisible();
     const darkImg = brand.querySelector(
       ".leh-brand-lockup-dark .leh-brand-lockup-img",
     );

@@ -17,8 +17,8 @@ describe("editorial homepage motion", () => {
     expect(css).not.toMatch(/position:\s*fixed/);
     expect(source).not.toContain("data-kinetic");
     expect(source).not.toContain("KineticRoot");
-    expect(source).toContain('id="platform"');
-    expect(source).not.toContain('href="/signup"');
+    expect(source).toContain('href="#platform"');
+    expect(source).toContain("GET_FREE_ACCESS_HREF");
   });
 
   it("opts into short entrance motion and removes it for reduced motion", () => {
