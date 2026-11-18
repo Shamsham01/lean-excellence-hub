@@ -4,28 +4,19 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Image from "next/image";
-
 import {
   DEMO_BOOKING_CTA,
   GET_FREE_ACCESS_CTA,
   GET_FREE_ACCESS_HREF,
 } from "@/lib/marketing/demo-booking";
-import {
-  MarketingModuleFigure,
-  ProductVignetteChrome,
-  type MarketingModuleId,
-} from "@/components/marketing/platform-previews";
-import {
-  MarketingContainer,
-  StatusChip,
-} from "@/components/marketing/primitives";
+import type { MarketingModuleId } from "@/components/marketing/platform-previews";
+import { MarketingContainer } from "@/components/marketing/primitives";
 import {
   MarketingActionCard,
   MarketingGembaFindingCard,
 } from "./marketing-action-card";
 import { ScrollReveal } from "./scroll-reveal";
+import { Capture, type CaptureSlot } from "./captures";
 import { LineageCarousel } from "./thread-carousel";
 
 import "./home.css";
@@ -114,6 +105,24 @@ const LINEAGE: readonly LineageStep[] = [
       ["Milestone", "Guide redesign in trial"],
       ["Benefit", "BEN-019 awaiting validation"],
       ["Outcome", "Nothing is shown as verified yet"],
+    ],
+  },
+  {
+    id: "learn",
+    index: "05",
+    title: "Learn",
+    module: "Standards & skills",
+    summary:
+      "Updated standards and capability requirements support sustained improvement.",
+    ref: "CAP-014",
+    recordTitle: "Film-change standard and packing competence",
+    status: "Draft for review",
+    tone: "neutral",
+    fields: [
+      ["Standard", "Packing Line 1 film-change · draft"],
+      ["Capability", "Film-change competence for packing operators"],
+      ["Owner", "CI manager"],
+      ["From", "PRJ-042"],
     ],
   },
 ];
@@ -274,236 +283,15 @@ function HeroActionStage() {
   );
 }
 
-function CloseFrameworkVisual() {
-  return (
-    <figure className="editorial-close-visual editorial-rise editorial-rise-delay">
-      <div className="editorial-framework-shell">
-        <div className="editorial-framework-chrome">
-          <span
-            className="editorial-dots inline-flex gap-[0.3rem]"
-            aria-hidden="true"
-          >
-            <i />
-            <i />
-            <i />
-          </span>
-          <p className="m-0 min-w-0 flex-1 truncate text-[0.72rem] font-semibold tracking-wide text-foreground">
-            Operating model
-          </p>
-          <StatusChip className="shrink-0">Example</StatusChip>
-        </div>
-        <div className="editorial-framework-body">
-          <p className="editorial-framework-kicker">Structure</p>
-          <ol
-            className="editorial-framework-layers"
-            aria-label="Organisation structure"
-          >
-            <li className="editorial-framework-layer editorial-framework-layer-org">
-              <div className="editorial-framework-layer-head">
-                <p className="editorial-framework-layer-title">Organisation</p>
-                <StatusChip tone="accent">Configured</StatusChip>
-              </div>
-              <p className="editorial-framework-layer-detail">
-                Your organisation
-              </p>
-            </li>
-            <li className="editorial-framework-layer editorial-framework-layer-site">
-              <div className="editorial-framework-layer-head">
-                <p className="editorial-framework-layer-title">Sites</p>
-                <StatusChip tone="connected">Rolled out</StatusChip>
-              </div>
-              <p className="editorial-framework-layer-detail">
-                Bodmin Bakery · Manchester DC
-              </p>
-            </li>
-            <li className="editorial-framework-layer editorial-framework-layer-area">
-              <div className="editorial-framework-layer-head">
-                <p className="editorial-framework-layer-title">Areas</p>
-                <StatusChip tone="neutral">Scoped</StatusChip>
-              </div>
-              <p className="editorial-framework-layer-detail">
-                Packing · Goods-in · Maintenance
-              </p>
-            </li>
-          </ol>
-          <p className="editorial-framework-kicker editorial-framework-kicker-spaced">
-            Your standards & methods
-          </p>
-          <div className="editorial-framework-cards">
-            <Card className="editorial-framework-card gap-2 border-primary/30 p-3 shadow-none sm:p-3.5">
-              <CardHeader className="gap-1 p-0">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <CardTitle className="text-xs font-semibold sm:text-sm">
-                    Maturity model
-                  </CardTitle>
-                  <StatusChip tone="accent">Yours</StatusChip>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <p className="marketing-field-label">Framework</p>
-                <p className="marketing-field-value">
-                  LEH Operational Excellence Standard
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="editorial-framework-card gap-2 border-primary/30 p-3 shadow-none sm:p-3.5">
-              <CardHeader className="gap-1 p-0">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <CardTitle className="text-xs font-semibold sm:text-sm">
-                    Problem solving
-                  </CardTitle>
-                  <StatusChip tone="connected">Method</StatusChip>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <p className="marketing-field-label">Organisation method</p>
-                <p className="marketing-field-value">
-                  The organisation&apos;s chosen method (example: A3 · DMAIC ·
-                  8D)
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="editorial-framework-card gap-2 border-primary/30 p-3 shadow-none sm:p-3.5">
-              <CardHeader className="gap-1 p-0">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <CardTitle className="text-xs font-semibold sm:text-sm">
-                    Standards library
-                  </CardTitle>
-                  <StatusChip tone="connected">Aligned</StatusChip>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <p className="marketing-field-label">Work standards</p>
-                <p className="marketing-field-value">
-                  Packing changeover · Goods-in 5S · Film path control
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-    </figure>
-  );
-}
-
-const CAPTURES = {
-  audit: {
-    file: "v2-five-s-raise-phone-dark",
-    width: 1009,
-    height: 2100,
-    variants: [600],
-    alt: "A 5S audit on a phone, raising an action with an owner, a due date and labels.",
-  },
-  case: {
-    file: "v3-pps-case-desktop-dark",
-    width: 2029,
-    height: 1490,
-    variants: [800, 1400],
-    alt: "A problem-solving case on the eight-step rail at Root Cause Analysis, with LeanAI proposals to accept, edit or reject.",
-  },
-  analysis: {
-    file: "v3b-pps-analysis-desktop-dark",
-    width: 2282,
-    height: 1231,
-    variants: [800, 1400],
-    alt: "A problem-solving cause analysis with LeanAI proposals to accept, edit or reject.",
-  },
-  action: {
-    file: "v4-actions-planner-desktop-dark",
-    width: 2135,
-    height: 1482,
-    variants: [800, 1400],
-    alt: "The actions planner as a board, with open, in-progress and completed actions.",
-  },
-  dashboard: {
-    file: "v5-dashboard-home-desktop-dark",
-    width: 2282,
-    height: 1336,
-    variants: [800, 1400],
-    alt: "The platform home with items needing attention and operational analytics tiles.",
-  },
-  finding: {
-    file: "v6-gemba-finding-dark",
-    width: 2231,
-    height: 1482,
-    variants: [800, 1400],
-    alt: "A completed Gemba walk with its summary, an issue observation and the answer recorded on Packing Line 1.",
-  },
-  results: {
-    file: "v7-maturity-results-desktop-dark",
-    width: 2010,
-    height: 1482,
-    variants: [800, 1400],
-    alt: "A published maturity result with the overall score, maturity levels and five pillar scores.",
-  },
-} as const;
-
-type CaptureSlot = keyof typeof CAPTURES;
-
 /** One capture per finding-story step, in carousel order. */
 const STORY_CAPTURE = {
-  observe: "finding",
-  act: "action",
-  solve: "case",
-  improve: "dashboard",
+  observe: "observe",
+  act: "act",
+  solve: "solve",
+  improve: "improve",
+  learn: "learn",
 } as const satisfies Record<string, CaptureSlot>;
 
-/** Platform modules that show a product capture instead of a vignette. */
-const MODULE_CAPTURE = {
-  maturity: "results",
-  "problem-solving": "analysis",
-} as const satisfies Partial<Record<MarketingModuleId, CaptureSlot>>;
-
-function srcSet(slot: CaptureSlot, extension: "avif" | "webp") {
-  const { file, width, variants } = CAPTURES[slot];
-  const base = `/marketing/captures/v4/${file}`;
-  return [
-    ...variants.map((w) => `${base}-${w}w.${extension} ${w}w`),
-    `${base}.${extension} ${width}w`,
-  ].join(", ");
-}
-
-/** A product capture shown whole, at its natural aspect ratio. */
-function Capture({
-  slot,
-  carousel = false,
-}: {
-  slot: CaptureSlot;
-  carousel?: boolean;
-}) {
-  const { file, width, height, alt } = CAPTURES[slot];
-  const phone = width < height;
-  const sizes = phone
-    ? "(max-width: 430px) 70vw, 300px"
-    : carousel
-      ? "(max-width: 767px) 86vw, (max-width: 1280px) 76vw, 1000px"
-      : "(max-width: 1023px) 92vw, 760px";
-
-  return (
-    <figure
-      className={
-        phone
-          ? "editorial-capture editorial-capture-phone"
-          : "editorial-capture"
-      }
-    >
-      <picture>
-        <source srcSet={srcSet(slot, "avif")} type="image/avif" sizes={sizes} />
-        <source srcSet={srcSet(slot, "webp")} type="image/webp" sizes={sizes} />
-        <Image
-          src={`/marketing/captures/v4/${file}.webp`}
-          alt={alt}
-          width={width}
-          height={height}
-          sizes={sizes}
-          loading={carousel ? "eager" : "lazy"}
-          unoptimized
-          style={{ aspectRatio: `${width} / ${height}` }}
-        />
-      </picture>
-    </figure>
-  );
-}
 export function EditorialHome() {
   return (
     <div className="editorial-home">
@@ -572,7 +360,7 @@ export function EditorialHome() {
 
       <section
         id="why"
-        className="editorial-section editorial-band editorial-section-premium"
+        className="dark marketing-dark-band editorial-section editorial-band editorial-section-premium"
       >
         <MarketingContainer>
           <div className="editorial-section-head">
@@ -591,10 +379,16 @@ export function EditorialHome() {
             <LineageCarousel label="From one finding" steps={LINEAGE}>
               {LINEAGE.map((step) => (
                 <li key={step.id} aria-labelledby={`finding-step-${step.id}`}>
-                  <Capture
-                    slot={STORY_CAPTURE[step.id as keyof typeof STORY_CAPTURE]}
-                    carousel
-                  />
+                  <div className="editorial-slide">
+                    <Capture
+                      slot={
+                        STORY_CAPTURE[step.id as keyof typeof STORY_CAPTURE]
+                      }
+                      eager
+                      dark
+                      sizes="(max-width: 767px) 86vw, (max-width: 1280px) 76vw, 1000px"
+                    />
+                  </div>
                 </li>
               ))}
             </LineageCarousel>
@@ -603,7 +397,7 @@ export function EditorialHome() {
       </section>
 
       <section
-        className="editorial-statement editorial-statement-evidence"
+        className="dark marketing-dark-band editorial-statement editorial-statement-evidence"
         aria-label="Product evidence"
       >
         <MarketingContainer>
@@ -623,7 +417,7 @@ export function EditorialHome() {
                   <Link href="/demo">{DEMO_BOOKING_CTA}</Link>
                 </Button>
               </div>
-              <Capture slot="audit" />
+              <Capture slot="raise" dark />
             </div>
           </ScrollReveal>
         </MarketingContainer>
@@ -647,7 +441,7 @@ export function EditorialHome() {
           </div>
           <ol className="editorial-modules editorial-modules-premium">
             {MODULES.map((module, index) => (
-              <li key={module.id} className="editorial-module">
+              <li key={module.id} id={module.id} className="editorial-module">
                 <div className="editorial-module-copy">
                   <p className="editorial-module-index">
                     {String(index + 1).padStart(2, "0")}
@@ -655,15 +449,7 @@ export function EditorialHome() {
                   <h3>{module.name}</h3>
                   <p>{module.line}</p>
                 </div>
-                {module.id in MODULE_CAPTURE ? (
-                  <Capture
-                    slot={
-                      MODULE_CAPTURE[module.id as keyof typeof MODULE_CAPTURE]
-                    }
-                  />
-                ) : (
-                  <MarketingModuleFigure id={module.id} />
-                )}
+                <Capture slot={module.id} />
               </li>
             ))}
           </ol>
@@ -700,62 +486,7 @@ export function EditorialHome() {
             </div>
 
             <div className="editorial-lean-visuals">
-              <figure className="editorial-assistant">
-                <div className="marketing-preview marketing-preview-product">
-                  <ProductVignetteChrome
-                    title="LeanAI"
-                    route="/platform · Assistant · GEM-214"
-                    badge={
-                      <StatusChip tone="accent">
-                        Contextual assistant
-                      </StatusChip>
-                    }
-                  />
-                  <div className="marketing-preview-body">
-                    <p className="editorial-label">Context</p>
-                    <ol className="editorial-context-path">
-                      <li>Bodmin Bakery</li>
-                      <li>Gemba</li>
-                      <li>GEM-214</li>
-                    </ol>
-                    <p className="editorial-label">Recommendation</p>
-                    <p className="editorial-recommend">
-                      Link the Gemba finding to an owned action before the next
-                      walk.
-                    </p>
-                    <div className="marketing-governance">
-                      <p className="editorial-label">Governance</p>
-                      <p className="editorial-authority">
-                        A person reviews. A person decides.
-                      </p>
-                      <p>
-                        LeanAI does not publish frameworks, close actions, grant
-                        access or purchase site capacity.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </figure>
-              <ScrollReveal delay>
-                <MarketingActionCard
-                  variant="story"
-                  actionRef={SIGNATURE_ACTION.actionRef}
-                  title={SIGNATURE_ACTION.title}
-                  owner={SIGNATURE_ACTION.owner}
-                  due={SIGNATURE_ACTION.due}
-                  status="In progress"
-                  statusTone="warning"
-                  sourceModule={SIGNATURE_ACTION.sourceModule}
-                  sourceRef={SIGNATURE_ACTION.sourceRef}
-                  sourceTitle={SIGNATURE_ACTION.sourceTitle}
-                  leanAiSuggestion={
-                    <>
-                      Link the Gemba finding to an owned action before the next
-                      walk. Context: GEM-214 · Packing Line 1.
-                    </>
-                  }
-                />
-              </ScrollReveal>
+              <Capture slot="leanai" />
             </div>
           </div>
         </MarketingContainer>
@@ -835,7 +566,9 @@ export function EditorialHome() {
                 </Button>
               </div>
             </div>
-            <CloseFrameworkVisual />
+            <div className="editorial-close-visual editorial-rise editorial-rise-delay">
+              <Capture slot="organisation" />
+            </div>
           </div>
         </MarketingContainer>
       </section>

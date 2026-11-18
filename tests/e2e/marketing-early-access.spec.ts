@@ -68,7 +68,7 @@ test("the finding-story carousel scrolls with its buttons and keeps captures who
     await track.scrollIntoViewIfNeeded();
     await expect(track).toHaveCSS("scroll-snap-type", "x mandatory");
     const images = track.locator("img");
-    await expect(images).toHaveCount(4);
+    await expect(images).toHaveCount(5);
     for (const image of await images.all()) {
       await image.scrollIntoViewIfNeeded();
       await expect
@@ -111,9 +111,10 @@ test("the finding-story carousel scrolls with its buttons and keeps captures who
     "aria-pressed",
     "true",
   );
-  await carousel.getByRole("button", { name: /Improve/ }).click();
+  await carousel.getByRole("button", { name: /Learn/ }).click();
   await expect(next).toBeDisabled();
-  await expect(
-    carousel.getByRole("button", { name: /Improve/ }),
-  ).toHaveAttribute("aria-pressed", "true");
+  await expect(carousel.getByRole("button", { name: /Learn/ })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
 });

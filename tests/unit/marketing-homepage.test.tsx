@@ -174,32 +174,31 @@ describe("public marketing homepage", () => {
     }
   });
 
-  it("renders LEH-native platform previews instead of generic module slogans", () => {
-    render(<MarketingHome />);
+  it("shows a product capture for every platform module, with no drawn vignettes", () => {
+    const { container } = render(<MarketingHome />);
 
+    const platform = container.querySelector("#platform") as HTMLElement;
+    const shown = [
+      ...platform.querySelectorAll<HTMLElement>("[data-capture]"),
+    ].map((node) => node.dataset.capture);
+    expect(shown).toEqual([
+      "maturity",
+      "gemba",
+      "five-s",
+      "suggestions",
+      "actions",
+      "problem-solving",
+      "projects-benefits",
+      "training-skills",
+    ]);
+    expect(container.querySelector(".marketing-product-vignette")).toBeNull();
+    expect(container.querySelector(".marketing-preview-title")).toBeNull();
     expect(
-      screen.getByText("Pallet labels not at point of use after changeover."),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("ACT-1042 · Restore point-of-use labels"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("img", { name: /published maturity result/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "SUG-018 · Move changeover kit to the line-side cupboard.",
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("img", { name: /problem-solving cause analysis/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("table", { name: /example skills matrix/i }),
-    ).toBeInTheDocument();
+      screen.getAllByRole("img", { name: /published maturity result/i }).length,
+    ).toBeGreaterThan(0);
   });
 
-  it("tells the evidence-to-impact loop as Observe through Improve", () => {
+  it("tells the evidence-to-impact loop as Observe through Learn", () => {
     render(<MarketingHome />);
 
     expect(
@@ -210,9 +209,7 @@ describe("public marketing homepage", () => {
     expect(
       screen.getByRole("heading", { name: "Improve" }),
     ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("heading", { name: "Learn" }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Learn" })).toBeInTheDocument();
   });
 
   it("exposes restrained in-page navigation without dead destinations", () => {
@@ -310,17 +307,6 @@ describe("public marketing homepage", () => {
 
     const platform = document.getElementById("platform");
     expect(platform).toBeTruthy();
-    const titles = [
-      ...platform!.querySelectorAll(".marketing-preview-title"),
-    ].map((node) => node.textContent);
-    expect(titles).toEqual([
-      "Gemba",
-      "5S",
-      "Suggestions",
-      "Actions",
-      "Projects & Benefits",
-      "Training & Skills",
-    ]);
     expect(
       [...platform!.querySelectorAll(".editorial-module-copy h3")].map(
         (node) => node.textContent,
@@ -375,7 +361,7 @@ describe("public marketing homepage", () => {
     const images = [
       ...container.querySelectorAll<HTMLImageElement>(".editorial-capture img"),
     ];
-    expect(images.length).toBe(7);
+    expect(images.length).toBeGreaterThanOrEqual(16);
     for (const image of images) {
       const width = Number(image.getAttribute("width"));
       const height = Number(image.getAttribute("height"));
@@ -383,6 +369,24 @@ describe("public marketing homepage", () => {
         `${width}/${height}`,
       );
       expect(image.getAttribute("alt")).toBeTruthy();
+    }
+  });
+
+  it("pairs light and dark captures, and keeps always-dark bands dark", () => {
+    const { container } = render(<MarketingHome />);
+    const gemba = container.querySelector('#platform [data-capture="gemba"]');
+    expect(
+      gemba?.querySelector(".editorial-capture-light img")?.getAttribute("src"),
+    ).toMatch(/m-gemba-walk-light\.webp$/);
+    expect(
+      gemba?.querySelector(".editorial-capture-dark img")?.getAttribute("src"),
+    ).toMatch(/m-gemba-walk-dark\.webp$/);
+    for (const band of container.querySelectorAll(".marketing-dark-band")) {
+      expect(band).toHaveClass("dark");
+      expect(band.querySelector(".editorial-capture-light")).toBeNull();
+      for (const image of band.querySelectorAll("img")) {
+        expect(image.getAttribute("src")).toMatch(/-dark\.webp$/);
+      }
     }
   });
 
@@ -427,7 +431,7 @@ describe("public marketing homepage", () => {
     ).toBeGreaterThan(0);
     expect(
       within(leanai).getByText(
-        /does not publish frameworks, close actions, grant access or purchase site capacity/i,
+        /publishing, closure, access and purchasing stay with a person/i,
       ),
     ).toBeInTheDocument();
     expect(

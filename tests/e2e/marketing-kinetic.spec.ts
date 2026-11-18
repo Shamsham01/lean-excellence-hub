@@ -137,17 +137,17 @@ test("reduced motion lays the story out in normal document flow", async ({
   ).toBeTruthy();
 });
 
-test("vertical wheel over the skills matrix continues the page", async ({
+test("vertical wheel over the skills capture continues the page", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/#training-skills");
-  const matrix = page.locator("#training-skills .marketing-matrix-scroll");
+  const matrix = page.locator("#training-skills .editorial-capture");
   await expect(matrix).toBeVisible();
   const box = await matrix.boundingBox();
 
   if (!box) {
-    throw new Error("Training skills matrix has no box");
+    throw new Error("Training skills capture has no box");
   }
 
   await page.mouse.move(
@@ -173,9 +173,12 @@ test("LeanAI governance is visible without a scroll-scrubbed stage", async ({
     }),
   ).toBeVisible();
   await expect(
-    page.getByText(
-      "LeanAI does not publish frameworks, close actions, grant access or purchase site capacity.",
-    ),
+    page
+      .locator("#leanai")
+      .getByText(
+        "Publishing, closure, access and purchasing stay with a person.",
+      )
+      .first(),
   ).toBeVisible();
   await expect(page.locator("#leanai")).not.toHaveAttribute("data-beat", /.+/);
 
@@ -193,7 +196,7 @@ test("selecting a connected step scrolls to its capture", async ({ page }) => {
   await solve.click();
   await expect(solve).toHaveAttribute("aria-pressed", "true");
   await expect(
-    page.getByRole("img", { name: /problem-solving case/i }),
+    page.locator("#why").getByRole("img", { name: /problem-solving case/i }),
   ).toBeInViewport();
 });
 

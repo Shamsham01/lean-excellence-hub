@@ -1718,8 +1718,26 @@
   overflow: hidden;
   border: 1px solid var(--marketing-vignette-border, var(--border));
   border-radius: 0.75rem;
-  background: #0b1220;
+  background: var(--background);
   box-shadow: var(--leh-highlight), var(--marketing-shadow-lift);
+}
+
+/* Theme-aware pairs: light in light mode, dark in dark mode and inside
+   always-dark bands. The .dark class is set before first paint. */
+.editorial-capture .editorial-capture-dark {
+  display: none;
+}
+
+.dark .editorial-capture .editorial-capture-light {
+  display: none;
+}
+
+.dark .editorial-capture .editorial-capture-dark {
+  display: block;
+}
+
+.editorial-slide .editorial-capture .editorial-capture-dark {
+  display: contents;
 }
 
 .editorial-capture img {
@@ -1741,6 +1759,61 @@
 
 .editorial-capture-phone img {
   border-radius: 1.3rem;
+}
+
+/* ---------- Carousel slides: one framed stage, phone or desktop ---------- */
+
+.editorial-slide {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1 / 1;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background:
+    radial-gradient(
+      80% 70% at 50% 40%,
+      color-mix(in oklab, var(--primary) 12%, transparent) 0%,
+      transparent 70%
+    ),
+    color-mix(in oklab, var(--card) 70%, var(--background));
+  padding: clamp(0.75rem, 2.5vw, 1.75rem);
+}
+
+.editorial-slide {
+  position: relative;
+}
+
+.editorial-slide .editorial-capture {
+  position: absolute;
+  inset: clamp(0.75rem, 2.5vw, 1.75rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+}
+
+.editorial-slide .editorial-capture picture {
+  display: contents;
+}
+
+.editorial-slide .editorial-capture img {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  border: 1px solid var(--marketing-vignette-border, var(--border));
+  border-radius: 0.65rem;
+  box-shadow: var(--marketing-shadow-lift);
+}
+
+.editorial-slide .editorial-capture-phone img {
+  border-radius: 1.4rem;
+}
+
+@media (min-width: 768px) {
+  .editorial-slide {
+    aspect-ratio: 16 / 10;
+  }
 }
 
 /* ---------- Finding story carousel ---------- */
@@ -1781,6 +1854,7 @@
 .editorial-thread[data-active="1"] li:nth-child(2),
 .editorial-thread[data-active="2"] li:nth-child(3),
 .editorial-thread[data-active="3"] li:nth-child(4),
+.editorial-thread[data-active="4"] li:nth-child(5),
 .editorial-thread li:focus-within {
   opacity: 1;
 }
@@ -1836,7 +1910,7 @@
 
 @media (min-width: 1024px) {
   .editorial-carousel .editorial-lineage {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 
@@ -1870,4 +1944,47 @@
   .editorial-modules-premium .editorial-module-copy {
     position: static;
   }
+}
+
+/* ---------- Always-dark bands (story and Action Card) ---------- */
+
+.editorial-home .marketing-dark-band {
+  border-color: color-mix(
+    in oklab,
+    var(--leh-canvas-dark) 78%,
+    var(--primary) 22%
+  );
+  background:
+    radial-gradient(
+      90% 60% at 50% 0%,
+      color-mix(in oklab, var(--primary) 14%, transparent) 0%,
+      transparent 60%
+    ),
+    var(--leh-canvas-dark);
+  color: var(--foreground);
+}
+
+.editorial-home .marketing-dark-band .editorial-story-shell {
+  background: color-mix(
+    in oklab,
+    var(--leh-card-dark) 70%,
+    var(--leh-canvas-dark)
+  );
+}
+
+/* ---------- Visuals beside long text ---------- */
+
+@media (min-width: 1024px) {
+  .editorial-lean {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    align-items: center;
+  }
+
+  .editorial-close-grid {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  }
+}
+
+.editorial-module {
+  scroll-margin-top: 6rem;
 }
