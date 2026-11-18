@@ -333,15 +333,10 @@ describe("LehBrand", () => {
       (node) => node.getAttribute("src"),
     );
     expect(lockupSrcs).toEqual(["/brand/leh-horizontal-dark.png"]);
-    // Phones collapse to the dark mark plus the name, without a strapline.
-    expect(brand).toHaveAttribute("data-responsive", "true");
-    expect(brand.querySelector(".leh-brand-name")).toHaveTextContent(
-      "Lean Excellence Hub",
-    );
-    const markSrcs = [
-      ...brand.querySelectorAll(".leh-brand-fallback .leh-brand-mark-dark img"),
-    ].map((node) => node.getAttribute("src"));
-    expect(markSrcs).toEqual(["/brand/leh-icon-dark.png"]);
+    // The official lockup stays on one line at every width (plan-v3 §2a):
+    // no icon-plus-text fallback in the marketing header.
+    expect(brand).toHaveAttribute("data-responsive", "false");
+    expect(brand.querySelector(".leh-brand-name")).toBeNull();
   });
 
   it("exposes a home link with a decorative mark", () => {

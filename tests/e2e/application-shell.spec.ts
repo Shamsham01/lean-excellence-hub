@@ -20,11 +20,11 @@ test("renders the commercial landing page", async ({ page }) => {
     page.getByRole("link", { name: "Sign in" }).first(),
   ).toHaveAttribute("href", "/login");
   await expect(
-    page.getByRole("link", { name: "Book a live demo" }).first(),
+    page.getByRole("link", { name: "Book a demo" }).first(),
   ).toHaveAttribute("href", "/demo");
   await expect(
-    page.locator("#hero").getByRole("link", { name: "Request free access" }),
-  ).toHaveAttribute("href", "/demo");
+    page.locator("#hero").getByRole("link", { name: "Get free access" }),
+  ).toHaveAttribute("href", "/#get-free-access");
   await expect(page).toHaveTitle(
     "Lean Excellence Hub — Operational Excellence & Continuous Improvement Platform",
   );
@@ -41,7 +41,7 @@ test("mobile navigation reaches in-page sections and sign-in", async ({
   await page.getByRole("button", { name: "Open menu" }).click();
   const mobileNav = page.getByRole("navigation", { name: "Mobile" });
   await expect(mobileNav).toBeVisible();
-  await mobileNav.getByRole("link", { name: "Platform" }).click();
+  await mobileNav.getByRole("link", { name: "Product" }).click();
   await expect(page).toHaveURL(/#platform/);
   await expect(
     page.getByRole("heading", { name: landingCopy.platform.title }),

@@ -35,11 +35,20 @@ test("marketing stays dark with a stored light preference", async ({
   await expect(signIn).toHaveAttribute("href", "/login");
   await expect(signIn).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
 
-  const primary = header.getByRole("link", { name: "Book a live demo" });
+  const primary = header.getByRole("link", { name: "Book a demo" });
   await expect(primary).toHaveCSS("background-color", "rgb(70, 95, 255)");
   await expect(
-    header.getByRole("link", { name: "Request free access" }),
+    header.getByRole("link", { name: "Get free access" }),
   ).toHaveCount(0);
+
+  // 64 px, transparent over the hero, then blurred and ruled after scrolling.
+  const bar = page.locator(".marketing-header-bar");
+  expect((await bar.boundingBox())!.height).toBeLessThanOrEqual(65);
+  await expect(bar).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await page.mouse.wheel(0, 600);
+  await expect(bar).toHaveCSS("background-color", "rgba(9, 14, 23, 0.8)");
+  await expect(bar).toHaveCSS("border-bottom-color", "rgb(30, 45, 66)");
+
   await primary.click();
   await expect(page).toHaveURL(/\/demo$/);
   await expect(page.locator(".marketing")).toHaveCSS(
@@ -50,10 +59,16 @@ test("marketing stays dark with a stored light preference", async ({
   await page.goto("/");
   const access = page
     .locator("#hero")
-    .getByRole("link", { name: "Request free access" });
+    .getByRole("link", { name: "Get free access" });
   await expect(access).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await access.click();
-  await expect(page).toHaveURL(/\/demo$/);
+  await expect(page).toHaveURL(/#get-free-access$/);
+  await expect(
+    page.locator("#get-free-access").getByRole("heading", {
+      level: 2,
+      name: "Get free access.",
+    }),
+  ).toBeInViewport();
 });
 
 test("mobile menu keeps the header booking link and returns focus on Escape", async ({
@@ -70,33 +85,22 @@ test("mobile menu keeps the header booking link and returns focus on Escape", as
     );
   }
 
-  // Phones get the dark mark and a readable product name, not a shrunken lockup.
+  // The official lockup stays on one line on phones, never icon plus text.
   const home = header.getByRole("link", { name: "Lean Excellence Hub home" });
-  await expect(
-    home.locator('img[src="/brand/leh-horizontal-dark.png"]'),
-  ).toBeHidden();
-  const mark = home.locator(".leh-brand-mark-dark img");
+  const mark = home.locator('img[src="/brand/leh-horizontal-dark.png"]');
   await expect(mark).toBeVisible();
   expect(
     await mark.evaluate((image: HTMLImageElement) => image.naturalWidth),
   ).toBeGreaterThan(0);
-  const name = home.locator(".leh-brand-name");
-  await expect(name).toBeVisible();
-  await expect(name).toHaveText("Lean Excellence Hub");
-  expect(
-    parseFloat(await name.evaluate((node) => getComputedStyle(node).fontSize)),
-  ).toBeGreaterThanOrEqual(13);
-  await expect(name).toHaveCSS("color", "rgb(241, 245, 249)");
-  await expect(home.locator(".leh-brand-strapline")).toHaveCount(1);
-  await expect(home.locator(".leh-brand-strapline")).toBeHidden();
-  const nameBox = await name.boundingBox();
-  const ctaBox = await header
-    .getByRole("link", { name: "Book a live demo" })
-    .boundingBox();
-  expect(nameBox!.x + nameBox!.width).toBeLessThanOrEqual(ctaBox!.x);
-  await expect(
-    header.getByRole("link", { name: "Book a live demo" }),
-  ).toBeVisible();
+  await expect(home.locator(".leh-brand-name")).toHaveCount(0);
+  const homeBox = await home.boundingBox();
+  const cta = header.getByRole("link", { name: "Book a demo" });
+  await expect(cta).toBeVisible();
+  const ctaBox = await cta.boundingBox();
+  expect(homeBox!.x + homeBox!.width).toBeLessThanOrEqual(ctaBox!.x);
+  expect(homeBox!.height).toBeLessThan(40);
+  await expect(header.getByRole("link", { name: "Sign in" })).toBeHidden();
+
   const menu = header.getByRole("button", { name: "Open menu" });
   await menu.click();
   await expect(

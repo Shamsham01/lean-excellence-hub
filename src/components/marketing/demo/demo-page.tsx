@@ -35,7 +35,7 @@ export function MarketingDemoPage({
         <MarketingContainer>
           <div className="demo-layout">
             <div className="demo-copy">
-              <MarketingKicker>Book a live demo</MarketingKicker>
+              <MarketingKicker>Book a demo</MarketingKicker>
               <h1>See operational excellence connected.</h1>
               <p className="demo-lede">
                 Discover how Lean Excellence Hub connects everyday improvement,

@@ -75,7 +75,7 @@ test("homepage demo CTA opens the booking page", async ({ page }) => {
   await page
     .getByRole("banner")
     .locator(".marketing-header-bar")
-    .getByRole("link", { name: "Book a live demo" })
+    .getByRole("link", { name: "Book a demo" })
     .click();
 
   await expect(page).toHaveURL(/\/demo$/);
@@ -118,7 +118,7 @@ test("mobile header books a demo and reduced motion still shows the page", async
   await page.goto("/");
   await page
     .getByRole("banner")
-    .getByRole("link", { name: "Book a live demo" })
+    .getByRole("link", { name: "Book a demo" })
     .click();
   await expect(page).toHaveURL(/\/demo$/);
   await expect(
@@ -155,7 +155,7 @@ test("client navigation remounts the mocked calendar", async ({ page }) => {
   const book = page
     .getByRole("banner")
     .locator(".marketing-header-bar")
-    .getByRole("link", { name: "Book a live demo" });
+    .getByRole("link", { name: "Book a demo" });
   await book.click();
   await expect(page).toHaveURL(/\/demo$/);
   const first = page.locator("[data-leh-mock-embed]");

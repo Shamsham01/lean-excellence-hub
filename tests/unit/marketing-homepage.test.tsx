@@ -47,7 +47,8 @@ import Home, { metadata } from "@/app/page";
 import { MarketingHome } from "@/components/marketing/home";
 import {
   DEMO_BOOKING_CTA,
-  REQUEST_FREE_ACCESS_CTA,
+  GET_FREE_ACCESS_CTA,
+  GET_FREE_ACCESS_HREF,
 } from "@/lib/marketing/demo-booking";
 import { HERO_HEADLINE, landingCopy } from "@/lib/marketing/landing-copy";
 
@@ -60,142 +61,172 @@ function section(id: string) {
 describe("public marketing homepage", () => {
   afterEach(cleanup);
 
-  it("renders the eight sections and the approved headline", () => {
+  it("tells the problem-solution story in the approved section order", () => {
     render(<MarketingHome />);
 
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
-    expect(screen.getByRole("heading", { name: HERO_HEADLINE })).toBeVisible();
+    expect(
+      screen.getByRole("heading", { level: 1, name: HERO_HEADLINE }),
+    ).toBeVisible();
     expect(screen.getByText(landingCopy.hero.lede)).toBeVisible();
     const ids = [...document.querySelectorAll("main section")].map(
       (element) => element.id,
     );
     expect(ids).toEqual([
       "hero",
-      "connect",
-      "why",
-      "five-s",
+      "status-quo",
       "platform",
+      "connect",
+      "measure",
+      "floor",
       "leanai",
       "faq",
-      "close",
+      "get-free-access",
     ]);
-    expect(screen.queryByTestId("leh-demo-start-suggestion")).toBeNull();
+    // No band between the hero and the next section (plan-v3 §2a).
+    expect(document.getElementById("hero")?.nextElementSibling?.id).toBe(
+      "status-quo",
+    );
+    expect(document.querySelector(".editorial-statement")).toBeNull();
   });
 
-  it("offers the same booking choices in the hero and close", () => {
+  it("offers Book a demo and Get free access in the hero, with nothing under them", () => {
     render(<MarketingHome />);
 
-    for (const id of ["hero", "close"]) {
-      const links = section(id).getAllByRole("link");
-      expect(links.map((link) => link.textContent)).toEqual([
-        DEMO_BOOKING_CTA,
-        REQUEST_FREE_ACCESS_CTA,
-      ]);
-      for (const link of links) expect(link).toHaveAttribute("href", "/demo");
-    }
-    expect(
-      section("hero").getByText(
-        "Both buttons open the same booking page. Pick a time and it is booked straight away.",
-      ),
-    ).toBeVisible();
-    expect(section("close").getByText(landingCopy.close.helper)).toBeVisible();
-    expect(
-      section("close").getByText(
-        /free access for your team or site while Lean Excellence Hub is in early access/,
-      ),
-    ).toBeVisible();
+    const links = section("hero").getAllByRole("link");
+    expect(links.map((link) => link.textContent)).toEqual([
+      DEMO_BOOKING_CTA,
+      GET_FREE_ACCESS_CTA,
+    ]);
+    expect(links[0]).toHaveAttribute("href", "/demo");
+    expect(links[1]).toHaveAttribute("href", GET_FREE_ACCESS_HREF);
+    expect(GET_FREE_ACCESS_HREF).toBe("/#get-free-access");
+    const actions = links[0].closest(".lv-actions");
+    expect(actions?.nextElementSibling).toBeNull();
 
     const header = within(screen.getByRole("banner"));
     expect(
       header.getByRole("link", { name: DEMO_BOOKING_CTA }),
     ).toHaveAttribute("href", "/demo");
-    expect(
-      header.queryByRole("link", { name: REQUEST_FREE_ACCESS_CTA }),
-    ).toBeNull();
     expect(header.getByRole("link", { name: "Sign in" })).toHaveAttribute(
       "href",
       "/login",
     );
+    expect(header.getAllByRole("link").map((link) => link.textContent)).toEqual(
+      expect.arrayContaining(["Product", "How it works", "FAQ"]),
+    );
 
     const footer = within(screen.getByRole("contentinfo"));
     expect(
-      footer.getByRole("link", { name: REQUEST_FREE_ACCESS_CTA }),
-    ).toHaveAttribute("href", "/demo");
+      footer.getByRole("link", { name: GET_FREE_ACCESS_CTA }),
+    ).toHaveAttribute("href", GET_FREE_ACCESS_HREF);
+    expect(footer.getByRole("link", { name: "Terms" })).toHaveAttribute(
+      "href",
+      "/terms",
+    );
+    expect(
+      footer.getByRole("link", { name: "Privacy Policy" }),
+    ).toHaveAttribute("href", "/privacy");
+  });
+
+  it("keeps the official one-line lockup in the header, never the text fallback", () => {
+    render(<MarketingHome />);
+    const brand = within(screen.getByRole("banner")).getAllByTestId(
+      "leh-brand",
+    )[0];
+    expect(brand).toHaveAttribute("data-responsive", "false");
+    expect(brand.querySelector(".leh-brand-name")).toBeNull();
+    expect(
+      brand.querySelector('img[src="/brand/leh-horizontal-dark.png"]'),
+    ).not.toBeNull();
+  });
+
+  it("shows the status quo as three pains and the six connected modules", () => {
+    render(<MarketingHome />);
+    expect(
+      section("status-quo")
+        .getAllByRole("listitem")
+        .map((item) => item.querySelector("p")?.textContent),
+    ).toEqual([...landingCopy.statusQuo.pains]);
+    expect(
+      section("platform")
+        .getAllByRole("heading", { level: 3 })
+        .map((heading) => heading.textContent),
+    ).toEqual(landingCopy.platform.modules.map((module) => module.name));
+  });
+
+  it("keeps Observe, Act, Solve as built, labelled for assistive tech", () => {
+    render(<MarketingHome />);
+    const thread = section("connect").getByRole("list", {
+      name: "Observe, Act, Solve",
+    });
+    expect(
+      within(thread)
+        .getAllByRole("listitem")
+        .map((item) => item.querySelector(".editorial-label")?.textContent),
+    ).toEqual(["Observe", "Act", "Solve"]);
+    expect(
+      [...thread.querySelectorAll("figcaption")].map(
+        (node) => node.textContent,
+      ),
+    ).toEqual([...landingCopy.stageRecords]);
+  });
+
+  it("never names the demo organisation, quotes prices or uses retired copy", () => {
+    render(<MarketingHome />);
+    const text = document.body.textContent ?? "";
+    expect(text).not.toMatch(/Harbourfield|Bodmin/i);
+    expect(text).not.toMatch(/£|\$\d|per month|\/month|pricing/i);
+    expect(text).not.toMatch(/before we go live/i);
+    expect(text).not.toMatch(/Example data|Both buttons/i);
+    expect(text).not.toMatch(/Book a live demo|Request free access/);
+    expect(text).not.toMatch(/ACT-2026-0019|2\.7\/5/);
+    for (const image of document.querySelectorAll("img")) {
+      expect(image.getAttribute("alt") ?? "").not.toMatch(
+        /Harbourfield|Bodmin/i,
+      );
+    }
     expect(
       document.querySelector('a[href="/signup"], a[href="/pricing"]'),
     ).toBeNull();
-    expect(
-      screen.queryByText(/Create an account|£49|\$49|49\/month/i),
-    ).toBeNull();
   });
 
-  it("shows the approved fictional records and labels the result as example data", () => {
+  it("renders the four FAQs", () => {
     render(<MarketingHome />);
-
-    expect(
-      section("hero").getByRole("heading", {
-        level: 3,
-        name: landingCopy.captions.action,
-      }),
-    ).toBeVisible();
-    expect(
-      section("hero").queryAllByRole("heading", { level: 2 }),
-    ).toHaveLength(0);
-    expect(section("hero").getByText("Harbourfield Manager")).toBeVisible();
-    expect(section("hero").getByText(landingCopy.audit.title)).toBeVisible();
-    const thread = section("connect");
-    for (const record of [
-      landingCopy.captions.finding,
-      landingCopy.captions.action,
-      landingCopy.captions.case,
-    ]) {
-      expect(thread.getByText(record)).toBeVisible();
-    }
-    expect(thread.getAllByText(landingCopy.credit)).toHaveLength(1);
-    expect(
-      section("why").getByRole("img", { name: landingCopy.phoneAlt }),
-    ).toBeVisible();
-    expect(section("platform").getByText("2.7/5")).toBeVisible();
-    expect(
-      section("platform").getByText(
-        "ACT-2026-0019 · Restore missing tools on Line 2 shadow board",
-      ),
-    ).toBeVisible();
-    expect(section("platform").getByText(landingCopy.credit)).toBeVisible();
-    expect(section("five-s").queryByText(/ACT-2026-0019/)).toBeNull();
-    expect(
-      screen.queryAllByText(
-        /GEM-214|ACT-318|PS-077|PRJ-042|BEN-019|CAP-014|SUG-018|ACT-1042|Manchester DC|Goods-in|Friday|Packing supervisor|CI manager|DMAIC/i,
-      ),
-    ).toHaveLength(0);
-  });
-
-  it("renders the five FAQs and offers the access link in the booking answer", () => {
-    render(<MarketingHome />);
-    expect(document.querySelectorAll("#faq details")).toHaveLength(5);
+    expect(document.querySelectorAll("#faq details")).toHaveLength(4);
     for (const item of landingCopy.faq.items) {
       expect(section("faq").getByText(item.question)).toBeVisible();
       expect(section("faq").getByText(item.answer)).toBeInTheDocument();
     }
-    const booking = section("faq")
-      .getByText(landingCopy.faq.items[1].question)
-      .closest("details");
-    booking?.setAttribute("open", "");
-    expect(
-      within(booking!).getByRole("link", { name: REQUEST_FREE_ACCESS_CTA }),
-    ).toHaveAttribute("href", "/demo");
   });
 
-  it("keeps LeanAI's six steps in reading order", () => {
+  it("keeps LeanAI's three steps in reading order", () => {
     render(<MarketingHome />);
     expect(
       section("leanai")
-        .getAllByRole("listitem")
+        .getAllByRole("heading", { level: 3 })
         .map((item) => item.textContent),
-    ).toEqual(landingCopy.leanAI.steps);
+    ).toEqual(["Draft", "Review", "Decide"]);
   });
 
-  it("keeps the navigation and skip link targets valid without an appearance menu", () => {
+  it("places the early-access form beside the walkthrough option", () => {
+    render(<MarketingHome />);
+    const access = section("get-free-access");
+    expect(
+      access.getByRole("heading", { level: 2, name: landingCopy.access.title }),
+    ).toBeVisible();
+    expect(
+      access.getByRole("button", { name: GET_FREE_ACCESS_CTA }),
+    ).toBeVisible();
+    expect(
+      access.getByRole("heading", { name: landingCopy.access.demoTitle }),
+    ).toBeVisible();
+    expect(
+      access.getByRole("link", { name: DEMO_BOOKING_CTA }),
+    ).toHaveAttribute("href", "/demo");
+  });
+
+  it("keeps the navigation and skip link targets valid", () => {
     render(<MarketingHome />);
     const banner = screen.getByRole("banner");
     expect(
@@ -213,58 +244,28 @@ describe("public marketing homepage", () => {
 
     expect(screen.queryByRole("navigation", { name: "Mobile" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
-    expect(screen.queryByText(/Appearance/)).toBeNull();
     expect(screen.queryByRole("button", { name: /Appearance/ })).toBeNull();
     const mobile = screen.getByRole("navigation", { name: "Mobile" });
-    fireEvent.click(within(mobile).getByRole("link", { name: "LeanAI" }));
+    fireEvent.click(within(mobile).getByRole("link", { name: "FAQ" }));
     expect(screen.queryByRole("navigation", { name: "Mobile" })).toBeNull();
   });
 
-  it("captions the real captures by what they show", () => {
-    render(<MarketingHome />);
-
-    const captions = [...document.querySelectorAll("figcaption")].map(
-      (node) => node.textContent,
-    );
-    expect(captions).toEqual([
-      "Packaging film misaligned on Packing Line 1",
-      "Realign the film guide and confirm the first-off pack",
-      "Recurring film wander on Packing Line 1",
-      "Maturity assessment on the floor · light mode",
-      "Harbourfield Foods Group · platform home",
-      "Raise action · LEH Workplace 5S Standard",
-      "Realign the film guide and confirm the first-off pack",
-      "Cause analysis",
-    ]);
-    // V1 is an in-progress formal assessment, and V2 uses the LEH Workplace
-    // 5S Standard, so neither may be described as anything else.
-    expect(landingCopy.phoneAlt).toMatch(
-      /in-progress formal maturity assessment/,
-    );
-    for (const text of [landingCopy.phoneAlt, ...captions]) {
-      expect(text).not.toMatch(
-        /self-assessment|Harbourfield Operating Standard|overdue/i,
-      );
-    }
-    expect(
-      section("five-s").getByText("Raise action · LEH Workplace 5S Standard"),
-    ).toBeVisible();
-  });
-
-  it("serves width-described capture variants so phones skip the 2400 px masters", () => {
+  it("serves width-described capture variants so phones skip the large masters", () => {
     render(<MarketingHome />);
 
     const images = [
-      ...document.querySelectorAll<HTMLImageElement>("figure picture img"),
+      ...document.querySelectorAll<HTMLImageElement>("main picture img"),
     ];
-    expect(images).toHaveLength(8);
+    expect(images.length).toBeGreaterThanOrEqual(7);
     for (const image of images) {
       const picture = image.closest("picture")!;
       const avif = picture.querySelector('source[type="image/avif"]')!;
       const master = image.getAttribute("src")!;
       expect(master).toMatch(
-        /^\/marketing\/captures\/v2\/v[1-6]b?-[a-z0-9-]+\.webp$/,
+        /^\/marketing\/captures\/v[23]\/[a-z0-9-]+\.webp$/,
       );
+      // Never the light V1 phone shot.
+      expect(master).not.toMatch(/light/);
       const base = master.replace(/\.webp$/, "");
       const width = Number(image.getAttribute("width"));
       const expected =
@@ -287,31 +288,10 @@ describe("public marketing homepage", () => {
       }
       expect(image.getAttribute("sizes")).toBeTruthy();
       expect(avif.getAttribute("sizes")).toBe(image.getAttribute("sizes"));
-      expect(image).toHaveAttribute("loading", "lazy");
       expect(image.getAttribute("height")).toBeTruthy();
+      const inHero = Boolean(image.closest("#hero"));
+      expect(image).toHaveAttribute("loading", inHero ? "eager" : "lazy");
     }
-  });
-
-  it("shows the closing statement once, under the hero, not beside the close heading", () => {
-    render(<MarketingHome />);
-
-    const statement = landingCopy.close.title;
-    const bands = [...document.querySelectorAll(".editorial-statement")];
-    const closingBand = bands.find((band) =>
-      band.textContent?.includes(statement),
-    );
-    expect(closingBand).toBeDefined();
-    expect(closingBand?.previousElementSibling?.id).toBe("hero");
-    expect(closingBand?.nextElementSibling?.id).toBe("connect");
-    expect(
-      bands.filter((band) => band.textContent?.includes(statement)),
-    ).toHaveLength(1);
-    expect(document.getElementById("close")?.previousElementSibling?.id).toBe(
-      "faq",
-    );
-    expect(
-      section("close").getByRole("heading", { level: 2, name: statement }),
-    ).toBeVisible();
   });
 });
 

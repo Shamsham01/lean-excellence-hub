@@ -1,89 +1,220 @@
-.editorial-home section {
-  scroll-margin-top: 6rem;
-  border-top: 1px solid var(--border);
+/* Landing v3 (plan-v3, PIXEL 18 Nov 2026). Dark tokens only. */
+
+.lv-home section {
+  scroll-margin-top: 5rem;
 }
 
-.editorial-home #hero {
+.lv-home .marketing-section {
+  border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+}
+
+.lv-home .marketing-section.lv-status {
   border-top: 0;
-  padding-block: clamp(3rem, 8vw, 8rem);
+  padding-top: clamp(2.5rem, 5vw, 4rem);
 }
 
-.editorial-split,
-.editorial-platform {
+/* ---------- Hero ---------- */
+
+.lv-hero {
+  position: relative;
+  padding-block: clamp(2.25rem, 6vw, 5.5rem) clamp(0rem, 4vw, 5rem);
+}
+
+.lv-hero-grid {
   display: grid;
-  gap: clamp(1.75rem, 5vw, 4.5rem);
+  gap: 2.5rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.lv-headline {
+  max-width: 17ch;
+  color: var(--foreground);
+  font-size: clamp(2.3rem, 8.4vw, 3.75rem);
+  font-weight: 650;
+  line-height: 1.04;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+
+.lv-lede {
+  max-width: 38rem;
+  margin-top: 1.25rem;
+  color: var(--muted-foreground);
+  font-size: clamp(1.05rem, 2.2vw, 1.125rem);
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.lv-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.lv-actions a {
+  min-height: 2.875rem;
+  padding-inline: 1.35rem;
+  font-size: 0.9375rem;
+}
+
+.lv-hero-stage {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+}
+
+.lv-hero-glow {
+  position: absolute;
+  z-index: -1;
+  inset: 10% 8% 5% 12%;
+  border-radius: 50%;
+  background: #465fff;
+  filter: blur(80px);
+  opacity: 0.16;
+  pointer-events: none;
+}
+
+.lv-hero-stage .lv-hero-desktop {
+  display: none;
+}
+
+/* Phones: the phone capture alone, centred and cropped at the fold. */
+.lv-hero-phone {
+  width: min(74vw, 300px);
+  max-height: 26rem;
+  margin-inline: auto;
+  overflow: hidden;
+  border-radius: 1.75rem 1.75rem 0 0;
+  -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 72%, transparent 100%);
+}
+
+.lv-hero-phone img {
+  border-radius: 1.4rem 1.4rem 0 0;
+}
+
+/* ---------- Captures ---------- */
+
+.lv-capture {
+  display: block;
+  min-width: 0;
+}
+
+.lv-capture img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.lv-capture-phone {
+  border: 1px solid var(--leh-line-strong);
+  border-radius: 1.75rem;
+  background: #121b2a;
+  padding: 0.4rem;
+  box-shadow: var(--marketing-shadow-lift);
+}
+
+.lv-capture-phone img {
+  border-radius: 1.4rem;
+}
+
+.lv-framed {
+  overflow: hidden;
+  border: 1px solid #1e2d42;
+  border-radius: 1rem;
+  background: #121b2a;
+  box-shadow: var(--marketing-shadow-lift);
+}
+
+/* ---------- Layout helpers ---------- */
+
+.lv-split {
+  display: grid;
+  gap: clamp(2rem, 5vw, 4.5rem);
   align-items: center;
   grid-template-columns: minmax(0, 1fr);
 }
 
-.editorial-platform {
-  align-items: stretch;
-  gap: 1.5rem;
+.lv-split-top {
+  align-items: start;
 }
 
-.editorial-headline {
-  max-width: 15ch;
-  font-size: clamp(2.35rem, 6vw, 5.25rem);
-  font-weight: 650;
-  line-height: 1.04;
-  letter-spacing: -0.06em;
+/* ---------- Status quo ---------- */
+
+.lv-pains {
+  display: grid;
+  gap: 0;
+  margin-top: 2rem;
+  counter-reset: pain;
+}
+
+.lv-pains li {
+  display: flex;
+  gap: 1rem;
+  border-top: 1px solid var(--border);
+  padding-block: 1.25rem;
+}
+
+.lv-pains li:last-child {
+  border-bottom: 1px solid var(--border);
+}
+
+.lv-index {
+  flex: none;
+  min-width: 1.75rem;
+  padding-top: 0.2rem;
+  color: var(--accent-foreground);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.lv-pains p {
+  color: var(--foreground);
+  font-size: clamp(1.15rem, 2.4vw, 1.375rem);
+  font-weight: 550;
+  line-height: 1.35;
+  letter-spacing: -0.015em;
   text-wrap: balance;
 }
 
-.editorial-lede {
-  max-width: 48ch;
-  margin-top: 1.35rem;
-  font-size: clamp(1rem, 2vw, 1.25rem);
-  color: var(--muted-foreground);
-}
+/* ---------- One connected system ---------- */
 
-.editorial-booking {
-  margin-top: 1.65rem;
-}
-
-.editorial-booking-links {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-
-.editorial-booking-links a,
-.editorial-faq a {
-  min-height: 2.75rem;
-}
-
-.editorial-booking > p,
-.editorial-credit {
-  margin-top: 0.8rem;
-  font-size: 0.875rem;
-  color: var(--muted-foreground);
-}
-
-.editorial-hero-fragments {
+.lv-modules {
   display: grid;
-  gap: 0.75rem;
+  gap: 1px;
+  margin-top: 2.5rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--border);
+  grid-template-columns: minmax(0, 1fr);
 }
 
-.editorial-action-card,
-.editorial-maturity,
-.editorial-structure {
-  padding: clamp(1.25rem, 4vw, 2.25rem);
-  border-radius: 0.75rem;
+.lv-modules li {
+  background: var(--background);
+  padding: 1.35rem 1.5rem;
 }
 
-.editorial-action-header,
-.editorial-audit-chip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+.lv-modules h3,
+.lv-steps h3 {
+  color: var(--foreground);
+  font-size: 1.0625rem;
+  font-weight: 620;
+  letter-spacing: -0.015em;
 }
 
-.editorial-audit-chip {
-  flex-wrap: wrap;
-  padding: 0.85rem 1.25rem;
-  font-size: 0.875rem;
+.lv-modules p,
+.lv-steps p {
+  margin-top: 0.35rem;
+  color: var(--muted-foreground);
+  font-size: 0.9375rem;
+  line-height: 1.55;
 }
+
+/* ---------- Observe, Act, Solve (kept as built) ---------- */
 
 .editorial-label {
   color: var(--accent-foreground);
@@ -91,49 +222,21 @@
   font-weight: 650;
 }
 
-.editorial-action-card h3 {
-  margin-top: 1rem;
-  font-size: clamp(1.35rem, 3vw, 2rem);
-  font-weight: 650;
-  line-height: 1.2;
-  text-wrap: balance;
-}
-
-.editorial-action-card dl {
-  display: grid;
-  gap: 0.85rem;
-  margin-top: 1.3rem;
-  border-top: 1px solid var(--border);
-  padding-top: 1rem;
-}
-
-.editorial-action-card dt {
-  color: var(--muted-foreground);
-  font-size: 0.8rem;
-}
-
-.editorial-hero-status-verified-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.editorial-hero-status-check {
-  width: 0.9rem;
-  height: 0.9rem;
-  color: var(--success);
-}
-
 .editorial-thread {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: 88%;
+  grid-auto-columns: 86%;
   gap: 1rem;
-  margin-top: 1.75rem;
+  margin-top: 2rem;
   padding: 0.25rem 0.25rem 0.75rem;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scroll-padding-inline: 0.25rem;
+  scrollbar-width: none;
+}
+
+.editorial-thread::-webkit-scrollbar {
+  display: none;
 }
 
 .editorial-thread li {
@@ -142,110 +245,80 @@
 }
 
 .editorial-thread .editorial-label {
-  margin-bottom: 0.45rem;
-}
-
-.editorial-visuals {
-  margin-top: 2rem;
+  margin-bottom: 0.5rem;
 }
 
 .editorial-capture {
   min-width: 0;
 }
 
-.editorial-capture picture {
-  display: block;
+.editorial-capture .lv-capture {
+  overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 0.75rem;
-  background: var(--background);
+  background: #121b2a;
   box-shadow: var(--marketing-shadow-lift);
 }
 
-.editorial-capture img {
-  display: block;
-  width: 100%;
-  height: auto;
-  border-radius: inherit;
-}
-
 .editorial-capture figcaption {
-  margin-top: 0.7rem;
-  font-size: 0.9rem;
+  margin-top: 0.75rem;
+  color: var(--foreground);
+  font-size: 0.9375rem;
   font-weight: 550;
+  line-height: 1.4;
 }
 
-.editorial-capture-phone {
-  width: min(100%, 390px);
+/* ---------- On the floor ---------- */
+
+.lv-phones {
+  display: grid;
+  gap: clamp(0.75rem, 3vw, 1.5rem);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 34rem;
+  width: 100%;
   margin-inline: auto;
 }
 
-.editorial-capture-phone picture {
-  position: relative;
-  isolation: isolate;
-  padding: 0.4rem;
-  border-radius: 1.4rem;
-  background: var(--card);
+.lv-phones .lv-capture:nth-child(2) {
+  margin-top: clamp(1.5rem, 6vw, 3.5rem);
 }
 
-.editorial-capture-phone img {
-  border-radius: 1rem;
-}
+/* ---------- LeanAI ---------- */
 
-.editorial-phone-glow::before {
-  position: absolute;
-  z-index: -1;
-  inset: 9% 5%;
-  border-radius: 40%;
-  background: var(--primary);
-  filter: blur(4.5rem);
-  opacity: 0.18;
-  content: "";
-  pointer-events: none;
-}
-
-.editorial-statement {
-  border-top: 1px solid var(--border);
-  padding-block: clamp(1.5rem, 4vw, 3rem);
-  background: var(--card);
-}
-
-.editorial-statement p:first-child {
-  font-size: clamp(1.3rem, 3vw, 2rem);
-  font-weight: 650;
-  letter-spacing: -0.025em;
-}
-
-.editorial-statement p + p {
-  margin-top: 0.35rem;
-  color: var(--muted-foreground);
-}
-
-.editorial-maturity {
+.lv-steps {
   display: grid;
-  align-content: center;
+  gap: 0;
+  margin-top: 2rem;
+  counter-reset: step;
 }
 
-.editorial-score {
-  color: var(--accent-foreground);
-  font-size: clamp(2.75rem, 7vw, 5rem);
-  font-weight: 650;
-  letter-spacing: -0.06em;
+.lv-steps li {
+  position: relative;
+  border-top: 1px solid var(--border);
+  padding: 1rem 0 1rem 2.5rem;
+  counter-increment: step;
 }
 
-.editorial-steps {
-  list-style: decimal;
-  padding-left: 2rem;
-}
-
-.editorial-steps li {
+.lv-steps li:last-child {
   border-bottom: 1px solid var(--border);
-  padding: 0.75rem 0.5rem;
 }
 
-.editorial-steps li::marker {
+.lv-steps li::before {
+  position: absolute;
+  top: 1.05rem;
+  left: 0;
   color: var(--accent-foreground);
-  font-weight: 650;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  content: "0" counter(step);
 }
+
+.lv-steps p {
+  margin-top: 0.2rem;
+}
+
+/* ---------- FAQ ---------- */
 
 .editorial-faq details {
   border-bottom: 1px solid var(--border);
@@ -256,38 +329,347 @@
 }
 
 .editorial-faq summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 3.5rem;
   padding: 0.9rem 0.25rem;
+  color: var(--foreground);
   cursor: pointer;
   font-weight: 600;
+  list-style: none;
+}
+
+.editorial-faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.editorial-faq summary::after {
+  flex: none;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-right: 0.35rem;
+  border-right: 1.5px solid var(--muted-foreground);
+  border-bottom: 1.5px solid var(--muted-foreground);
+  transform: rotate(45deg) translateY(-0.15rem);
+  content: "";
+  transition: transform 160ms ease;
+}
+
+.editorial-faq details[open] summary::after {
+  transform: rotate(-135deg) translateY(-0.1rem);
 }
 
 .editorial-faq details > div {
-  padding: 0 0.25rem 1rem;
+  max-width: 40rem;
+  padding: 0 0.25rem 1.25rem;
   color: var(--muted-foreground);
 }
 
-.editorial-faq a {
-  margin-top: 0.85rem;
+/* ---------- Get free access ---------- */
+
+.lv-access {
+  background: linear-gradient(
+    180deg,
+    var(--background) 0%,
+    color-mix(in oklab, #121b2a 60%, var(--background)) 100%
+  );
 }
 
-.editorial-structure li {
-  border-left: 1px solid var(--leh-line-strong);
-  padding: 0.55rem 0 0.55rem 0.8rem;
+.lv-access-grid {
+  display: grid;
+  gap: 2rem;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr);
 }
 
-.editorial-structure li:nth-child(2) {
-  margin-left: 0.75rem;
-}
-.editorial-structure li:nth-child(3) {
-  margin-left: 1.5rem;
-}
-.editorial-structure li:nth-child(4) {
-  margin-left: 2.25rem;
+.lv-form {
+  margin-top: 2rem;
 }
 
-@media (min-width: 560px) {
-  .editorial-booking-links {
-    flex-flow: row wrap;
+.lv-form-grid {
+  display: grid;
+  gap: 1.15rem 1.25rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.lv-field {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.lv-field label,
+.lv-chips legend {
+  color: var(--foreground);
+  font-size: 0.875rem;
+  font-weight: 560;
+}
+
+.lv-field input,
+.lv-field select {
+  width: 100%;
+  min-height: 2.875rem;
+  border: 1px solid var(--leh-line-strong);
+  border-radius: 0.625rem;
+  background: #121b2a;
+  padding: 0.6rem 0.85rem;
+  color: var(--foreground);
+  font-size: 1rem;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.lv-field select {
+  appearance: none;
+  padding-right: 2.5rem;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #94a3b8 50%),
+    linear-gradient(135deg, #94a3b8 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.2rem) 50%,
+    calc(100% - 0.85rem) 50%;
+  background-size: 0.35rem 0.35rem;
+  background-repeat: no-repeat;
+}
+
+.lv-field select[data-empty="true"] {
+  color: #8494ab;
+}
+
+.lv-field select option {
+  background: #121b2a;
+  color: var(--foreground);
+}
+
+.lv-field input::placeholder {
+  color: #8494ab;
+}
+
+.lv-field input:focus-visible,
+.lv-field select:focus-visible {
+  outline: none;
+  border-color: #465fff;
+  box-shadow: 0 0 0 3px color-mix(in oklab, #465fff 35%, transparent);
+}
+
+.lv-field [aria-invalid="true"] {
+  border-color: var(--destructive);
+}
+
+.lv-field-error,
+.lv-form-error {
+  color: var(--leh-on-destructive-tint);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.lv-form-error {
+  margin-top: 1.25rem;
+  border: 1px solid color-mix(in oklab, var(--destructive) 50%, var(--border));
+  border-radius: 0.625rem;
+  background: color-mix(in oklab, var(--destructive) 10%, var(--background));
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+}
+
+.lv-chips {
+  margin-top: 1.5rem;
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.lv-chips legend {
+  margin-bottom: 0.6rem;
+  padding: 0;
+}
+
+.lv-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.lv-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  border: 1px solid var(--leh-line-strong);
+  border-radius: 999px;
+  background: #121b2a;
+  padding: 0.4rem 0.95rem;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 520;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.lv-chip input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  margin: 0;
+}
+
+.lv-chip:hover {
+  border-color: var(--leh-accent-line);
+  color: var(--foreground);
+}
+
+.lv-chip[data-checked] {
+  border-color: #465fff;
+  background: color-mix(in oklab, #465fff 22%, #121b2a);
+  color: var(--foreground);
+}
+
+.lv-chip:has(input:focus-visible) {
+  outline: 2px solid var(--accent-foreground);
+  outline-offset: 2px;
+}
+
+.lv-chips .lv-field-error {
+  margin-top: 0.5rem;
+}
+
+.lv-consents {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1.75rem;
+}
+
+.lv-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.lv-check input {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.15rem;
+  accent-color: #465fff;
+  cursor: pointer;
+}
+
+.lv-check label {
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  line-height: 1.55;
+  cursor: pointer;
+}
+
+.lv-check a,
+.lv-form-note a {
+  color: var(--foreground);
+  text-decoration: underline;
+  text-decoration-color: var(--leh-line-strong);
+  text-underline-offset: 3px;
+}
+
+.lv-check a:hover,
+.lv-form-note a:hover {
+  text-decoration-color: currentColor;
+}
+
+.lv-honeypot {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.lv-submit {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1.75rem;
+}
+
+.lv-submit button {
+  justify-self: start;
+  min-height: 2.875rem;
+  padding-inline: 1.5rem;
+  font-size: 0.9375rem;
+}
+
+.lv-form-note {
+  max-width: 34rem;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.lv-form-success {
+  margin-top: 2rem;
+  border: 1px solid #1e2d42;
+  border-radius: 1rem;
+  background: #121b2a;
+  padding: clamp(1.5rem, 4vw, 2.25rem);
+}
+
+.lv-form-success h3 {
+  color: var(--foreground);
+  font-size: 1.375rem;
+  font-weight: 640;
+  letter-spacing: -0.02em;
+}
+
+.lv-form-success h3:focus {
+  outline: none;
+}
+
+.lv-form-success p {
+  margin: 0.6rem 0 1.25rem;
+  max-width: 34rem;
+  color: var(--muted-foreground);
+}
+
+.lv-demo-card {
+  border: 1px solid #1e2d42;
+  border-radius: 1rem;
+  background: #121b2a;
+  padding: 1.5rem;
+}
+
+.lv-demo-card h3 {
+  color: var(--foreground);
+  font-size: 1.125rem;
+  font-weight: 620;
+  letter-spacing: -0.015em;
+}
+
+.lv-demo-card p {
+  margin: 0.4rem 0 1.25rem;
+  color: var(--muted-foreground);
+  font-size: 0.9375rem;
+}
+
+.lv-demo-card a,
+.lv-form-success a {
+  min-height: 2.75rem;
+  padding-inline: 1.25rem;
+}
+
+/* ---------- Breakpoints ---------- */
+
+@media (min-width: 640px) {
+  .lv-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lv-modules {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -297,22 +679,128 @@
     overflow: visible;
   }
 
-  .editorial-split,
-  .editorial-platform {
+  .lv-pains {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2rem;
+  }
+
+  .lv-pains li,
+  .lv-pains li:last-child {
+    flex-direction: column;
+    gap: 0.85rem;
+    border-bottom: 0;
+    padding-block: 1.5rem 0;
+  }
+
+  .lv-split {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lv-split-top > :first-child {
+    position: sticky;
+    top: 6rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .lv-modules {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .lv-split-wide {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  }
+
+  .lv-access-grid {
+    grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);
+    gap: 3.5rem;
+  }
+
+  .lv-demo-card {
+    position: sticky;
+    top: 6rem;
+    margin-top: 0.5rem;
+  }
+
+  /* Hero A: copy on 5 of 12 columns, product on 7, bleeding off the right. */
+  .lv-hero {
+    padding-bottom: clamp(2.5rem, 4vw, 4rem);
+  }
+
+  .lv-hero-grid {
+    grid-template-columns: minmax(0, 5.5fr) minmax(0, 6.5fr);
+    gap: 2.5rem;
+    align-items: center;
+  }
+
+  .lv-headline span {
+    display: block;
+  }
+
+  .lv-headline {
+    max-width: 13.5em;
+    font-size: clamp(2.6rem, 3.7vw, 3.5rem);
+  }
+
+  .lv-hero-stage {
+    --lv-bleed: max(
+      var(--marketing-gutter),
+      calc((100vw - var(--marketing-max)) / 2)
+    );
+    margin-right: calc(var(--lv-bleed) * -1);
+    padding-block: 1rem 6rem;
+    padding-left: 3.5rem;
+  }
+
+  .lv-hero-stage .lv-hero-desktop {
+    display: block;
+    width: max(100%, 46rem);
+    overflow: hidden;
+    border: 1px solid #1e2d42;
+    border-right: 0;
+    border-radius: 1rem 0 0 1rem;
+    background: #121b2a;
+    box-shadow:
+      0 40px 80px -40px rgb(0 0 0 / 0.85),
+      0 0 0 1px rgb(255 255 255 / 0.02);
+  }
+
+  .lv-hero-phone {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: clamp(9.5rem, 12vw, 11.5rem);
+    max-height: none;
+    overflow: visible;
+    border-radius: 1.75rem;
+    -webkit-mask-image: none;
+    mask-image: none;
+    box-shadow:
+      0 30px 60px -20px rgb(0 0 0 / 0.9),
+      0 0 0 1px rgb(255 255 255 / 0.03);
+  }
+
+  .lv-hero-phone img {
+    border-radius: 1.4rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .lv-headline {
+    font-size: 3.5rem;
   }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .editorial-hero-fragments {
-    animation: editorial-rise 320ms ease-out both;
+  .lv-hero-stage {
+    animation: lv-rise 400ms ease-out both;
   }
 }
 
-@keyframes editorial-rise {
+@keyframes lv-rise {
   from {
     opacity: 0;
-    transform: translateY(0.5rem);
+    transform: translateY(0.75rem);
   }
   to {
     opacity: 1;
@@ -321,11 +809,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .editorial-hero-fragments {
+  .lv-hero-stage {
     animation: none;
   }
-}
 
-.editorial-platform .editorial-audit-chip {
-  align-content: center;
+  .editorial-faq summary::after {
+    transition: none;
+  }
 }

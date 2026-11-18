@@ -1,11 +1,12 @@
 import Link from "next/link";
 
-import { landingCopy, landingNav } from "@/lib/marketing/landing-copy";
+import { landingNav } from "@/lib/marketing/landing-copy";
 
 import {
+  GetFreeAccessControl,
   MarketingContainer,
   MarketingWordmark,
-  RequestFreeAccessControl,
+  RequestDemoControl,
 } from "./primitives";
 
 export function MarketingFooter() {
@@ -25,9 +26,6 @@ export function MarketingFooter() {
                   <Link href={item.href}>{item.label}</Link>
                 </li>
               ))}
-              <li>
-                <Link href="/#five-s">{landingCopy.fiveS.kicker}</Link>
-              </li>
             </ul>
           </nav>
 
@@ -38,8 +36,9 @@ export function MarketingFooter() {
                 <Link href="/login">Sign in</Link>
               </li>
             </ul>
-            <div className="mt-2">
-              <RequestFreeAccessControl />
+            <div className="marketing-footer-ctas">
+              <RequestDemoControl size="sm" />
+              <GetFreeAccessControl size="sm" />
             </div>
           </nav>
         </div>
@@ -48,6 +47,10 @@ export function MarketingFooter() {
           <p className="marketing-footer-copyright">
             © {new Date().getFullYear()} Lean Excellence Hub
           </p>
+          <nav aria-label="Legal" className="marketing-footer-legal">
+            <Link href="/terms">Terms</Link>
+            <Link href="/privacy">Privacy Policy</Link>
+          </nav>
         </div>
       </MarketingContainer>
     </footer>

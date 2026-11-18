@@ -20,6 +20,15 @@ export function MarketingHeader() {
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const menuTrigger = useRef<HTMLButtonElement>(null);
+  const [scrolled, setScrolled] = useState(false);
+
+  // Transparent over the hero; solid, blurred and ruled once the page scrolls.
+  useEffect(() => {
+    const update = () => setScrolled(window.scrollY > 24);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, []);
 
   useEffect(() => {
     if (!open) {
@@ -38,20 +47,23 @@ export function MarketingHeader() {
   }, [open]);
 
   return (
-    <header className="marketing-header">
+    <header
+      className="marketing-header"
+      data-scrolled={scrolled || open ? "true" : "false"}
+    >
       <div className="marketing-header-bar">
-        <MarketingContainer className="flex items-center gap-2 py-3 sm:gap-4">
+        <MarketingContainer className="marketing-header-inner">
           <Link
             href="/"
             className="leh-brand-link marketing-home-link"
             aria-label={LEH_BRAND_HOME_LABEL}
           >
-            <MarketingWordmark decorative priority responsive />
+            <MarketingWordmark decorative priority />
           </Link>
 
           <nav
             aria-label="Primary"
-            className="ml-2 hidden items-center gap-6 lg:flex lg:gap-7"
+            className="marketing-header-nav hidden lg:flex"
           >
             {landingNav.map((item) => (
               <a
@@ -64,15 +76,10 @@ export function MarketingHeader() {
             ))}
           </nav>
 
-          <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-            <Button
-              asChild
-              variant="ghost"
-              size="sm"
-              className="hidden lg:inline-flex"
-            >
-              <Link href="/login">Sign in</Link>
-            </Button>
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            <Link href="/login" className="marketing-nav-link marketing-signin">
+              Sign in
+            </Link>
             <RequestDemoControl size="sm" />
             <Button
               ref={menuTrigger}
@@ -115,10 +122,10 @@ export function MarketingHeader() {
                 </a>
               ))}
             </nav>
-            <div className="flex flex-col gap-3">
-              <Button asChild variant="ghost">
-                <Link href="/login">Sign in</Link>
-              </Button>
+            <div className="marketing-mobile-footer">
+              <Link href="/login" className="marketing-mobile-link">
+                Sign in
+              </Link>
             </div>
           </MarketingContainer>
         </div>

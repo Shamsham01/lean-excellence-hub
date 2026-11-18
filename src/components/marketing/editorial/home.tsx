@@ -1,242 +1,200 @@
-import { HERO_HEADLINE, landingCopy } from "@/lib/marketing/landing-copy";
-
 import {
+  HERO_HEADLINE,
+  HERO_HEADLINE_LINES,
+  landingCopy,
+} from "@/lib/marketing/landing-copy";
+
+import { EarlyAccessForm } from "../early-access-form";
+import {
+  GetFreeAccessControl,
   MarketingContainer,
   MarketingSection,
   RequestDemoControl,
-  RequestFreeAccessControl,
   SectionIntro,
-  StatusChip,
 } from "../primitives";
-import { MarketingActionCard } from "./marketing-action-card";
+import { Capture, captures } from "./captures";
 
 import "./home.css";
 
 const copy = landingCopy;
-const captures = {
-  phone: ["v1-maturity-phone-light", 1170, 2532],
-  audit: ["v2-five-s-raise-phone-dark", 1170, 2532],
-  case: ["v3-pps-case-desktop-dark", 2400, 1600],
-  analysis: ["v3b-pps-analysis-desktop-dark", 2400, 1600],
-  action: ["v4-actions-planner-desktop-dark", 2400, 1600],
-  dashboard: ["v5-dashboard-home-desktop-dark", 2400, 1200],
-  finding: ["v6-gemba-finding-dark", 2400, 1600],
-} as const;
 
-/**
- * Smaller copies sit next to each master as `<basename>-<width>w.<ext>`, so a
- * phone never has to download a 2400 px desktop master.
- */
-const PHONE_VARIANT_WIDTHS = [780] as const;
-const DESKTOP_VARIANT_WIDTHS = [800, 1200] as const;
+const DESKTOP_SIZES =
+  "(max-width: 767px) calc(100vw - 2.5rem), (max-width: 1280px) 60vw, 760px";
+const PHONE_SIZES = "(max-width: 767px) 72vw, 320px";
 
-export function captureSrcSet(
-  basename: string,
-  masterWidth: number,
-  extension: "avif" | "webp",
-) {
-  const src = `/marketing/captures/v2/${basename}`;
-  const variants =
-    masterWidth >= 2400 ? DESKTOP_VARIANT_WIDTHS : PHONE_VARIANT_WIDTHS;
-  return [
-    ...variants.map((width) => `${src}-${width}w.${extension} ${width}w`),
-    `${src}.${extension} ${masterWidth}w`,
-  ].join(", ");
-}
-
-function Capture({
-  slot,
-  thread = false,
-}: {
-  slot: keyof typeof captures;
-  thread?: boolean;
-}) {
-  const [basename, width, height] = captures[slot];
-  const phone = width < height;
-  const src = `/marketing/captures/v2/${basename}`;
-  const sizes = phone
-    ? "(max-width: 430px) calc(100vw - 3rem), 390px"
-    : thread
-      ? "(max-width: 767px) 83vw, (max-width: 1280px) 30vw, 390px"
-      : "(max-width: 767px) 92vw, (max-width: 1280px) 46vw, 600px";
-
+function HeroActions() {
   return (
-    <figure
-      className={
-        phone
-          ? "editorial-capture editorial-capture-phone"
-          : "editorial-capture"
-      }
-    >
-      <picture
-        className={slot === "phone" ? "editorial-phone-glow" : undefined}
-      >
-        <source
-          srcSet={captureSrcSet(basename, width, "avif")}
-          type="image/avif"
-          sizes={sizes}
-        />
-        {/* Pre-sized variants via srcset; next/image would need a runtime optimiser. */}
-        <img
-          src={`${src}.webp`}
-          srcSet={captureSrcSet(basename, width, "webp")}
-          sizes={sizes}
-          alt={slot === "phone" ? copy.phoneAlt : ""}
-          width={width}
-          height={height}
-          loading="lazy"
-          decoding="async"
-        />
-      </picture>
-      <figcaption>{copy.captions[slot]}</figcaption>
-    </figure>
-  );
-}
-
-function BookingActions({ helper }: { helper: string }) {
-  return (
-    <div className="editorial-booking">
-      <div className="editorial-booking-links">
-        <RequestDemoControl />
-        <RequestFreeAccessControl />
-      </div>
-      <p>{helper}</p>
-    </div>
-  );
-}
-
-function Credit() {
-  return <p className="editorial-credit">{copy.credit}</p>;
-}
-
-function AuditSummary() {
-  return (
-    <div className="marketing-surface editorial-audit-chip">
-      <span>{copy.audit.title}</span>
-      <StatusChip tone="warning">{copy.audit.status}</StatusChip>
+    <div className="lv-actions">
+      <RequestDemoControl size="lg" />
+      <GetFreeAccessControl size="lg" />
     </div>
   );
 }
 
 export function EditorialHome() {
+  const results = captures.results;
   return (
-    <div className="editorial-home">
-      <MarketingSection id="hero">
-        <MarketingContainer className="editorial-split">
-          <div>
-            <h1 className="editorial-headline">{HERO_HEADLINE}</h1>
-            <p className="editorial-lede">{copy.hero.lede}</p>
-            <BookingActions helper={copy.hero.helper} />
+    <div className="editorial-home lv-home">
+      <MarketingSection id="hero" className="lv-hero" flush>
+        <MarketingContainer className="lv-hero-grid">
+          <div className="lv-hero-copy">
+            <h1 className="lv-headline" aria-label={HERO_HEADLINE}>
+              <span aria-hidden="true">{HERO_HEADLINE_LINES[0]}</span>{" "}
+              <span aria-hidden="true">{HERO_HEADLINE_LINES[1]}</span>
+            </h1>
+            <p className="lv-lede">{copy.hero.lede}</p>
+            <HeroActions />
           </div>
-          <div className="editorial-hero-fragments">
-            <MarketingActionCard />
-            <AuditSummary />
-            <Credit />
+          <div className="lv-hero-stage">
+            <div className="lv-hero-glow" aria-hidden="true" />
+            <Capture
+              asset={captures.dashboard}
+              alt={copy.alt.dashboard}
+              sizes="(max-width: 1023px) 1px, (max-width: 1440px) 62vw, 900px"
+              className="lv-hero-desktop"
+              priority
+            />
+            <Capture
+              asset={captures.assessment}
+              alt={copy.alt.assessment}
+              sizes="(max-width: 1023px) 72vw, 260px"
+              className="lv-hero-phone"
+              priority
+            />
           </div>
         </MarketingContainer>
       </MarketingSection>
 
-      <div className="editorial-statement">
+      <MarketingSection id="status-quo" className="lv-status">
         <MarketingContainer>
-          <p>{copy.close.title}</p>
-        </MarketingContainer>
-      </div>
-
-      <MarketingSection id="connect">
-        <MarketingContainer>
-          <SectionIntro {...copy.connect}>
-            <p>{copy.connect.intro}</p>
-          </SectionIntro>
-          <ol
-            className="editorial-thread"
-            tabIndex={0}
-            aria-label={copy.connect.kicker}
-          >
-            {(["finding", "action", "case"] as const).map((slot, index) => (
-              <li key={slot}>
-                <p className="editorial-label">{copy.stages[index]}</p>
-                <Capture slot={slot} thread />
+          <SectionIntro title={copy.statusQuo.title} />
+          <ol className="lv-pains">
+            {copy.statusQuo.pains.map((pain, index) => (
+              <li key={pain}>
+                <span className="lv-index" aria-hidden="true">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <p>{pain}</p>
               </li>
             ))}
           </ol>
-          <Credit />
-        </MarketingContainer>
-      </MarketingSection>
-
-      <div className="editorial-statement">
-        <MarketingContainer>
-          <p>{copy.statement.title}</p>
-          <p>{copy.statement.detail}</p>
-        </MarketingContainer>
-      </div>
-
-      <MarketingSection id="why">
-        <MarketingContainer>
-          <SectionIntro {...copy.why}>
-            <p>{copy.why.intro}</p>
-          </SectionIntro>
-          <div className="editorial-split editorial-visuals">
-            <Capture slot="phone" />
-            <Capture slot="dashboard" />
-          </div>
-          <Credit />
-        </MarketingContainer>
-      </MarketingSection>
-
-      <MarketingSection id="five-s">
-        <MarketingContainer className="editorial-split">
-          <SectionIntro {...copy.fiveS}>
-            <p>{copy.fiveS.intro}</p>
-          </SectionIntro>
-          <div>
-            <Capture slot="audit" />
-            <Credit />
-          </div>
         </MarketingContainer>
       </MarketingSection>
 
       <MarketingSection id="platform">
         <MarketingContainer>
-          <SectionIntro {...copy.platform}>
+          <SectionIntro title={copy.platform.title}>
             <p>{copy.platform.intro}</p>
           </SectionIntro>
-          <div className="editorial-platform editorial-visuals">
-            <Capture slot="action" />
-            <Capture slot="analysis" />
-            <AuditSummary />
-            <article className="marketing-surface editorial-maturity">
-              <h3>{copy.maturity.title}</h3>
-              <p className="editorial-score">{copy.maturity.score}</p>
-              <p>{copy.maturity.action}</p>
-            </article>
-          </div>
-          <Credit />
+          <ul className="lv-modules">
+            {copy.platform.modules.map((module) => (
+              <li key={module.name}>
+                <h3>{module.name}</h3>
+                <p>{module.detail}</p>
+              </li>
+            ))}
+          </ul>
         </MarketingContainer>
       </MarketingSection>
 
-      <MarketingSection id="leanai">
-        <MarketingContainer className="editorial-split">
-          <SectionIntro {...copy.leanAI}>
-            <p>{copy.leanAI.intro}</p>
+      <MarketingSection id="connect">
+        <MarketingContainer>
+          <SectionIntro title={copy.connect.title}>
+            <p>{copy.connect.intro}</p>
           </SectionIntro>
-          <ol className="editorial-steps">
-            {copy.leanAI.steps.map((step) => (
-              <li key={step}>{step}</li>
+          <ol
+            className="editorial-thread"
+            tabIndex={0}
+            aria-label={copy.connect.label}
+          >
+            {(["finding", "planner", "case"] as const).map((slot, index) => (
+              <li key={slot}>
+                <p className="editorial-label">{copy.stages[index]}</p>
+                <figure className="editorial-capture">
+                  <Capture
+                    asset={captures[slot]}
+                    alt=""
+                    sizes="(max-width: 767px) 83vw, (max-width: 1280px) 30vw, 390px"
+                  />
+                  <figcaption>{copy.stageRecords[index]}</figcaption>
+                </figure>
+              </li>
             ))}
           </ol>
         </MarketingContainer>
       </MarketingSection>
 
+      <MarketingSection id="measure">
+        <MarketingContainer
+          className={results ? "lv-split lv-split-wide" : undefined}
+        >
+          <SectionIntro title={copy.measure.title}>
+            <p>{copy.measure.intro}</p>
+          </SectionIntro>
+          {results ? (
+            <Capture
+              asset={results}
+              alt={copy.alt.results}
+              sizes={DESKTOP_SIZES}
+              className="lv-framed"
+            />
+          ) : null}
+        </MarketingContainer>
+      </MarketingSection>
+
+      <MarketingSection id="floor">
+        <MarketingContainer className="lv-split">
+          <SectionIntro title={copy.floor.title}>
+            <p>{copy.floor.intro}</p>
+          </SectionIntro>
+          <div className="lv-phones">
+            <Capture
+              asset={captures.assessment}
+              alt={copy.alt.assessment}
+              sizes={PHONE_SIZES}
+            />
+            <Capture
+              asset={captures.audit}
+              alt={copy.alt.audit}
+              sizes={PHONE_SIZES}
+            />
+          </div>
+        </MarketingContainer>
+      </MarketingSection>
+
+      <MarketingSection id="leanai">
+        <MarketingContainer className="lv-split lv-split-wide">
+          <div>
+            <SectionIntro title={copy.leanAI.title}>
+              <p>{copy.leanAI.intro}</p>
+            </SectionIntro>
+            <ol className="lv-steps">
+              {copy.leanAI.steps.map((step) => (
+                <li key={step.name}>
+                  <h3>{step.name}</h3>
+                  <p>{step.detail}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+          <Capture
+            asset={captures.analysis}
+            alt={copy.alt.analysis}
+            sizes={DESKTOP_SIZES}
+            className="lv-framed"
+          />
+        </MarketingContainer>
+      </MarketingSection>
+
       <MarketingSection id="faq">
-        <MarketingContainer className="editorial-split">
-          <SectionIntro {...copy.faq} />
+        <MarketingContainer className="lv-split lv-split-top">
+          <SectionIntro title={copy.faq.title} />
           <div className="editorial-faq">
             {copy.faq.items.map((item) => (
               <details key={item.question}>
                 <summary>{item.question}</summary>
                 <div>
                   <p>{item.answer}</p>
-                  {"access" in item && <RequestFreeAccessControl />}
                 </div>
               </details>
             ))}
@@ -244,22 +202,19 @@ export function EditorialHome() {
         </MarketingContainer>
       </MarketingSection>
 
-      <MarketingSection id="close">
-        <MarketingContainer className="editorial-split">
+      <MarketingSection id="get-free-access" className="lv-access">
+        <MarketingContainer className="lv-access-grid">
           <div>
-            <SectionIntro {...copy.close}>
-              <p>{copy.close.intro}</p>
+            <SectionIntro title={copy.access.title}>
+              <p>{copy.access.intro}</p>
             </SectionIntro>
-            <BookingActions helper={copy.close.helper} />
+            <EarlyAccessForm />
           </div>
-          <div>
-            <ol className="marketing-surface editorial-structure" role="list">
-              {copy.close.structure.map((name) => (
-                <li key={name}>{name}</li>
-              ))}
-            </ol>
-            <Credit />
-          </div>
+          <aside className="lv-demo-card" aria-labelledby="lv-demo-title">
+            <h3 id="lv-demo-title">{copy.access.demoTitle}</h3>
+            <p>{copy.access.demoLine}</p>
+            <RequestDemoControl size="lg" />
+          </aside>
         </MarketingContainer>
       </MarketingSection>
     </div>
