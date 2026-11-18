@@ -66,7 +66,7 @@ describe("interactive LEH product experience", () => {
       screen.queryByTestId("leh-demo-start-suggestion"),
     ).not.toBeInTheDocument();
     expect(document.getElementById("platform")).toBeTruthy();
-    expect(document.getElementById("why")).toBeTruthy();
+    expect(document.getElementById("floor")).toBeTruthy();
     expect(document.getElementById("loop")).toBeNull();
   });
 

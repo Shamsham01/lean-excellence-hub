@@ -25,6 +25,6 @@ describe("editorial homepage motion", () => {
     expect(css).toMatch(/@media \(prefers-reduced-motion: no-preference\)/);
     expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)/);
     expect(css).toMatch(/animation: none/);
-    expect(css).toContain("@keyframes editorial-rise");
+    expect(css).toContain("@keyframes lv-rise");
   });
 });
