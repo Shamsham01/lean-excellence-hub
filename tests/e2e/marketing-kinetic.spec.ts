@@ -141,7 +141,7 @@ test("early-access form validates and reports when it is not configured", async 
   await form.getByLabel("Role or job title").fill("CI Manager");
   await form.getByLabel("Number of sites").fill("3");
   await form.getByLabel("Number of employees").selectOption("50–249");
-  await form.getByText("Gemba walks", { exact: true }).click();
+  await form.getByLabel("Gemba walks").check();
   await form.getByLabel(/I agree to the/).check();
   await form.getByRole("button", { name: "Get free access" }).click();
   // CI has no webhook configured, so the route answers 503 politely.
