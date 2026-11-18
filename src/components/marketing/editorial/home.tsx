@@ -188,19 +188,19 @@ export function EditorialHome() {
       </div>
 
       <MarketingSection id="why">
-        <MarketingContainer>
-          <SectionIntro {...copy.why}>
-            <p>{copy.why.intro}</p>
-          </SectionIntro>
-          <div className="editorial-split editorial-visuals">
-            <Capture slot="phone" />
+        <MarketingContainer className="editorial-why">
+          <div className="editorial-why-copy">
+            <SectionIntro {...copy.why}>
+              <p>{copy.why.intro}</p>
+            </SectionIntro>
             <Capture slot="dashboard" />
           </div>
+          <Capture slot="phone" />
         </MarketingContainer>
       </MarketingSection>
 
       <MarketingSection id="five-s">
-        <MarketingContainer className="editorial-split">
+        <MarketingContainer className="editorial-split editorial-five-s">
           <SectionIntro {...copy.fiveS}>
             <p>{copy.fiveS.intro}</p>
           </SectionIntro>
@@ -216,8 +216,8 @@ export function EditorialHome() {
             <p>{copy.platform.intro}</p>
           </SectionIntro>
           <div className="editorial-platform editorial-visuals">
-            <Capture slot="results" />
             <Capture slot="analysis" />
+            <Capture slot="results" />
             <AuditSummary />
             <article className="marketing-surface editorial-maturity">
               <h3>{copy.maturity.title}</h3>

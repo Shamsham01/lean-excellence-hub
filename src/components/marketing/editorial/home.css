@@ -460,3 +460,58 @@
 .editorial-platform .editorial-audit-chip {
   align-content: center;
 }
+
+/* ---------- Layout balance: uncropped captures beside short copy ---------- */
+
+.editorial-why {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.editorial-why-copy {
+  display: grid;
+  gap: 2rem;
+  min-width: 0;
+}
+
+.editorial-maturity {
+  gap: 0.25rem;
+}
+
+@media (min-width: 768px) {
+  .editorial-why {
+    grid-template-columns: minmax(0, 1fr) clamp(13.5rem, 28vw, 22rem);
+    gap: clamp(2rem, 5vw, 4.5rem);
+    align-items: center;
+  }
+
+  .editorial-why .editorial-capture-phone {
+    width: 100%;
+  }
+
+  .editorial-five-s .editorial-capture-phone {
+    width: clamp(13.5rem, 26vw, 19.5rem);
+  }
+
+  /* Column widths follow each capture's aspect ratio (1.855 and 1.356),
+     so the two screenshots share one height with no dead space. */
+  .editorial-platform {
+    grid-template-columns: minmax(0, 1.855fr) minmax(0, 1.356fr);
+    align-items: start;
+  }
+
+  .editorial-platform .editorial-audit-chip,
+  .editorial-platform .editorial-maturity {
+    align-self: stretch;
+  }
+
+  .editorial-maturity {
+    padding-block: clamp(1rem, 2vw, 1.5rem);
+  }
+
+  .editorial-maturity .editorial-score {
+    font-size: clamp(2.25rem, 4.5vw, 3.5rem);
+    line-height: 1.05;
+  }
+}

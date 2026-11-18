@@ -73,9 +73,9 @@ export const landingCopy = {
           " differ?",
         answer:
           DEMO_BOOKING_CTA +
-          " picks a time for a 30-minute walkthrough. " +
+          " for a walkthrough. " +
           REQUEST_FREE_ACCESS_CTA +
-          " opens a short form: tell us about your site and we set up early access with you. There is no self-serve trial.",
+          " if you also want us to set up access for your team or site while we are in early access. There is no self-serve trial.",
         access: true,
       },
       {
@@ -101,7 +101,7 @@ export const landingCopy = {
     intro:
       DEMO_BOOKING_CTA +
       " to see the product. If you want free access for your team or site while Lean Excellence Hub is in early access, request it on the early-access page.",
-    structure: ["Your organisation", "Your site", "Your area", "Your line"],
+    structure: ["Bodmin Bakery", "Packing", "Packing Line 1"],
   },
   statement: {
     title: "From the floor to the dashboard.",
