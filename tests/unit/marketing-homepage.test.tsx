@@ -93,9 +93,7 @@ describe("public marketing homepage", () => {
       expect(links[0]).toHaveAttribute("href", "/demo");
       expect(links[1]).toHaveAttribute("href", "/early-access");
     }
-    expect(section("hero").getByText(landingCopy.hero.helper)).toBeVisible();
     expect(document.body.textContent).not.toMatch(/same booking page/);
-    expect(section("close").getByText(landingCopy.close.helper)).toBeVisible();
     expect(
       section("close").getByText(
         /free access for your team or site while Lean Excellence Hub is in early access/,
@@ -133,25 +131,24 @@ describe("public marketing homepage", () => {
     ).toBeNull();
   });
 
-  it("shows the approved fictional records and labels the result as example data", () => {
+  it("shows the approved fictional records without captions or Harbourfield text", () => {
     render(<MarketingHome />);
 
     expect(
       section("hero").getByRole("heading", {
-        name: landingCopy.captions.action,
+        name: landingCopy.records.action,
       }),
     ).toBeVisible();
-    expect(section("hero").getByText("Harbourfield Manager")).toBeVisible();
+    expect(section("hero").getByText("Shift Lead")).toBeVisible();
     expect(section("hero").getByText(landingCopy.audit.title)).toBeVisible();
     const thread = section("connect");
-    for (const record of [
-      landingCopy.captions.finding,
-      landingCopy.captions.action,
-      landingCopy.captions.case,
-    ]) {
-      expect(thread.getByText(record)).toBeVisible();
+    expect(thread.getAllByRole("img")).toHaveLength(3);
+    expect(document.querySelectorAll("figcaption")).toHaveLength(0);
+    expect(document.querySelector(".editorial-credit")).toBeNull();
+    expect(document.body.textContent).not.toMatch(/Harbourfield|Example data/);
+    for (const image of screen.getAllByRole("img")) {
+      expect(image.getAttribute("alt") ?? "").not.toMatch(/Harbourfield/);
     }
-    expect(thread.getAllByText(landingCopy.credit)).toHaveLength(1);
     expect(
       section("why").getByRole("img", { name: landingCopy.phoneAlt }),
     ).toBeVisible();
@@ -161,7 +158,6 @@ describe("public marketing homepage", () => {
         "ACT-2026-0019 · Restore missing tools on Line 2 shadow board",
       ),
     ).toBeVisible();
-    expect(section("platform").getByText(landingCopy.credit)).toBeVisible();
     expect(section("five-s").queryByText(/ACT-2026-0019/)).toBeNull();
     expect(
       screen.queryAllByText(

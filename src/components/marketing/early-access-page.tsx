@@ -27,7 +27,6 @@ export function EarlyAccessPage() {
           </div>
           <aside className="lv-demo-card" aria-labelledby="lv-demo-title">
             <h2 id="lv-demo-title">{copy.demoTitle}</h2>
-            <p>{copy.demoLine}</p>
             <RequestDemoControl />
           </aside>
         </MarketingContainer>

@@ -122,25 +122,19 @@ function Capture({
           style={{ aspectRatio: `${width} / ${height}` }}
         />
       </picture>
-      <figcaption>{copy.captions[slot]}</figcaption>
     </figure>
   );
 }
 
-function BookingActions({ helper }: { helper: string }) {
+function BookingActions() {
   return (
     <div className="editorial-booking">
       <div className="editorial-booking-links">
         <RequestDemoControl />
         <RequestFreeAccessControl />
       </div>
-      <p>{helper}</p>
     </div>
   );
-}
-
-function Credit() {
-  return <p className="editorial-credit">{copy.credit}</p>;
 }
 
 function AuditSummary() {
@@ -160,12 +154,11 @@ export function EditorialHome() {
           <div>
             <h1 className="editorial-headline">{HERO_HEADLINE}</h1>
             <p className="editorial-lede">{copy.hero.lede}</p>
-            <BookingActions helper={copy.hero.helper} />
+            <BookingActions />
           </div>
           <div className="editorial-hero-fragments">
             <MarketingActionCard />
             <AuditSummary />
-            <Credit />
           </div>
         </MarketingContainer>
       </MarketingSection>
@@ -181,19 +174,16 @@ export function EditorialHome() {
                 key={slot}
                 aria-label={`${index + 1} of 3: ${copy.stages[index]}`}
               >
-                <p className="editorial-label">{copy.stages[index]}</p>
                 <Capture slot={slot} thread />
               </li>
             ))}
           </ThreadCarousel>
-          <Credit />
         </MarketingContainer>
       </MarketingSection>
 
       <div className="editorial-statement">
         <MarketingContainer>
           <p>{copy.statement.title}</p>
-          <p>{copy.statement.detail}</p>
         </MarketingContainer>
       </div>
 
@@ -206,7 +196,6 @@ export function EditorialHome() {
             <Capture slot="phone" />
             <Capture slot="dashboard" />
           </div>
-          <Credit />
         </MarketingContainer>
       </MarketingSection>
 
@@ -217,7 +206,6 @@ export function EditorialHome() {
           </SectionIntro>
           <div>
             <Capture slot="audit" />
-            <Credit />
           </div>
         </MarketingContainer>
       </MarketingSection>
@@ -237,7 +225,6 @@ export function EditorialHome() {
               <p>{copy.maturity.action}</p>
             </article>
           </div>
-          <Credit />
         </MarketingContainer>
       </MarketingSection>
 
@@ -283,7 +270,7 @@ export function EditorialHome() {
             <SectionIntro {...copy.close}>
               <p>{copy.close.intro}</p>
             </SectionIntro>
-            <BookingActions helper={copy.close.helper} />
+            <BookingActions />
           </div>
           <div>
             <ol className="marketing-surface editorial-structure" role="list">
@@ -291,7 +278,6 @@ export function EditorialHome() {
                 <li key={name}>{name}</li>
               ))}
             </ol>
-            <Credit />
           </div>
         </MarketingContainer>
       </MarketingSection>

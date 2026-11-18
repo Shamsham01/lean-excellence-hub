@@ -16,8 +16,6 @@ export const landingNav = [
 export const landingCopy = {
   hero: {
     lede: "It takes audits, Gemba walks and maturity assessments off the spreadsheet, so a finding on the line can become an action and a case in the same system.",
-    helper:
-      "A 30-minute live walkthrough, or free early access for your team or site.",
   },
   connect: {
     kicker: "The thread",
@@ -29,7 +27,7 @@ export const landingCopy = {
     kicker: "Floor and desk",
     title: "Accountability you can see on the line and on the dashboard.",
     intro:
-      "Assess on a phone or tablet, with photos and notes as you go. Site leaders see the same work on the Harbourfield Foods Group dashboard when they are back at a desk.",
+      "Assess on a phone or tablet, with photos and notes as you go. Site leaders see the same work on the dashboard when they are back at a desk.",
   },
   fiveS: {
     kicker: "5S on the floor",
@@ -83,7 +81,7 @@ export const landingCopy = {
       {
         question: "Are the screens and scores on this page from customers?",
         answer:
-          "No. The previews use example data from a fictional demo organisation, Harbourfield Foods Group, at Bodmin Bakery. They show the live product, not customer work, scores or savings. Any figure you see, including a 2.7 out of 5 official result, is demo data.",
+          "No. The previews use example data from a fictional demo organisation. They show the live product, not customer work, scores or savings. Any figure you see, including a 2.7 out of 5 official result, is demo data.",
       },
       {
         question: "What does LeanAI do, and what does it not do?",
@@ -103,27 +101,17 @@ export const landingCopy = {
     intro:
       DEMO_BOOKING_CTA +
       " to see the product. If you want free access for your team or site while Lean Excellence Hub is in early access, request it on the early-access page.",
-    helper:
-      "Free access is arranged with you during early access; it is not a self-serve trial.",
-    structure: [
-      "Harbourfield Foods Group",
-      "Bodmin Bakery",
-      "Packing",
-      "Packing Line 1",
-    ],
+    structure: ["Your organisation", "Your site", "Your area", "Your line"],
   },
   statement: {
     title: "From the floor to the dashboard.",
-    detail:
-      "A finding, an action and a case stay in one thread. LeanAI can draft; a person decides.",
   },
-  credit: "Example data · Harbourfield demo site",
   stages: ["Observe", "Act", "Solve"],
   action: {
     label: "Actions",
     ownerLabel: "Owner",
     sourceLabel: "Gemba observation",
-    owner: "Harbourfield Manager",
+    owner: "Shift Lead",
     assigned: "Assigned",
     verified: "Verified",
   },
@@ -133,14 +121,9 @@ export const landingCopy = {
     score: "2.7/5",
     action: "ACT-2026-0019 · Restore missing tools on Line 2 shadow board",
   },
-  captions: {
-    phone: "Formal assessment · Flow & Capacity",
-    audit: "Raise action · Bodmin Bakery Packing 5S Standard",
-    case: "Recurring film wander on Packing Line 1",
-    analysis: "Cause analysis",
+  /** Record names shown inside the hero action card. */
+  records: {
     action: "Realign the film guide and confirm the first-off pack",
-    dashboard: "Harbourfield Foods Group · platform home",
-    results: "Pillar scores · published formal assessment",
     finding: "Packaging film misaligned on Packing Line 1",
   },
   phoneAlt:
@@ -166,7 +149,6 @@ export const landingCopy = {
     intro:
       "Lean Excellence Hub is in early access. Tell us about your site and we will set it up with you.",
     demoTitle: "Prefer to see it first?",
-    demoLine: "A 30-minute live walkthrough of the product.",
     submitting: "Sending…",
     successTitle: "Thanks. We have your details.",
     successBody:

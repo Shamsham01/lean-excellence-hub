@@ -320,6 +320,7 @@
 }
 
 .lv-demo-card h2 {
+  margin-bottom: 1rem;
   color: var(--foreground);
   font-size: 1.125rem;
   font-weight: 620;
