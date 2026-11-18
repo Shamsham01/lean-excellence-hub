@@ -1,3 +1,4 @@
+import type React from "react";
 import Image from "next/image";
 
 type Source = {
@@ -39,7 +40,8 @@ export const CAPTURES = {
   act: {
     alt: "The actions planner as a board, with open, in-progress and completed actions.",
     variants: DESKTOP,
-    dark: v4("v4-actions-planner-desktop-dark", 2135, 1482),
+    dark: v5("v4-actions-planner-desktop-dark", 2139, 1488),
+    light: v5("v4-actions-planner-desktop-light", 2139, 1488),
   },
   solve: {
     alt: "A problem-solving case on the eight-step rail at Root Cause Analysis, with LeanAI proposals to accept, edit or reject.",
@@ -50,7 +52,8 @@ export const CAPTURES = {
   improve: {
     alt: "The platform home with items needing attention and operational analytics tiles.",
     variants: DESKTOP,
-    dark: v4("v5-dashboard-home-desktop-dark", 2282, 1336),
+    dark: v5("v5-dashboard-home-desktop-dark", 2288, 1341),
+    light: v5("v5-dashboard-home-desktop-light", 2288, 1341),
   },
   learn: {
     alt: "A published training course with its duration, validity, learning objectives, trainer and evidence.",
@@ -66,7 +69,8 @@ export const CAPTURES = {
   maturity: {
     alt: "A published maturity result with the overall score, maturity levels and five pillar scores.",
     variants: DESKTOP,
-    dark: v4("v7-maturity-results-desktop-dark", 2010, 1482),
+    dark: v5("v7-maturity-results-desktop-dark", 2016, 1488),
+    light: v5("v7-maturity-results-desktop-light", 2016, 1488),
   },
   gemba: {
     alt: "A completed Gemba walk with its summary, observations and answers.",
@@ -89,13 +93,14 @@ export const CAPTURES = {
   actions: {
     alt: "The actions list grouped by due date, with status, priority and assignee.",
     variants: DESKTOP,
-    dark: v5("m-actions-list-dark", 2288, 1751),
-    light: v5("m-actions-list-light", 2288, 1765),
+    dark: v5("m-actions-list-dark", 2288, 1664),
+    light: v5("m-actions-list-light", 2288, 1664),
   },
   "problem-solving": {
     alt: "A problem-solving cause analysis with LeanAI proposals to accept, edit or reject.",
     variants: DESKTOP,
-    dark: v4("v3b-pps-analysis-desktop-dark", 2282, 1231),
+    dark: v5("v3b-pps-analysis-desktop-dark", 2288, 1330),
+    light: v5("v3b-pps-analysis-desktop-light", 2288, 1330),
   },
   "projects-benefits": {
     alt: "A project charter with its problem statement and objective.",
@@ -169,7 +174,12 @@ function Shot({
         sizes={sizes}
         loading={eager ? "eager" : "lazy"}
         unoptimized
-        style={{ aspectRatio: `${source.width} / ${source.height}` }}
+        style={
+          {
+            aspectRatio: `${source.width} / ${source.height}`,
+            "--capture-ratio": source.width / source.height,
+          } as React.CSSProperties
+        }
       />
     </picture>
   );

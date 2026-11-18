@@ -67,7 +67,8 @@ test("the finding-story carousel scrolls with its buttons and keeps captures who
     const track = page.locator(".editorial-thread");
     await track.scrollIntoViewIfNeeded();
     await expect(track).toHaveCSS("scroll-snap-type", "x mandatory");
-    const images = track.locator("img");
+    // Each slide carries a light and a dark capture; one shows per theme.
+    const images = track.locator("img:visible");
     await expect(images).toHaveCount(5);
     for (const image of await images.all()) {
       await image.scrollIntoViewIfNeeded();

@@ -360,7 +360,7 @@ export function EditorialHome() {
 
       <section
         id="why"
-        className="dark marketing-dark-band editorial-section editorial-band editorial-section-premium"
+        className="editorial-section editorial-band editorial-section-premium"
       >
         <MarketingContainer>
           <div className="editorial-section-head">
@@ -384,8 +384,6 @@ export function EditorialHome() {
                       slot={
                         STORY_CAPTURE[step.id as keyof typeof STORY_CAPTURE]
                       }
-                      eager
-                      dark
                       sizes="(max-width: 767px) 86vw, (max-width: 1280px) 76vw, 1000px"
                     />
                   </div>

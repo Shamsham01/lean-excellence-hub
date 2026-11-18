@@ -1736,10 +1736,6 @@
   display: block;
 }
 
-.editorial-slide .editorial-capture .editorial-capture-dark {
-  display: contents;
-}
-
 .editorial-capture img {
   display: block;
   width: 100%;
@@ -1784,6 +1780,7 @@
 }
 
 .editorial-slide .editorial-capture {
+  container-type: size;
   position: absolute;
   inset: clamp(0.75rem, 2.5vw, 1.75rem);
   display: flex;
@@ -1796,11 +1793,20 @@
   display: contents;
 }
 
+.editorial-slide .editorial-capture .editorial-capture-dark,
+.dark .editorial-slide .editorial-capture .editorial-capture-light {
+  display: none;
+}
+
+.dark .editorial-slide .editorial-capture .editorial-capture-dark {
+  display: contents;
+}
+
+/* Sized from the known ratio so lazy, not-yet-loaded images already hold
+   their final box: as wide as fits, never taller than the stage. */
 .editorial-slide .editorial-capture img {
-  width: auto;
+  width: min(100cqw, calc(100cqh * var(--capture-ratio, 1.6)));
   height: auto;
-  max-width: 100%;
-  max-height: 100%;
   border: 1px solid var(--marketing-vignette-border, var(--border));
   border-radius: 0.65rem;
   box-shadow: var(--marketing-shadow-lift);
@@ -1980,8 +1986,46 @@
     align-items: center;
   }
 
+  /* The organisation capture is wide and short, so the close stacks:
+     title beside the copy and actions, then the capture across the full
+     width. No empty column beside tall text. */
   .editorial-close-grid {
-    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    grid-template-columns: minmax(0, 1fr);
+    gap: 3rem;
+  }
+
+  .editorial-close-copy {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    column-gap: clamp(3rem, 5vw, 4.5rem);
+    align-items: start;
+  }
+
+  .editorial-close-copy > * {
+    grid-column: 2;
+  }
+
+  .editorial-close-copy > .marketing-kicker {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .editorial-close-copy > .editorial-close-title {
+    grid-column: 1;
+    grid-row: 2 / span 3;
+  }
+
+  .editorial-close-copy > .editorial-close-platform {
+    grid-row: 2;
+    margin-top: 0.85rem;
+  }
+
+  .editorial-close-copy > .editorial-lede {
+    grid-row: 3;
+  }
+
+  .editorial-close-copy > .editorial-actions {
+    grid-row: 4;
   }
 }
 

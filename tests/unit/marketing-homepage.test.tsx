@@ -381,7 +381,24 @@ describe("public marketing homepage", () => {
     expect(
       gemba?.querySelector(".editorial-capture-dark img")?.getAttribute("src"),
     ).toMatch(/m-gemba-walk-dark\.webp$/);
-    for (const band of container.querySelectorAll(".marketing-dark-band")) {
+    // The story carousel and every platform row follow the page theme.
+    const why = container.querySelector("#why");
+    expect(why).not.toHaveClass("dark");
+    for (const figure of container.querySelectorAll(
+      "#why [data-capture], #platform [data-capture]",
+    )) {
+      expect(figure.querySelector(".editorial-capture-light")).not.toBeNull();
+      expect(figure.querySelector(".editorial-capture-dark")).not.toBeNull();
+    }
+    expect(
+      container
+        .querySelector('[data-capture="maturity"] .editorial-capture-light img')
+        ?.getAttribute("src"),
+    ).toMatch(/v7-maturity-results-desktop-light\.webp$/);
+    // Only the Action Card band stays dark (no light 5S phone capture yet).
+    const bands = container.querySelectorAll(".marketing-dark-band");
+    expect(bands).toHaveLength(1);
+    for (const band of bands) {
       expect(band).toHaveClass("dark");
       expect(band.querySelector(".editorial-capture-light")).toBeNull();
       for (const image of band.querySelectorAll("img")) {
@@ -405,8 +422,9 @@ describe("public marketing homepage", () => {
       ),
     ).toBeInTheDocument();
     expect(
-      within(problem).getByRole("img", { name: /completed gemba walk/i }),
-    ).toBeInTheDocument();
+      within(problem).getAllByRole("img", { name: /completed gemba walk/i })
+        .length,
+    ).toBeGreaterThan(0);
     expect(within(problem).queryByText("Spreadsheet")).not.toBeInTheDocument();
     expect(screen.queryAllByText(/\bexcel\b|\bpowerpoint\b/i)).toHaveLength(0);
     expect(
@@ -417,8 +435,8 @@ describe("public marketing homepage", () => {
       within(problem).getByRole("button", { name: /Improve/ }),
     ).toHaveAttribute("aria-pressed", "false");
     expect(
-      within(problem).getByRole("img", { name: /platform home/i }),
-    ).toBeInTheDocument();
+      within(problem).getAllByRole("img", { name: /platform home/i }).length,
+    ).toBeGreaterThan(0);
   });
 
   it("tells LeanAI governance without autonomous authority", () => {
