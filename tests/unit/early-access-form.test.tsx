@@ -106,7 +106,7 @@ describe("Get free access form", () => {
     await screen.findByRole("heading", {
       name: "Thanks. We have your details.",
     });
-    const [url, init] = fetchMock.mock.calls[0];
+    const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toBe("/api/early-access");
     const body = JSON.parse(init.body);
     expect(body).toMatchObject({

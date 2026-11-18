@@ -101,7 +101,7 @@ describe("public marketing homepage", () => {
     expect(links[0]).toHaveAttribute("href", "/demo");
     expect(links[1]).toHaveAttribute("href", GET_FREE_ACCESS_HREF);
     expect(GET_FREE_ACCESS_HREF).toBe("/#get-free-access");
-    const actions = links[0].closest(".lv-actions");
+    const actions = links[0]!.closest(".lv-actions");
     expect(actions?.nextElementSibling).toBeNull();
 
     const header = within(screen.getByRole("banner"));
@@ -133,7 +133,7 @@ describe("public marketing homepage", () => {
     render(<MarketingHome />);
     const brand = within(screen.getByRole("banner")).getAllByTestId(
       "leh-brand",
-    )[0];
+    )[0]!;
     expect(brand).toHaveAttribute("data-responsive", "false");
     expect(brand.querySelector(".leh-brand-name")).toBeNull();
     expect(

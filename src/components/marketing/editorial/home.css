@@ -80,18 +80,13 @@
 }
 
 /* Phones: the phone capture alone, centred and cropped at the fold. */
-.lv-hero-phone {
-  width: min(74vw, 300px);
-  max-height: 26rem;
+.lv-hero-stage .lv-hero-phone {
+  width: min(78vw, 320px);
+  max-height: 27rem;
   margin-inline: auto;
-  overflow: hidden;
-  border-radius: 1.75rem 1.75rem 0 0;
-  -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent 100%);
-  mask-image: linear-gradient(180deg, #000 72%, transparent 100%);
-}
-
-.lv-hero-phone img {
-  border-radius: 1.4rem 1.4rem 0 0;
+  border-radius: 0.5rem 0.5rem 0 0;
+  -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 70%, transparent 100%);
 }
 
 /* ---------- Captures ---------- */
@@ -107,24 +102,28 @@
   height: auto;
 }
 
+/* captures-v3 phones carry their own 2px edge and 24px radius (at 1170px);
+   clip the canvas corners to the same curve. */
 .lv-capture-phone {
-  border: 1px solid var(--leh-line-strong);
-  border-radius: 1.75rem;
-  background: #121b2a;
-  padding: 0.4rem;
-  box-shadow: var(--marketing-shadow-lift);
-}
-
-.lv-capture-phone img {
-  border-radius: 1.4rem;
-}
-
-.lv-framed {
   overflow: hidden;
-  border: 1px solid #1e2d42;
-  border-radius: 1rem;
-  background: #121b2a;
-  box-shadow: var(--marketing-shadow-lift);
+  border-radius: 2.05% / 1.14%;
+}
+
+.lv-capture.lv-dialog-crop {
+  aspect-ratio: 1009 / 2100;
+  border: 0;
+  border-radius: 3.57% / 1.71%;
+}
+
+.lv-dialog-crop img {
+  width: 115.96%;
+  max-width: none;
+  margin-left: -7.93%;
+}
+
+/* captures-v3 desktop shots are framed cards on a #090E17 canvas. */
+.lv-planner {
+  margin-top: clamp(2rem, 4vw, 3rem);
 }
 
 /* ---------- Layout helpers ---------- */
@@ -270,10 +269,12 @@
 
 /* ---------- On the floor ---------- */
 
+/* Columns in proportion to the two phones' widths, so both stand the same
+   height (V2 is the 1009px dialog cropped from its 1170px canvas). */
 .lv-phones {
   display: grid;
   gap: clamp(0.75rem, 3vw, 1.5rem);
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1170fr) minmax(0, 1009fr);
   max-width: 34rem;
   width: 100%;
   margin-inline: auto;
@@ -752,36 +753,36 @@
     padding-left: 3.5rem;
   }
 
+  /* Crop the canvas padding baked into the capture (card 2288×1340 on a
+     2400×1500 canvas) so the glow sits behind the card, not a rectangle. */
   .lv-hero-stage .lv-hero-desktop {
     display: block;
-    width: max(100%, 46rem);
+    width: calc(100% + 6rem);
+    aspect-ratio: 2288 / 1340;
     overflow: hidden;
-    border: 1px solid #1e2d42;
-    border-right: 0;
-    border-radius: 1rem 0 0 1rem;
-    background: #121b2a;
+    border-radius: 0.6rem 0 0 0.6rem;
     box-shadow:
       0 40px 80px -40px rgb(0 0 0 / 0.85),
       0 0 0 1px rgb(255 255 255 / 0.02);
   }
 
-  .lv-hero-phone {
+  .lv-hero-desktop img {
+    width: 104.895%;
+    max-width: none;
+    margin: -3.4965% 0 0 -2.4476%;
+  }
+
+  .lv-hero-stage .lv-hero-phone {
     position: absolute;
     bottom: 0;
     left: 0;
-    width: clamp(9.5rem, 12vw, 11.5rem);
+    width: clamp(10rem, 13vw, 12.5rem);
     max-height: none;
-    overflow: visible;
-    border-radius: 1.75rem;
+    margin: 0;
+    border-radius: 2.05% / 1.14%;
     -webkit-mask-image: none;
     mask-image: none;
-    box-shadow:
-      0 30px 60px -20px rgb(0 0 0 / 0.9),
-      0 0 0 1px rgb(255 255 255 / 0.03);
-  }
-
-  .lv-hero-phone img {
-    border-radius: 1.4rem;
+    box-shadow: 0 30px 60px -20px rgb(0 0 0 / 0.9);
   }
 }
 

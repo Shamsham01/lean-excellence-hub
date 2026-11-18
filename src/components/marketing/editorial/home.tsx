@@ -32,7 +32,6 @@ function HeroActions() {
 }
 
 export function EditorialHome() {
-  const results = captures.results;
   return (
     <div className="editorial-home lv-home">
       <MarketingSection id="hero" className="lv-hero" flush>
@@ -47,13 +46,14 @@ export function EditorialHome() {
           </div>
           <div className="lv-hero-stage">
             <div className="lv-hero-glow" aria-hidden="true" />
-            <Capture
-              asset={captures.dashboard}
-              alt={copy.alt.dashboard}
-              sizes="(max-width: 1023px) 1px, (max-width: 1440px) 62vw, 900px"
-              className="lv-hero-desktop"
-              priority
-            />
+            <div className="lv-hero-desktop">
+              <Capture
+                asset={captures.dashboard}
+                alt={copy.alt.dashboard}
+                sizes="(max-width: 1023px) 1px, (max-width: 1440px) 66vw, 960px"
+                priority
+              />
+            </div>
             <Capture
               asset={captures.assessment}
               alt={copy.alt.assessment}
@@ -94,6 +94,12 @@ export function EditorialHome() {
               </li>
             ))}
           </ul>
+          <Capture
+            asset={captures.planner}
+            alt={copy.alt.planner}
+            sizes="(max-width: 767px) calc(100vw - 2.5rem), (max-width: 1280px) 92vw, 1216px"
+            className="lv-planner"
+          />
         </MarketingContainer>
       </MarketingSection>
 
@@ -107,38 +113,35 @@ export function EditorialHome() {
             tabIndex={0}
             aria-label={copy.connect.label}
           >
-            {(["finding", "planner", "case"] as const).map((slot, index) => (
-              <li key={slot}>
-                <p className="editorial-label">{copy.stages[index]}</p>
-                <figure className="editorial-capture">
-                  <Capture
-                    asset={captures[slot]}
-                    alt=""
-                    sizes="(max-width: 767px) 83vw, (max-width: 1280px) 30vw, 390px"
-                  />
-                  <figcaption>{copy.stageRecords[index]}</figcaption>
-                </figure>
-              </li>
-            ))}
+            {(["threadFinding", "threadAction", "threadCase"] as const).map(
+              (slot, index) => (
+                <li key={slot}>
+                  <p className="editorial-label">{copy.stages[index]}</p>
+                  <figure className="editorial-capture">
+                    <Capture
+                      asset={captures[slot]}
+                      alt=""
+                      sizes="(max-width: 767px) 83vw, (max-width: 1280px) 30vw, 390px"
+                    />
+                    <figcaption>{copy.stageRecords[index]}</figcaption>
+                  </figure>
+                </li>
+              ),
+            )}
           </ol>
         </MarketingContainer>
       </MarketingSection>
 
       <MarketingSection id="measure">
-        <MarketingContainer
-          className={results ? "lv-split lv-split-wide" : undefined}
-        >
+        <MarketingContainer className="lv-split lv-split-wide">
           <SectionIntro title={copy.measure.title}>
             <p>{copy.measure.intro}</p>
           </SectionIntro>
-          {results ? (
-            <Capture
-              asset={results}
-              alt={copy.alt.results}
-              sizes={DESKTOP_SIZES}
-              className="lv-framed"
-            />
-          ) : null}
+          <Capture
+            asset={captures.results}
+            alt={copy.alt.results}
+            sizes={DESKTOP_SIZES}
+          />
         </MarketingContainer>
       </MarketingSection>
 
@@ -157,6 +160,7 @@ export function EditorialHome() {
               asset={captures.audit}
               alt={copy.alt.audit}
               sizes={PHONE_SIZES}
+              className="lv-dialog-crop"
             />
           </div>
         </MarketingContainer>
@@ -181,7 +185,6 @@ export function EditorialHome() {
             asset={captures.analysis}
             alt={copy.alt.analysis}
             sizes={DESKTOP_SIZES}
-            className="lv-framed"
           />
         </MarketingContainer>
       </MarketingSection>

@@ -6,50 +6,64 @@ import { cn } from "@/lib/utils";
  * so a phone never downloads a 2400 px desktop master.
  */
 export const captures = {
+  // captures-v3 (PIXEL, 18 Nov 2026). Desktop shots carry their own card
+  // frame; phone shots carry their own edge and radius.
   dashboard: {
-    dir: "v2",
+    dir: "v3",
     file: "v5-dashboard-home-desktop-dark",
     width: 2400,
-    height: 1200,
+    height: 1500,
   },
   assessment: {
-    dir: "v2",
-    file: "v2-five-s-raise-phone-dark",
+    dir: "v3",
+    file: "v1-maturity-phone-dark",
     width: 1170,
-    height: 2532,
+    height: 2100,
   },
   audit: {
-    dir: "v2",
+    dir: "v3",
     file: "v2-five-s-raise-phone-dark",
     width: 1170,
-    height: 2532,
+    height: 2100,
   },
   planner: {
-    dir: "v2",
+    dir: "v3",
     file: "v4-actions-planner-desktop-dark",
     width: 2400,
     height: 1600,
   },
-  results: null as CaptureAsset | null,
+  results: {
+    dir: "v3",
+    file: "v7-maturity-results-desktop-dark",
+    width: 2400,
+    height: 1600,
+  },
   analysis: {
-    dir: "v2",
+    dir: "v3",
     file: "v3b-pps-analysis-desktop-dark",
     width: 2400,
     height: 1600,
   },
-  finding: {
+  // Observe, Act, Solve keeps the captures it was built with (PR #410/#411).
+  threadFinding: {
     dir: "v2",
     file: "v6-gemba-finding-dark",
     width: 2400,
     height: 1600,
   },
-  case: {
+  threadAction: {
+    dir: "v2",
+    file: "v4-actions-planner-desktop-dark",
+    width: 2400,
+    height: 1600,
+  },
+  threadCase: {
     dir: "v2",
     file: "v3-pps-case-desktop-dark",
     width: 2400,
     height: 1600,
   },
-} satisfies Record<string, CaptureAsset | null>;
+} satisfies Record<string, CaptureAsset>;
 
 export type CaptureAsset = {
   dir: string;

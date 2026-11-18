@@ -62,7 +62,7 @@ describe("POST /api/early-access", () => {
     expect(await response.json()).toEqual({ ok: true });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchMock.mock.calls[0];
+    const [url, init] = fetchMock.mock.calls[0]!;
     expect(String(url)).toBe(WEBHOOK);
     expect(init.method).toBe("POST");
     expect(init.headers).toEqual({ "Content-Type": "application/json" });
