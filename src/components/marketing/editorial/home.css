@@ -124,25 +124,159 @@
   color: var(--success);
 }
 
+.editorial-carousel {
+  margin-top: 1.75rem;
+}
+
+.editorial-carousel-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.editorial-carousel-stages {
+  display: flex;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.editorial-carousel-stage {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.5rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.editorial-carousel-stage span {
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+.editorial-carousel-stage:hover {
+  color: var(--foreground);
+}
+
+.editorial-carousel-stage.is-active {
+  border-color: var(--border);
+  background: var(--card);
+  color: var(--foreground);
+}
+
+.editorial-carousel-arrows {
+  display: none;
+  gap: 0.5rem;
+}
+
+.editorial-carousel-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--foreground);
+  cursor: pointer;
+  transition:
+    opacity 160ms ease,
+    border-color 160ms ease;
+}
+
+.editorial-carousel-arrow:hover:not(:disabled) {
+  border-color: var(--leh-line-strong);
+}
+
+.editorial-carousel-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.editorial-carousel-stage:focus-visible,
+.editorial-carousel-arrow:focus-visible,
+.editorial-thread:focus-visible {
+  outline: 2px solid var(--accent-foreground);
+  outline-offset: 3px;
+}
+
 .editorial-thread {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 88%;
+  align-items: start;
   gap: 1rem;
-  margin-top: 1.75rem;
-  padding: 0.25rem 0.25rem 0.75rem;
+  padding: 0.25rem 0.25rem 1.5rem;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
   scroll-padding-inline: 0.25rem;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.editorial-thread::-webkit-scrollbar {
+  display: none;
 }
 
 .editorial-thread li {
   min-width: 0;
   scroll-snap-align: start;
+  opacity: 0.5;
+  transition: opacity 240ms ease;
+}
+
+.editorial-thread[data-active="0"] li:nth-child(1),
+.editorial-thread[data-active="1"] li:nth-child(2),
+.editorial-thread[data-active="2"] li:nth-child(3),
+.editorial-thread li:focus-within {
+  opacity: 1;
+}
+
+/* The track bleeds to the viewport edges so the next slide reads as the
+   next card in the strip, aligned to the page container on the left. */
+.editorial-home #connect {
+  overflow-x: clip;
+}
+
+.editorial-carousel {
+  container-type: inline-size;
+}
+
+.editorial-carousel .editorial-thread {
+  --editorial-bleed: max(0px, calc(50vw - 50cqw));
+  margin-inline: calc(-1 * var(--editorial-bleed));
+  padding-inline: var(--editorial-bleed);
+  scroll-padding-inline: var(--editorial-bleed);
 }
 
 .editorial-thread .editorial-label {
   margin-bottom: 0.45rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .editorial-thread {
+    scroll-behavior: smooth;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editorial-thread li {
+    transition: none;
+  }
 }
 
 .editorial-visuals {
@@ -293,13 +427,23 @@
 
 @media (min-width: 768px) {
   .editorial-thread {
-    grid-auto-columns: minmax(0, 1fr);
-    overflow: visible;
+    grid-auto-columns: 74%;
+    gap: 1.5rem;
+  }
+
+  .editorial-carousel-arrows {
+    display: flex;
   }
 
   .editorial-split,
   .editorial-platform {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .editorial-thread {
+    grid-auto-columns: 70%;
   }
 }
 

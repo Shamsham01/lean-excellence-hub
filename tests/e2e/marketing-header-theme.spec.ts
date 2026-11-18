@@ -30,8 +30,8 @@ test("marketing stays dark with a stored light preference", async ({
   const primary = header.getByRole("link", { name: "Book a live demo" });
   await expect(primary).toHaveCSS("background-color", "rgb(70, 95, 255)");
   await expect(
-    header.getByRole("link", { name: "Request free access" }),
-  ).toHaveCount(0);
+    header.getByRole("link", { name: "Get free access" }),
+  ).toHaveAttribute("href", "/early-access");
   await primary.click();
   await expect(page).toHaveURL(/\/demo$/);
   await expect(page.locator(".marketing")).toHaveCSS(
@@ -42,10 +42,10 @@ test("marketing stays dark with a stored light preference", async ({
   await page.goto("/");
   const access = page
     .locator("#hero")
-    .getByRole("link", { name: "Request free access" });
+    .getByRole("link", { name: "Get free access" });
   await expect(access).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await access.click();
-  await expect(page).toHaveURL(/\/demo$/);
+  await expect(page).toHaveURL(/\/early-access$/);
 });
 
 test("mobile menu keeps the header booking link and returns focus on Escape", async ({

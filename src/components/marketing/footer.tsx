@@ -48,6 +48,10 @@ export function MarketingFooter() {
           <p className="marketing-footer-copyright">
             © {new Date().getFullYear()} Lean Excellence Hub
           </p>
+          <nav aria-label="Legal" className="marketing-footer-legal">
+            <Link href="/terms">Terms</Link>
+            <Link href="/privacy">Privacy Policy</Link>
+          </nav>
         </div>
       </MarketingContainer>
     </footer>

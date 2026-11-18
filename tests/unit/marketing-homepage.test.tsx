@@ -90,13 +90,11 @@ describe("public marketing homepage", () => {
         DEMO_BOOKING_CTA,
         REQUEST_FREE_ACCESS_CTA,
       ]);
-      for (const link of links) expect(link).toHaveAttribute("href", "/demo");
+      expect(links[0]).toHaveAttribute("href", "/demo");
+      expect(links[1]).toHaveAttribute("href", "/early-access");
     }
-    expect(
-      section("hero").getByText(
-        "Both buttons open the same booking page. Pick a time and it is booked straight away.",
-      ),
-    ).toBeVisible();
+    expect(section("hero").getByText(landingCopy.hero.helper)).toBeVisible();
+    expect(document.body.textContent).not.toMatch(/same booking page/);
     expect(section("close").getByText(landingCopy.close.helper)).toBeVisible();
     expect(
       section("close").getByText(
@@ -109,8 +107,8 @@ describe("public marketing homepage", () => {
       header.getByRole("link", { name: DEMO_BOOKING_CTA }),
     ).toHaveAttribute("href", "/demo");
     expect(
-      header.queryByRole("link", { name: REQUEST_FREE_ACCESS_CTA }),
-    ).toBeNull();
+      header.getByRole("link", { name: REQUEST_FREE_ACCESS_CTA }),
+    ).toHaveAttribute("href", "/early-access");
     expect(header.getByRole("link", { name: "Sign in" })).toHaveAttribute(
       "href",
       "/login",
@@ -119,7 +117,14 @@ describe("public marketing homepage", () => {
     const footer = within(screen.getByRole("contentinfo"));
     expect(
       footer.getByRole("link", { name: REQUEST_FREE_ACCESS_CTA }),
-    ).toHaveAttribute("href", "/demo");
+    ).toHaveAttribute("href", "/early-access");
+    expect(footer.getByRole("link", { name: "Terms" })).toHaveAttribute(
+      "href",
+      "/terms",
+    );
+    expect(
+      footer.getByRole("link", { name: "Privacy Policy" }),
+    ).toHaveAttribute("href", "/privacy");
     expect(
       document.querySelector('a[href="/signup"], a[href="/pricing"]'),
     ).toBeNull();
@@ -178,7 +183,7 @@ describe("public marketing homepage", () => {
     booking?.setAttribute("open", "");
     expect(
       within(booking!).getByRole("link", { name: REQUEST_FREE_ACCESS_CTA }),
-    ).toHaveAttribute("href", "/demo");
+    ).toHaveAttribute("href", "/early-access");
   });
 
   it("keeps LeanAI's six steps in reading order", () => {

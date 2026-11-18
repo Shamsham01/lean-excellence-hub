@@ -4106,3 +4106,18 @@ html:has(> body > .marketing) {
     max-width: 100%;
   }
 }
+
+.marketing-footer-sleek .marketing-footer-legal {
+  display: flex;
+  gap: 1.25rem;
+  font-size: 0.875rem;
+}
+
+.marketing-footer-sleek .marketing-footer-legal a {
+  color: var(--muted-foreground);
+  text-decoration: none;
+}
+
+.marketing-footer-sleek .marketing-footer-legal a:hover {
+  color: var(--foreground);
+}

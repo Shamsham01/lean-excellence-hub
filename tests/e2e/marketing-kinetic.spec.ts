@@ -65,11 +65,14 @@ test("mobile CTAs fit, the thread scrolls within the page and the audit stays in
   await audit.scrollIntoViewIfNeeded();
   await expect
     .poll(() => audit.evaluate((image: HTMLImageElement) => image.naturalWidth))
-    .toBe(1170);
-  const ratio = await audit.evaluate(
-    (image) => image.clientWidth / image.clientHeight,
-  );
-  expect(ratio).toBeCloseTo(1170 / 2532, 2);
+    .toBeGreaterThan(0);
+  const [ratio, natural] = await audit.evaluate((image: HTMLImageElement) => [
+    image.clientWidth / image.clientHeight,
+    image.naturalWidth / image.naturalHeight,
+  ]);
+  // Shown whole at its natural aspect ratio: never cropped.
+  expect(ratio).toBeCloseTo(1009 / 2100, 2);
+  expect(ratio).toBeCloseTo(natural, 2);
   expect(
     await page.evaluate(
       () =>
@@ -120,8 +123,8 @@ test("keyboard reaches the landing content and the FAQ booking link", async ({
   await page.keyboard.press("Tab");
   const access = page
     .locator("#faq")
-    .getByRole("link", { name: "Request free access" });
+    .getByRole("link", { name: "Get free access" });
   await expect(access).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/\/demo$/);
+  await expect(page).toHaveURL(/\/early-access$/);
 });

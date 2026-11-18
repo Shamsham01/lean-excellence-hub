@@ -11,34 +11,91 @@ import {
   StatusChip,
 } from "../primitives";
 import { MarketingActionCard } from "./marketing-action-card";
+import { ThreadCarousel } from "./thread-carousel";
 
 import "./home.css";
 
 const copy = landingCopy;
+/**
+ * Real product captures (dark, masked, no browser chrome), each shown whole at
+ * its natural aspect ratio. Smaller copies sit next to each master as
+ * `<basename>-<width>w.<ext>`.
+ */
 const captures = {
-  phone: ["v1-maturity-phone-light", 1170, 2532],
-  audit: ["v2-five-s-raise-phone-dark", 1170, 2532],
-  case: ["v3-pps-case-desktop-dark", 2400, 1600],
-  analysis: ["v3b-pps-analysis-desktop-dark", 2400, 1600],
-  action: ["v4-actions-planner-desktop-dark", 2400, 1600],
-  dashboard: ["v5-dashboard-home-desktop-dark", 2400, 1200],
-  finding: ["v6-gemba-finding-dark", 2400, 1600],
+  phone: {
+    file: "v1-maturity-phone-dark",
+    width: 1170,
+    height: 2100,
+    variants: [600],
+  },
+  audit: {
+    file: "v2-five-s-raise-phone-dark",
+    width: 1009,
+    height: 2100,
+    variants: [600],
+  },
+  case: {
+    file: "v3-pps-case-desktop-dark",
+    width: 2029,
+    height: 1490,
+    variants: [800, 1400],
+  },
+  analysis: {
+    file: "v3b-pps-analysis-desktop-dark",
+    width: 2282,
+    height: 1231,
+    variants: [800, 1400],
+  },
+  action: {
+    file: "v4-actions-planner-desktop-dark",
+    width: 2135,
+    height: 1482,
+    variants: [800, 1400],
+  },
+  dashboard: {
+    file: "v5-dashboard-home-desktop-dark",
+    width: 2282,
+    height: 1336,
+    variants: [800, 1400],
+  },
+  finding: {
+    file: "v6-gemba-finding-dark",
+    width: 2231,
+    height: 1482,
+    variants: [800, 1400],
+  },
+  results: {
+    file: "v7-maturity-results-desktop-dark",
+    width: 2010,
+    height: 1482,
+    variants: [800, 1400],
+  },
 } as const;
+
+type CaptureSlot = keyof typeof captures;
+
+function srcSet(slot: CaptureSlot, extension: "avif" | "webp") {
+  const { file, width, variants } = captures[slot];
+  const base = `/marketing/captures/v4/${file}`;
+  return [
+    ...variants.map((w) => `${base}-${w}w.${extension} ${w}w`),
+    `${base}.${extension} ${width}w`,
+  ].join(", ");
+}
 
 function Capture({
   slot,
   thread = false,
 }: {
-  slot: keyof typeof captures;
+  slot: CaptureSlot;
   thread?: boolean;
 }) {
-  const [basename, width, height] = captures[slot];
+  const { file, width, height } = captures[slot];
   const phone = width < height;
-  const src = `/marketing/captures/v2/${basename}`;
   const sizes = phone
     ? "(max-width: 430px) calc(100vw - 3rem), 390px"
     : thread
-      ? "(max-width: 767px) 83vw, (max-width: 1280px) 30vw, 390px"
+      ? "(max-width: 767px) 86vw, (max-width: 1280px) 72vw, 900px"
       : "(max-width: 767px) 92vw, (max-width: 1280px) 46vw, 600px";
 
   return (
@@ -52,15 +109,17 @@ function Capture({
       <picture
         className={slot === "phone" ? "editorial-phone-glow" : undefined}
       >
-        <source srcSet={`${src}.avif`} type="image/avif" sizes={sizes} />
+        <source srcSet={srcSet(slot, "avif")} type="image/avif" sizes={sizes} />
+        <source srcSet={srcSet(slot, "webp")} type="image/webp" sizes={sizes} />
         <Image
-          src={`${src}.webp`}
-          alt={slot === "phone" ? copy.phoneAlt : ""}
+          src={`/marketing/captures/v4/${file}.webp`}
+          alt={slot === "phone" ? copy.phoneAlt : copy.alt[slot]}
           width={width}
           height={height}
           sizes={sizes}
           loading="lazy"
           unoptimized
+          style={{ aspectRatio: `${width} / ${height}` }}
         />
       </picture>
       <figcaption>{copy.captions[slot]}</figcaption>
@@ -116,18 +175,17 @@ export function EditorialHome() {
           <SectionIntro {...copy.connect}>
             <p>{copy.connect.intro}</p>
           </SectionIntro>
-          <ol
-            className="editorial-thread"
-            tabIndex={0}
-            aria-label={copy.connect.kicker}
-          >
+          <ThreadCarousel label={copy.connect.kicker} stages={copy.stages}>
             {(["finding", "action", "case"] as const).map((slot, index) => (
-              <li key={slot}>
+              <li
+                key={slot}
+                aria-label={`${index + 1} of 3: ${copy.stages[index]}`}
+              >
                 <p className="editorial-label">{copy.stages[index]}</p>
                 <Capture slot={slot} thread />
               </li>
             ))}
-          </ol>
+          </ThreadCarousel>
           <Credit />
         </MarketingContainer>
       </MarketingSection>
@@ -170,7 +228,7 @@ export function EditorialHome() {
             <p>{copy.platform.intro}</p>
           </SectionIntro>
           <div className="editorial-platform editorial-visuals">
-            <Capture slot="action" />
+            <Capture slot="results" />
             <Capture slot="analysis" />
             <AuditSummary />
             <article className="marketing-surface editorial-maturity">

@@ -23,8 +23,8 @@ test("renders the commercial landing page", async ({ page }) => {
     page.getByRole("link", { name: "Book a live demo" }).first(),
   ).toHaveAttribute("href", "/demo");
   await expect(
-    page.locator("#hero").getByRole("link", { name: "Request free access" }),
-  ).toHaveAttribute("href", "/demo");
+    page.locator("#hero").getByRole("link", { name: "Get free access" }),
+  ).toHaveAttribute("href", "/early-access");
   await expect(page).toHaveTitle(
     "Lean Excellence Hub — Operational Excellence & Continuous Improvement Platform",
   );

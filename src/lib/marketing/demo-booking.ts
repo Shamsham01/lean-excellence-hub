@@ -34,7 +34,11 @@ const SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,80}$/;
 export const DEMO_EMBED_NAMESPACE = "leh-demo";
 
 export const DEMO_BOOKING_CTA = "Book a live demo";
-export const REQUEST_FREE_ACCESS_CTA = "Request free access";
+export const GET_FREE_ACCESS_CTA = "Get free access";
+/** The early-access request page (form posts to /api/early-access). */
+export const GET_FREE_ACCESS_HREF = "/early-access";
+/** @deprecated Use GET_FREE_ACCESS_CTA. Kept for existing imports. */
+export const REQUEST_FREE_ACCESS_CTA = GET_FREE_ACCESS_CTA;
 
 /**
  * Playwright sends this header only when `DEMO_BOOKING_E2E=1`.

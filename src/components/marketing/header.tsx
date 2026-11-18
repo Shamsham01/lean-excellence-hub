@@ -14,6 +14,7 @@ import {
   MarketingContainer,
   MarketingWordmark,
   RequestDemoControl,
+  RequestFreeAccessControl,
 } from "./primitives";
 
 export function MarketingHeader() {
@@ -73,6 +74,10 @@ export function MarketingHeader() {
             >
               <Link href="/login">Sign in</Link>
             </Button>
+            <RequestFreeAccessControl
+              size="sm"
+              className="hidden sm:inline-flex"
+            />
             <RequestDemoControl size="sm" />
             <Button
               ref={menuTrigger}
@@ -116,6 +121,7 @@ export function MarketingHeader() {
               ))}
             </nav>
             <div className="flex flex-col gap-3">
+              <RequestFreeAccessControl className="sm:hidden" />
               <Button asChild variant="ghost">
                 <Link href="/login">Sign in</Link>
               </Button>

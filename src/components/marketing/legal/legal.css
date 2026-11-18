@@ -1,0 +1,139 @@
+.legal-page {
+  padding-block: clamp(2.5rem, 6vw, 5rem);
+}
+
+.legal-container {
+  max-width: 46rem;
+}
+
+.legal-draft {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 2rem;
+  border: 1px solid color-mix(in oklab, var(--warning) 45%, var(--border));
+  border-radius: 0.75rem;
+  background: color-mix(in oklab, var(--warning) 10%, var(--background));
+  padding: 0.85rem 1rem;
+  font-size: 0.875rem;
+  color: var(--leh-on-warning-tint);
+}
+
+.legal-draft-badge {
+  border-radius: 999px;
+  background: var(--warning);
+  padding: 0.15rem 0.6rem;
+  color: var(--warning-foreground);
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.legal-prose {
+  color: var(--muted-foreground);
+  font-size: 0.975rem;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.legal-prose h1 {
+  margin-bottom: 1.25rem;
+  color: var(--foreground);
+  font-size: clamp(1.9rem, 4vw, 2.6rem);
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.legal-prose h2 {
+  margin: 2.25rem 0 0.75rem;
+  color: var(--foreground);
+  font-size: 1.3rem;
+  font-weight: 620;
+  letter-spacing: -0.02em;
+}
+
+.legal-prose h3 {
+  margin: 1.5rem 0 0.5rem;
+  color: var(--foreground);
+  font-size: 1.05rem;
+  font-weight: 620;
+}
+
+.legal-prose p,
+.legal-prose ul,
+.legal-prose ol,
+.legal-prose blockquote,
+.legal-prose .legal-table {
+  margin-block: 0.85rem;
+}
+
+.legal-prose ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+
+.legal-prose ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+
+.legal-prose li + li {
+  margin-top: 0.35rem;
+}
+
+.legal-prose strong {
+  color: var(--foreground);
+  font-weight: 620;
+}
+
+.legal-prose a {
+  color: var(--accent-foreground);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.legal-prose blockquote {
+  border-left: 2px solid var(--leh-line-strong);
+  padding-left: 1rem;
+  font-size: 0.9rem;
+}
+
+.legal-prose code {
+  border-radius: 0.3rem;
+  background: var(--card);
+  padding: 0.05rem 0.35rem;
+  font-size: 0.85em;
+}
+
+.legal-table {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+}
+
+.legal-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.legal-prose th,
+.legal-prose td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.legal-prose th {
+  background: var(--card);
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.legal-prose tr:last-child td {
+  border-bottom: 0;
+}

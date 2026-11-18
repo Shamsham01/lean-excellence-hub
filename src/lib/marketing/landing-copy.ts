@@ -17,7 +17,7 @@ export const landingCopy = {
   hero: {
     lede: "It takes audits, Gemba walks and maturity assessments off the spreadsheet, so a finding on the line can become an action and a case in the same system.",
     helper:
-      "Both buttons open the same booking page. Pick a time and it is booked straight away.",
+      "A 30-minute live walkthrough, or free early access for your team or site.",
   },
   connect: {
     kicker: "The thread",
@@ -74,11 +74,10 @@ export const landingCopy = {
           REQUEST_FREE_ACCESS_CTA +
           " differ?",
         answer:
-          "Both open the same booking page. " +
           DEMO_BOOKING_CTA +
-          " for a walkthrough. " +
+          " picks a time for a 30-minute walkthrough. " +
           REQUEST_FREE_ACCESS_CTA +
-          " if you also want us to set up access for your team or site while we are in early access. There is no self-serve trial.",
+          " opens a short form: tell us about your site and we set up early access with you. There is no self-serve trial.",
         access: true,
       },
       {
@@ -103,9 +102,9 @@ export const landingCopy = {
     title: "Your framework. Your standards. Your way of working.",
     intro:
       DEMO_BOOKING_CTA +
-      " to see the product. If you want free access for your team or site while Lean Excellence Hub is in early access, request it on the same booking page.",
+      " to see the product. If you want free access for your team or site while Lean Excellence Hub is in early access, request it on the early-access page.",
     helper:
-      "Both buttons open the same booking page. Free access is arranged with you; it is not instant and not a self-serve trial.",
+      "Free access is arranged with you during early access; it is not a self-serve trial.",
     structure: [
       "Harbourfield Foods Group",
       "Bodmin Bakery",
@@ -135,14 +134,54 @@ export const landingCopy = {
     action: "ACT-2026-0019 · Restore missing tools on Line 2 shadow board",
   },
   captions: {
-    phone: "Harbourfield Operating Standard · shop-floor light mode",
+    phone: "Formal assessment · Flow & Capacity",
     audit: "Raise action · Bodmin Bakery Packing 5S Standard",
     case: "Recurring film wander on Packing Line 1",
     analysis: "Cause analysis",
     action: "Realign the film guide and confirm the first-off pack",
     dashboard: "Harbourfield Foods Group · platform home",
+    results: "Pillar scores · published formal assessment",
     finding: "Packaging film misaligned on Packing Line 1",
   },
   phoneAlt:
-    "A phone in light mode, showing an in-progress self-assessment against the Harbourfield Operating Standard. Example data from a fictional demo site.",
+    "A phone in dark mode, showing an in-progress formal maturity assessment: a Flow & Capacity question with its five-level rating scale and a comment. Example data from a fictional demo site.",
+  alt: {
+    audit:
+      "A 5S audit on a phone, raising an action with an owner, a due date and labels.",
+    case: "A problem-solving case on the eight-step rail at Root Cause Analysis, with LeanAI proposals to accept, edit or reject.",
+    analysis:
+      "A problem-solving cause analysis with LeanAI proposals to accept, edit or reject.",
+    action:
+      "The actions planner as a board, with open, in-progress and completed actions.",
+    dashboard:
+      "The platform home with items needing attention and operational analytics tiles.",
+    finding:
+      "A completed Gemba walk with its summary, an issue observation and the answer recorded on Packing Line 1.",
+    results:
+      "A published maturity result with the overall score, maturity levels and five pillar scores.",
+  },
+  access: {
+    kicker: "Early access",
+    title: "Get free access.",
+    intro:
+      "Lean Excellence Hub is in early access. Tell us about your site and we will set it up with you.",
+    demoTitle: "Prefer to see it first?",
+    demoLine: "A 30-minute live walkthrough of the product.",
+    submitting: "Sending…",
+    successTitle: "Thanks. We have your details.",
+    successBody:
+      "We will be in touch to set up your early access. Want to see it sooner? Book a 30-minute live walkthrough.",
+    /** LAUNCH form-consent-copy.md: line under the submit button. */
+    privacyNote:
+      "We'll use your details to set up early access and contact you about Lean Excellence Hub.",
+  },
+  fields: {
+    fullName: { label: "Full name", placeholder: "Your full name" },
+    workEmail: { label: "Work email", placeholder: "name@company.com" },
+    company: { label: "Company", placeholder: "Company name" },
+    role: { label: "Role or job title", placeholder: "e.g. CI Manager" },
+    sites: { label: "Number of sites", placeholder: "e.g. 3" },
+    employees: { label: "Number of employees", placeholder: "Choose a range" },
+    ciAreas: { label: "Which CI areas interest you?" },
+  },
 } as const;
