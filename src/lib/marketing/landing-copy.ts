@@ -140,7 +140,7 @@ export const landingCopy = {
   },
   alt: {
     dashboard:
-      "Lean Excellence Hub dashboard showing items that need attention and operational tiles for actions, problem solving, suggestions and 5S audits.",
+      "Lean Excellence Hub dashboard showing operational analytics tiles for actions, problem solving, suggestions and 5S audits.",
     assessment:
       "A formal maturity assessment on a phone: a question with its rating scale, notes and a photo.",
     audit:

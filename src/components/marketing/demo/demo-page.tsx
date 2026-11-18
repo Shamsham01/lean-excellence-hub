@@ -8,6 +8,8 @@ import {
 import { MarketingShell } from "@/components/marketing/shell";
 import {
   type DemoBookingState,
+  GET_FREE_ACCESS_CTA,
+  GET_FREE_ACCESS_HREF,
   readDemoBooking,
 } from "@/lib/marketing/demo-booking";
 
@@ -92,11 +94,15 @@ export function MarketingDemoPage({
               <h2>Booking and privacy</h2>
               <p>
                 Cal.com reserves your booking when you pick a time and sends the
-                confirmation, calendar invitation and meeting link. You can use
-                the same booking page to request free access for your team or
-                site during early access. Lean Excellence Hub does not keep a
-                separate booking record. Do not send financial results or
-                confidential documents.
+                confirmation, calendar invitation and meeting link. Lean
+                Excellence Hub does not keep a separate booking record. Do not
+                send financial results or confidential documents.
+              </p>
+              <p>
+                Want to start without a call?{" "}
+                <Link href={GET_FREE_ACCESS_HREF}>{GET_FREE_ACCESS_CTA}</Link>{" "}
+                and tell us about your site; we will set up early access with
+                you.
               </p>
               <p>
                 <a href="https://cal.com/privacy">Cal.com privacy notice</a>.

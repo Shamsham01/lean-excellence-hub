@@ -256,42 +256,67 @@ describe("public marketing homepage", () => {
     const images = [
       ...document.querySelectorAll<HTMLImageElement>("main picture img"),
     ];
-    expect(images.length).toBeGreaterThanOrEqual(7);
+    expect(images.length).toBe(6);
     for (const image of images) {
       const picture = image.closest("picture")!;
       const avif = picture.querySelector('source[type="image/avif"]')!;
       const master = image.getAttribute("src")!;
-      expect(master).toMatch(
-        /^\/marketing\/captures\/v[23]\/[a-z0-9-]+\.webp$/,
-      );
-      // Never the light V1 phone shot.
+      // captures-v3 only: no v2 shots, and never the light V1 phone shot.
+      expect(master).toMatch(/^\/marketing\/captures\/v3\/[a-z0-9-]+\.webp$/);
       expect(master).not.toMatch(/light/);
       const base = master.replace(/\.webp$/, "");
       const width = Number(image.getAttribute("width"));
-      const expected =
-        width >= 2400
-          ? [
-              `${base}-800w.webp 800w`,
-              `${base}-1200w.webp 1200w`,
-              `${base}.webp ${width}w`,
-            ]
-          : [`${base}-780w.webp 780w`, `${base}.webp ${width}w`];
-      expect(image.getAttribute("srcset")).toBe(expected.join(", "));
+      const candidates = image.getAttribute("srcset")!.split(", ");
+      // At least one smaller copy, ending with the master at its own width.
+      expect(candidates.length).toBeGreaterThanOrEqual(2);
+      expect(candidates.at(-1)).toBe(`${base}.webp ${width}w`);
+      for (const candidate of candidates.slice(0, -1)) {
+        const [, variantWidth] = candidate
+          .match(new RegExp(`^${base}-(\\d+)w\\.webp (\\d+)w$`))!
+          .slice(1);
+        expect(Number(variantWidth)).toBeLessThan(width);
+      }
       expect(avif.getAttribute("srcset")).toBe(
-        expected.join(", ").replaceAll(".webp", ".avif"),
+        candidates.join(", ").replaceAll(".webp", ".avif"),
       );
       for (const candidate of [
-        ...expected,
-        ...expected.map((entry) => entry.replaceAll(".webp", ".avif")),
+        ...candidates,
+        ...candidates.map((entry) => entry.replaceAll(".webp", ".avif")),
       ]) {
         expect(existsSync(`public${candidate.split(" ")[0]}`)).toBe(true);
       }
       expect(image.getAttribute("sizes")).toBeTruthy();
       expect(avif.getAttribute("sizes")).toBe(image.getAttribute("sizes"));
       expect(image.getAttribute("height")).toBeTruthy();
+      expect(image.getAttribute("alt")).toBeTruthy();
       const inHero = Boolean(image.closest("#hero"));
       expect(image).toHaveAttribute("loading", inHero ? "eager" : "lazy");
     }
+  });
+
+  it("shows every product image once", () => {
+    render(<MarketingHome />);
+    const sources = [
+      ...document.querySelectorAll<HTMLImageElement>("main picture img"),
+    ].map((image) => image.getAttribute("src")!);
+    // One capture per source screen (V1, V2, V3b, V4, V5, V7).
+    const screens = sources.map((src) => src.match(/\/(v\d+b?)-/)![1]);
+    expect(new Set(sources).size).toBe(sources.length);
+    expect(screens.sort()).toEqual(["v1", "v2", "v3b", "v4", "v5", "v7"]);
+  });
+
+  it("uses captures-v3 crops in Observe, Act, Solve", () => {
+    render(<MarketingHome />);
+    const thread = screen.getByRole("list", { name: "Observe, Act, Solve" });
+    expect(
+      [...thread.querySelectorAll("img")].map((image) =>
+        image.getAttribute("src"),
+      ),
+    ).toEqual([
+      "/marketing/captures/v3/v2-five-s-raise-crop-dark.webp",
+      "/marketing/captures/v3/v4-planner-open-crop-dark.webp",
+      "/marketing/captures/v3/v3b-cause-analysis-crop-dark.webp",
+    ]);
   });
 });
 

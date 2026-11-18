@@ -146,6 +146,11 @@ describe("demo booking page", () => {
     expect(
       within(article).getByRole("link", { name: "Explore the platform" }),
     ).toHaveAttribute("href", "/#platform");
+    // Two CTAs: this page is "Book a demo"; "Get free access" is the form.
+    expect(
+      within(article).getByRole("link", { name: "Get free access" }),
+    ).toHaveAttribute("href", "/#get-free-access");
+    expect(screen.queryByText(/request free access/i)).toBeNull();
     expect(
       screen.getByRole("link", { name: "Cal.com privacy notice" }),
     ).toHaveAttribute("href", "https://cal.com/privacy");

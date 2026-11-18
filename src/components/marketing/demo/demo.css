@@ -49,6 +49,10 @@
   margin-top: 0.85rem;
 }
 
+.demo-copy > h2 + p {
+  margin-top: 0.75rem;
+}
+
 .demo-copy a {
   color: var(--foreground);
   text-decoration-thickness: 1px;
@@ -229,4 +233,11 @@
   display: inline-flex;
   align-items: center;
   min-height: 1.5rem;
+}
+
+/* Inline links inside running copy read as links. */
+.demo-copy > p a {
+  display: inline;
+  text-decoration-line: underline;
+  text-decoration-color: color-mix(in oklab, currentColor 45%, transparent);
 }

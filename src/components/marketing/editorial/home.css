@@ -109,23 +109,21 @@
   border-radius: 2.05% / 1.14%;
 }
 
-.lv-capture.lv-dialog-crop {
-  aspect-ratio: 1009 / 2100;
-  border: 0;
-  border-radius: 3.57% / 1.71%;
+/* Crops cut from a captures-v3 card sit in a window panel of their own. */
+.lv-panel {
+  overflow: hidden;
+  border: 1px solid #22324a;
+  border-radius: 1.1rem;
+  background: linear-gradient(180deg, #0e1524 0%, #090e18 100%);
+  padding: clamp(0.5rem, 1.1vw, 0.9rem);
+  box-shadow:
+    0 40px 90px -45px rgb(0 0 0 / 0.9),
+    inset 0 1px 0 rgb(255 255 255 / 0.05);
 }
 
-.lv-dialog-crop img {
-  width: 115.96%;
-  max-width: none;
-  margin-left: -7.93%;
+.lv-panel img {
+  border-radius: 0.55rem;
 }
-
-/* captures-v3 desktop shots are framed cards on a #090E17 canvas. */
-.lv-planner {
-  margin-top: clamp(2rem, 4vw, 3rem);
-}
-
 /* ---------- Layout helpers ---------- */
 
 .lv-split {
@@ -252,11 +250,18 @@
 }
 
 .editorial-capture .lv-capture {
+  aspect-ratio: 4 / 5;
   overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  background: #121b2a;
+  border: 1px solid #1e2d42;
+  border-radius: 0.875rem;
+  background: #090e18;
   box-shadow: var(--marketing-shadow-lift);
+}
+
+.editorial-capture .lv-capture img {
+  height: 100%;
+  object-fit: cover;
+  object-position: top left;
 }
 
 .editorial-capture figcaption {
@@ -269,19 +274,17 @@
 
 /* ---------- On the floor ---------- */
 
-/* Columns in proportion to the two phones' widths, so both stand the same
-   height (V2 is the 1009px dialog cropped from its 1170px canvas). */
-.lv-phones {
-  display: grid;
-  gap: clamp(0.75rem, 3vw, 1.5rem);
-  grid-template-columns: minmax(0, 1170fr) minmax(0, 1009fr);
-  max-width: 34rem;
-  width: 100%;
-  margin-inline: auto;
+.lv-statement {
+  align-items: start;
 }
 
-.lv-phones .lv-capture:nth-child(2) {
-  margin-top: clamp(1.5rem, 6vw, 3.5rem);
+.lv-statement-copy {
+  max-width: 34rem;
+  color: var(--muted-foreground);
+  font-size: clamp(1.125rem, 2vw, 1.375rem);
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  text-wrap: pretty;
 }
 
 /* ---------- LeanAI ---------- */
@@ -693,6 +696,24 @@
     padding-block: 1.5rem 0;
   }
 
+  .lv-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2rem;
+    margin-top: 2.5rem;
+  }
+
+  .lv-steps li,
+  .lv-steps li:last-child {
+    border-bottom: 0;
+    padding: 1.5rem 0 0;
+  }
+
+  .lv-steps li::before {
+    position: static;
+    display: block;
+    margin-bottom: 0.85rem;
+  }
+
   .lv-split {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -723,13 +744,14 @@
     margin-top: 0.5rem;
   }
 
-  /* Hero A: copy on 5 of 12 columns, product on 7, bleeding off the right. */
+  /* Hero A: copy on the left, product composition bleeding off the right. */
   .lv-hero {
-    padding-bottom: clamp(2.5rem, 4vw, 4rem);
+    overflow-x: clip;
+    padding-bottom: clamp(3rem, 5vw, 5rem);
   }
 
   .lv-hero-grid {
-    grid-template-columns: minmax(0, 5.5fr) minmax(0, 6.5fr);
+    grid-template-columns: minmax(0, 5.75fr) minmax(0, 6.25fr);
     gap: 2.5rem;
     align-items: center;
   }
@@ -740,7 +762,7 @@
 
   .lv-headline {
     max-width: 13.5em;
-    font-size: clamp(2.6rem, 3.7vw, 3.5rem);
+    font-size: clamp(2.4rem, 3.45vw, 3.125rem);
   }
 
   .lv-hero-stage {
@@ -748,47 +770,66 @@
       var(--marketing-gutter),
       calc((100vw - var(--marketing-max)) / 2)
     );
+    --lv-phone-w: clamp(15rem, 20vw, 18.5rem);
+    --lv-panel-x: clamp(6rem, 8.5vw, 7.5rem);
+    position: relative;
     margin-right: calc(var(--lv-bleed) * -1);
-    padding-block: 1rem 6rem;
-    padding-left: 3.5rem;
+    padding-top: clamp(5.5rem, 7.5vw, 7rem);
   }
 
-  /* Crop the canvas padding baked into the capture (card 2288×1340 on a
-     2400×1500 canvas) so the glow sits behind the card, not a rectangle. */
+  .lv-hero-glow {
+    inset: -12% -10% -8% -14%;
+    border-radius: 0;
+    background:
+      radial-gradient(
+        48% 42% at 42% 46%,
+        rgb(70 95 255 / 0.3),
+        transparent 72%
+      ),
+      radial-gradient(
+        30% 34% at 14% 74%,
+        rgb(70 95 255 / 0.16),
+        transparent 70%
+      );
+    filter: none;
+    opacity: 1;
+  }
+
+  /* V5 analytics crop in a window panel; it runs past the viewport edge. */
   .lv-hero-stage .lv-hero-desktop {
-    display: block;
-    width: calc(100% + 6rem);
-    aspect-ratio: 2288 / 1340;
-    overflow: hidden;
-    border-radius: 0.6rem 0 0 0.6rem;
-    box-shadow:
-      0 40px 80px -40px rgb(0 0 0 / 0.85),
-      0 0 0 1px rgb(255 255 255 / 0.02);
-  }
-
-  .lv-hero-desktop img {
-    width: 104.895%;
-    max-width: none;
-    margin: -3.4965% 0 0 -2.4476%;
-  }
-
-  .lv-hero-stage .lv-hero-phone {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    width: clamp(10rem, 13vw, 12.5rem);
+    top: 0;
+    left: var(--lv-panel-x);
+    display: block;
+    width: max(calc(100% - var(--lv-panel-x) + 14rem), 70rem);
+    padding: clamp(0.9rem, 1.2vw, 1.25rem);
+    border: 1px solid #22324a;
+    border-right: 0;
+    border-radius: 1.25rem 0 0 1.25rem;
+    background: linear-gradient(180deg, #0e1524 0%, #090e18 100%);
+    box-shadow:
+      0 60px 120px -50px rgb(0 0 0 / 0.95),
+      inset 0 1px 0 rgb(255 255 255 / 0.05);
+  }
+
+  .lv-hero-stage .lv-hero-desktop .lv-capture img {
+    border-radius: 0.5rem;
+  }
+
+  /* V1 phone in front of the panel's lower-left corner. */
+  .lv-hero-stage .lv-hero-phone {
+    position: relative;
+    z-index: 1;
+    width: var(--lv-phone-w);
     max-height: none;
     margin: 0;
     border-radius: 2.05% / 1.14%;
     -webkit-mask-image: none;
     mask-image: none;
-    box-shadow: 0 30px 60px -20px rgb(0 0 0 / 0.9);
-  }
-}
-
-@media (min-width: 1280px) {
-  .lv-headline {
-    font-size: 3.5rem;
+    box-shadow:
+      0 0 0 1px rgb(148 163 184 / 0.22),
+      0 40px 80px -24px rgb(0 0 0 / 0.95),
+      0 0 0 10px rgb(9 14 23 / 0.55);
   }
 }
 

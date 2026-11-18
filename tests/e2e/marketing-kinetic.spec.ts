@@ -71,12 +71,12 @@ test("mobile hero shows the CTAs and the phone capture only", async ({
   expect(
     await thread.evaluate((element) => element.scrollWidth),
   ).toBeGreaterThan(await thread.evaluate((element) => element.clientWidth));
-  // Desktop masters (2400 px) are never chosen on a phone.
+  // Thread crops serve their 600 w copy on a phone, not the master.
   const finding = page.locator("#connect img").first();
   await finding.scrollIntoViewIfNeeded();
   await expect
     .poll(() => finding.evaluate((image: HTMLImageElement) => image.currentSrc))
-    .toMatch(/-(800|1200)w\.(avif|webp)$/);
+    .toMatch(/-600w\.(avif|webp)$/);
 });
 
 test("desktop hero puts the dashboard on stage with the phone overlapping", async ({
