@@ -29,11 +29,7 @@
   },
   "leanai-proposals-m": {
     "width": 728,
-    "height": 792,
-    "dark": {
-      "width": 728,
-      "height": 684
-    }
+    "height": 792
   },
   "step-act-list": {
     "width": 2400,

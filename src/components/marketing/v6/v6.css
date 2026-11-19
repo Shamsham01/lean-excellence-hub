@@ -865,11 +865,13 @@ html.dark .v6-hero-aurora::before {
   display: none;
 }
 @media (min-width: 1024px) {
-  /* ATELIER r2 N3: the modal-only drawer (1312 px at 1.0x) shown at
-     ≤720 CSS px — text ~15 px, well inside the ≤960 px / ≥13 px brief. */
+  /* ATELIER r2 N3: the portrait modal-only drawer (1312×1588) shown well
+     under 960 CSS px and capped at ~820 px tall so it never towers over the
+     copy: 820 × 1312 / 1588 ≈ 677 px wide (text ~14.4 px). */
   .v6-action-desktop {
     display: block;
-    max-width: 720px;
+    width: 100%;
+    max-width: min(677px, calc(820px * 1312 / 1588));
   }
   .v6-action-mobile {
     display: none;
