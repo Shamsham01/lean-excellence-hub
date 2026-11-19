@@ -391,7 +391,7 @@ html.dark .v6-thread-node circle {
    1 · Hero (§6.1)
    ========================================================= */
 .v6-hero {
-  padding-top: 48px;
+  padding-top: 24px;
 }
 .v6-hero-aurora {
   position: absolute;
@@ -453,7 +453,12 @@ html.dark .v6-hero-aurora::before {
 
 .v6-hero-grid {
   display: grid;
-  gap: 48px;
+  gap: 32px;
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .v6-hero-grid {
+    gap: 40px;
+  }
 }
 .v6-hero-copy .v6-display {
   margin-top: 16px;
@@ -464,9 +469,16 @@ html.dark .v6-hero-aurora::before {
     font-size: 3.25rem;
   }
 }
+/* The display size is held so the H1 stays at 4 lines in the
+   narrower device-hero copy column (432 px at 1280, 486 px at 1440). */
 @media (min-width: 1280px) {
   .v6-hero-copy .v6-display {
-    font-size: 4rem;
+    font-size: 3rem;
+  }
+}
+@media (min-width: 1440px) {
+  .v6-hero-copy .v6-display {
+    font-size: 3.375rem;
   }
 }
 .v6-hero-copy .v6-lede {
@@ -533,24 +545,52 @@ html.dark .leh-v6 .v6-hero-devices-img {
   }
 }
 
-/* ≥1024: copy cols 1–6; the visual spans cols 7–12 and bleeds 40 px right.
-   Copy-top aligns with the visible device tops. */
+/* ≥1024: copy on the left, devices on the right. The cluster bleeds
+   toward the 1360 container (80 px past the 1200 content) but stays
+   at least 16 px inside the viewport so it never clips or scrolls. */
 @media (min-width: 1024px) {
   .v6-hero {
     padding-top: 72px;
   }
   .v6-hero-grid {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
+    --hero-bleed: min(
+      80px,
+      calc(var(--m) - 16px + max(0px, (100vw - (1200px + 2 * var(--m))) / 2))
+    );
+    /* Seven twelfths of the 1200 content, before the bleed. */
+    --hero-7: calc((100% - 11 * var(--gutter)) * 7 / 12 + 6 * var(--gutter));
+    display: grid;
+    /* Keep the copy at least 480 px so the H1 stays at 4 lines;
+       leftover width goes to the devices. */
+    grid-template-columns: 480px minmax(0, 1fr);
     column-gap: var(--gutter);
+    row-gap: 0;
+    /* Heights are close once the H1 is 4 lines; top-align so the
+       kicker sits on the device tops (the shadow padding would
+       otherwise lift the cluster if we centred the boxes). */
     align-items: start;
   }
   .v6-hero-copy {
-    grid-column: 1 / span 6;
+    grid-column: 1;
   }
   .v6-hero-composite {
-    margin-inline: 0 -40px;
+    grid-column: 2;
+    margin-inline: 0 calc(-1 * var(--hero-bleed));
     width: auto;
-    grid-column: 7 / -1;
+    max-width: none;
+  }
+}
+/* ≥1280: hold the visible cluster in the 760–800 px band. */
+@media (min-width: 1280px) {
+  .v6-hero-grid {
+    --hero-visible: clamp(
+      760px,
+      calc(var(--hero-7) + var(--hero-bleed)),
+      800px
+    );
+    grid-template-columns:
+      minmax(0, 1fr)
+      calc(var(--hero-visible) - var(--hero-bleed));
   }
 }
 

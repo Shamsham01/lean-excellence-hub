@@ -26,6 +26,7 @@ export function ThemedCapture({
   className,
   style,
   decorative = false,
+  fullFromMedia,
 }: {
   slot: CaptureSlot;
   priority?: boolean | undefined;
@@ -33,11 +34,20 @@ export function ThemedCapture({
   className?: string | undefined;
   style?: CSSProperties | undefined;
   decorative?: boolean | undefined;
+  /** When set, serve only the full-size file at this media query. */
+  fullFromMedia?: string | undefined;
 }) {
   return (
     <>
       {(["light", "dark"] as const).map((theme) => (
         <picture key={theme} className={cn("v6-cap", `cap-${theme}`)}>
+          {fullFromMedia ? (
+            <source
+              type="image/avif"
+              media={fullFromMedia}
+              srcSet={`${slot.base}-${theme}.avif ${slot.width}w`}
+            />
+          ) : null}
           <source
             type="image/avif"
             srcSet={srcSet(slot, theme, "avif")}
