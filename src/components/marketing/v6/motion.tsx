@@ -17,7 +17,15 @@ export function V6Motion({ rootId }: { rootId: string }) {
 
     // Decorative hero art (G1) waits for the page — and its LCP planner —
     // to finish loading (review r1 ruling #28).
-    const showArt = () => document.documentElement.classList.add("v6-art");
+    const showArt = () => {
+      const theme = document.documentElement.classList.contains("dark")
+        ? "dark"
+        : "light";
+      const art = new Image();
+      art.src = `/marketing/v6/art/g1-hero-${theme}.webp`;
+      const add = () => document.documentElement.classList.add("v6-art");
+      art.decode().then(add, add);
+    };
     if (document.readyState === "complete") {
       showArt();
     } else {
