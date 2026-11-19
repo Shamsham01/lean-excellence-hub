@@ -42,26 +42,21 @@ describe("landing capture manifest", () => {
     }
   });
 
-  it("keeps only bento tiles whose window stack fits a cell (≤3:1)", () => {
-    for (const tile of BENTO_ROWS.flat()) {
-      const stacked =
-        tile.slot.height +
-        (tile.back
-          ? (tile.back.height * tile.slot.width) / tile.back.width
-          : 0);
-      expect(tile.slot.width / stacked, tile.id).toBeLessThanOrEqual(3);
-    }
-    expect(BENTO_ROWS.flat().map((tile) => tile.id)).not.toContain(
-      "projects-benefits",
-    );
-  });
-
-  it("drops the problem-solving tile; Training & Skills takes its row", () => {
-    const ids = BENTO_ROWS.flat().map((tile) => tile.id);
-    expect(ids).not.toContain("problem-solving");
-    expect(BENTO_ROWS.at(-1)?.map((tile) => tile.id)).toEqual([
-      "training-skills",
+  it("lays the bento out as Gemba | 5S, then Suggestions | Training & Skills", () => {
+    expect(BENTO_ROWS.map((row) => row.map((tile) => tile.id))).toEqual([
+      ["gemba", "five-s"],
+      ["suggestions", "training-skills"],
     ]);
     expect(manifest).not.toHaveProperty("tile-pps");
+  });
+
+  it("gives every bento tile a phone capture or no capture at all (r2 N1)", () => {
+    for (const tile of BENTO_ROWS.flat()) {
+      if (tile.slot) {
+        // 390 px @2x phone captures only; never a desktop capture.
+        expect(tile.slot.width, tile.id).toBeLessThanOrEqual(800);
+        expect(tile.slot.base, tile.id).toMatch(/-m$/);
+      }
+    }
   });
 });

@@ -59,32 +59,8 @@
     "width": 716,
     "height": 486
   },
-  "tile-5s": {
-    "width": 2400,
-    "height": 1046
-  },
-  "tile-actions": {
-    "width": 2400,
-    "height": 1771
-  },
   "tile-actions-m": {
     "width": 780,
     "height": 1172
-  },
-  "tile-gemba": {
-    "width": 2400,
-    "height": 1286
-  },
-  "tile-suggestions": {
-    "width": 2400,
-    "height": 1122
-  },
-  "tile-training": {
-    "width": 2400,
-    "height": 793
-  },
-  "tile-training-skills": {
-    "width": 2400,
-    "height": 978
   }
 }

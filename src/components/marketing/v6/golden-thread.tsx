@@ -25,6 +25,8 @@ function prefersReducedMotion() {
 const THREAD_MEDIA = "(min-width: 1280px)";
 /** Distance from the container's content edge to the line. */
 const GUTTER_OFFSET = 40;
+/** Radius of the closing curve into the LEH icon (ATELIER r2 m2). */
+const CURVE = 120;
 
 /**
  * The Golden Thread (art direction §0, ATELIER review r1 B4): one straight
@@ -74,6 +76,7 @@ export function GoldenThread({ rootId }: { rootId: string }) {
 
         const nodes: Node[] = [];
         let spur: { y: number; x: number } | null = null;
+        let end: { x: number; y: number } | null = null;
         let top = Infinity;
         let bottom = -Infinity;
         for (const el of anchors) {
@@ -81,6 +84,13 @@ export function GoldenThread({ rootId }: { rootId: string }) {
           const y = Math.round(r.top - rootRect.top + r.height / 2) + 0.5;
           top = Math.min(top, y);
           bottom = Math.max(bottom, y);
+          if (el.dataset.thread === "end") {
+            // The LEH icon at the close: the thread curves into its halo.
+            const halo = 16;
+            end = { x: Math.round(r.left - rootRect.left - halo), y };
+            bottom = Math.max(bottom, y);
+            continue;
+          }
           if (el.dataset.thread === "stub") {
             const rx = Math.round(r.left - rootRect.left);
             spur = { y, x: rx };
@@ -96,10 +106,19 @@ export function GoldenThread({ rootId }: { rootId: string }) {
         setGeo({
           width: Math.round(rootRect.width),
           height: Math.round(root.scrollHeight),
-          // Down to the rail, across it, then on down to the close.
-          d: spur
-            ? `M ${x} ${top} L ${x} ${spur.y} L ${spur.x} ${spur.y} M ${x} ${spur.y} L ${x} ${bottom}`
-            : `M ${x} ${top} L ${x} ${bottom}`,
+          // Down to the rail, across it, then on down to the close, where
+          // a 120 px curve turns the line into the LEH icon's halo.
+          d: [
+            `M ${x} ${top}`,
+            spur
+              ? `L ${x} ${spur.y} L ${spur.x} ${spur.y} M ${x} ${spur.y}`
+              : "",
+            end && end.x > x + CURVE
+              ? `L ${x} ${end.y - CURVE} Q ${x} ${end.y} ${x + CURVE} ${end.y} L ${end.x} ${end.y}`
+              : `L ${x} ${bottom}`,
+          ]
+            .filter(Boolean)
+            .join(" "),
           nodes,
           end: null,
         });
@@ -111,12 +130,15 @@ export function GoldenThread({ rootId }: { rootId: string }) {
       typeof ResizeObserver === "function" ? new ResizeObserver(measure) : null;
     observer?.observe(root);
     window.addEventListener("resize", measure);
+    // Reveal transitions move anchors by a few px; re-measure once they end.
+    root.addEventListener("transitionend", measure);
     wide?.addEventListener?.("change", measure);
     document.fonts?.ready.then(measure).catch(() => undefined);
     return () => {
       cancelAnimationFrame(frame);
       observer?.disconnect();
       window.removeEventListener("resize", measure);
+      root.removeEventListener("transitionend", measure);
       wide?.removeEventListener?.("change", measure);
     };
   }, [rootId]);

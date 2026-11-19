@@ -245,54 +245,34 @@ export function V6Landing() {
                       className={cn(
                         "v6-tile v6-bento-tile",
                         `v6-tile-${tile.id}`,
-                        tile.mobile && "has-mobile",
+                        !tile.slot && "is-text-only",
                       )}
                       data-reveal
                       style={
-                        {
-                          "--ar-d": (
-                            tile.slot.width / tile.slot.height
-                          ).toFixed(4),
-                          ...(tile.mobile
-                            ? {
-                                "--ar-m": (
-                                  tile.mobile.width / tile.mobile.height
-                                ).toFixed(4),
-                              }
-                            : {}),
-                        } as CSSProperties
+                        tile.slot
+                          ? ({
+                              "--ar": (
+                                tile.slot.width / tile.slot.height
+                              ).toFixed(4),
+                              // Natural CSS width of a 2x phone capture.
+                              "--nat-w": `${tile.slot.width / 2}px`,
+                            } as CSSProperties)
+                          : undefined
                       }
                     >
                       <div className="v6-tile-head">
                         <h3 className="v6-h3">{tile.name}</h3>
                         <p className="v6-small">{tile.line}</p>
                       </div>
-                      <div
-                        className={cn("v6-tile-media", tile.back && "has-back")}
-                      >
-                        <ProductWindow
-                          slot={tile.slot}
-                          sizes="(min-width: 1024px) 720px, 92vw"
-                          className={cn(
-                            "v6-tile-window",
-                            tile.mobile && "v6-tile-window-desktop",
-                          )}
-                        />
-                        {tile.mobile ? (
+                      {tile.slot ? (
+                        <div className="v6-tile-media">
                           <ProductWindow
-                            slot={tile.mobile}
+                            slot={tile.slot}
                             sizes="390px"
-                            className="v6-tile-window v6-tile-window-mobile"
+                            className="v6-tile-window"
                           />
-                        ) : null}
-                        {tile.back ? (
-                          <ProductWindow
-                            slot={tile.back}
-                            sizes="(min-width: 1024px) 720px, 92vw"
-                            className="v6-tile-window v6-tile-window-back"
-                          />
-                        ) : null}
-                      </div>
+                        </div>
+                      ) : null}
                     </article>
                   ))}
                 </div>
@@ -320,6 +300,18 @@ export function V6Landing() {
           </div>
           {/* Base: the proposals; ≥1024 the LeanAI panel fragment overlaps it.
               Until the proposals export lands the section is copy-only. */}
+          {OPTIONAL_CAPTURES.leanaiProposalsM ? (
+            // ATELIER r2 N4: below 768 the phone crop alone.
+            <div className="v6-leanai-mobile" data-reveal>
+              <ProductWindow
+                slot={OPTIONAL_CAPTURES.leanaiProposalsM}
+                sizes="390px"
+                style={{
+                  maxWidth: `${OPTIONAL_CAPTURES.leanaiProposalsM.width / 2}px`,
+                }}
+              />
+            </div>
+          ) : null}
           {OPTIONAL_CAPTURES.leanaiProposals ? (
             <div
               className={cn(
@@ -386,12 +378,10 @@ export function V6Landing() {
       <section id="close" className="v6-close" aria-labelledby="v6-close-title">
         <div className="v6-close-art" aria-hidden="true" />
         <div className="v6-container v6-close-inner" data-reveal>
-          <div className="v6-close-mark">
+          <div className="v6-close-mark" data-thread="end">
             <ThemedIcon />
           </div>
-          <p className="v6-kicker" data-thread="node">
-            Your system
-          </p>
+          <p className="v6-kicker">Your system</p>
           <h2 className="v6-display v6-close-title" id="v6-close-title">
             <span>Your framework.</span> <span>Your standards.</span>{" "}
             <span>Your way of working.</span>

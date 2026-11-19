@@ -353,13 +353,13 @@ describe("public marketing homepage", () => {
       container.querySelectorAll(".v6-statement .v6-mega-line"),
     ).map((el) => el.textContent);
     expect(lines).toEqual(["Operational excellence.", "Connected."]);
-    // B4: the thread only meets nodes beside kickers and the carousel rail.
+    // B4 + r2 m2: nodes beside kickers, the carousel rail, and the close icon.
     const kinds = new Set(
       Array.from(container.querySelectorAll<HTMLElement>("[data-thread]")).map(
         (el) => el.dataset.thread,
       ),
     );
-    expect([...kinds].sort()).toEqual(["node", "stub"]);
+    expect([...kinds].sort()).toEqual(["end", "node", "stub"]);
     // #28: the planner is the hero's high-priority image.
     const planner = container.querySelector(".v6-hero-l1 img");
     expect(planner?.getAttribute("loading")).toBe("eager");

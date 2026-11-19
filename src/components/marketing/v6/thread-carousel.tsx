@@ -103,15 +103,27 @@ export function ThreadCarousel() {
               >
                 {/* ATELIER r3: every slide is 16:10. A wider capture is
                     top-aligned and fades into the screen colour. */}
-                <div className="v6-frame-shot">
-                  <ThemedCapture
-                    slot={step.desktop}
-                    sizes="(min-width: 1360px) 1200px, 92vw"
-                  />
-                  {step.desktop.width / step.desktop.height > 1.61 ? (
+                {step.desktop ? (
+                  <div className="v6-frame-shot">
+                    <ThemedCapture
+                      slot={step.desktop}
+                      sizes="(min-width: 1360px) 1200px, 92vw"
+                    />
+                    {step.desktop.width / step.desktop.height > 1.61 ? (
+                      <span className="v6-frame-fade" aria-hidden="true" />
+                    ) : null}
+                  </div>
+                ) : step.mobile ? (
+                  // No desktop export yet: the legible phone crop, centred
+                  // at its natural CSS width (never upscaled).
+                  <div
+                    className="v6-frame-shot is-phone"
+                    style={{ width: `${step.mobile.width / 2}px` }}
+                  >
+                    <ThemedCapture slot={step.mobile} sizes="390px" />
                     <span className="v6-frame-fade" aria-hidden="true" />
-                  ) : null}
-                </div>
+                  </div>
+                ) : null}
               </div>
             ))}
           </div>

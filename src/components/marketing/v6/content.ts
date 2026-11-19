@@ -1,5 +1,5 @@
 /** Landing copy (published page main@b1bd423, edited per art direction §6). */
-import { CAPTURES, type CaptureSlot } from "./assets";
+import { CAPTURES, OPTIONAL_CAPTURES, type CaptureSlot } from "./assets";
 
 export type ThreadStep = {
   id: "observe" | "act" | "solve" | "improve" | "learn";
@@ -8,7 +8,8 @@ export type ThreadStep = {
   module: string;
   /** One line for the narrow (<1024) step list. */
   line: string;
-  desktop: CaptureSlot;
+  /** `null` hides the stage image for that step until it is exported. */
+  desktop: CaptureSlot | null;
   /** Narrow-viewport (390 px phone) crop, shown at its natural aspect. */
   mobile?: CaptureSlot | undefined;
 };
@@ -29,8 +30,10 @@ export const THREAD_STEPS: readonly ThreadStep[] = [
     index: "02",
     title: "Act",
     module: "Actions",
-    desktop: CAPTURES.actionDetail,
-    mobile: CAPTURES.actionDetailM,
+    // ATELIER r2 N2: the Act step shows the actions list, so action-detail
+    // appears only in the Action Card.
+    desktop: OPTIONAL_CAPTURES.stepActList ?? null,
+    mobile: CAPTURES.tileActionsM,
   },
   {
     id: "solve",
@@ -65,44 +68,28 @@ export type BentoTile = {
   id: string;
   name: string;
   line: string;
-  slot: CaptureSlot;
-  /** Phone crop shown instead of `slot` below 768 px. */
-  mobile?: CaptureSlot;
-  /** Second window stacked under the first (Training & Skills). */
-  back?: CaptureSlot;
+  /**
+   * The tile's 390 px phone capture (ATELIER r2 N1), shown at its natural
+   * CSS width, never above 1.0x. `null` until PIXEL exports it: the tile
+   * then shows its text only, never a capture with sub-10 px text.
+   */
+  slot: CaptureSlot | null;
 };
 
-/**
- * A capture thinner than 3:1 cannot fill a bento cell; its tile is left out
- * and the row's neighbour takes the full width.
- */
-const fitsCell = (tile: BentoTile) =>
-  // Landscape captures only: a portrait capture waits for a ruling.
-  tile.slot.width >= tile.slot.height &&
-  tile.slot.width /
-    (tile.slot.height +
-      (tile.back
-        ? (tile.back.height * tile.slot.width) / tile.back.width
-        : 0)) <=
-    3;
-
-/** A tile whose capture has not been exported yet (slot `null`) is left out. */
-type PendingTile = Omit<BentoTile, "slot"> & { slot: CaptureSlot | null };
-const isReady = (tile: PendingTile): tile is BentoTile => tile.slot !== null;
-
-const ROWS: readonly (readonly PendingTile[])[] = [
+/** ATELIER r2 N2: Gemba | 5S, then Suggestions | Training & Skills. */
+export const BENTO_ROWS: readonly (readonly BentoTile[])[] = [
   [
     {
       id: "gemba",
       name: "Gemba",
       line: "See the work where it happens.",
-      slot: CAPTURES.tileGemba,
+      slot: OPTIONAL_CAPTURES.tileGembaM,
     },
     {
       id: "five-s",
       name: "5S",
       line: "Turn standards into repeatable practice.",
-      slot: CAPTURES.tile5s,
+      slot: OPTIONAL_CAPTURES.tile5sM,
     },
   ],
   [
@@ -110,30 +97,16 @@ const ROWS: readonly (readonly PendingTile[])[] = [
       id: "suggestions",
       name: "Suggestions",
       line: "Turn frontline ideas into visible decisions.",
-      slot: CAPTURES.tileSuggestions,
+      slot: OPTIONAL_CAPTURES.tileSuggestionsM,
     },
-    {
-      id: "actions",
-      name: "Actions",
-      line: "One accountable action system.",
-      slot: CAPTURES.tileActions,
-      mobile: CAPTURES.tileActionsM,
-    },
-  ],
-  [
     {
       id: "training-skills",
       name: "Training & Skills",
       line: "Build capability against your standards.",
-      slot: CAPTURES.tileTraining,
-      back: CAPTURES.tileSkills,
+      slot: OPTIONAL_CAPTURES.tileTrainingM,
     },
   ],
 ];
-
-export const BENTO_ROWS: readonly (readonly BentoTile[])[] = ROWS.map((row) =>
-  row.filter(isReady).filter(fitsCell),
-).filter((row) => row.length > 0);
 
 /** Real published result (Formal assessment, 2.7 / 5). Order matches the app. */
 export const PILLARS = [

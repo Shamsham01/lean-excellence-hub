@@ -89,30 +89,6 @@ export const CAPTURES = {
     "action-detail",
     "An action opened over the actions list, with owner, due date, linked source and status.",
   ),
-  tileGemba: v6(
-    "tile-gemba",
-    "A completed Gemba walk summary with observations and answers.",
-  ),
-  tile5s: v6(
-    "tile-5s",
-    "A 5S audit section with question scores and a linked action.",
-  ),
-  tileSuggestions: v6(
-    "tile-suggestions",
-    "An implemented improvement idea with what was noticed, the proposed change and the expected benefit.",
-  ),
-  tileActions: v6(
-    "tile-actions",
-    "The actions list grouped by due date with owners and status.",
-  ),
-  tileTraining: v6(
-    "tile-training",
-    "The training catalogue with published courses.",
-  ),
-  tileSkills: v6(
-    "tile-training-skills",
-    "The skills catalogue with categories for each skill.",
-  ),
 } as const satisfies Record<string, CaptureSlot>;
 
 /**
@@ -130,6 +106,32 @@ export const OPTIONAL_CAPTURES = {
   heroKpi: v6Optional(
     "hero-kpi",
     "Operational analytics tiles for open actions, overdue actions and problem solving.",
+  ),
+  /** ATELIER r2: the actions list for the Act step, 2400x1500 from the top. */
+  stepActList: v6Optional(
+    "step-act-list",
+    "The actions list grouped by due date with owners and status.",
+  ),
+  /** 390 px phone crop of the LeanAI proposals, shown alone below 768. */
+  leanaiProposalsM: v6Optional(
+    "leanai-proposals-m",
+    "Pending LeanAI proposals on a phone, to accept, edit or reject.",
+  ),
+  tileGembaM: v6Optional(
+    "tile-gemba-m",
+    "A completed Gemba walk summary on a phone with observations and answers.",
+  ),
+  tile5sM: v6Optional(
+    "tile-5s-m",
+    "A 5S audit section on a phone with question scores and a linked action.",
+  ),
+  tileSuggestionsM: v6Optional(
+    "tile-suggestions-m",
+    "An implemented improvement idea on a phone with what was noticed and the proposed change.",
+  ),
+  tileTrainingM: v6Optional(
+    "tile-training-m",
+    "The training catalogue on a phone with published courses.",
   ),
   leanaiFrag: v6Optional(
     "leanai-panel-frag",

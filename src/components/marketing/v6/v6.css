@@ -576,6 +576,14 @@ html.dark .v6-hero-aurora::before {
   }
 }
 
+/* ATELIER r2 m3: at 1440 the KPI layer drops ~60 px so the stack's bottom
+   edge lines up with the phone's. */
+@media (min-width: 1440px) {
+  .v6-hero-l2 {
+    top: calc(var(--plh) * 0.42 + 60px);
+  }
+}
+
 /* ≥1024: copy cols 1–6; the visual spans cols 7–12 and bleeds 40 px right.
    Its optical centre sits on the centre of the text block. */
 @media (min-width: 1024px) {
@@ -776,6 +784,13 @@ html.dark .v6-hero-aurora::before {
   .v6-frame-shot {
     position: relative;
   }
+  .v6-frame-shot.is-phone {
+    max-width: 100%;
+    height: 100%;
+    margin-inline: auto;
+    padding-top: 24px;
+    overflow: hidden;
+  }
   .v6-frame-fade {
     position: absolute;
     inset: auto 0 0;
@@ -850,8 +865,11 @@ html.dark .v6-hero-aurora::before {
   display: none;
 }
 @media (min-width: 1024px) {
+  /* ATELIER r2 N3: the modal-only drawer at ≤960 CSS px (text ≥13 px). */
   .v6-action-desktop {
     display: block;
+    max-width: 960px;
+    margin-left: auto;
   }
   .v6-action-mobile {
     display: none;
@@ -1043,20 +1061,24 @@ html.dark .v6-hero-aurora::before {
 .v6-bento-row {
   display: contents;
 }
-/* Review r1 B3: every window sits inside its tile, inset 24 px left, right
-   and top, at the tile's full inner width (never cut horizontally). It may
+/* Review r1 B3 + r2 N1: one window per tile, the tile's 390 px phone
+   capture at its natural CSS width (never above 1.0x), inset 24 px from the
+   top, left and right. On tiles wider than the capture it sits right. It may
    only run off the bottom, under a 64 px fade — and only fades when it does.
-   --ar (width / height) comes from the capture file. */
+   --ar (width / height) and --nat-w come from the capture file. */
 .v6-bento-tile {
   display: flex;
   flex-direction: column;
   overflow: hidden;
   padding: var(--tile-pad) 0 0;
   container-type: inline-size;
-  --media-cap: 260px;
-  --ar: var(--ar-d);
-  --win-h: calc((100cqw - 48px) / var(--ar));
+  --media-cap: 300px;
+  --win-w: min(var(--nat-w, 390px), 100cqw - 48px);
+  --win-h: calc(var(--win-w) / var(--ar, 1));
   transition: border-color 160ms ease;
+}
+.v6-bento-tile.is-text-only {
+  padding-bottom: var(--tile-pad);
 }
 .v6-tile-head {
   padding-inline: var(--tile-pad);
@@ -1067,8 +1089,7 @@ html.dark .v6-hero-aurora::before {
 .v6-tile-media {
   position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 16px;
+  justify-content: flex-end;
   margin: 24px 24px 0;
   height: min(var(--win-h), var(--media-cap));
   overflow: hidden;
@@ -1084,30 +1105,10 @@ html.dark .v6-hero-aurora::before {
     transparent
   );
 }
-/* Training & Skills stacks two windows, so it always fills its cap. */
-.v6-tile-media.has-back {
-  height: calc(var(--win-h) * 1.5 + 16px);
-  --fade: 64px;
-}
-/* Below 768 a tile with a phone crop shows that instead (text ≥10 px). */
-.v6-tile-window-mobile {
-  display: none;
-}
-@media (max-width: 767px) {
-  .v6-bento-tile.has-mobile {
-    --ar: var(--ar-m);
-  }
-  .v6-bento-tile.has-mobile .v6-tile-window-desktop {
-    display: none;
-  }
-  .v6-bento-tile.has-mobile .v6-tile-window-mobile {
-    display: block;
-  }
-}
 .v6-tile-window {
   flex: none;
-  width: 100%;
-  transition: transform 160ms var(--ease-out);
+  align-self: flex-start;
+  width: var(--win-w);
 }
 @media (hover: hover) and (pointer: fine) {
   .v6-bento-tile:hover {
@@ -1115,7 +1116,6 @@ html.dark .v6-hero-aurora::before {
   }
 }
 
-/* Below 1024 the bento is one column: a single left edge (ruling #18). */
 @media (min-width: 640px) {
   .v6-bento-tile {
     --media-cap: 320px;
@@ -1126,17 +1126,12 @@ html.dark .v6-hero-aurora::before {
     grid-template-columns: repeat(12, minmax(0, 1fr));
   }
   .v6-bento-tile {
-    --media-cap: 360px;
+    --media-cap: 420px;
   }
-  .v6-bento-row-1 .v6-bento-tile {
+  /* ATELIER r2 N2: 6/6 and 6/6 — every tile holds one 390 px capture, so
+     equal cells balance best. */
+  .v6-bento-row .v6-bento-tile {
     grid-column: span 6;
-  }
-  /* Row 2 alternates the 6/6 · 5/7 rhythm. */
-  .v6-bento-row-2 .v6-bento-tile {
-    grid-column: span 5;
-  }
-  .v6-bento-row-2 .v6-bento-tile + .v6-bento-tile {
-    grid-column: span 7;
   }
   /* A row left with one tile takes the full width. */
   .v6-bento-row .v6-bento-tile:only-child {
@@ -1233,6 +1228,18 @@ html.dark .v6-hero-aurora::before {
   }
 }
 /* Beats stay one column below 1024: one left edge (ruling #18). */
+/* ATELIER r2 N4: the desktop composite reads under 10 px below 768, so it
+   is replaced there by leanai-proposals-m (or by nothing until it exists). */
+@media (max-width: 767px) {
+  .v6-leanai-visual {
+    display: none;
+  }
+}
+@media (min-width: 768px) {
+  .v6-leanai-mobile {
+    display: none;
+  }
+}
 @media (min-width: 1024px) {
   .v6-leanai-grid {
     grid-template-columns: repeat(12, minmax(0, 1fr));
