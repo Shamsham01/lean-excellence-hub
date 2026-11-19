@@ -1,11 +1,8 @@
 import { expect, test } from "@playwright/test";
 
-import {
-  HERO_HEADLINE,
-  landingCopy,
-} from "../../src/lib/marketing/landing-copy";
+const HERO = "Make continuous improvement visible, accountable and measurable.";
 
-test("desktop navigation reaches the thread, platform and LeanAI", async ({
+test("homepage story is reachable from the header and has no playground", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -14,114 +11,224 @@ test("desktop navigation reaches the thread, platform and LeanAI", async ({
   await page.goto("/");
 
   await expect(
-    page.getByRole("heading", { level: 1, name: HERO_HEADLINE }),
+    page.getByRole("heading", { level: 1, name: HERO }),
   ).toBeVisible();
-  const navigation = page.getByRole("navigation", { name: "Primary" });
-  for (const [id, content] of [
-    ["connect", landingCopy.connect],
-    ["platform", landingCopy.platform],
-    ["leanai", landingCopy.leanAI],
-  ] as const) {
-    const section = page.locator(`#${id}`);
-    await navigation
-      .getByRole("link", {
-        name: id === "platform" ? "Platform" : content.kicker,
-      })
-      .click();
-    await expect(page).toHaveURL(new RegExp(`#${id}$`));
-    await expect(
-      section.getByRole("heading", { name: content.title }),
-    ).toBeInViewport();
-  }
+  await expect(page.getByRole("link", { name: "Try LEH" })).toHaveCount(0);
+  await expect(page.getByTestId("leh-demo-start-suggestion")).toHaveCount(0);
+  await expect(page.locator(".kinetic-story")).toHaveCount(0);
+
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: "Why LEH" })
+    .click();
+  await expect(page).toHaveURL(/#why/);
+  await expect(
+    page.getByRole("heading", {
+      name: "One finding. Every next step connected.",
+    }),
+  ).toBeVisible();
+
+  await page
+    .getByRole("navigation", { name: "Primary" })
+    .getByRole("link", { name: "LeanAI" })
+    .click();
+  await expect(page).toHaveURL(/#leanai/);
+  await expect(
+    page.getByRole("heading", {
+      name: "Context first. Assistance second. You decide.",
+    }),
+  ).toBeVisible();
   expect(errors).toEqual([]);
 });
 
-test("mobile CTAs fit, the thread scrolls within the page and the audit stays intact", async ({
+test("hero actions reach demo booking, early access, sign-in and platform sections", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+
+  const hero = page.locator("#connect");
+  await hero.getByRole("link", { name: "Book a demo" }).click();
+  await expect(page).toHaveURL(/\/demo/);
+
+  await page.goto("/");
+  await hero.getByRole("link", { name: "Get free access" }).click();
+  await expect(page).toHaveURL(/\/early-access/);
+
+  await page.goto("/");
+  await page.getByRole("link", { name: "Sign in" }).first().click();
+  await expect(page).toHaveURL(/\/login/);
+
+  await page.goto("/");
+  await page
+    .getByRole("link", { name: "Explore the platform" })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/#platform/);
+  await expect(
+    page.getByRole("heading", { name: "One connected improvement system." }),
+  ).toBeVisible();
+});
+
+test("mobile homepage keeps native vertical flow without horizontal overflow", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  const hero = page.locator("#hero");
-  const links = hero.getByRole("link");
-  await expect(links).toHaveCount(2);
-  for (const link of await links.all()) {
-    await expect(link).toBeInViewport();
-    const bounds = await link.boundingBox();
-    expect(bounds?.height).toBeGreaterThanOrEqual(24);
-    expect(bounds?.width).toBeGreaterThanOrEqual(24);
-  }
-  const [primary, secondary] = await Promise.all([
-    links.nth(0).boundingBox(),
-    links.nth(1).boundingBox(),
-  ]);
-  expect(secondary!.y).toBeGreaterThan(primary!.y + primary!.height);
 
-  const thread = page.locator(".editorial-thread");
-  await expect(thread).toHaveCSS("scroll-snap-type", "x mandatory");
-  expect(
-    await thread.evaluate((element) => element.scrollWidth),
-  ).toBeGreaterThan(await thread.evaluate((element) => element.clientWidth));
-  const audit = page.locator("#five-s img");
-  await audit.scrollIntoViewIfNeeded();
-  await expect
-    .poll(() => audit.evaluate((image: HTMLImageElement) => image.naturalWidth))
-    .toBe(1170);
-  const ratio = await audit.evaluate(
-    (image) => image.clientWidth / image.clientHeight,
-  );
-  expect(ratio).toBeCloseTo(1170 / 2532, 2);
-  expect(
-    await page.evaluate(
-      () =>
-        document.documentElement.scrollWidth -
-        document.documentElement.clientWidth,
-    ),
-  ).toBeLessThanOrEqual(1);
+  await expect(page.getByRole("heading", { name: HERO })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Explore the platform" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Open menu" }).click();
+  await page
+    .getByRole("navigation", { name: "Mobile" })
+    .getByRole("link", { name: "Platform" })
+    .click();
+  await expect(page).toHaveURL(/#platform/);
+  await expect(
+    page.getByRole("heading", { name: "One connected improvement system." }),
+  ).toBeVisible();
+
+  const metrics = await page.evaluate(() => {
+    const doc = document.documentElement;
+    const sections = [...document.querySelectorAll("main section")].map(
+      (section) => ({
+        id: section.id,
+        position: getComputedStyle(section).position,
+        height: section.getBoundingClientRect().height,
+      }),
+    );
+    return {
+      overflow: doc.scrollWidth - doc.clientWidth,
+      sections,
+    };
+  });
+  expect(metrics.overflow).toBeLessThanOrEqual(1);
+  const hero = metrics.sections.find((section) => section.id === "connect");
+  expect(hero?.position).not.toBe("fixed");
+  expect(hero?.height ?? 0).toBeGreaterThan(520);
+  expect(hero?.height ?? 0).toBeLessThan(1500);
 });
 
-test("reduced motion holds Verified and disables the hero entrance", async ({
+test("reduced motion lays the story out in normal document flow", async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
+
+  await expect(page.getByRole("heading", { name: HERO })).toBeVisible();
   await expect(
-    page.getByRole("status").filter({ hasText: "Verified" }),
+    page.getByText("A person reviews. A person decides.").first(),
   ).toBeVisible();
-  await expect(page.locator(".editorial-hero-fragments")).toHaveCSS(
-    "animation-name",
-    "none",
-  );
+  await expect(
+    page.getByRole("heading", {
+      name: "Your framework. Your standards. Your way of working.",
+    }),
+  ).toBeVisible();
   await expect(page.locator(".kinetic-story")).toHaveCount(0);
+
+  const positions = await page
+    .locator("main section")
+    .evaluateAll((sections) =>
+      sections.map((section) => getComputedStyle(section).position),
+    );
+  expect(positions.length).toBeGreaterThan(0);
+  expect(
+    positions.every(
+      (position) => position === "static" || position === "relative",
+    ),
+  ).toBeTruthy();
 });
 
-test("standard motion changes Assigned to Verified", async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: "no-preference" });
-  await page.goto("/", { waitUntil: "domcontentloaded" });
-  const status = page.locator("#hero").getByRole("status");
-  await expect(status).toHaveText("Assigned");
-  await expect(status).toHaveText("Verified");
-});
-
-test("keyboard reaches the landing content and the FAQ booking link", async ({
+test("vertical wheel over the finding story continues the page", async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/#why");
+  const stage = page.locator(".v6-carousel-stage");
+  await expect(stage).toBeVisible();
+  const box = await stage.boundingBox();
+
+  if (!box) {
+    throw new Error("Finding story stage has no box");
+  }
+
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  const before = await page.evaluate(() => window.scrollY);
+  await page.mouse.wheel(0, 480);
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(before + 40);
+});
+
+test("LeanAI governance is visible without a scroll-scrubbed stage", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto("/#leanai");
+
+  await expect(
+    page.getByRole("heading", {
+      name: "Context first. Assistance second. You decide.",
+    }),
+  ).toBeVisible();
+  await expect(
+    page
+      .locator("#leanai")
+      .getByText(
+        "Publishing, closure, access and purchasing stay with a person.",
+        { exact: true },
+      ),
+  ).toBeVisible();
+  await expect(page.locator("#leanai")).not.toHaveAttribute("data-beat", /.+/);
+
+  const height = await page
+    .locator("#leanai")
+    .evaluate((el) => el.getBoundingClientRect().height);
+  expect(height).toBeGreaterThan(320);
+  expect(height).toBeLessThan(2200);
+});
+
+test("selecting a connected step shows that record", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/#why");
+  const solve = page
+    .getByRole("tablist", { name: "From one finding" })
+    .getByRole("tab", { name: /Solve/ });
+  await solve.click();
+  await expect(solve).toHaveAttribute("aria-selected", "true");
+  await expect(
+    page.locator(".v6-carousel-frame.is-active img:visible"),
+  ).toHaveAttribute("src", /step-solve-(light|dark)\.webp$/);
+  await expect(page.getByRole("tabpanel")).toBeVisible();
+});
+
+test("tablet width keeps the headline, preview and platform reachable", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: HERO })).toBeVisible();
+  await expect(
+    page.locator(".v6-hero-composite img:visible").first(),
+  ).toBeVisible();
+  await expect(page.getByText(/Harbourfield/)).toHaveCount(0);
+  const overflow = await page.evaluate(
+    () =>
+      document.documentElement.scrollWidth -
+      document.documentElement.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
+});
+
+test("keyboard reaches the hero actions", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/");
   await page.keyboard.press("Tab");
   const skip = page.getByRole("link", { name: "Skip to main content" });
   await expect(skip).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.locator("#main")).toBeFocused();
-
-  const question = page.getByText(landingCopy.faq.items[1].question, {
-    exact: true,
-  });
-  await question.focus();
-  await page.keyboard.press("Enter");
-  await page.keyboard.press("Tab");
-  const access = page
-    .locator("#faq")
-    .getByRole("link", { name: "Request free access" });
-  await expect(access).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/\/demo$/);
 });

@@ -74,8 +74,7 @@ test("homepage demo CTA opens the booking page", async ({ page }) => {
 
   await page
     .getByRole("banner")
-    .locator(".marketing-header-bar")
-    .getByRole("link", { name: "Book a live demo" })
+    .getByRole("link", { name: "Book a demo" })
     .click();
 
   await expect(page).toHaveURL(/\/demo$/);
@@ -118,7 +117,7 @@ test("mobile header books a demo and reduced motion still shows the page", async
   await page.goto("/");
   await page
     .getByRole("banner")
-    .getByRole("link", { name: "Book a live demo" })
+    .getByRole("link", { name: "Book a demo" })
     .click();
   await expect(page).toHaveURL(/\/demo$/);
   await expect(
@@ -154,8 +153,7 @@ test("client navigation remounts the mocked calendar", async ({ page }) => {
 
   const book = page
     .getByRole("banner")
-    .locator(".marketing-header-bar")
-    .getByRole("link", { name: "Book a live demo" });
+    .getByRole("link", { name: "Book a demo" });
   await book.click();
   await expect(page).toHaveURL(/\/demo$/);
   const first = page.locator("[data-leh-mock-embed]");
@@ -206,15 +204,10 @@ test("a blocked embed script keeps the direct booking link", async ({
 
 test("demo page stays readable in dark theme", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.addInitScript(() => localStorage.setItem("theme", "light"));
   await page.goto("/demo");
-  await expect(page.locator("html")).toHaveClass(/\blight\b/);
-  await expect(page.locator(".marketing")).toHaveCSS(
-    "background-color",
-    "rgb(9, 14, 23)",
-  );
-  await expect(page.getByRole("button", { name: /Appearance/ })).toHaveCount(0);
-  await expect(page.getByText("30-minute walkthrough")).toBeVisible();
+  await page.getByRole("button", { name: "Appearance" }).first().click();
+  await page.getByRole("menuitemradio", { name: "Dark" }).click();
+  await expect(page.locator("html")).toHaveClass(/dark/);
   await expect(
     page.getByRole("heading", { name: "Live booking is not connected" }),
   ).toBeVisible();

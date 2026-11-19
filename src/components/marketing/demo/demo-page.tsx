@@ -8,13 +8,15 @@ import {
 import { MarketingShell } from "@/components/marketing/shell";
 import {
   type DemoBookingState,
+  GET_FREE_ACCESS_CTA,
+  GET_FREE_ACCESS_HREF,
   readDemoBooking,
 } from "@/lib/marketing/demo-booking";
 
 import "./demo.css";
 
 const FACTS = [
-  ["Duration", "30-minute walkthrough"],
+  ["Duration", "30-minute personalised walkthrough"],
   ["Format", "Live online meeting"],
   ["Journey", "Connected improvement workflow"],
   ["Standards", "Configurable Lean frameworks and standards"],
@@ -35,7 +37,7 @@ export function MarketingDemoPage({
         <MarketingContainer>
           <div className="demo-layout">
             <div className="demo-copy">
-              <MarketingKicker>Book a live demo</MarketingKicker>
+              <MarketingKicker>Book a demo</MarketingKicker>
               <h1>See operational excellence connected.</h1>
               <p className="demo-lede">
                 Discover how Lean Excellence Hub connects everyday improvement,
@@ -91,17 +93,24 @@ export function MarketingDemoPage({
 
               <h2>Booking and privacy</h2>
               <p>
-                Cal.com reserves your booking when you pick a time and sends the
-                confirmation, calendar invitation and meeting link. You can use
-                the same booking page to request free access for your team or
-                site during early access. Lean Excellence Hub does not keep a
-                separate booking record. Do not send financial results or
-                confidential documents.
+                When scheduling is connected, the form belongs to Cal.com. It
+                asks the questions configured on that event. Do not send
+                financial results or confidential documents. Cal.com sends the
+                confirmation, calendar invitation and meeting link. Lean
+                Excellence Hub does not keep a separate booking record, and this
+                page does not confirm a meeting.
               </p>
               <p>
                 <a href="https://cal.com/privacy">Cal.com privacy notice</a>.
               </p>
+              <p>
+                Want to start without a call?{" "}
+                <Link href={GET_FREE_ACCESS_HREF}>{GET_FREE_ACCESS_CTA}</Link>{" "}
+                and tell us about your site; we will set up early access with
+                you.
+              </p>
               <p className="demo-secondary">
+                <Link href="/login">Sign in</Link>
                 <Link href="/#platform">Explore the platform</Link>
               </p>
             </div>
