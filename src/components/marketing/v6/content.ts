@@ -66,7 +66,13 @@ export type BentoTile = {
   back?: CaptureSlot;
 };
 
-export const BENTO_ROWS: readonly (readonly BentoTile[])[] = [
+/**
+ * A capture thinner than 3:1 cannot fill a bento cell; its tile is left out
+ * and the row's neighbour takes the full width.
+ */
+const fitsCell = (tile: BentoTile) => tile.slot.width / tile.slot.height <= 3;
+
+const ROWS: readonly (readonly BentoTile[])[] = [
   [
     {
       id: "gemba",
@@ -111,6 +117,10 @@ export const BENTO_ROWS: readonly (readonly BentoTile[])[] = [
     },
   ],
 ];
+
+export const BENTO_ROWS: readonly (readonly BentoTile[])[] = ROWS.map((row) =>
+  row.filter(fitsCell),
+).filter((row) => row.length > 0);
 
 /** Real published result (Formal assessment, 2.7 / 5). Order matches the app. */
 export const PILLARS = [

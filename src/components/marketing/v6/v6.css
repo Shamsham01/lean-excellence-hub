@@ -1091,6 +1091,9 @@ html.dark .v6-hero-aurora::before {
   .v6-tile-training-skills {
     grid-column: span 2;
   }
+  .v6-bento-row .v6-bento-tile:only-child {
+    grid-column: 1 / -1;
+  }
 }
 @media (min-width: 1024px) {
   .v6-bento {
@@ -1118,6 +1121,10 @@ html.dark .v6-hero-aurora::before {
   .v6-tile-training-skills {
     grid-column: span 5;
     height: 520px;
+  }
+  /* A row left with one tile (its neighbour's capture did not fit a cell). */
+  .v6-bento-row .v6-bento-tile:only-child {
+    grid-column: 1 / -1;
   }
   .v6-tile-window {
     width: 880px;

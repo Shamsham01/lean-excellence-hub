@@ -97,10 +97,6 @@ export const CAPTURES = {
     "tile-training-skills",
     "The skills catalogue with categories for each skill.",
   ),
-  leanaiBase: v6(
-    "step-solve-m",
-    "A LeanAI draft for cause analysis with pending proposals a person can accept, edit or reject.",
-  ),
 } as const satisfies Record<string, CaptureSlot>;
 
 /**
@@ -111,6 +107,10 @@ const v6Optional = (slot: string, alt: string): CaptureSlot | null =>
   SIZES[slot] ? v6(slot, alt) : null;
 
 export const OPTIONAL_CAPTURES = {
+  leanaiProposals: v6Optional(
+    "leanai-proposals",
+    "Pending LeanAI proposals a person can accept, edit or reject.",
+  ),
   heroKpi: v6Optional(
     "hero-kpi",
     "Operational analytics tiles for open actions, overdue actions and problem solving.",

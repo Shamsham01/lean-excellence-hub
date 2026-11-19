@@ -290,28 +290,32 @@ export function V6Landing() {
             />
             <LeanAiBeats />
           </div>
-          <div
-            className={cn(
-              "v6-leanai-visual",
-              OPTIONAL_CAPTURES.leanaiFrag && "has-overlay",
-            )}
-          >
-            <div className="v6-stage-glow" aria-hidden="true" />
-            <div className="v6-leanai-base" data-reveal>
-              <ProductWindow
-                slot={CAPTURES.leanaiBase}
-                sizes="(min-width: 1024px) 560px, (min-width: 640px) 560px, 100vw"
-              />
-            </div>
-            {OPTIONAL_CAPTURES.leanaiFrag ? (
-              <div className="v6-leanai-overlay" data-reveal>
+          {/* Base: the proposals; ≥1024 the LeanAI panel fragment overlaps it.
+              Until the proposals export lands the section is copy-only. */}
+          {OPTIONAL_CAPTURES.leanaiProposals ? (
+            <div
+              className={cn(
+                "v6-leanai-visual",
+                OPTIONAL_CAPTURES.leanaiFrag && "has-overlay",
+              )}
+            >
+              <div className="v6-stage-glow" aria-hidden="true" />
+              <div className="v6-leanai-base" data-reveal>
                 <ProductWindow
-                  slot={OPTIONAL_CAPTURES.leanaiFrag}
-                  sizes="320px"
+                  slot={OPTIONAL_CAPTURES.leanaiProposals}
+                  sizes="(min-width: 640px) 560px, 100vw"
                 />
               </div>
-            ) : null}
-          </div>
+              {OPTIONAL_CAPTURES.leanaiFrag ? (
+                <div className="v6-leanai-overlay" data-reveal>
+                  <ProductWindow
+                    slot={OPTIONAL_CAPTURES.leanaiFrag}
+                    sizes="320px"
+                  />
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </section>
 

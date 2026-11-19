@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import manifest from "@/components/marketing/v6/capture-manifest.json";
 import { CAPTURES } from "@/components/marketing/v6/assets";
+import { BENTO_ROWS } from "@/components/marketing/v6/content";
 // @ts-expect-error -- plain ESM build script without type declarations
 import { webpSize } from "../../scripts/marketing-capture-manifest.mjs";
 
@@ -39,5 +40,16 @@ describe("landing capture manifest", () => {
         }
       }
     }
+  });
+
+  it("keeps only bento tiles whose capture fits a cell (≤3:1)", () => {
+    for (const tile of BENTO_ROWS.flat()) {
+      expect(tile.slot.width / tile.slot.height, tile.id).toBeLessThanOrEqual(
+        3,
+      );
+    }
+    expect(BENTO_ROWS.flat().map((tile) => tile.id)).not.toContain(
+      "projects-benefits",
+    );
   });
 });
