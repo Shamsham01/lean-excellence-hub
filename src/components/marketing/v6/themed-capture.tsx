@@ -47,8 +47,10 @@ export function ThemedCapture({
             src={`${slot.base}-${theme}.webp`}
             srcSet={srcSet(slot, theme, "webp")}
             sizes={sizes}
-            width={slot.width}
-            height={slot.height}
+            width={theme === "dark" && slot.dark ? slot.dark.width : slot.width}
+            height={
+              theme === "dark" && slot.dark ? slot.dark.height : slot.height
+            }
             alt={decorative ? "" : slot.alt}
             className={className}
             style={style}

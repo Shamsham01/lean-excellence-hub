@@ -12,18 +12,21 @@ const dir = path.join(process.cwd(), "public/marketing/v6");
 
 describe("landing capture manifest", () => {
   it("matches the intrinsic size of every capture file", () => {
-    const sizes = manifest as Record<string, { width: number; height: number }>;
+    type Size = { width: number; height: number };
+    const sizes = manifest as Record<string, Size & { dark?: Size }>;
     const webps = readdirSync(dir).filter((f) =>
       /-(light|dark)\.webp$/.test(f),
     );
     expect(webps.length).toBeGreaterThan(0);
     for (const file of webps) {
       const slot = file.replace(/-(light|dark)\.webp$/, "");
-      const size = webpSize(readFileSync(path.join(dir, file))) as {
-        width: number;
-        height: number;
-      };
-      expect(sizes[slot], file).toEqual(size);
+      const size = webpSize(readFileSync(path.join(dir, file))) as Size;
+      const entry = sizes[slot];
+      const expected =
+        file.endsWith("-dark.webp") && entry?.dark
+          ? entry.dark
+          : { width: entry?.width, height: entry?.height };
+      expect(expected, file).toEqual(size);
     }
   });
 

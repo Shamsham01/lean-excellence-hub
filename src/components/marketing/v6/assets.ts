@@ -11,11 +11,14 @@ export type CaptureSlot = {
   width: number;
   height: number;
   alt: string;
+  /** Set when the dark file has a different size from the light one. */
+  dark?: { width: number; height: number } | undefined;
   /** A smaller derivative `<base>-<theme>-<w>w.*` exists for each width. */
   widths?: readonly number[] | undefined;
 };
 
-const SIZES: Record<string, { width: number; height: number }> = manifest;
+type Size = { width: number; height: number };
+const SIZES: Record<string, Size & { dark?: Size }> = manifest;
 
 /** Intrinsic sizes come from the files (scripts/marketing-capture-manifest.mjs). */
 const v6 = (
@@ -31,6 +34,7 @@ const v6 = (
     base: `/marketing/v6/${slot}`,
     width: size.width,
     height: size.height,
+    dark: size.dark,
     alt,
     widths,
   };

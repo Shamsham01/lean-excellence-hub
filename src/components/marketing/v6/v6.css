@@ -1077,7 +1077,9 @@ html.dark .v6-hero-aurora::before {
   container-type: inline-size;
   --media-cap: 300px;
   --win-w: min(var(--nat-w, 390px), 100cqw - 48px);
-  --win-h: calc(var(--win-w) / var(--ar, 1));
+  /* Window height = capture height + chrome bar + 2 px of border. */
+  --chrome-h: 30px;
+  --win-h: calc((var(--win-w) - 2px) / var(--ar, 1) + var(--chrome-h));
   transition: border-color 160ms ease;
 }
 .v6-bento-tile.is-text-only {
@@ -1122,6 +1124,11 @@ html.dark .v6-hero-aurora::before {
 @media (min-width: 640px) {
   .v6-bento-tile {
     --media-cap: 320px;
+  }
+}
+@media (min-width: 768px) {
+  .v6-bento-tile {
+    --chrome-h: 38px;
   }
 }
 @media (min-width: 1024px) {

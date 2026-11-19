@@ -27,6 +27,14 @@
     "width": 922,
     "height": 1270
   },
+  "leanai-proposals-m": {
+    "width": 728,
+    "height": 792,
+    "dark": {
+      "width": 728,
+      "height": 684
+    }
+  },
   "step-act-list": {
     "width": 2400,
     "height": 1460
@@ -63,8 +71,28 @@
     "width": 716,
     "height": 476
   },
+  "tile-5s-m": {
+    "width": 728,
+    "height": 654
+  },
   "tile-actions-m": {
     "width": 780,
     "height": 1172
+  },
+  "tile-gemba-m": {
+    "width": 640,
+    "height": 1016
+  },
+  "tile-suggestions-m": {
+    "width": 728,
+    "height": 676
+  },
+  "tile-training-m": {
+    "width": 728,
+    "height": 412
+  },
+  "tile-training-skills-m": {
+    "width": 780,
+    "height": 772
   }
 }

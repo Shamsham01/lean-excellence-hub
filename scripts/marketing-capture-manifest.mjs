@@ -45,21 +45,27 @@ export function webpSize(buf) {
   throw new Error(`unknown WebP chunk ${chunk}`);
 }
 
-const manifest = {};
+// The light file sets a slot's size. A dark file of a different size (a
+// phone crop whose themes could not share one box) is recorded as `dark`.
+const sizes = {};
 for (const file of fs.readdirSync(dir).sort()) {
   const match = /^(.+)-(light|dark)\.webp$/.exec(file);
   if (!match) {
     continue;
   }
   const [, slot, theme] = match;
-  const size = webpSize(fs.readFileSync(path.join(dir, file)));
-  const prev = manifest[slot];
-  if (prev && (prev.width !== size.width || prev.height !== size.height)) {
-    throw new Error(
-      `${slot}: light and dark differ (${prev.width}x${prev.height} vs ${size.width}x${size.height}, ${theme})`,
-    );
+  sizes[slot] ??= {};
+  sizes[slot][theme] = webpSize(fs.readFileSync(path.join(dir, file)));
+}
+const manifest = {};
+for (const [slot, { light, dark }] of Object.entries(sizes)) {
+  if (!light || !dark) {
+    throw new Error(`${slot}: needs both a light and a dark file`);
   }
-  manifest[slot] = size;
+  manifest[slot] =
+    light.width === dark.width && light.height === dark.height
+      ? light
+      : { ...light, dark };
 }
 
 const json = `${JSON.stringify(manifest, null, 2)}\n`;
