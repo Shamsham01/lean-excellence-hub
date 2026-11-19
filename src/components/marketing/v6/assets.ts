@@ -116,6 +116,12 @@ export const OPTIONAL_CAPTURES = {
     "step-act-list",
     "The actions list grouped by due date with owners and status.",
   ),
+  /** ATELIER r3 M3: the Act step's phone crop (~430 CSS @2x, open items
+   * first); falls back to tile-actions-m until it lands. */
+  stepActListM: v6Optional(
+    "step-act-list-m",
+    "Open actions on a phone, each with an owner, a due date and a status.",
+  ),
   /** 390 px phone crop of the LeanAI proposals, shown alone below 768. */
   leanaiProposalsM: v6Optional(
     "leanai-proposals-m",

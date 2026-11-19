@@ -675,6 +675,27 @@ html.dark .v6-hero-aurora::before {
 .v6-step-window {
   margin-top: 20px;
 }
+/* ATELIER r3 M2: 768-1023 — each step is 5/7, text left and the -m window
+   right, tops aligned. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .v6-step {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-rows: auto auto auto 1fr;
+    column-gap: var(--gutter);
+    align-items: start;
+  }
+  .v6-step > :not(.v6-step-window) {
+    grid-column: 1 / span 5;
+  }
+  .v6-step > .v6-step-window {
+    grid-column: 6 / -1;
+    grid-row: 1 / -1;
+    margin-top: 0;
+    justify-self: end;
+    width: 100%;
+  }
+}
 
 @media (min-width: 1024px) {
   .v6-steps {
@@ -877,6 +898,24 @@ html.dark .v6-hero-aurora::before {
     display: none;
   }
 }
+/* ATELIER r3 M2: 768-1023 is a 5/7 grid — copy left, the -m window right,
+   tops aligned. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .v6-action-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--gutter);
+    align-items: start;
+  }
+  .v6-action-copy {
+    grid-column: 1 / span 5;
+  }
+  .v6-action-visual {
+    grid-column: 6 / -1;
+  }
+  .v6-action-mobile {
+    margin-left: auto;
+  }
+}
 @media (min-width: 1280px) {
   .v6-action-grid {
     grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -887,9 +926,9 @@ html.dark .v6-hero-aurora::before {
   .v6-action-copy {
     grid-column: 1 / span 4;
   }
+  /* ATELIER r3 M4: the window's right edge sits on the container edge. */
   .v6-action-visual {
     grid-column: 5 / -1;
-    margin-right: -40px;
   }
   .v6-action-desktop {
     margin-left: auto;
@@ -1066,56 +1105,45 @@ html.dark .v6-hero-aurora::before {
 .v6-bento-row {
   display: contents;
 }
-/* Review r1 B3 + r2 N1: one window per tile, the tile's 390 px phone
-   capture at its natural CSS width (never above 1.0x), inset 24 px from the
-   top, left and right. On tiles wider than the capture it sits right. It may
-   only run off the bottom, under a 64 px fade — and only fades when it does.
-   --ar (width / height) and --nat-w come from the capture file. */
+/* ATELIER r3 M1: every tile is identical — the title block and the window
+   share one 24 px inset; the window is calc(100% - 48px) wide, starts 24 px
+   under the title block and bleeds off the bottom under a 64 px fade. The
+   media box is 0.6 × the window width (the shortest capture, Training, still
+   runs past it), so all four tiles crop at the same height. Soft drop shadow
+   only — no side haze. */
 .v6-bento-tile {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: var(--tile-pad) 0 0;
-  container-type: inline-size;
-  --media-cap: 300px;
-  --win-w: min(var(--nat-w, 390px), 100cqw - 48px);
-  /* Window height = capture height + chrome bar + 2 px of border. */
-  --chrome-h: 30px;
-  --win-h: calc((var(--win-w) - 2px) / var(--ar, 1) + var(--chrome-h));
+  padding: 24px 0 0;
   transition: border-color 160ms ease;
 }
 .v6-bento-tile.is-text-only {
-  padding-bottom: var(--tile-pad);
+  padding-bottom: 24px;
 }
-.v6-tile-head {
-  padding-inline: var(--tile-pad);
+.v6-bento-tile .v6-tile-head {
+  padding-inline: 24px;
 }
 .v6-tile-head .v6-small {
   margin-top: 4px;
 }
 .v6-tile-media {
   position: relative;
-  display: flex;
-  justify-content: flex-end;
   margin: 24px 24px 0;
-  height: min(var(--win-h), var(--media-cap));
+  aspect-ratio: 5 / 3;
   overflow: hidden;
-  --fade: clamp(0px, (var(--win-h) - var(--media-cap)) * 1000, 64px);
-  mask-image: linear-gradient(
-    to bottom,
-    #000 calc(100% - var(--fade)),
-    transparent
-  );
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 64px), transparent);
   -webkit-mask-image: linear-gradient(
     to bottom,
-    #000 calc(100% - var(--fade)),
+    #000 calc(100% - 64px),
     transparent
   );
 }
 .v6-tile-window {
-  flex: none;
-  align-self: flex-start;
-  width: var(--win-w);
+  width: 100%;
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.06),
+    0 6px 16px -8px rgb(15 23 42 / 0.14);
 }
 @media (hover: hover) and (pointer: fine) {
   .v6-bento-tile:hover {
@@ -1123,22 +1151,9 @@ html.dark .v6-hero-aurora::before {
   }
 }
 
-@media (min-width: 640px) {
-  .v6-bento-tile {
-    --media-cap: 320px;
-  }
-}
-@media (min-width: 768px) {
-  .v6-bento-tile {
-    --chrome-h: 38px;
-  }
-}
 @media (min-width: 1024px) {
   .v6-bento {
     grid-template-columns: repeat(12, minmax(0, 1fr));
-  }
-  .v6-bento-tile {
-    --media-cap: 420px;
   }
   /* ATELIER r2 N2: 6/6 and 6/6 — every tile holds one 390 px capture, so
      equal cells balance best. */
@@ -1267,6 +1282,12 @@ html.dark .v6-hero-aurora::before {
     top: 120px;
   }
 }
+/* ATELIER r3 n2. */
+@media (min-width: 1280px) {
+  .v6-leanai-visual {
+    top: 96px;
+  }
+}
 
 /* =========================================================
    7 · FAQ (§6.7)
@@ -1364,17 +1385,26 @@ html.dark .v6-hero-aurora::before {
   background-size: 1400px 788px;
   background-position: calc(50% - 49px) calc(var(--close-pad) + 48px - 425px);
   background-repeat: no-repeat;
+  /* ATELIER r3 n1: the art's ground is levelled to pure white (light,
+     multiply) and pure black (dark, screen) so it is a no-op on --bg, and
+     the mask feathers to zero inside the image bounds — no visible ellipse. */
   opacity: 0.65;
   mix-blend-mode: multiply;
   mask-image: radial-gradient(
     700px 360px at 50% calc(var(--close-pad) + 48px),
-    #000 15%,
-    transparent 70%
+    #000 0%,
+    rgb(0 0 0 / 0.6) 35%,
+    rgb(0 0 0 / 0.22) 62%,
+    rgb(0 0 0 / 0.06) 80%,
+    transparent 92%
   );
   -webkit-mask-image: radial-gradient(
     700px 360px at 50% calc(var(--close-pad) + 48px),
-    #000 15%,
-    transparent 70%
+    #000 0%,
+    rgb(0 0 0 / 0.6) 35%,
+    rgb(0 0 0 / 0.22) 62%,
+    rgb(0 0 0 / 0.06) 80%,
+    transparent 92%
   );
 }
 html.dark .v6-close-art {

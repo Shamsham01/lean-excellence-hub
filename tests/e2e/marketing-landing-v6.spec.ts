@@ -95,12 +95,12 @@ test("windows never crop and match across themes (ATELIER r1 B2/B3)", async ({
           .filter((w) => w.offsetParent !== null)
           .map((w) => {
             const r = w.getBoundingClientRect();
-            const img = w.querySelector("img");
-            const natural = Number(img?.getAttribute("width") ?? 0) / 2;
+            const media = w.parentElement!.getBoundingClientRect();
             return {
-              left: r.left - t.left,
-              right: t.right - r.right,
-              upscale: r.width - natural,
+              left: Math.round(r.left - t.left),
+              right: Math.round(t.right - r.right),
+              width: Math.round(r.width),
+              mediaHeight: Math.round(media.height),
             };
           });
       }),
@@ -111,10 +111,13 @@ test("windows never crop and match across themes (ATELIER r1 B2/B3)", async ({
   const light = await measure("light");
   const dark = await measure("dark");
   expect(dark.heights).toEqual(light.heights);
-  for (const { left, right, upscale } of [...light.tiles, ...dark.tiles]) {
-    expect(left).toBeGreaterThanOrEqual(24);
-    expect(right).toBeGreaterThanOrEqual(24);
-    // r2 N1: phone captures never above 1.0x (natural CSS width + border).
-    expect(upscale).toBeLessThanOrEqual(2);
+  // r3 M1: all four windows identical, on the 24 px inset both sides.
+  const all = [...light.tiles, ...dark.tiles];
+  expect(all.length).toBe(8);
+  for (const { left, right, width, mediaHeight } of all) {
+    expect(left).toBe(24);
+    expect(right).toBe(24);
+    expect(width).toBe(all[0]!.width);
+    expect(mediaHeight).toBe(all[0]!.mediaHeight);
   }
 });
