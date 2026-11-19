@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-import { CAPTURES } from "./assets";
+import { CAPTURES, OPTIONAL_CAPTURES } from "./assets";
 import { Handset } from "./handset";
 import { ProductWindow } from "./product-window";
 
@@ -63,28 +63,23 @@ export function HeroComposite() {
       <div className="v6-hero-stage">
         <div className="v6-hero-layer v6-hero-l1">
           <ProductWindow
-            slot={CAPTURES.heroDashboard}
-            priority
-            sizes="(min-width: 1024px) 760px, 100vw"
-            className="v6-hero-dashboard"
-          />
-          <ProductWindow
-            slot={CAPTURES.heroDashboardKpi}
-            priority
-            sizes="100vw"
-            className="v6-hero-kpi"
-          />
-        </div>
-        <div className="v6-hero-layer v6-hero-l2">
-          <ProductWindow
             slot={CAPTURES.heroPlanner}
-            sizes="(min-width: 1024px) 440px, 60vw"
+            priority
+            sizes="(min-width: 1024px) 720px, 640px"
           />
         </div>
+        {OPTIONAL_CAPTURES.heroKpi ? (
+          <div className="v6-hero-layer v6-hero-l2">
+            <ProductWindow
+              slot={OPTIONAL_CAPTURES.heroKpi}
+              sizes="(min-width: 1024px) 420px, 370px"
+            />
+          </div>
+        ) : null}
         <div className="v6-hero-layer v6-hero-l3">
           <Handset
             slot={CAPTURES.heroPhone}
-            sizes="(min-width: 768px) 210px, 44vw"
+            sizes="(min-width: 768px) 210px, 300px"
           >
             <span className="v6-spark" aria-hidden="true" />
           </Handset>

@@ -474,17 +474,14 @@ html.dark .v6-hero-aurora::before {
 .v6-hero-layer {
   position: relative;
 }
-.v6-hero-dashboard {
-  display: none;
-}
+/* <768: the phone alone, centred. */
+.v6-hero-l1,
 .v6-hero-l2 {
   display: none;
 }
 .v6-hero-l3 {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 44%;
+  width: min(300px, 78%);
+  margin-inline: auto;
 }
 .v6-hero-thread-start {
   position: absolute;
@@ -500,35 +497,34 @@ html.dark .v6-hero-aurora::before {
 .v6-hero-l3 .v6-handset-screen {
   border-radius: 24px;
 }
-/* 390: KPI focus crop, handset 44% overlapping bottom-right by 40%. */
-.v6-hero-stage {
-  padding-bottom: calc((44cqw * 1.854) * 0.6 - 20px);
-}
-.v6-hero-l1 {
-  width: 100%;
-}
 
-@media (min-width: 1024px) {
-  .v6-hero-kpi {
-    display: none;
+/* 768–1023: flat stack — planner behind, KPI fragment and phone in front. */
+@media (min-width: 768px) {
+  .v6-hero-composite {
+    width: 100%;
+    max-width: 640px;
+    margin-inline: auto;
   }
-  .v6-hero-dashboard {
+  .v6-hero-stage {
+    padding-bottom: 18cqw;
+  }
+  .v6-hero-l1 {
     display: block;
+    width: 100%;
   }
   .v6-hero-l2 {
     display: block;
     position: absolute;
     right: 0;
-    bottom: 0;
-    width: 60%;
+    bottom: 4cqw;
+    width: 58%;
   }
   .v6-hero-l3 {
+    position: absolute;
     left: 0;
-    right: auto;
-    width: 30%;
-  }
-  .v6-hero-stage {
-    padding-bottom: calc(60cqw * 0.75 * 0.75 + 27px);
+    bottom: 0;
+    width: 28%;
+    margin: 0;
   }
 }
 
@@ -547,6 +543,8 @@ html.dark .v6-hero-aurora::before {
     padding-top: 40px;
   }
   .v6-hero-composite {
+    max-width: none;
+    margin-inline: 0;
     grid-column: 7 / -1;
     margin-right: calc(-1 * min(80px, var(--m)));
     perspective: 2400px;
@@ -653,69 +651,28 @@ html.dark .v6-hero-aurora::before {
 .v6-carousel-stage {
   display: none;
 }
-.v6-chips {
-  position: sticky;
-  top: 64px;
-  z-index: 5;
-  display: flex;
-  gap: 8px;
-  margin-inline: calc(-1 * var(--m));
-  padding: 12px var(--m);
-  overflow-x: auto;
-  scrollbar-width: none;
-  background: color-mix(in oklab, var(--bg) 86%, transparent);
-  backdrop-filter: blur(12px);
+/* <1024: the five steps as a list on the thread. */
+.v6-steps {
+  display: grid;
+  gap: 40px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
-.v6-chips::-webkit-scrollbar {
-  display: none;
+.v6-step .v6-h3 {
+  margin-top: 8px;
 }
-.v6-chip {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 36px;
-  padding-inline: 14px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--ink-2);
-  font-size: 0.875rem;
-  font-weight: 600;
+.v6-step .v6-small {
+  margin-top: 6px;
+  max-width: 34rem;
 }
-.v6-chip.is-active {
-  border-color: var(--accent);
-  color: var(--ink);
-  box-shadow: 0 0 0 3px var(--accent-soft);
-}
-.v6-track {
-  position: relative;
-  display: flex;
-  gap: 16px;
-  margin-top: 16px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-  overscroll-behavior-x: contain;
-  padding-bottom: 32px;
-  margin-bottom: -32px;
-}
-.v6-track::-webkit-scrollbar {
-  display: none;
-}
-.v6-track-slide {
-  flex: 0 0 100%;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
-}
-.v6-track-slide .v6-window {
+.v6-step-window {
+  margin-top: 20px;
   max-width: 560px;
-  margin-inline: auto;
 }
 
 @media (min-width: 1024px) {
-  .v6-chips,
-  .v6-track {
+  .v6-steps {
     display: none;
   }
   .v6-rail {
@@ -867,21 +824,29 @@ html.dark .v6-hero-aurora::before {
 .v6-action-copy .v6-lede {
   margin-top: 20px;
 }
+/* The action drawer needs ≥808 px to keep its UI text ≥10 px. Below 1024
+   there is no legible narrow crop yet, so the visual is not shown. */
 .v6-action-visual {
   position: relative;
+  display: none;
 }
 @media (min-width: 1024px) {
+  .v6-action-visual {
+    display: block;
+  }
+}
+@media (min-width: 1280px) {
   .v6-action-grid {
     grid-template-columns: repeat(12, minmax(0, 1fr));
     column-gap: var(--gutter);
     align-items: start;
   }
   .v6-action-copy {
-    grid-column: 1 / span 5;
+    grid-column: 1 / span 4;
     padding-top: 8px;
   }
   .v6-action-visual {
-    grid-column: 6 / -1;
+    grid-column: 5 / -1;
     margin-right: -80px;
   }
 }
@@ -1122,7 +1087,8 @@ html.dark .v6-hero-aurora::before {
     aspect-ratio: auto;
     height: 440px;
   }
-  .v6-tile-problem-solving {
+  .v6-tile-problem-solving,
+  .v6-tile-training-skills {
     grid-column: span 2;
   }
 }
@@ -1137,9 +1103,13 @@ html.dark .v6-hero-aurora::before {
     grid-column: span 6;
     height: 520px;
   }
+  /* Row 2 alternates the 6/6 · 7/5 rhythm of rows 1 and 3. */
   .v6-bento-row-2 .v6-bento-tile {
-    grid-column: span 4;
+    grid-column: span 5;
     height: 480px;
+  }
+  .v6-bento-row-2 .v6-bento-tile + .v6-bento-tile {
+    grid-column: span 7;
   }
   .v6-tile-problem-solving {
     grid-column: span 7;
@@ -1216,6 +1186,8 @@ html.dark .v6-hero-aurora::before {
     right: 0;
     bottom: 0;
     width: 55%;
+    /* The fragment is 760 px wide: never upscale it. */
+    max-width: 760px;
     z-index: 1;
   }
   .v6-leanai-visual.has-overlay .v6-leanai-overlay {
@@ -1540,20 +1512,5 @@ html.dark .v6-close-art {
   .leh-v6 *::after {
     animation: none !important;
     transition: none !important;
-  }
-}
-
-/* <640: wide captures bleed off the right edge instead of shrinking, so UI
-   text stays ≥10 px (same layered-fragment treatment as the bento). */
-@media (max-width: 639px) {
-  .v6-action-visual {
-    margin-right: calc(-1 * var(--m));
-    overflow: hidden;
-    padding: 0 0 48px;
-    margin-bottom: -48px;
-  }
-  .v6-action-visual .v6-window {
-    width: 720px;
-    max-width: none;
   }
 }

@@ -1,13 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from "react";
+import { useCallback, useRef, useState, type KeyboardEvent } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -16,16 +10,14 @@ import { ProductWindow } from "./product-window";
 import { ThemedCapture } from "./themed-capture";
 
 /**
- * Observe → Learn carousel (art direction §6.3). ≥1024: a thread rail of
- * tabs above one fixed 16:10 window that crossfades. <1024: a chip row and a
- * swipeable scroll-snap track with one full-width slide at a time.
+ * Observe → Learn (art direction §6.3). ≥1024: a thread rail of tabs above
+ * one fixed 16:10 window that crossfades. <1024: the same five steps as a
+ * vertical list; a step shows a capture only where a narrow crop keeps its
+ * UI text ≥10 px, so nothing is shrunk, upscaled or cut off.
  */
 export function ThreadCarousel() {
   const [active, setActive] = useState(0);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const chipRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const fromScroll = useRef(false);
   const count = THREAD_STEPS.length;
 
   const go = useCallback(
@@ -38,49 +30,6 @@ export function ThreadCarousel() {
     },
     [count],
   );
-
-  // Keep the mobile track and chip row in step with the active slide.
-  useEffect(() => {
-    const track = trackRef.current;
-    if (track && !fromScroll.current && track.offsetParent !== null) {
-      const slide = track.children[active] as HTMLElement | undefined;
-      if (slide) {
-        track.scrollTo({ left: slide.offsetLeft, behavior: "smooth" });
-      }
-    }
-    fromScroll.current = false;
-    const chip = chipRefs.current[active];
-    const row = chip?.parentElement;
-    if (chip && row && row.offsetParent !== null) {
-      row.scrollTo({
-        left: chip.offsetLeft - 20,
-        behavior: "smooth",
-      });
-    }
-  }, [active]);
-
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track) {
-      return;
-    }
-    let timer = 0;
-    const onScroll = () => {
-      window.clearTimeout(timer);
-      timer = window.setTimeout(() => {
-        const index = Math.round(track.scrollLeft / (track.clientWidth + 16));
-        if (index >= 0 && index < count) {
-          fromScroll.current = true;
-          setActive(index);
-        }
-      }, 90);
-    };
-    track.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      track.removeEventListener("scroll", onScroll);
-      window.clearTimeout(timer);
-    };
-  }, [count]);
 
   const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (event.key === "ArrowRight") {
@@ -175,30 +124,25 @@ export function ThreadCarousel() {
         </div>
       </div>
 
-      {/* Below 1024 px: 4:5 focus crops keep UI text ≥10 px */}
-      <div className="v6-chips" aria-label="Steps" role="group">
-        {THREAD_STEPS.map((step, index) => (
-          <button
-            key={step.id}
-            ref={(el) => {
-              chipRefs.current[index] = el;
-            }}
-            type="button"
-            className={cn("v6-chip", index === active && "is-active")}
-            aria-pressed={index === active}
-            onClick={() => go(index)}
-          >
-            <span className="v6-kicker">{step.index}</span> {step.title}
-          </button>
-        ))}
-      </div>
-      <div className="v6-track" ref={trackRef}>
+      {/* Below 1024 px */}
+      <ol className="v6-steps" role="list">
         {THREAD_STEPS.map((step) => (
-          <div key={step.id} className="v6-track-slide">
-            <ProductWindow slot={step.mobile} sizes="100vw" />
-          </div>
+          <li key={step.id} className="v6-step">
+            <p className="v6-kicker" data-thread="node">
+              {step.index} · {step.module}
+            </p>
+            <h3 className="v6-h3">{step.title}</h3>
+            <p className="v6-small">{step.line}</p>
+            {step.mobile ? (
+              <ProductWindow
+                slot={step.mobile}
+                sizes="(min-width: 640px) 560px, 100vw"
+                className="v6-step-window"
+              />
+            ) : null}
+          </li>
         ))}
-      </div>
+      </ol>
     </div>
   );
 }

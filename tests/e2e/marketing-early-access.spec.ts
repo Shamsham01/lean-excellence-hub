@@ -58,7 +58,7 @@ test("the early-access form explains when requests are not switched on", async (
   ).toBeLessThanOrEqual(1);
 });
 
-test("the finding-story carousel switches steps and keeps captures whole", async ({
+test("the finding story switches steps and never shrinks a capture", async ({
   page,
 }) => {
   for (const width of [390, 768, 1280, 1440]) {
@@ -66,28 +66,31 @@ test("the finding-story carousel switches steps and keeps captures whole", async
     await page.goto("/#why");
     const carousel = page.locator(".v6-carousel");
     await carousel.scrollIntoViewIfNeeded();
-    // Each step carries a light and a dark capture; only the current
-    // theme's picture is displayed, and frames letterbox instead of cropping.
-    const frames =
-      width >= 1024
-        ? carousel.locator(".v6-carousel-frame img:visible")
-        : carousel.locator(".v6-track img:visible");
-    await expect(frames).toHaveCount(5);
-    for (const image of await frames.all()) {
-      await image.scrollIntoViewIfNeeded();
-      await expect
-        .poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth))
-        .toBeGreaterThan(0);
-      if (width >= 1024) {
+    if (width >= 1024) {
+      // Five desktop frames, one per step; frames letterbox, never crop.
+      const frames = carousel.locator(".v6-carousel-frame img:visible");
+      await expect(frames).toHaveCount(5);
+      for (const image of await frames.all()) {
         await expect(image).toHaveCSS("object-fit", "contain");
-      } else {
-        const [rendered, natural] = await image.evaluate(
+      }
+      await expect(carousel.locator(".v6-steps")).toBeHidden();
+    } else {
+      // The step list shows only captures with a legible narrow crop.
+      await expect(carousel.locator(".v6-step")).toHaveCount(5);
+      await expect(carousel.getByRole("tablist")).toBeHidden();
+      for (const image of await carousel
+        .locator(".v6-steps img:visible")
+        .all()) {
+        await image.scrollIntoViewIfNeeded();
+        const [rendered, intrinsic] = await image.evaluate(
           (img: HTMLImageElement) => [
-            img.clientWidth / img.clientHeight,
-            img.naturalWidth / img.naturalHeight,
+            img.clientWidth,
+            Number(img.getAttribute("width")),
           ],
         );
-        expect(Math.abs(rendered / natural - 1)).toBeLessThan(0.015);
+        // A 4:5 crop is ≥10 px text from 350 px; it is never upscaled.
+        expect(rendered).toBeGreaterThanOrEqual(340);
+        expect(rendered).toBeLessThanOrEqual(intrinsic);
       }
     }
     expect(
@@ -108,7 +111,7 @@ test("the finding-story carousel switches steps and keeps captures whole", async
   await expect(tab(/Act/)).toHaveAttribute("aria-selected", "true");
   await expect(
     page.locator(".v6-carousel-frame.is-active img:visible"),
-  ).toHaveAttribute("src", /step-act-(light|dark)\.webp$/);
+  ).toHaveAttribute("src", /action-detail-(light|dark)\.webp$/);
   await tab(/Learn/).click();
   await expect(tab(/Learn/)).toHaveAttribute("aria-selected", "true");
   await tab(/Learn/).press("Home");
@@ -116,21 +119,4 @@ test("the finding-story carousel switches steps and keeps captures whole", async
   await expect(tab(/Observe/)).toBeFocused();
   await tab(/Observe/).press("ArrowLeft");
   await expect(tab(/Learn/)).toHaveAttribute("aria-selected", "true");
-
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/#why");
-  const track = page.locator(".v6-track");
-  await expect(track).toHaveCSS("scroll-snap-type", "x mandatory");
-  await page
-    .getByRole("group", { name: "Steps" })
-    .getByRole("button", { name: /Solve/ })
-    .click();
-  await expect
-    .poll(() => track.evaluate((element) => element.scrollLeft))
-    .toBeGreaterThan(0);
-  await expect(
-    page
-      .getByRole("group", { name: "Steps" })
-      .getByRole("button", { name: /Solve/ }),
-  ).toHaveAttribute("aria-pressed", "true");
 });

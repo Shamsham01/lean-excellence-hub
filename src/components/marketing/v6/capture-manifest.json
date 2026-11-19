@@ -1,15 +1,7 @@
 {
   "action-detail": {
-    "width": 1548,
-    "height": 968
-  },
-  "hero-dashboard": {
     "width": 2400,
-    "height": 1500
-  },
-  "hero-dashboard-kpi": {
-    "width": 1064,
-    "height": 580
+    "height": 1867
   },
   "hero-phone": {
     "width": 1170,
@@ -19,37 +11,21 @@
     "width": 1600,
     "height": 1200
   },
-  "step-act": {
-    "width": 2400,
-    "height": 1500
-  },
-  "step-act-m": {
-    "width": 740,
-    "height": 925
+  "leanai-panel-frag": {
+    "width": 760,
+    "height": 438
   },
   "step-improve": {
     "width": 2400,
-    "height": 1500
-  },
-  "step-improve-m": {
-    "width": 880,
-    "height": 1100
+    "height": 1647
   },
   "step-learn": {
     "width": 2400,
     "height": 1500
   },
-  "step-learn-m": {
-    "width": 880,
-    "height": 1100
-  },
   "step-observe": {
     "width": 2400,
-    "height": 1500
-  },
-  "step-observe-m": {
-    "width": 1170,
-    "height": 1462
+    "height": 1828
   },
   "step-solve": {
     "width": 2400,
@@ -65,7 +41,7 @@
   },
   "tile-actions": {
     "width": 2400,
-    "height": 1734
+    "height": 1771
   },
   "tile-gemba": {
     "width": 2400,
@@ -74,10 +50,6 @@
   "tile-pps": {
     "width": 2400,
     "height": 1182
-  },
-  "tile-projects": {
-    "width": 2400,
-    "height": 904
   },
   "tile-suggestions": {
     "width": 2400,

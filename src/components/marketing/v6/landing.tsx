@@ -171,9 +171,10 @@ export function V6Landing() {
           </div>
           <div className="v6-action-visual" data-reveal>
             <div className="v6-stage-glow" aria-hidden="true" />
+            {/* Shown only where its UI text stays ≥10 px (see v6.css). */}
             <ProductWindow
               slot={CAPTURES.actionDetail}
-              sizes="(min-width: 1280px) 760px, 100vw"
+              sizes="(min-width: 1280px) 900px, 100vw"
             />
           </div>
         </div>

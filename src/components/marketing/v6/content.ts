@@ -6,29 +6,33 @@ export type ThreadStep = {
   index: string;
   title: string;
   module: string;
+  /** One line for the narrow (<1024) step list. */
+  line: string;
   desktop: CaptureSlot;
-  mobile: CaptureSlot;
+  /** Narrow-viewport crop; omitted until a legible recapture exists. */
+  mobile?: CaptureSlot | undefined;
 };
 
 export const THREAD_STEPS: readonly ThreadStep[] = [
   {
     id: "observe",
+    line: "A finding is captured on the Gemba walk, with its evidence.",
     index: "01",
     title: "Observe",
     module: "Gemba",
     desktop: CAPTURES.stepObserve,
-    mobile: CAPTURES.stepObserveM,
   },
   {
     id: "act",
+    line: "It becomes an owned action with a due date and a status.",
     index: "02",
     title: "Act",
     module: "Actions",
-    desktop: CAPTURES.stepAct,
-    mobile: CAPTURES.stepActM,
+    desktop: CAPTURES.actionDetail,
   },
   {
     id: "solve",
+    line: "Recurring causes go through structured problem solving.",
     index: "03",
     title: "Solve",
     module: "Problem solving",
@@ -37,19 +41,19 @@ export const THREAD_STEPS: readonly ThreadStep[] = [
   },
   {
     id: "improve",
+    line: "Countermeasures become a project with benefits to validate.",
     index: "04",
     title: "Improve",
     module: "Projects & Benefits",
     desktop: CAPTURES.stepImprove,
-    mobile: CAPTURES.stepImproveM,
   },
   {
     id: "learn",
+    line: "Standards and training change so the gain holds.",
     index: "05",
     title: "Learn",
     module: "Standards & skills",
     desktop: CAPTURES.stepLearn,
-    mobile: CAPTURES.stepLearnM,
   },
 ];
 
@@ -89,12 +93,6 @@ export const BENTO_ROWS: readonly (readonly BentoTile[])[] = [
       name: "Actions",
       line: "One accountable action system.",
       slot: CAPTURES.tileActions,
-    },
-    {
-      id: "projects-benefits",
-      name: "Projects & Benefits",
-      line: "Connect delivered change to validated value.",
-      slot: CAPTURES.tileProjects,
     },
   ],
   [

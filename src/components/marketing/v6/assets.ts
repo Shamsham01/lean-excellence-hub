@@ -37,14 +37,6 @@ const v6 = (
 };
 
 export const CAPTURES = {
-  heroDashboard: v6(
-    "hero-dashboard",
-    "The platform home with items needing attention and operational analytics.",
-  ),
-  heroDashboardKpi: v6(
-    "hero-dashboard-kpi",
-    "Operational analytics tiles for open actions, overdue actions and problem solving.",
-  ),
   heroPlanner: v6(
     "hero-planner",
     "The actions planner board with open, in-progress and completed actions.",
@@ -56,10 +48,6 @@ export const CAPTURES = {
   stepObserve: v6(
     "step-observe",
     "A completed Gemba walk with its summary, observations and answers.",
-  ),
-  stepAct: v6(
-    "step-act",
-    "The actions planner as a board with open, in-progress and completed actions.",
   ),
   stepSolve: v6(
     "step-solve",
@@ -73,29 +61,13 @@ export const CAPTURES = {
     "step-learn",
     "A published training course with its duration, validity, objectives and evidence requirements.",
   ),
-  stepObserveM: v6(
-    "step-observe-m",
-    "A Gemba walk on a phone with its summary and an issue observation.",
-  ),
-  stepActM: v6(
-    "step-act-m",
-    "Open actions on the planner board with owners and due dates.",
-  ),
   stepSolveM: v6(
     "step-solve-m",
     "Cause analysis with a pending LeanAI proposal to accept, edit or reject.",
   ),
-  stepImproveM: v6(
-    "step-improve-m",
-    "A project charter with its problem statement and objective.",
-  ),
-  stepLearnM: v6(
-    "step-learn-m",
-    "A published course version with its duration, validity and objectives.",
-  ),
   actionDetail: v6(
     "action-detail",
-    "The actions list with owners, due dates and status for each action.",
+    "An action opened over the actions list, with owner, due date, linked source and status.",
   ),
   tileGemba: v6(
     "tile-gemba",
@@ -116,10 +88,6 @@ export const CAPTURES = {
   tilePps: v6(
     "tile-pps",
     "A problem-solving case with its why chain and fishbone analysis.",
-  ),
-  tileProjects: v6(
-    "tile-projects",
-    "A project charter with its problem statement and objective.",
   ),
   tileTraining: v6(
     "tile-training",
@@ -143,6 +111,10 @@ const v6Optional = (slot: string, alt: string): CaptureSlot | null =>
   SIZES[slot] ? v6(slot, alt) : null;
 
 export const OPTIONAL_CAPTURES = {
+  heroKpi: v6Optional(
+    "hero-kpi",
+    "Operational analytics tiles for open actions, overdue actions and problem solving.",
+  ),
   leanaiFrag: v6Optional(
     "leanai-panel-frag",
     "The LeanAI panel facilitating the current problem-solving stage.",

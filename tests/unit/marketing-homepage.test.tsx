@@ -183,6 +183,23 @@ describe("public marketing homepage", () => {
     expect(tabs[0]).toHaveAttribute("aria-selected", "true");
   });
 
+  it("never ships retired or rejected capture slots", () => {
+    const { container } = render(<MarketingHome />);
+
+    const sources = Array.from(
+      container.querySelectorAll("main picture img, main picture source"),
+    )
+      .map((el) => el.getAttribute("src") ?? el.getAttribute("srcset") ?? "")
+      .join(" ");
+    expect(sources).toMatch(/hero-planner-/);
+    expect(sources).toMatch(/hero-phone-/);
+    expect(sources).toMatch(/action-detail-/);
+    expect(sources).not.toMatch(
+      /hero-dashboard|step-act|leanai-panel-(light|dark)|tile-projects|action-detail-m|step-(observe|improve|learn)-m|tile-actions-m/,
+    );
+    expect(container.querySelector("#projects-benefits")).toBeNull();
+  });
+
   it("draws the pillar maturity radar with the real values", () => {
     render(<MarketingHome />);
 
