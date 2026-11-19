@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import manifest from "@/components/marketing/v6/capture-manifest.json";
-import { CAPTURES, OPTIONAL_CAPTURES } from "@/components/marketing/v6/assets";
+import { CAPTURES } from "@/components/marketing/v6/assets";
 import { BENTO_ROWS } from "@/components/marketing/v6/content";
 // @ts-expect-error -- plain ESM build script without type declarations
 import { webpSize } from "../../scripts/marketing-capture-manifest.mjs";
@@ -56,10 +56,12 @@ describe("landing capture manifest", () => {
     );
   });
 
-  it("leaves the problem-solving tile out until its Fishbone capture exists", () => {
+  it("drops the problem-solving tile; Training & Skills takes its row", () => {
     const ids = BENTO_ROWS.flat().map((tile) => tile.id);
-    expect(ids.includes("problem-solving")).toBe(
-      OPTIONAL_CAPTURES.tilePps !== null,
-    );
+    expect(ids).not.toContain("problem-solving");
+    expect(BENTO_ROWS.at(-1)?.map((tile) => tile.id)).toEqual([
+      "training-skills",
+    ]);
+    expect(manifest).not.toHaveProperty("tile-pps");
   });
 });

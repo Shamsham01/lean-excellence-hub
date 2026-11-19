@@ -67,11 +67,22 @@ test("the finding story switches steps and never shrinks a capture", async ({
     const carousel = page.locator(".v6-carousel");
     await carousel.scrollIntoViewIfNeeded();
     if (width >= 1024) {
-      // Five desktop frames, one per step; frames letterbox, never crop.
+      // Five desktop frames, one per step; captures keep their own
+      // aspect (never cropped or squashed) inside a fixed 16:10 stage.
       const frames = carousel.locator(".v6-carousel-frame img:visible");
       await expect(frames).toHaveCount(5);
       for (const image of await frames.all()) {
-        await expect(image).toHaveCSS("object-fit", "contain");
+        await expect(image).not.toHaveCSS("object-fit", "cover");
+        const [w, h, iw, ih] = await image.evaluate((img: HTMLImageElement) => {
+          const r = img.getBoundingClientRect();
+          return [
+            r.width,
+            r.height,
+            Number(img.getAttribute("width")),
+            Number(img.getAttribute("height")),
+          ];
+        });
+        expect(Math.abs(w / h - iw / ih)).toBeLessThan(0.01);
       }
       await expect(carousel.locator(".v6-steps")).toBeHidden();
     } else {

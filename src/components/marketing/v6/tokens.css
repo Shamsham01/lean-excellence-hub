@@ -23,6 +23,7 @@
   --radar-label: #475569;
   /* Product page background inside captures (fades in PIXEL's C1 go here). */
   --capture-bg: #f8fafc;
+  --screen: var(--capture-bg);
   --dot: rgb(15 23 42 / 0.07);
   --aurora: rgb(70 95 255 / 0.1);
   --glow: rgb(70 95 255 / 0.08);

@@ -666,7 +666,6 @@ html.dark .v6-hero-aurora::before {
 }
 .v6-step-window {
   margin-top: 20px;
-  max-width: 560px;
 }
 
 @media (min-width: 1024px) {
@@ -766,18 +765,23 @@ html.dark .v6-hero-aurora::before {
     margin-top: 32px;
     container-type: inline-size;
   }
-  /* Review r1 B2: no cropping. The window takes the active capture's own
-     aspect (--ar = width / height), at most 16:10 tall, and eases between
-     slides. Light and dark share one size per slot. */
-  .v6-carousel-window {
-    width: min(100cqw, calc(62.5cqw * var(--ar)));
-    margin-inline: auto;
-    transition: width 300ms var(--ease-out);
-  }
+  /* Review r1 B2 + ATELIER r3: the stage is a fixed 16:10 in both themes.
+     Captures are never cropped or squashed: a wider one is top-aligned on
+     the screen colour, its bottom edge fading out over 96 px. */
   .v6-carousel-frames {
     position: relative;
-    height: min(calc(100cqw / var(--ar)), 62.5cqw);
-    transition: height 300ms var(--ease-out);
+    aspect-ratio: 16 / 10;
+    background: var(--screen);
+  }
+  .v6-frame-shot {
+    position: relative;
+  }
+  .v6-frame-fade {
+    position: absolute;
+    inset: auto 0 0;
+    height: 96px;
+    background: linear-gradient(to bottom, transparent, var(--screen));
+    pointer-events: none;
   }
   .v6-carousel-frame {
     position: absolute;
@@ -790,10 +794,9 @@ html.dark .v6-hero-aurora::before {
     pointer-events: none;
   }
   .v6-carousel-frame img {
+    display: block;
     width: 100%;
-    height: 100%;
-    object-fit: contain;
-    object-position: center top;
+    height: auto;
   }
   .v6-carousel-frame.is-active {
     opacity: 1;
@@ -838,15 +841,20 @@ html.dark .v6-hero-aurora::before {
 .v6-action-copy .v6-lede {
   margin-top: 20px;
 }
-/* The action drawer needs ≥808 px to keep its UI text ≥10 px. Below 1024
-   there is no legible narrow crop yet, so the visual is not shown. */
+/* The action drawer needs ≥808 px to keep its UI text ≥10 px; below 1024
+   the phone crop (action-detail-m) shows at its natural size. */
 .v6-action-visual {
   position: relative;
+}
+.v6-action-desktop {
   display: none;
 }
 @media (min-width: 1024px) {
-  .v6-action-visual {
+  .v6-action-desktop {
     display: block;
+  }
+  .v6-action-mobile {
+    display: none;
   }
 }
 @media (min-width: 1280px) {
@@ -1046,6 +1054,7 @@ html.dark .v6-hero-aurora::before {
   padding: var(--tile-pad) 0 0;
   container-type: inline-size;
   --media-cap: 260px;
+  --ar: var(--ar-d);
   --win-h: calc((100cqw - 48px) / var(--ar));
   transition: border-color 160ms ease;
 }
@@ -1080,6 +1089,21 @@ html.dark .v6-hero-aurora::before {
   height: calc(var(--win-h) * 1.5 + 16px);
   --fade: 64px;
 }
+/* Below 768 a tile with a phone crop shows that instead (text ≥10 px). */
+.v6-tile-window-mobile {
+  display: none;
+}
+@media (max-width: 767px) {
+  .v6-bento-tile.has-mobile {
+    --ar: var(--ar-m);
+  }
+  .v6-bento-tile.has-mobile .v6-tile-window-desktop {
+    display: none;
+  }
+  .v6-bento-tile.has-mobile .v6-tile-window-mobile {
+    display: block;
+  }
+}
 .v6-tile-window {
   flex: none;
   width: 100%;
@@ -1113,12 +1137,6 @@ html.dark .v6-hero-aurora::before {
   }
   .v6-bento-row-2 .v6-bento-tile + .v6-bento-tile {
     grid-column: span 7;
-  }
-  .v6-tile-problem-solving {
-    grid-column: span 7;
-  }
-  .v6-tile-training-skills {
-    grid-column: span 5;
   }
   /* A row left with one tile takes the full width. */
   .v6-bento-row .v6-bento-tile:only-child {

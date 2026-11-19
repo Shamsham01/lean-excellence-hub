@@ -91,10 +91,12 @@ test("windows never crop and match across themes (ATELIER r1 B2/B3)", async ({
     const tiles = await page.evaluate(() =>
       [...document.querySelectorAll(".v6-bento-tile")].flatMap((tile) => {
         const t = tile.getBoundingClientRect();
-        return [...tile.querySelectorAll(".v6-tile-window")].map((w) => {
-          const r = w.getBoundingClientRect();
-          return { left: r.left - t.left, right: t.right - r.right };
-        });
+        return [...tile.querySelectorAll<HTMLElement>(".v6-tile-window")]
+          .filter((w) => w.offsetParent !== null)
+          .map((w) => {
+            const r = w.getBoundingClientRect();
+            return { left: r.left - t.left, right: t.right - r.right };
+          });
       }),
     );
     return { heights, tiles };

@@ -24,7 +24,11 @@ export function V6Motion({ rootId }: { rootId: string }) {
       const art = new Image();
       art.src = `/marketing/v6/art/g1-hero-${theme}.webp`;
       const add = () => document.documentElement.classList.add("v6-art");
-      art.decode().then(add, add);
+      if (typeof art.decode === "function") {
+        art.decode().then(add, add);
+      } else {
+        add();
+      }
     };
     if (document.readyState === "complete") {
       showArt();

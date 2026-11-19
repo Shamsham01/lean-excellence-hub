@@ -51,7 +51,7 @@ export const CAPTURES = {
   ),
   stepSolve: v6(
     "step-solve",
-    "A problem-solving case at root cause analysis with LeanAI proposals to accept, edit or reject.",
+    "A problem-solving case with its provisional why chain and fishbone analysis.",
   ),
   stepImprove: v6(
     "step-improve",
@@ -63,7 +63,27 @@ export const CAPTURES = {
   ),
   stepSolveM: v6(
     "step-solve-m",
-    "Cause analysis with a pending LeanAI proposal to accept, edit or reject.",
+    "A provisional why chain on a problem-solving case.",
+  ),
+  stepObserveM: v6(
+    "step-observe-m",
+    "A completed Gemba walk on a phone with its summary and observations.",
+  ),
+  actionDetailM: v6(
+    "action-detail-m",
+    "An action on a phone with owner, due date, linked source and status.",
+  ),
+  stepImproveM: v6(
+    "step-improve-m",
+    "An improvement project charter on a phone with its problem statement and objective.",
+  ),
+  stepLearnM: v6(
+    "step-learn-m",
+    "A published training course on a phone with its objectives.",
+  ),
+  tileActionsM: v6(
+    "tile-actions-m",
+    "The actions list on a phone, grouped by due date with owners and status.",
   ),
   actionDetail: v6(
     "action-detail",
@@ -110,11 +130,6 @@ export const OPTIONAL_CAPTURES = {
   heroKpi: v6Optional(
     "hero-kpi",
     "Operational analytics tiles for open actions, overdue actions and problem solving.",
-  ),
-  /** The Fishbone (6M) card alone; PIXEL is re-exporting it. */
-  tilePps: v6Optional(
-    "tile-pps",
-    "A problem-solving case with its fishbone (6M) analysis.",
   ),
   leanaiFrag: v6Optional(
     "leanai-panel-frag",

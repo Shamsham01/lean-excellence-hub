@@ -162,10 +162,17 @@ export function V6Landing() {
           </div>
           <div className="v6-action-visual" data-reveal>
             <div className="v6-stage-glow" aria-hidden="true" />
-            {/* Shown only where its UI text stays ≥10 px (see v6.css). */}
+            {/* Desktop drawer from 1024; the phone crop below it. */}
             <ProductWindow
               slot={CAPTURES.actionDetail}
               sizes="(min-width: 1280px) 900px, 100vw"
+              className="v6-action-desktop"
+            />
+            <ProductWindow
+              slot={CAPTURES.actionDetailM}
+              sizes="420px"
+              className="v6-action-mobile"
+              style={{ maxWidth: `${CAPTURES.actionDetailM.width / 2}px` }}
             />
           </div>
         </div>
@@ -235,13 +242,24 @@ export function V6Landing() {
                     <article
                       key={tile.id}
                       id={tile.id}
-                      className={`v6-tile v6-bento-tile v6-tile-${tile.id}`}
+                      className={cn(
+                        "v6-tile v6-bento-tile",
+                        `v6-tile-${tile.id}`,
+                        tile.mobile && "has-mobile",
+                      )}
                       data-reveal
                       style={
                         {
-                          "--ar": (tile.slot.width / tile.slot.height).toFixed(
-                            4,
-                          ),
+                          "--ar-d": (
+                            tile.slot.width / tile.slot.height
+                          ).toFixed(4),
+                          ...(tile.mobile
+                            ? {
+                                "--ar-m": (
+                                  tile.mobile.width / tile.mobile.height
+                                ).toFixed(4),
+                              }
+                            : {}),
                         } as CSSProperties
                       }
                     >
@@ -255,8 +273,18 @@ export function V6Landing() {
                         <ProductWindow
                           slot={tile.slot}
                           sizes="(min-width: 1024px) 720px, 92vw"
-                          className="v6-tile-window"
+                          className={cn(
+                            "v6-tile-window",
+                            tile.mobile && "v6-tile-window-desktop",
+                          )}
                         />
+                        {tile.mobile ? (
+                          <ProductWindow
+                            slot={tile.mobile}
+                            sizes="390px"
+                            className="v6-tile-window v6-tile-window-mobile"
+                          />
+                        ) : null}
                         {tile.back ? (
                           <ProductWindow
                             slot={tile.back}

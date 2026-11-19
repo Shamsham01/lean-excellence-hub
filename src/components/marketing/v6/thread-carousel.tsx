@@ -19,10 +19,6 @@ export function ThreadCarousel() {
   const [active, setActive] = useState(0);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const count = THREAD_STEPS.length;
-  const activeSlot = THREAD_STEPS[active]?.desktop;
-  const activeRatio = activeSlot
-    ? (activeSlot.width / activeSlot.height).toFixed(4)
-    : "1.6";
 
   const go = useCallback(
     (index: number, focus = false) => {
@@ -57,8 +53,6 @@ export function ThreadCarousel() {
       style={{
         ["--active" as string]: active,
         ["--steps" as string]: count,
-        // Review r1 B2: the stage takes the active capture's own aspect.
-        ["--ar" as string]: activeRatio,
       }}
     >
       <div className="v6-rail" role="tablist" aria-label="From one finding">
@@ -107,10 +101,17 @@ export function ThreadCarousel() {
                 )}
                 aria-hidden={index !== active}
               >
-                <ThemedCapture
-                  slot={step.desktop}
-                  sizes="(min-width: 1360px) 1200px, 92vw"
-                />
+                {/* ATELIER r3: every slide is 16:10. A wider capture is
+                    top-aligned and fades into the screen colour. */}
+                <div className="v6-frame-shot">
+                  <ThemedCapture
+                    slot={step.desktop}
+                    sizes="(min-width: 1360px) 1200px, 92vw"
+                  />
+                  {step.desktop.width / step.desktop.height > 1.61 ? (
+                    <span className="v6-frame-fade" aria-hidden="true" />
+                  ) : null}
+                </div>
               </div>
             ))}
           </div>
@@ -147,8 +148,10 @@ export function ThreadCarousel() {
             {step.mobile ? (
               <ProductWindow
                 slot={step.mobile}
-                sizes="(min-width: 640px) 560px, 100vw"
+                sizes="(min-width: 640px) 420px, 100vw"
                 className="v6-step-window"
+                // Natural aspect, never wider than its 2x phone capture.
+                style={{ maxWidth: `${step.mobile.width / 2}px` }}
               />
             ) : null}
           </li>

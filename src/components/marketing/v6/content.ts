@@ -1,5 +1,5 @@
 /** Landing copy (published page main@b1bd423, edited per art direction §6). */
-import { CAPTURES, OPTIONAL_CAPTURES, type CaptureSlot } from "./assets";
+import { CAPTURES, type CaptureSlot } from "./assets";
 
 export type ThreadStep = {
   id: "observe" | "act" | "solve" | "improve" | "learn";
@@ -9,7 +9,7 @@ export type ThreadStep = {
   /** One line for the narrow (<1024) step list. */
   line: string;
   desktop: CaptureSlot;
-  /** Narrow-viewport crop; omitted until a legible recapture exists. */
+  /** Narrow-viewport (390 px phone) crop, shown at its natural aspect. */
   mobile?: CaptureSlot | undefined;
 };
 
@@ -21,6 +21,7 @@ export const THREAD_STEPS: readonly ThreadStep[] = [
     title: "Observe",
     module: "Gemba",
     desktop: CAPTURES.stepObserve,
+    mobile: CAPTURES.stepObserveM,
   },
   {
     id: "act",
@@ -29,6 +30,7 @@ export const THREAD_STEPS: readonly ThreadStep[] = [
     title: "Act",
     module: "Actions",
     desktop: CAPTURES.actionDetail,
+    mobile: CAPTURES.actionDetailM,
   },
   {
     id: "solve",
@@ -46,6 +48,7 @@ export const THREAD_STEPS: readonly ThreadStep[] = [
     title: "Improve",
     module: "Projects & Benefits",
     desktop: CAPTURES.stepImprove,
+    mobile: CAPTURES.stepImproveM,
   },
   {
     id: "learn",
@@ -54,6 +57,7 @@ export const THREAD_STEPS: readonly ThreadStep[] = [
     title: "Learn",
     module: "Standards & skills",
     desktop: CAPTURES.stepLearn,
+    mobile: CAPTURES.stepLearnM,
   },
 ];
 
@@ -62,6 +66,8 @@ export type BentoTile = {
   name: string;
   line: string;
   slot: CaptureSlot;
+  /** Phone crop shown instead of `slot` below 768 px. */
+  mobile?: CaptureSlot;
   /** Second window stacked under the first (Training & Skills). */
   back?: CaptureSlot;
 };
@@ -71,12 +77,14 @@ export type BentoTile = {
  * and the row's neighbour takes the full width.
  */
 const fitsCell = (tile: BentoTile) =>
+  // Landscape captures only: a portrait capture waits for a ruling.
+  tile.slot.width >= tile.slot.height &&
   tile.slot.width /
     (tile.slot.height +
       (tile.back
         ? (tile.back.height * tile.slot.width) / tile.back.width
         : 0)) <=
-  3;
+    3;
 
 /** A tile whose capture has not been exported yet (slot `null`) is left out. */
 type PendingTile = Omit<BentoTile, "slot"> & { slot: CaptureSlot | null };
@@ -109,15 +117,10 @@ const ROWS: readonly (readonly PendingTile[])[] = [
       name: "Actions",
       line: "One accountable action system.",
       slot: CAPTURES.tileActions,
+      mobile: CAPTURES.tileActionsM,
     },
   ],
   [
-    {
-      id: "problem-solving",
-      name: "Problem Solving",
-      line: "Use your methodology. Keep the evidence.",
-      slot: OPTIONAL_CAPTURES.tilePps,
-    },
     {
       id: "training-skills",
       name: "Training & Skills",
