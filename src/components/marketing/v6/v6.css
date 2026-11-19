@@ -1151,6 +1151,30 @@ html.dark .v6-hero-aurora::before {
   .v6-bento-tile.has-desktop .v6-tile-window.is-desktop {
     display: block;
   }
+  /* The media box is 0.6 × the window width, but never taller than the
+     row's shortest -d window (--row-hr = its height / width), so the short
+     Training capture leaves no gap and both tiles in a row match. */
+  .v6-bento-tile.has-desktop {
+    container-type: inline-size;
+  }
+  .v6-bento-tile.has-desktop .v6-tile-media {
+    aspect-ratio: auto;
+    height: min(
+      (100cqw - 48px) * 0.6,
+      (100cqw - 50px) * var(--row-hr, 0.6) + 38px
+    );
+  }
+  /* The row's shortest capture fits whole: no fade, it sits on the tile's
+     bottom edge. */
+  .v6-bento-tile.is-row-short .v6-tile-media {
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+  .v6-bento-tile.is-row-short .v6-tile-window {
+    border-bottom: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
 }
 /* ATELIER r4 P1: 768-1023 stays one column, each tile split 5/7 like the
    steps — title and line left, the phone window right, its top on the

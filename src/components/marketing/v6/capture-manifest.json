@@ -36,7 +36,7 @@
     "height": 1460
   },
   "step-act-list-m": {
-    "width": 844,
+    "width": 580,
     "height": 1170
   },
   "step-improve": {
@@ -71,17 +71,33 @@
     "width": 716,
     "height": 476
   },
+  "tile-5s-d": {
+    "width": 1232,
+    "height": 1532
+  },
   "tile-5s-m": {
     "width": 728,
     "height": 654
+  },
+  "tile-gemba-d": {
+    "width": 1232,
+    "height": 1148
   },
   "tile-gemba-m": {
     "width": 764,
     "height": 1042
   },
+  "tile-suggestions-d": {
+    "width": 1232,
+    "height": 992
+  },
   "tile-suggestions-m": {
     "width": 728,
     "height": 676
+  },
+  "tile-training-d": {
+    "width": 1232,
+    "height": 402
   },
   "tile-training-m": {
     "width": 728,

@@ -99,9 +99,12 @@ test("the finding story switches steps and never shrinks a capture", async ({
             Number(img.getAttribute("width")),
           ],
         );
-        // A 4:5 crop is ≥10 px text from 350 px; it is never upscaled.
-        expect(rendered).toBeGreaterThanOrEqual(340);
-        expect(rendered).toBeLessThanOrEqual(intrinsic);
+        // Phone crops show at their natural 1.0x width (or the column, if
+        // narrower), never upscaled. step-act-list-m is one 290 px column.
+        expect(rendered).toBeGreaterThanOrEqual(
+          Math.min(280, intrinsic / 2 - 2),
+        );
+        expect(rendered).toBeLessThanOrEqual(intrinsic / 2);
       }
     }
     expect(

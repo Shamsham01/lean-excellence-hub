@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { ArrowRight, Plus } from "lucide-react";
 
@@ -10,6 +11,7 @@ import {
 } from "@/lib/marketing/demo-booking";
 
 import { CAPTURES, OPTIONAL_CAPTURES } from "./assets";
+import type { BentoTile } from "./content";
 import {
   BENTO_ROWS,
   FAQ_ITEMS,
@@ -246,8 +248,18 @@ export function V6Landing() {
                         `v6-tile-${tile.id}`,
                         !tile.slot && !tile.desktop && "is-text-only",
                         tile.desktop && "has-desktop",
+                        tile.desktop &&
+                          tile.desktop.height / tile.desktop.width ===
+                            rowHeightRatio(row) &&
+                          rowHeightRatio(row) < BENTO_BLEED_RATIO &&
+                          "is-row-short",
                       )}
                       data-reveal
+                      style={
+                        {
+                          "--row-hr": rowHeightRatio(row).toFixed(4),
+                        } as CSSProperties
+                      }
                     >
                       <div className="v6-tile-head">
                         <h3 className="v6-h3">{tile.name}</h3>
@@ -414,4 +426,20 @@ function ThemedIcon() {
       />
     </>
   );
+}
+
+/** ≥1024 the bento media box is 0.6 × the window width (the bleed). */
+const BENTO_BLEED_RATIO = 0.6;
+
+/**
+ * ATELIER r4 P1: a row's media box is never taller than its shortest -d
+ * capture, so a short capture (Training, ~3:1) leaves no gap and the tiles in
+ * the row stay equal height.
+ */
+function rowHeightRatio(row: readonly BentoTile[]): number {
+  const ratios = row
+    .map((tile) => tile.desktop)
+    .filter((slot): slot is NonNullable<typeof slot> => slot !== null)
+    .map((slot) => slot.height / slot.width);
+  return Math.min(BENTO_BLEED_RATIO, ...ratios);
 }

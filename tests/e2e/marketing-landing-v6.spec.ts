@@ -101,6 +101,8 @@ test("windows never crop and match across themes (ATELIER r1 B2/B3)", async ({
               right: Math.round(t.right - r.right - tile.clientLeft),
               width: Math.round(r.width),
               mediaHeight: Math.round(media.height),
+              tileTop: Math.round(t.top + window.scrollY),
+              tileHeight: Math.round(t.height),
             };
           });
       }),
@@ -114,10 +116,17 @@ test("windows never crop and match across themes (ATELIER r1 B2/B3)", async ({
   // r3 M1: all four windows identical, on the 24 px inset both sides.
   const all = [...light.tiles, ...dark.tiles];
   expect(all.length).toBe(8);
-  for (const { left, right, width, mediaHeight } of all) {
-    expect(left).toBe(24);
-    expect(right).toBe(24);
-    expect(width).toBe(all[0]!.width);
-    expect(mediaHeight).toBe(all[0]!.mediaHeight);
+  for (const tile of all) {
+    expect(tile.left).toBe(24);
+    expect(tile.right).toBe(24);
+    expect(tile.width).toBe(all[0]!.width);
+    // r4 P1: tiles in a row share one media height and one tile height (the
+    // short Training capture sets its row's crop, so it leaves no gap).
+    const rowMate = all.find(
+      (other) => other !== tile && other.tileTop === tile.tileTop,
+    );
+    expect(rowMate).toBeDefined();
+    expect(tile.mediaHeight).toBe(rowMate!.mediaHeight);
+    expect(tile.tileHeight).toBe(rowMate!.tileHeight);
   }
 });
