@@ -69,7 +69,7 @@ test("the finding-story carousel switches steps and keeps captures whole", async
     // Each step carries a light and a dark capture; only the current
     // theme's picture is displayed, and frames letterbox instead of cropping.
     const frames =
-      width >= 768
+      width >= 1024
         ? carousel.locator(".v6-carousel-frame img:visible")
         : carousel.locator(".v6-track img:visible");
     await expect(frames).toHaveCount(5);
@@ -78,7 +78,7 @@ test("the finding-story carousel switches steps and keeps captures whole", async
       await expect
         .poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth))
         .toBeGreaterThan(0);
-      if (width >= 768) {
+      if (width >= 1024) {
         await expect(image).toHaveCSS("object-fit", "contain");
       } else {
         const [rendered, natural] = await image.evaluate(

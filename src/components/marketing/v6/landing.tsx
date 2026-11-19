@@ -2,13 +2,14 @@ import Link from "next/link";
 import { ArrowRight, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   DEMO_BOOKING_CTA,
   GET_FREE_ACCESS_CTA,
   GET_FREE_ACCESS_HREF,
 } from "@/lib/marketing/demo-booking";
 
-import { CAPTURES } from "./assets";
+import { CAPTURES, OPTIONAL_CAPTURES } from "./assets";
 import {
   BENTO_ROWS,
   FAQ_ITEMS,
@@ -288,12 +289,27 @@ export function V6Landing() {
             />
             <LeanAiBeats />
           </div>
-          <div className="v6-leanai-visual" data-reveal>
+          <div
+            className={cn(
+              "v6-leanai-visual",
+              OPTIONAL_CAPTURES.leanaiFrag && "has-overlay",
+            )}
+          >
             <div className="v6-stage-glow" aria-hidden="true" />
-            <ProductWindow
-              slot={CAPTURES.leanaiPanel}
-              sizes="(min-width: 1024px) 600px, 100vw"
-            />
+            <div className="v6-leanai-base" data-reveal>
+              <ProductWindow
+                slot={CAPTURES.leanaiBase}
+                sizes="(min-width: 1024px) 560px, (min-width: 640px) 560px, 100vw"
+              />
+            </div>
+            {OPTIONAL_CAPTURES.leanaiFrag ? (
+              <div className="v6-leanai-overlay" data-reveal>
+                <ProductWindow
+                  slot={OPTIONAL_CAPTURES.leanaiFrag}
+                  sizes="320px"
+                />
+              </div>
+            ) : null}
           </div>
         </div>
       </section>

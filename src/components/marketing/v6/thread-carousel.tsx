@@ -16,8 +16,8 @@ import { ProductWindow } from "./product-window";
 import { ThemedCapture } from "./themed-capture";
 
 /**
- * Observe → Learn carousel (art direction §6.3). ≥768: a thread rail of
- * tabs above one fixed 16:10 window that crossfades. <768: a chip row and a
+ * Observe → Learn carousel (art direction §6.3). ≥1024: a thread rail of
+ * tabs above one fixed 16:10 window that crossfades. <1024: a chip row and a
  * swipeable scroll-snap track with one full-width slide at a time.
  */
 export function ThreadCarousel() {
@@ -175,7 +175,7 @@ export function ThreadCarousel() {
         </div>
       </div>
 
-      {/* Below 768 px */}
+      {/* Below 1024 px: 4:5 focus crops keep UI text ≥10 px */}
       <div className="v6-chips" aria-label="Steps" role="group">
         {THREAD_STEPS.map((step, index) => (
           <button

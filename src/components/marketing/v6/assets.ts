@@ -129,10 +129,24 @@ export const CAPTURES = {
     "tile-training-skills",
     "The skills catalogue with categories for each skill.",
   ),
-  leanaiPanel: v6(
-    "leanai-panel",
-    "LeanAI facilitating cause analysis next to pending proposals a person can accept, edit or reject.",
+  leanaiBase: v6(
+    "step-solve-m",
+    "A LeanAI draft for cause analysis with pending proposals a person can accept, edit or reject.",
   ),
 } as const satisfies Record<string, CaptureSlot>;
+
+/**
+ * Slots that are optional until their exports land. A missing file means the
+ * layout renders without that layer; no placeholder is shown.
+ */
+const v6Optional = (slot: string, alt: string): CaptureSlot | null =>
+  SIZES[slot] ? v6(slot, alt) : null;
+
+export const OPTIONAL_CAPTURES = {
+  leanaiFrag: v6Optional(
+    "leanai-panel-frag",
+    "The LeanAI panel facilitating the current problem-solving stage.",
+  ),
+};
 
 export type CaptureKey = keyof typeof CAPTURES;

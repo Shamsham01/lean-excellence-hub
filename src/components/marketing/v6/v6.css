@@ -508,7 +508,7 @@ html.dark .v6-hero-aurora::before {
   width: 100%;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 1024px) {
   .v6-hero-kpi {
     display: none;
   }
@@ -579,7 +579,7 @@ html.dark .v6-hero-aurora::before {
   }
   .v6-hero-l3 {
     top: 18.2cqw;
-    left: 3cqw;
+    left: 4.5cqw;
     bottom: auto;
     width: 27.3cqw;
     --z: 150px;
@@ -708,8 +708,12 @@ html.dark .v6-hero-aurora::before {
   scroll-snap-align: start;
   scroll-snap-stop: always;
 }
+.v6-track-slide .v6-window {
+  max-width: 560px;
+  margin-inline: auto;
+}
 
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .v6-chips,
   .v6-track {
     display: none;
@@ -1086,7 +1090,7 @@ html.dark .v6-hero-aurora::before {
   position: absolute;
   top: 0;
   left: 0;
-  width: 780px;
+  width: 860px;
   transition: transform 160ms var(--ease-out);
 }
 .v6-tile-window-back {
@@ -1146,7 +1150,7 @@ html.dark .v6-hero-aurora::before {
     height: 520px;
   }
   .v6-tile-window {
-    width: 820px;
+    width: 880px;
   }
 }
 
@@ -1191,6 +1195,50 @@ html.dark .v6-hero-aurora::before {
 }
 .v6-leanai-visual {
   position: relative;
+}
+/* Base: the proposals focus crop, never narrower than 350 px. */
+.v6-leanai-base .v6-window {
+  min-width: min(350px, 100%);
+  max-width: 560px;
+  margin-inline: auto;
+}
+/* Overlay (≥1024 only): the LeanAI panel fragment in its own window. */
+.v6-leanai-overlay {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .v6-leanai-base .v6-window {
+    max-width: none;
+  }
+  .v6-leanai-overlay {
+    display: block;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 55%;
+    z-index: 1;
+  }
+  .v6-leanai-visual.has-overlay .v6-leanai-overlay {
+    /* Anchored bottom-right, 48 px outward on both axes so it overhangs. */
+    right: -48px;
+    bottom: -48px;
+  }
+  html:not(.dark) .leh-v6 .v6-leanai-overlay .v6-window {
+    border: 1px solid var(--line-strong);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  html.js .leh-v6 .v6-leanai-base[data-reveal],
+  html.js .leh-v6 .v6-leanai-overlay[data-reveal] {
+    transform: translateY(12px);
+  }
+  html.js .leh-v6 .v6-leanai-overlay[data-reveal] {
+    transition-delay: 120ms;
+  }
+  html.js .leh-v6 .v6-leanai-base[data-reveal].is-in,
+  html.js .leh-v6 .v6-leanai-overlay[data-reveal].is-in {
+    transform: none;
+  }
 }
 @media (min-width: 640px) and (max-width: 1023px) {
   .v6-beats {
@@ -1498,15 +1546,13 @@ html.dark .v6-close-art {
 /* <640: wide captures bleed off the right edge instead of shrinking, so UI
    text stays ≥10 px (same layered-fragment treatment as the bento). */
 @media (max-width: 639px) {
-  .v6-action-visual,
-  .v6-leanai-visual {
+  .v6-action-visual {
     margin-right: calc(-1 * var(--m));
     overflow: hidden;
     padding: 0 0 48px;
     margin-bottom: -48px;
   }
-  .v6-action-visual .v6-window,
-  .v6-leanai-visual .v6-window {
+  .v6-action-visual .v6-window {
     width: 720px;
     max-width: none;
   }

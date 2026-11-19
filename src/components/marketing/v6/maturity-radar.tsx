@@ -45,7 +45,7 @@ export function MaturityRadar() {
   return (
     <div className="v6-radar">
       <svg
-        viewBox={`0 0 ${SIZE} ${SIZE}`}
+        viewBox={`-20 0 ${SIZE + 40} ${SIZE}`}
         role="img"
         aria-label="Pillar maturity radar"
         className="v6-radar-svg"
