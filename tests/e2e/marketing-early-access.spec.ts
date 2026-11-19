@@ -58,55 +58,70 @@ test("the early-access form explains when requests are not switched on", async (
   ).toBeLessThanOrEqual(1);
 });
 
-test("the finding story switches steps and never shrinks a capture", async ({
+test("the finding story swipes below 1024 and never stretches a phone crop", async ({
   page,
 }) => {
-  for (const width of [390, 768, 1280, 1440]) {
+  for (const width of [390, 768]) {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto("/#why");
+    // A fresh load per width (a same-URL hash goto would keep the state).
+    await page.goto(`/?w=${width}#why`);
     const carousel = page.locator(".v6-carousel");
+    await expect(carousel).toHaveAttribute("data-mode", "swipe");
     await carousel.scrollIntoViewIfNeeded();
-    if (width >= 1024) {
-      // Five desktop frames, one per step; captures keep their own
-      // aspect (never cropped or squashed) inside a fixed 16:10 stage.
-      const frames = carousel.locator(".v6-carousel-frame img:visible");
-      await expect(frames).toHaveCount(5);
-      for (const image of await frames.all()) {
-        await expect(image).not.toHaveCSS("object-fit", "cover");
-        const [w, h, iw, ih] = await image.evaluate((img: HTMLImageElement) => {
-          const r = img.getBoundingClientRect();
-          return [
-            r.width,
-            r.height,
-            Number(img.getAttribute("width")),
-            Number(img.getAttribute("height")),
-          ];
-        });
-        expect(Math.abs(w / h - iw / ih)).toBeLessThan(0.01);
-      }
-      await expect(carousel.locator(".v6-steps")).toBeHidden();
-    } else {
-      // The step list shows only captures with a legible narrow crop.
-      await expect(carousel.locator(".v6-step")).toHaveCount(5);
-      await expect(carousel.getByRole("tablist")).toBeHidden();
-      for (const image of await carousel
-        .locator(".v6-steps img:visible")
-        .all()) {
-        await image.scrollIntoViewIfNeeded();
-        const [rendered, intrinsic] = await image.evaluate(
-          (img: HTMLImageElement) => [
-            img.clientWidth,
-            Number(img.getAttribute("width")),
-          ],
-        );
-        // Phone crops show at their natural 1.0x width (or the column, if
-        // narrower), never upscaled. step-act-list-m is one 290 px column.
-        expect(rendered).toBeGreaterThanOrEqual(
-          Math.min(280, intrinsic / 2 - 2),
-        );
-        expect(rendered).toBeLessThanOrEqual(intrinsic / 2);
-      }
+    // The rail stays in sync above five swipe panels: copy over the phone
+    // crop, with no desktop window or arrow buttons.
+    const tabs = carousel.getByRole("tablist", { name: "From one finding" });
+    await expect(tabs.getByRole("tab")).toHaveCount(5);
+    await expect(carousel.locator(".v6-hpanel-swipe")).toHaveCount(5);
+    await expect(carousel.locator(".v6-hpanel-desk").first()).toBeHidden();
+    await expect(
+      carousel.getByRole("button", { name: "Next step" }),
+    ).toBeHidden();
+    const viewport = carousel.locator(".v6-hviewport");
+    await expect(viewport).toHaveCSS("scroll-snap-type", "x mandatory");
+
+    // Phone crops show at their natural 1.0x width (up to 1.25x on the
+    // 768-1023 stage), never upscaled beyond that and never shrunk below
+    // the space the window gives them.
+    const maxScale = width >= 768 ? 1.25 : 1;
+    const crops = await carousel.locator(".v6-step-shot img:visible").all();
+    expect(crops.length).toBeGreaterThanOrEqual(4);
+    for (const image of crops) {
+      const [rendered, intrinsic, room] = await image.evaluate(
+        (img: HTMLImageElement) => [
+          img.getBoundingClientRect().width,
+          Number(img.getAttribute("width")),
+          img.closest(".v6-step-body")?.getBoundingClientRect().width ?? 0,
+        ],
+      );
+      expect(rendered).toBeLessThanOrEqual((intrinsic / 2) * maxScale + 1);
+      expect(rendered).toBeGreaterThanOrEqual(
+        Math.min(room, intrinsic / 2) - 2,
+      );
     }
+
+    // Swiping moves the rail; the rail moves the swipe.
+    const tab = (name: RegExp) => tabs.getByRole("tab", { name });
+    await expect(tab(/Observe/)).toHaveAttribute("aria-selected", "true");
+    await viewport.evaluate((el) => {
+      const panels = el.querySelectorAll<HTMLElement>(".v6-hpanel");
+      el.scrollTo({ left: panels[1]!.offsetLeft - panels[0]!.offsetLeft });
+    });
+    await expect(tab(/Act/)).toHaveAttribute("aria-selected", "true");
+    await tab(/Learn/).click();
+    await expect(tab(/Learn/)).toHaveAttribute("aria-selected", "true");
+    await expect
+      .poll(() =>
+        viewport.evaluate(
+          (el) => el.scrollLeft + el.clientWidth >= el.scrollWidth - 2,
+        ),
+      )
+      .toBe(true);
+    await expect(page.locator(".v6-hpanel.is-active")).toHaveAttribute(
+      "id",
+      /learn/,
+    );
+
     expect(
       await page.evaluate(
         () =>
@@ -115,17 +130,92 @@ test("the finding story switches steps and never shrinks a capture", async ({
       ),
     ).toBeLessThanOrEqual(1);
   }
+});
 
+test("the finding story pins at 1024+ and its rail drives the scroll", async ({
+  page,
+}) => {
+  for (const width of [1280, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(`/?w=${width}`);
+    const carousel = page.locator(".v6-carousel");
+    await expect(carousel).toHaveAttribute("data-mode", "pin");
+    // Five desktop windows, one per step; captures keep their own aspect
+    // (never squashed) and the swipe panels stay hidden.
+    const frames = carousel.locator(".v6-hpanel-desk img:visible");
+    await expect(frames).toHaveCount(5);
+    for (const image of await frames.all()) {
+      await expect(image).not.toHaveCSS("object-fit", "cover");
+      const [w, h, iw, ih] = await image.evaluate((img: HTMLImageElement) => {
+        const r = img.getBoundingClientRect();
+        return [
+          r.width,
+          r.height,
+          Number(img.getAttribute("width")),
+          Number(img.getAttribute("height")),
+        ];
+      });
+      expect(Math.abs(w / h - iw / ih)).toBeLessThan(0.01);
+    }
+    await expect(carousel.locator(".v6-hpanel-swipe").first()).toBeHidden();
+
+    // The rail is a working control: a tab click scrolls the page to that
+    // step's rest, and the stage stays pinned in view.
+    const tabs = carousel.getByRole("tablist", { name: "From one finding" });
+    const tab = (name: RegExp) => tabs.getByRole("tab", { name });
+    const stage = page.locator(".v6-why-stage");
+    await stage.scrollIntoViewIfNeeded();
+    const startY = await page.evaluate(() => window.scrollY);
+    await tab(/Act/).click();
+    await expect(tab(/Act/)).toHaveAttribute("aria-selected", "true");
+    await expect
+      .poll(() => page.evaluate(() => window.scrollY))
+      .toBeGreaterThan(startY + 100);
+    await expect(
+      page.locator(".v6-hpanel.is-active .v6-hpanel-desk img:visible"),
+    ).toHaveAttribute("src", /step-act-list(-m)?-(light|dark)\.webp$/);
+    const box = await stage.boundingBox();
+    expect(Math.abs(box?.y ?? 99)).toBeLessThanOrEqual(1);
+
+    // Keyboard: End and Home move between the first and last steps.
+    await tab(/Act/).focus();
+    await tab(/Act/).press("End");
+    await expect(tab(/Learn/)).toHaveAttribute("aria-selected", "true");
+    await expect(tab(/Learn/)).toBeFocused();
+    await tab(/Learn/).press("Home");
+    await expect(tab(/Observe/)).toHaveAttribute("aria-selected", "true");
+
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+      ),
+    ).toBeLessThanOrEqual(1);
+  }
+});
+
+test("with reduced motion the finding story is a tabbed carousel at 1024+", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/#why");
+  const carousel = page.locator(".v6-carousel");
+  await expect(carousel).toHaveAttribute("data-mode", "tabs");
   const tabs = page.getByRole("tablist", { name: "From one finding" });
   const tab = (name: RegExp) => tabs.getByRole("tab", { name });
   await expect(tab(/Observe/)).toHaveAttribute("aria-selected", "true");
-  await page.getByRole("button", { name: "Next step" }).click();
+  const next = page.getByRole("button", { name: "Next step" });
+  await next.scrollIntoViewIfNeeded();
+  const scrollBefore = await page.evaluate(() => window.scrollY);
+  await next.click();
   await expect(tab(/Act/)).toHaveAttribute("aria-selected", "true");
   await expect(
-    page.locator(".v6-carousel-frame.is-active img:visible"),
+    page.locator(".v6-hpanel.is-active .v6-hpanel-desk img:visible"),
   ).toHaveAttribute("src", /step-act-list(-m)?-(light|dark)\.webp$/);
+  // Tabs switch in place; they never scroll the page.
+  expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
   await tab(/Learn/).click();
   await expect(tab(/Learn/)).toHaveAttribute("aria-selected", "true");
   await tab(/Learn/).press("Home");
