@@ -191,8 +191,7 @@ describe("public marketing homepage", () => {
     )
       .map((el) => el.getAttribute("src") ?? el.getAttribute("srcset") ?? "")
       .join(" ");
-    expect(sources).toMatch(/hero-planner-/);
-    expect(sources).toMatch(/hero-phone-/);
+    expect(sources).toMatch(/hero-devices-/);
     expect(sources).toMatch(/action-detail-/);
     expect(sources).not.toMatch(
       /hero-dashboard|step-act-(light|dark|m)|leanai-panel-(light|dark)|tile-projects|tile-pps/,
@@ -360,10 +359,13 @@ describe("public marketing homepage", () => {
       ),
     );
     expect([...kinds].sort()).toEqual(["end", "node", "stub"]);
-    // #28: the planner is the hero's high-priority image.
-    const planner = container.querySelector(".v6-hero-l1 img");
-    expect(planner?.getAttribute("loading")).toBe("eager");
-    expect(planner?.getAttribute("fetchpriority")).toBe("high");
+    // The device mockup is the hero's high-priority LCP image.
+    const heroImgs = container.querySelectorAll(".v6-hero-devices img");
+    expect(heroImgs.length).toBeGreaterThan(0);
+    for (const img of heroImgs) {
+      expect(img.getAttribute("loading")).toBe("eager");
+      expect(img.getAttribute("fetchpriority")).toBe("high");
+    }
 
     const css = readFileSync("src/components/marketing/v6/v6.css", "utf8");
     // B2: captures are never cropped to fill a window.

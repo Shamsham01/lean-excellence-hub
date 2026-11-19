@@ -41,6 +41,11 @@ const v6 = (
 };
 
 export const CAPTURES = {
+  heroDevices: v6(
+    "hero-devices",
+    "Lean Excellence Hub on a desktop, a tablet and a phone.",
+    [1440],
+  ),
   heroPlanner: v6(
     "hero-planner",
     "The actions planner board with open, in-progress and completed actions.",

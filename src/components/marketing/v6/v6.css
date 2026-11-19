@@ -481,111 +481,60 @@ html.dark .v6-hero-aurora::before {
   }
 }
 
-/* Composite (review r1 B1) — flat, fully opaque layers; sizes come from
-   the capture ratios set inline (--planner-r, --phone-r, --kpi-r). */
+/* Hero devices mockup (exp/hero-devices). One themed image, no frame.
+   The source canvas is 2880×1600 with transparent padding (left 274,
+   right 55). The stage is cropped to the visible 2551×1600 so the
+   devices sit flush with the column and align with the copy top. */
 .v6-hero-composite {
   position: relative;
-  container-type: inline-size;
-  --pw: clamp(220px, 37cqw, 240px);
-  --plw: min(100cqw, 620px);
-  --plh: calc(var(--plw) * var(--planner-r));
-  --phh: calc(var(--pw) * var(--phone-r));
+  width: 100%;
 }
-.v6-hero-stage {
+.v6-hero-devices {
+  width: 100%;
+  /* Room for the contact shadow under the devices. */
+  padding-bottom: 32px;
+}
+.v6-hero-devices-stage {
   position: relative;
+  width: 100%;
+  aspect-ratio: 2551 / 1600;
+  overflow: visible;
 }
-/* <768: the phone alone, centred. */
-.v6-hero-l1,
-.v6-hero-l2 {
-  display: none;
+.v6-hero-devices .v6-cap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
-.v6-hero-l3 {
-  width: min(300px, 78%);
-  margin-inline: auto;
+.v6-hero-devices-img {
+  position: absolute;
+  top: 0;
+  left: calc(100% * -274 / 2551);
+  width: calc(100% * 2880 / 2551);
+  max-width: none;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 18px 28px rgb(15 23 42 / 0.16))
+    drop-shadow(0 4px 10px rgb(15 23 42 / 0.08));
 }
-.v6-hero-l3 .v6-handset {
-  padding: 6px;
-  border-radius: 30px;
+html.dark .leh-v6 .v6-hero-devices-img {
+  filter: drop-shadow(0 22px 36px rgb(0 0 0 / 0.5))
+    drop-shadow(0 6px 14px rgb(0 0 0 / 0.28));
 }
-.v6-hero-l3 .v6-handset-screen {
-  border-radius: 24px;
-}
-
-@media (min-width: 768px) {
-  /* Left-aligned on the container edge: one left edge (ruling #18). */
-  .v6-hero-composite {
-    width: 100%;
-    max-width: 640px;
-    margin-inline: 0;
-  }
-  /* Phone top sits 30 % of its height above the planner's bottom edge. */
-  .v6-hero-stage {
-    height: calc(var(--plh) + var(--phh) * 0.7);
-  }
-  .v6-hero-layer {
-    position: absolute;
-  }
-  .v6-hero-l1 {
-    display: block;
-    top: 0;
-    right: 0;
-    width: var(--plw);
-    z-index: 1;
-  }
-  .v6-hero-l2 {
-    display: block;
-    top: calc(var(--plh) * 0.42);
-    left: calc(var(--pw) * 0.85);
-    /* The KPI fragment is exported at 1.0×: never shown wider than it is. */
-    width: min(62cqw, 420px);
-    z-index: 2;
-  }
-  .v6-hero-l3 {
-    top: calc(var(--plh) - var(--phh) * 0.3);
-    left: 0;
-    width: var(--pw);
-    margin: 0;
-    z-index: 3;
-  }
-  .v6-hero-l3 .v6-handset {
-    padding: 8px;
-    border-radius: 40px;
-  }
-  .v6-hero-l3 .v6-handset-screen {
-    border-radius: 30px;
-  }
-  .v6-hero-layer .v6-window,
-  .v6-hero-layer .v6-handset {
-    box-shadow: var(--shadow-window);
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    .v6-hero-layer {
-      animation: v6-rise 600ms var(--ease-out) both;
-    }
-    .v6-hero-l2 {
-      animation-delay: 80ms;
-    }
-    .v6-hero-l3 {
-      animation-delay: 160ms;
-    }
+@media (prefers-reduced-motion: no-preference) {
+  .v6-hero-devices {
+    animation: v6-hero-in 700ms var(--ease-out) both;
   }
 }
-@keyframes v6-rise {
+@keyframes v6-hero-in {
   from {
-    translate: 0 12px;
-  }
-}
-
-/* ATELIER r2 m3: at 1440 the KPI layer drops ~60 px so the stack's bottom
-   edge lines up with the phone's. */
-@media (min-width: 1440px) {
-  .v6-hero-l2 {
-    top: calc(var(--plh) * 0.42 + 60px);
+    opacity: 0;
+    translate: 0 16px;
   }
 }
 
 /* ≥1024: copy cols 1–6; the visual spans cols 7–12 and bleeds 40 px right.
-   Its optical centre sits on the centre of the text block. */
+   Copy-top aligns with the visible device tops. */
 @media (min-width: 1024px) {
   .v6-hero {
     padding-top: 72px;
@@ -593,13 +542,12 @@ html.dark .v6-hero-aurora::before {
   .v6-hero-grid {
     grid-template-columns: repeat(12, minmax(0, 1fr));
     column-gap: var(--gutter);
-    align-items: center;
+    align-items: start;
   }
   .v6-hero-copy {
     grid-column: 1 / span 6;
   }
   .v6-hero-composite {
-    max-width: none;
     margin-inline: 0 -40px;
     width: auto;
     grid-column: 7 / -1;
