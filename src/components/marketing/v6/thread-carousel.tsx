@@ -19,6 +19,10 @@ export function ThreadCarousel() {
   const [active, setActive] = useState(0);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const count = THREAD_STEPS.length;
+  const activeSlot = THREAD_STEPS[active]?.desktop;
+  const activeRatio = activeSlot
+    ? (activeSlot.width / activeSlot.height).toFixed(4)
+    : "1.6";
 
   const go = useCallback(
     (index: number, focus = false) => {
@@ -50,7 +54,12 @@ export function ThreadCarousel() {
   return (
     <div
       className="v6-carousel"
-      style={{ ["--active" as string]: active, ["--steps" as string]: count }}
+      style={{
+        ["--active" as string]: active,
+        ["--steps" as string]: count,
+        // Review r1 B2: the stage takes the active capture's own aspect.
+        ["--ar" as string]: activeRatio,
+      }}
     >
       <div className="v6-rail" role="tablist" aria-label="From one finding">
         <span className="v6-rail-line" aria-hidden="true" data-thread="stub" />
@@ -72,8 +81,10 @@ export function ThreadCarousel() {
             onKeyDown={onKeyDown}
           >
             <span className="v6-rail-node" aria-hidden="true" />
-            <span className="v6-kicker">{step.index}</span>
-            <span className="v6-rail-title">{step.title}</span>
+            <span className="v6-rail-head">
+              <span className="v6-kicker">{step.index}</span>
+              <span className="v6-rail-title">{step.title}</span>
+            </span>
             <span className="v6-rail-module">{step.module}</span>
           </button>
         ))}

@@ -85,10 +85,6 @@ export const CAPTURES = {
     "tile-actions",
     "The actions list grouped by due date with owners and status.",
   ),
-  tilePps: v6(
-    "tile-pps",
-    "A problem-solving case with its why chain and fishbone analysis.",
-  ),
   tileTraining: v6(
     "tile-training",
     "The training catalogue with published courses.",
@@ -114,6 +110,11 @@ export const OPTIONAL_CAPTURES = {
   heroKpi: v6Optional(
     "hero-kpi",
     "Operational analytics tiles for open actions, overdue actions and problem solving.",
+  ),
+  /** The Fishbone (6M) card alone; PIXEL is re-exporting it. */
+  tilePps: v6Optional(
+    "tile-pps",
+    "A problem-solving case with its fishbone (6M) analysis.",
   ),
   leanaiFrag: v6Optional(
     "leanai-panel-frag",

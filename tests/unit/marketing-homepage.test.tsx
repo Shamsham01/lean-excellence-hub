@@ -333,6 +333,40 @@ describe("public marketing homepage", () => {
     expect(css).not.toMatch(/\n\s*\.leh-v6 \[data-reveal\] \{\s*opacity: 0/);
   });
 
+  it("applies the ATELIER r1 layout rulings", () => {
+    const { container } = render(<MarketingHome />);
+    // M3: no tagline strip under the hero.
+    expect(container.querySelector(".v6-principle")).toBeNull();
+    // M1: the statement is two phrases, one per line.
+    const lines = Array.from(
+      container.querySelectorAll(".v6-statement .v6-mega-line"),
+    ).map((el) => el.textContent);
+    expect(lines).toEqual(["Operational excellence.", "Connected."]);
+    // B4: the thread only meets nodes beside kickers and the carousel rail.
+    const kinds = new Set(
+      Array.from(container.querySelectorAll<HTMLElement>("[data-thread]")).map(
+        (el) => el.dataset.thread,
+      ),
+    );
+    expect([...kinds].sort()).toEqual(["node", "stub"]);
+    // #28: the planner is the hero's high-priority image.
+    const planner = container.querySelector(".v6-hero-l1 img");
+    expect(planner?.getAttribute("loading")).toBe("eager");
+    expect(planner?.getAttribute("fetchpriority")).toBe("high");
+
+    const css = readFileSync("src/components/marketing/v6/v6.css", "utf8");
+    // B2: captures are never cropped to fill a window.
+    expect(css).not.toMatch(/object-fit:\s*cover/);
+    // B4: no thread below 1280.
+    expect(css).toMatch(
+      /@media \(max-width: 1279px\) \{\s*\.v6-thread \{\s*display: none/,
+    );
+    // B1: no translucent or 3-D hero layers.
+    expect(css).not.toMatch(/preserve-3d|perspective:/);
+    // G1 art waits for the page to load.
+    expect(css).toMatch(/html\.v6-art \.v6-hero-aurora::before/);
+  });
+
   it("gives every section a transparent background (one page background)", () => {
     const css = readFileSync("src/components/marketing/v6/v6.css", "utf8");
     expect(css).toMatch(/\.v6-page section \{[^}]*background: transparent/);

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-type Node = { x: number; y: number; stub?: number | undefined };
+type Node = { x: number; y: number };
 type Geometry = {
   width: number;
   height: number;
@@ -21,10 +21,17 @@ function prefersReducedMotion() {
   );
 }
 
+/** The thread only runs where the left gutter can hold it (§ review B4). */
+const THREAD_MEDIA = "(min-width: 1280px)";
+/** Distance from the container's content edge to the line. */
+const GUTTER_OFFSET = 40;
+
 /**
- * The Golden Thread (art direction §0, §8 motion 2): one continuous 2 px
- * line from the hero to the close, drawn as the page scrolls. It runs in
- * the left margin and joins anchors marked with `data-thread` in the page.
+ * The Golden Thread (art direction §0, ATELIER review r1 B4): one straight
+ * vertical line in the left gutter, 40 px left of the container edge, with a
+ * node beside each section kicker (`data-thread="node"`). Its only
+ * excursion is the carousel rail (`data-thread="stub"`), reached by a
+ * horizontal spur. ≥1280 only; drawn as the page scrolls.
  */
 export function GoldenThread({ rootId }: { rootId: string }) {
   const [geo, setGeo] = useState<Geometry>(EMPTY);
@@ -36,89 +43,65 @@ export function GoldenThread({ rootId }: { rootId: string }) {
     if (!root) {
       return;
     }
+    const wide =
+      typeof window.matchMedia === "function"
+        ? window.matchMedia(THREAD_MEDIA)
+        : null;
 
     let frame = 0;
     const measure = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
+        if (!wide?.matches) {
+          setGeo(EMPTY);
+          return;
+        }
         const rootRect = root.getBoundingClientRect();
         const container = root.querySelector<HTMLElement>(".v6-container");
         if (!container) {
           return;
         }
         const cRect = container.getBoundingClientRect();
-        const style = getComputedStyle(container);
         const contentLeft =
-          cRect.left - rootRect.left + parseFloat(style.paddingLeft);
-        const margin = contentLeft;
-        const mx = Math.round(
-          Math.max(10, contentLeft - Math.min(48, Math.max(10, margin / 2))),
-        );
-        const rel = (r: DOMRect) => ({
-          x: r.left - rootRect.left,
-          y: r.top - rootRect.top,
-          w: r.width,
-          h: r.height,
-        });
+          cRect.left -
+          rootRect.left +
+          parseFloat(getComputedStyle(container).paddingLeft);
+        const x = Math.round(Math.max(8, contentLeft - GUTTER_OFFSET)) + 0.5;
 
         const anchors = Array.from(
           root.querySelectorAll<HTMLElement>("[data-thread]"),
         ).filter((el) => el.offsetParent !== null);
 
-        let d = "";
         const nodes: Node[] = [];
-        let end: Geometry["end"] = null;
-        let cursor: { x: number; y: number } | null = null;
-
+        let spur: { y: number; x: number } | null = null;
+        let top = Infinity;
+        let bottom = -Infinity;
         for (const el of anchors) {
-          const kind = el.dataset.thread;
-          const r = rel(el.getBoundingClientRect());
-          if (kind === "start") {
-            const sx = r.x + r.w / 2;
-            const sy = r.y + r.h / 2;
-            d = `M ${sx} ${sy}`;
-            cursor = { x: sx, y: sy };
-            continue;
+          const r = el.getBoundingClientRect();
+          const y = Math.round(r.top - rootRect.top + r.height / 2) + 0.5;
+          top = Math.min(top, y);
+          bottom = Math.max(bottom, y);
+          if (el.dataset.thread === "stub") {
+            const rx = Math.round(r.left - rootRect.left);
+            spur = { y, x: rx };
+          } else {
+            nodes.push({ x, y });
           }
-          if (kind === "bend" && cursor) {
-            // Drop from the start, then sweep left into the margin.
-            const by = r.y + r.h / 2;
-            const radius = Math.min(40, Math.abs(cursor.x - mx) / 2);
-            d += ` L ${cursor.x} ${by - radius}`;
-            d += ` Q ${cursor.x} ${by} ${cursor.x - radius} ${by}`;
-            d += ` L ${mx + radius} ${by}`;
-            d += ` Q ${mx} ${by} ${mx} ${by + radius}`;
-            cursor = { x: mx, y: by + radius };
-            continue;
-          }
-          if (kind === "node" || kind === "stub") {
-            const ny = r.y + r.h / 2;
-            const gap = Number(el.dataset.threadGap ?? 0);
-            d += cursor ? ` L ${mx} ${ny}` : `M ${mx} ${ny}`;
-            cursor = { x: mx, y: ny };
-            nodes.push({
-              x: mx,
-              y: ny,
-              stub: kind === "stub" ? Math.max(0, r.x - mx - gap) : undefined,
-            });
-            continue;
-          }
-          if (kind === "end" && cursor) {
-            const ex = r.x + r.w / 2;
-            const ey = r.y + r.h / 2;
-            const turn = Math.min(160, (ey - cursor.y) / 2);
-            d += ` L ${mx} ${ey - turn}`;
-            d += ` C ${mx} ${ey} ${mx + (ex - mx) * 0.4} ${ey} ${ex - r.w / 2 - 12} ${ey}`;
-            end = { x: ex, y: ey };
-          }
+        }
+        if (!Number.isFinite(top) || bottom <= top) {
+          setGeo(EMPTY);
+          return;
         }
 
         setGeo({
           width: Math.round(rootRect.width),
           height: Math.round(root.scrollHeight),
-          d,
+          // Down to the rail, across it, then on down to the close.
+          d: spur
+            ? `M ${x} ${top} L ${x} ${spur.y} L ${spur.x} ${spur.y} M ${x} ${spur.y} L ${x} ${bottom}`
+            : `M ${x} ${top} L ${x} ${bottom}`,
           nodes,
-          end,
+          end: null,
         });
       });
     };
@@ -128,11 +111,13 @@ export function GoldenThread({ rootId }: { rootId: string }) {
       typeof ResizeObserver === "function" ? new ResizeObserver(measure) : null;
     observer?.observe(root);
     window.addEventListener("resize", measure);
+    wide?.addEventListener?.("change", measure);
     document.fonts?.ready.then(measure).catch(() => undefined);
     return () => {
       cancelAnimationFrame(frame);
       observer?.disconnect();
       window.removeEventListener("resize", measure);
+      wide?.removeEventListener?.("change", measure);
     };
   }, [rootId]);
 
@@ -243,15 +228,6 @@ export function GoldenThread({ rootId }: { rootId: string }) {
           data-y={n.y}
           style={{ transformOrigin: `${n.x}px ${n.y}px` }}
         >
-          {n.stub ? (
-            <line
-              className="v6-thread-stub"
-              x1={n.x}
-              y1={n.y}
-              x2={n.x + n.stub}
-              y2={n.y}
-            />
-          ) : null}
           <circle cx={n.x} cy={n.y} r={4} />
         </g>
       ))}

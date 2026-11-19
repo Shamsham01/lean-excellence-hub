@@ -2,8 +2,10 @@ import { PILLARS, SCORE_MAX } from "./content";
 
 const SIZE = 480;
 const CENTRE = SIZE / 2;
-const RADIUS = 150;
-const LABEL_GAP = 22;
+const RADIUS = 140;
+const LABEL_GAP = 18;
+/** Label size in SVG units: ≥12 px rendered at the 320 px radar (r1 M4). */
+const LABEL_LINE = 24;
 
 function point(index: number, value: number) {
   const angle = ((-90 + index * 72) * Math.PI) / 180;
@@ -18,7 +20,7 @@ function ring(level: number) {
 /** Split a pillar name over at most two balanced lines. */
 function labelLines(name: string): string[] {
   const words = name.split(" ");
-  if (words.length < 3) {
+  if (words.length < 2 || name.length <= 10) {
     return [name];
   }
   let best = [name];
@@ -45,7 +47,7 @@ export function MaturityRadar() {
   return (
     <div className="v6-radar">
       <svg
-        viewBox={`-20 0 ${SIZE + 40} ${SIZE}`}
+        viewBox="-40 30 540 390"
         role="img"
         aria-label="Pillar maturity radar"
         className="v6-radar-svg"
@@ -91,14 +93,14 @@ export function MaturityRadar() {
             const top = i === 0;
             const bottom = Math.sin(rad) > 0.5;
             const dy0 = top
-              ? -(lines.length - 1) * 17 - 4
+              ? -(lines.length - 1) * LABEL_LINE - 6
               : bottom
-                ? 14
-                : -((lines.length - 1) * 17) / 2 + 5;
+                ? 18
+                : -((lines.length - 1) * LABEL_LINE) / 2 + 7;
             return (
               <text key={p.name} x={x} y={y} textAnchor={anchor}>
                 {lines.map((line, li) => (
-                  <tspan key={line} x={x} dy={li === 0 ? dy0 : 17}>
+                  <tspan key={line} x={x} dy={li === 0 ? dy0 : LABEL_LINE}>
                     {line}
                   </tspan>
                 ))}

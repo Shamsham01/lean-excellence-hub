@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import manifest from "@/components/marketing/v6/capture-manifest.json";
-import { CAPTURES } from "@/components/marketing/v6/assets";
+import { CAPTURES, OPTIONAL_CAPTURES } from "@/components/marketing/v6/assets";
 import { BENTO_ROWS } from "@/components/marketing/v6/content";
 // @ts-expect-error -- plain ESM build script without type declarations
 import { webpSize } from "../../scripts/marketing-capture-manifest.mjs";
@@ -42,14 +42,24 @@ describe("landing capture manifest", () => {
     }
   });
 
-  it("keeps only bento tiles whose capture fits a cell (≤3:1)", () => {
+  it("keeps only bento tiles whose window stack fits a cell (≤3:1)", () => {
     for (const tile of BENTO_ROWS.flat()) {
-      expect(tile.slot.width / tile.slot.height, tile.id).toBeLessThanOrEqual(
-        3,
-      );
+      const stacked =
+        tile.slot.height +
+        (tile.back
+          ? (tile.back.height * tile.slot.width) / tile.back.width
+          : 0);
+      expect(tile.slot.width / stacked, tile.id).toBeLessThanOrEqual(3);
     }
     expect(BENTO_ROWS.flat().map((tile) => tile.id)).not.toContain(
       "projects-benefits",
+    );
+  });
+
+  it("leaves the problem-solving tile out until its Fishbone capture exists", () => {
+    const ids = BENTO_ROWS.flat().map((tile) => tile.id);
+    expect(ids.includes("problem-solving")).toBe(
+      OPTIONAL_CAPTURES.tilePps !== null,
     );
   });
 });

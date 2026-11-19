@@ -69,10 +69,9 @@ export function MarketingDemoPage({
                 <li>
                   <p>One connected finding</p>
                   <p>
-                    A fictional manufacturing example, from the observation
-                    through action, problem solving, the improvement project, a
-                    benefit awaiting validation, and what the organisation
-                    learns.
+                    From the observation through action, problem solving, the
+                    improvement project, a benefit awaiting validation, and what
+                    the organisation learns.
                   </p>
                 </li>
                 <li>

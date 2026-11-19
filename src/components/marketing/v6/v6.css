@@ -304,7 +304,12 @@ html.dark .leh-v6 .cap-dark {
   pointer-events: none;
 }
 
-/* ---------- Thread (§8 motion 2) ---------- */
+/* ---------- Thread (§8 motion 2; review r1 B4: ≥1280 only) ---------- */
+@media (max-width: 1279px) {
+  .v6-thread {
+    display: none;
+  }
+}
 .v6-thread {
   position: absolute;
   top: 0;
@@ -403,7 +408,6 @@ html.dark .v6-thread-node circle {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url("/marketing/v6/art/g1-hero-light.webp");
   background-size: cover;
   background-position: 70% 40%;
   opacity: var(--art-opacity);
@@ -425,8 +429,14 @@ html.dark .v6-thread-node circle {
     );
   }
 }
-html.dark .v6-hero-aurora::before {
+/* G1 is decorative: it loads only after the page (and the LCP planner). */
+html.v6-art .v6-hero-aurora::before {
+  background-image: url("/marketing/v6/art/g1-hero-light.webp");
+}
+html.v6-art.dark .v6-hero-aurora::before {
   background-image: url("/marketing/v6/art/g1-hero-dark.webp");
+}
+html.dark .v6-hero-aurora::before {
   mix-blend-mode: screen;
 }
 
@@ -436,6 +446,17 @@ html.dark .v6-hero-aurora::before {
 }
 .v6-hero-copy .v6-display {
   margin-top: 16px;
+}
+/* Review r1 M2: the H1 is held to 64 px from 1280 (3.25rem at 1024). */
+@media (min-width: 1024px) {
+  .v6-hero-copy .v6-display {
+    font-size: 3.25rem;
+  }
+}
+@media (min-width: 1280px) {
+  .v6-hero-copy .v6-display {
+    font-size: 4rem;
+  }
 }
 .v6-hero-copy .v6-lede {
   margin-top: 20px;
@@ -449,29 +470,17 @@ html.dark .v6-hero-aurora::before {
   }
 }
 
-.v6-principle {
-  margin-top: 64px;
-  padding-top: 24px;
-  border-top: 1px solid var(--line);
-  font-size: 0.875rem;
-  line-height: 1.45;
-  font-weight: 500;
-  color: var(--ink-3);
-}
-.v6-principle strong {
-  color: var(--ink);
-  font-weight: 600;
-}
-
-/* Composite — flat, stacked (<1024) */
+/* Composite (review r1 B1) — flat, fully opaque layers; sizes come from
+   the capture ratios set inline (--planner-r, --phone-r, --kpi-r). */
 .v6-hero-composite {
   position: relative;
   container-type: inline-size;
+  --pw: clamp(220px, 37cqw, 240px);
+  --plw: min(100cqw, 620px);
+  --plh: calc(var(--plw) * var(--planner-r));
+  --phh: calc(var(--pw) * var(--phone-r));
 }
 .v6-hero-stage {
-  position: relative;
-}
-.v6-hero-layer {
   position: relative;
 }
 /* <768: the phone alone, centred. */
@@ -483,13 +492,6 @@ html.dark .v6-hero-aurora::before {
   width: min(300px, 78%);
   margin-inline: auto;
 }
-.v6-hero-thread-start {
-  position: absolute;
-  left: 50%;
-  bottom: -2px;
-  width: 1px;
-  height: 1px;
-}
 .v6-hero-l3 .v6-handset {
   padding: 6px;
   border-radius: 30px;
@@ -498,90 +500,41 @@ html.dark .v6-hero-aurora::before {
   border-radius: 24px;
 }
 
-/* 768–1023: flat stack — planner behind, KPI fragment and phone in front. */
 @media (min-width: 768px) {
+  /* Left-aligned on the container edge: one left edge (ruling #18). */
   .v6-hero-composite {
     width: 100%;
     max-width: 640px;
-    margin-inline: auto;
-  }
-  .v6-hero-stage {
-    padding-bottom: 18cqw;
-  }
-  .v6-hero-l1 {
-    display: block;
-    width: 100%;
-  }
-  .v6-hero-l2 {
-    display: block;
-    position: absolute;
-    right: 0;
-    bottom: 4cqw;
-    width: 58%;
-  }
-  .v6-hero-l3 {
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    width: 28%;
-    margin: 0;
-  }
-}
-
-/* ≥1024: copy cols 1–5, exploded 3-D composite cols 6–12 */
-@media (min-width: 1024px) {
-  .v6-hero {
-    padding-top: 72px;
-  }
-  .v6-hero-grid {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    column-gap: var(--gutter);
-    align-items: start;
-  }
-  .v6-hero-copy {
-    grid-column: 1 / span 6;
-    padding-top: 40px;
-  }
-  .v6-hero-composite {
-    max-width: none;
     margin-inline: 0;
-    grid-column: 7 / -1;
-    margin-right: calc(-1 * min(80px, var(--m)));
-    perspective: 2400px;
   }
+  /* Phone top sits 30 % of its height above the planner's bottom edge. */
   .v6-hero-stage {
-    height: 80.5cqw;
-    padding-bottom: 0;
-    transform-style: preserve-3d;
-    transform: scale(0.94) rotateX(calc(8deg + var(--py, 0deg)))
-      rotateY(calc(-16deg + var(--px, 0deg))) rotateZ(2deg);
-    transform-origin: 50% 45%;
+    height: calc(var(--plh) + var(--phh) * 0.7);
   }
   .v6-hero-layer {
     position: absolute;
-    transform-style: preserve-3d;
   }
   .v6-hero-l1 {
+    display: block;
     top: 0;
     right: 0;
-    width: 98.7cqw;
-    transform: translateZ(0);
+    width: var(--plw);
+    z-index: 1;
   }
   .v6-hero-l2 {
-    top: 28.6cqw;
-    right: 0;
-    bottom: auto;
-    width: 57.1cqw;
-    --z: 100px;
-    transform: translateZ(var(--z));
+    display: block;
+    top: calc(var(--plh) * 0.42);
+    left: calc(var(--pw) * 0.85);
+    /* The KPI fragment is exported at 1.0×: never shown wider than it is. */
+    width: min(62cqw, 420px);
+    z-index: 2;
   }
   .v6-hero-l3 {
-    top: 18.2cqw;
-    left: 4.5cqw;
-    bottom: auto;
-    width: 27.3cqw;
-    --z: 150px;
-    transform: translateZ(var(--z)) rotateZ(-2deg) rotateY(16deg) rotateX(-8deg);
+    top: calc(var(--plh) - var(--phh) * 0.3);
+    left: 0;
+    width: var(--pw);
+    margin: 0;
+    z-index: 3;
   }
   .v6-hero-l3 .v6-handset {
     padding: 8px;
@@ -590,20 +543,47 @@ html.dark .v6-hero-aurora::before {
   .v6-hero-l3 .v6-handset-screen {
     border-radius: 30px;
   }
+  .v6-hero-layer .v6-window,
+  .v6-hero-layer .v6-handset {
+    box-shadow: var(--shadow-window);
+  }
   @media (prefers-reduced-motion: no-preference) {
-    .v6-hero-l2,
-    .v6-hero-l3 {
-      animation: v6-explode 900ms var(--ease-out) both;
+    .v6-hero-layer {
+      animation: v6-rise 600ms var(--ease-out) both;
+    }
+    .v6-hero-l2 {
+      animation-delay: 80ms;
     }
     .v6-hero-l3 {
-      animation-delay: 80ms;
+      animation-delay: 160ms;
     }
   }
 }
-@keyframes v6-explode {
+@keyframes v6-rise {
   from {
-    translate: 0 0 calc(var(--z, 0px) * 0.6);
-    opacity: 0;
+    translate: 0 12px;
+  }
+}
+
+/* ≥1024: copy cols 1–6; the visual spans cols 7–12 and bleeds 40 px right.
+   Its optical centre sits on the centre of the text block. */
+@media (min-width: 1024px) {
+  .v6-hero {
+    padding-top: 72px;
+  }
+  .v6-hero-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--gutter);
+    align-items: center;
+  }
+  .v6-hero-copy {
+    grid-column: 1 / span 6;
+  }
+  .v6-hero-composite {
+    max-width: none;
+    margin-inline: 0 -40px;
+    width: auto;
+    grid-column: 7 / -1;
   }
 }
 
@@ -613,16 +593,23 @@ html.dark .v6-hero-aurora::before {
 .v6-statement {
   padding-block: var(--statement-y);
 }
-.v6-statement .v6-mega {
-  max-width: 11.5ch;
+/* Review r1 M1: centred; two lines from 1024 up, one per phrase. */
+.v6-statement .v6-container {
+  text-align: center;
+}
+.v6-statement .v6-mega-line {
+  display: block;
 }
 @media (min-width: 1024px) {
   .v6-statement .v6-mega {
-    max-width: 92%;
+    font-size: min(7.5rem, 7.6vw);
+  }
+  .v6-statement .v6-mega-line {
+    white-space: nowrap;
   }
 }
 .v6-statement-sub {
-  margin-top: 24px;
+  margin: 24px auto 0;
   max-width: 48ch;
 }
 
@@ -733,11 +720,15 @@ html.dark .v6-hero-aurora::before {
     border-color: var(--accent);
     box-shadow: 0 0 0 4px var(--accent-soft);
   }
-  .v6-rail-tab .v6-kicker {
+  /* Review r1 M7: index and title on one line; the module wraps to ≤2. */
+  .v6-rail-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
     margin-top: 20px;
+    white-space: nowrap;
   }
   .v6-rail-title {
-    margin-top: 10px;
     font-size: 1.25rem;
     line-height: 1.4;
     font-weight: 600;
@@ -750,7 +741,9 @@ html.dark .v6-hero-aurora::before {
     color: var(--ink);
   }
   .v6-rail-module {
-    margin-top: 2px;
+    margin-top: 4px;
+    max-width: 100%;
+    overflow-wrap: anywhere;
     font-size: 0.875rem;
     line-height: 1.45;
     font-weight: 500;
@@ -760,10 +753,20 @@ html.dark .v6-hero-aurora::before {
     display: block;
     position: relative;
     margin-top: 32px;
+    container-type: inline-size;
+  }
+  /* Review r1 B2: no cropping. The window takes the active capture's own
+     aspect (--ar = width / height), at most 16:10 tall, and eases between
+     slides. Light and dark share one size per slot. */
+  .v6-carousel-window {
+    width: min(100cqw, calc(62.5cqw * var(--ar)));
+    margin-inline: auto;
+    transition: width 300ms var(--ease-out);
   }
   .v6-carousel-frames {
     position: relative;
-    aspect-ratio: 16 / 10;
+    height: min(calc(100cqw / var(--ar)), 62.5cqw);
+    transition: height 300ms var(--ease-out);
   }
   .v6-carousel-frame {
     position: absolute;
@@ -839,15 +842,15 @@ html.dark .v6-hero-aurora::before {
   .v6-action-grid {
     grid-template-columns: repeat(12, minmax(0, 1fr));
     column-gap: var(--gutter);
-    align-items: start;
+    /* Review r1 M5: the copy is centred on the visual. */
+    align-items: center;
   }
   .v6-action-copy {
     grid-column: 1 / span 4;
-    padding-top: 8px;
   }
   .v6-action-visual {
     grid-column: 5 / -1;
-    margin-right: -80px;
+    margin-right: -40px;
   }
 }
 
@@ -871,10 +874,11 @@ html.dark .v6-hero-aurora::before {
 .v6-maturity-radar .v6-small {
   margin-top: 4px;
 }
+/* Review r1 M4: 320 (390) / 360 (768) / 400 (1280) / 440 (1440). */
 .v6-radar {
   margin: 24px auto 0;
   width: 100%;
-  max-width: 340px;
+  max-width: 320px;
 }
 .v6-radar-svg {
   display: block;
@@ -900,7 +904,7 @@ html.dark .v6-hero-aurora::before {
   fill: var(--radar-stroke);
 }
 .v6-radar-labels text {
-  font-size: 15px;
+  font-size: 22px;
   font-weight: 500;
   fill: var(--radar-label);
   font-family: var(--font-sans), system-ui, sans-serif;
@@ -988,28 +992,23 @@ html.dark .v6-hero-aurora::before {
     padding: 32px;
   }
   .v6-radar {
-    max-width: 400px;
+    max-width: 360px;
   }
 }
+/* ≥1024: the card splits 50/50, radar and scores side by side, centred. */
 @media (min-width: 1024px) {
   .v6-maturity {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    column-gap: var(--gutter);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 48px;
+    align-items: center;
     padding: 48px;
-  }
-  .v6-maturity-radar {
-    grid-column: 1 / span 6;
-  }
-  .v6-maturity-scores {
-    grid-column: 7 / -1;
-    align-self: center;
   }
   .v6-radar {
     margin-top: 32px;
     max-width: 400px;
   }
 }
-@media (min-width: 1360px) {
+@media (min-width: 1440px) {
   .v6-radar {
     max-width: 440px;
   }
@@ -1025,109 +1024,94 @@ html.dark .v6-hero-aurora::before {
 .v6-bento-row {
   display: contents;
 }
+/* Review r1 B3: every window sits inside its tile, inset 24 px left, right
+   and top, at the tile's full inner width (never cut horizontally). It may
+   only run off the bottom, under a 64 px fade — and only fades when it does.
+   --ar (width / height) comes from the capture file. */
 .v6-bento-tile {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  aspect-ratio: 4 / 5;
-  padding: var(--tile-pad) 0 0 var(--tile-pad);
+  padding: var(--tile-pad) 0 0;
+  container-type: inline-size;
+  --media-cap: 260px;
+  --win-h: calc((100cqw - 48px) / var(--ar));
   transition: border-color 160ms ease;
 }
 .v6-tile-head {
-  padding-right: var(--tile-pad);
+  padding-inline: var(--tile-pad);
 }
 .v6-tile-head .v6-small {
   margin-top: 4px;
 }
 .v6-tile-media {
   position: relative;
-  flex: 1;
-  min-height: 0;
-  margin-top: 24px;
-  mask-image: linear-gradient(to bottom, #000 calc(100% - 48px), transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 24px 24px 0;
+  height: min(var(--win-h), var(--media-cap));
+  overflow: hidden;
+  --fade: clamp(0px, (var(--win-h) - var(--media-cap)) * 1000, 64px);
+  mask-image: linear-gradient(
+    to bottom,
+    #000 calc(100% - var(--fade)),
+    transparent
+  );
   -webkit-mask-image: linear-gradient(
     to bottom,
-    #000 calc(100% - 48px),
+    #000 calc(100% - var(--fade)),
     transparent
   );
 }
+/* Training & Skills stacks two windows, so it always fills its cap. */
+.v6-tile-media.has-back {
+  height: calc(var(--win-h) * 1.5 + 16px);
+  --fade: 64px;
+}
 .v6-tile-window {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 860px;
+  flex: none;
+  width: 100%;
   transition: transform 160ms var(--ease-out);
-}
-.v6-tile-window-back {
-  top: 40px;
-  left: 40px;
-  opacity: 1;
-}
-.v6-tile-window-back + .v6-tile-window {
-  z-index: 1;
-}
-.v6-tile-training-skills .v6-tile-window-back {
-  top: 96px;
-  left: 40px;
 }
 @media (hover: hover) and (pointer: fine) {
   .v6-bento-tile:hover {
     border-color: var(--line-strong);
   }
-  .v6-bento-tile:hover .v6-tile-window:not(.v6-tile-window-back) {
-    transform: translateY(-4px);
-  }
 }
 
+/* Below 1024 the bento is one column: a single left edge (ruling #18). */
 @media (min-width: 640px) {
-  .v6-bento {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .v6-bento-tile {
-    aspect-ratio: auto;
-    height: 440px;
-  }
-  .v6-tile-problem-solving,
-  .v6-tile-training-skills {
-    grid-column: span 2;
-  }
-  .v6-bento-row .v6-bento-tile:only-child {
-    grid-column: 1 / -1;
+    --media-cap: 320px;
   }
 }
 @media (min-width: 1024px) {
   .v6-bento {
     grid-template-columns: repeat(12, minmax(0, 1fr));
   }
-  .v6-bento-row {
-    display: contents;
+  .v6-bento-tile {
+    --media-cap: 360px;
   }
   .v6-bento-row-1 .v6-bento-tile {
     grid-column: span 6;
-    height: 520px;
   }
-  /* Row 2 alternates the 6/6 · 7/5 rhythm of rows 1 and 3. */
+  /* Row 2 alternates the 6/6 · 5/7 rhythm. */
   .v6-bento-row-2 .v6-bento-tile {
     grid-column: span 5;
-    height: 480px;
   }
   .v6-bento-row-2 .v6-bento-tile + .v6-bento-tile {
     grid-column: span 7;
   }
   .v6-tile-problem-solving {
     grid-column: span 7;
-    height: 520px;
   }
   .v6-tile-training-skills {
     grid-column: span 5;
-    height: 520px;
   }
-  /* A row left with one tile (its neighbour's capture did not fit a cell). */
+  /* A row left with one tile takes the full width. */
   .v6-bento-row .v6-bento-tile:only-child {
     grid-column: 1 / -1;
-  }
-  .v6-tile-window {
-    width: 880px;
   }
 }
 
@@ -1219,12 +1203,7 @@ html.dark .v6-hero-aurora::before {
     transform: none;
   }
 }
-@media (min-width: 640px) and (max-width: 1023px) {
-  .v6-beats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: var(--gutter);
-  }
-}
+/* Beats stay one column below 1024: one left edge (ruling #18). */
 @media (min-width: 1024px) {
   .v6-leanai-grid {
     grid-template-columns: repeat(12, minmax(0, 1fr));

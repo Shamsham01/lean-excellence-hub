@@ -1,5 +1,5 @@
 /** Landing copy (published page main@b1bd423, edited per art direction §6). */
-import { CAPTURES, type CaptureSlot } from "./assets";
+import { CAPTURES, OPTIONAL_CAPTURES, type CaptureSlot } from "./assets";
 
 export type ThreadStep = {
   id: "observe" | "act" | "solve" | "improve" | "learn";
@@ -62,7 +62,7 @@ export type BentoTile = {
   name: string;
   line: string;
   slot: CaptureSlot;
-  /** Second window offset behind the first (Training & Skills). */
+  /** Second window stacked under the first (Training & Skills). */
   back?: CaptureSlot;
 };
 
@@ -70,9 +70,19 @@ export type BentoTile = {
  * A capture thinner than 3:1 cannot fill a bento cell; its tile is left out
  * and the row's neighbour takes the full width.
  */
-const fitsCell = (tile: BentoTile) => tile.slot.width / tile.slot.height <= 3;
+const fitsCell = (tile: BentoTile) =>
+  tile.slot.width /
+    (tile.slot.height +
+      (tile.back
+        ? (tile.back.height * tile.slot.width) / tile.back.width
+        : 0)) <=
+  3;
 
-const ROWS: readonly (readonly BentoTile[])[] = [
+/** A tile whose capture has not been exported yet (slot `null`) is left out. */
+type PendingTile = Omit<BentoTile, "slot"> & { slot: CaptureSlot | null };
+const isReady = (tile: PendingTile): tile is BentoTile => tile.slot !== null;
+
+const ROWS: readonly (readonly PendingTile[])[] = [
   [
     {
       id: "gemba",
@@ -106,7 +116,7 @@ const ROWS: readonly (readonly BentoTile[])[] = [
       id: "problem-solving",
       name: "Problem Solving",
       line: "Use your methodology. Keep the evidence.",
-      slot: CAPTURES.tilePps,
+      slot: OPTIONAL_CAPTURES.tilePps,
     },
     {
       id: "training-skills",
@@ -119,7 +129,7 @@ const ROWS: readonly (readonly BentoTile[])[] = [
 ];
 
 export const BENTO_ROWS: readonly (readonly BentoTile[])[] = ROWS.map((row) =>
-  row.filter(fitsCell),
+  row.filter(isReady).filter(fitsCell),
 ).filter((row) => row.length > 0);
 
 /** Real published result (Formal assessment, 2.7 / 5). Order matches the app. */

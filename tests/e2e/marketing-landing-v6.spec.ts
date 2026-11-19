@@ -66,3 +66,45 @@ test("the header gains its hairline after scrolling", async ({ page }) => {
   await page.mouse.wheel(0, 400);
   await expect(banner).toHaveAttribute("data-scrolled", "true");
 });
+
+test("windows never crop and match across themes (ATELIER r1 B2/B3)", async ({
+  page,
+}) => {
+  const measure = async (theme: "light" | "dark") => {
+    await page.addInitScript((value) => {
+      window.localStorage.setItem("theme", value);
+    }, theme);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/");
+    await expect(page.locator("html")).toHaveClass(new RegExp(theme));
+    const heights: number[] = [];
+    const tabs = page.getByRole("tab");
+    for (let i = 0; i < (await tabs.count()); i += 1) {
+      await tabs.nth(i).click();
+      await page.waitForTimeout(400);
+      heights.push(
+        await page
+          .locator(".v6-carousel-frames")
+          .evaluate((el) => Math.round(el.getBoundingClientRect().height)),
+      );
+    }
+    const tiles = await page.evaluate(() =>
+      [...document.querySelectorAll(".v6-bento-tile")].flatMap((tile) => {
+        const t = tile.getBoundingClientRect();
+        return [...tile.querySelectorAll(".v6-tile-window")].map((w) => {
+          const r = w.getBoundingClientRect();
+          return { left: r.left - t.left, right: t.right - r.right };
+        });
+      }),
+    );
+    return { heights, tiles };
+  };
+
+  const light = await measure("light");
+  const dark = await measure("dark");
+  expect(dark.heights).toEqual(light.heights);
+  for (const { left, right } of [...light.tiles, ...dark.tiles]) {
+    expect(left).toBeGreaterThanOrEqual(24);
+    expect(right).toBeGreaterThanOrEqual(24);
+  }
+});

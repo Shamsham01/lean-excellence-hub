@@ -15,6 +15,15 @@ export function V6Motion({ rootId }: { rootId: string }) {
     }
     document.documentElement.classList.add("js");
 
+    // Decorative hero art (G1) waits for the page — and its LCP planner —
+    // to finish loading (review r1 ruling #28).
+    const showArt = () => document.documentElement.classList.add("v6-art");
+    if (document.readyState === "complete") {
+      showArt();
+    } else {
+      window.addEventListener("load", showArt, { once: true });
+    }
+
     const reveal = Array.from(
       root.querySelectorAll<HTMLElement>("[data-reveal]"),
     );
@@ -60,6 +69,7 @@ export function V6Motion({ rootId }: { rootId: string }) {
     radarEls.forEach((el) => radarIo.observe(el));
 
     return () => {
+      window.removeEventListener("load", showArt);
       io.disconnect();
       radarIo.disconnect();
     };

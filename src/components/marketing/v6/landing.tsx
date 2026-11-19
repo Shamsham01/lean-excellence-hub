@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { ArrowRight, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -84,7 +85,9 @@ export function V6Landing() {
         <div className="v6-hero-aurora" aria-hidden="true" />
         <div className="v6-container v6-hero-grid">
           <div className="v6-hero-copy">
-            <p className="v6-kicker">The Continuous Improvement Platform</p>
+            <p className="v6-kicker" data-thread="node">
+              The Continuous Improvement Platform
+            </p>
             <h1 className="v6-display" id="v6-hero-title">
               Make continuous improvement visible, accountable and measurable.
             </h1>
@@ -104,26 +107,14 @@ export function V6Landing() {
           </div>
           <HeroComposite />
         </div>
-        <div className="v6-container">
-          <p className="v6-principle" data-thread="bend">
-            <strong>One connected platform.</strong>{" "}
-            <span>Your framework, your standards, your way of working.</span>
-          </p>
-        </div>
       </section>
 
       {/* 2 · Statement */}
       <section className="v6-statement" aria-label="Positioning statement">
         <div className="v6-container" data-reveal>
           <p className="v6-mega">
-            Operational excellence.{" "}
-            <span
-              className="v6-gradient-text"
-              data-thread="stub"
-              data-thread-gap="14"
-            >
-              Connected.
-            </span>
+            <span className="v6-mega-line">Operational excellence.</span>{" "}
+            <span className="v6-mega-line v6-gradient-text">Connected.</span>
           </p>
           <p className="v6-lede v6-statement-sub">
             One spine of evidence — from the floor, through LeanAI, into owned
@@ -246,24 +237,33 @@ export function V6Landing() {
                       id={tile.id}
                       className={`v6-tile v6-bento-tile v6-tile-${tile.id}`}
                       data-reveal
+                      style={
+                        {
+                          "--ar": (tile.slot.width / tile.slot.height).toFixed(
+                            4,
+                          ),
+                        } as CSSProperties
+                      }
                     >
                       <div className="v6-tile-head">
                         <h3 className="v6-h3">{tile.name}</h3>
                         <p className="v6-small">{tile.line}</p>
                       </div>
-                      <div className="v6-tile-media">
+                      <div
+                        className={cn("v6-tile-media", tile.back && "has-back")}
+                      >
+                        <ProductWindow
+                          slot={tile.slot}
+                          sizes="(min-width: 1024px) 720px, 92vw"
+                          className="v6-tile-window"
+                        />
                         {tile.back ? (
                           <ProductWindow
                             slot={tile.back}
-                            sizes="720px"
+                            sizes="(min-width: 1024px) 720px, 92vw"
                             className="v6-tile-window v6-tile-window-back"
                           />
                         ) : null}
-                        <ProductWindow
-                          slot={tile.slot}
-                          sizes="720px"
-                          className="v6-tile-window"
-                        />
                       </div>
                     </article>
                   ))}
@@ -358,10 +358,12 @@ export function V6Landing() {
       <section id="close" className="v6-close" aria-labelledby="v6-close-title">
         <div className="v6-close-art" aria-hidden="true" />
         <div className="v6-container v6-close-inner" data-reveal>
-          <div className="v6-close-mark" data-thread="end">
+          <div className="v6-close-mark">
             <ThemedIcon />
           </div>
-          <p className="v6-kicker">Your system</p>
+          <p className="v6-kicker" data-thread="node">
+            Your system
+          </p>
           <h2 className="v6-display v6-close-title" id="v6-close-title">
             <span>Your framework.</span> <span>Your standards.</span>{" "}
             <span>Your way of working.</span>

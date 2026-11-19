@@ -151,6 +151,7 @@ describe("demo booking page", () => {
     expect(screen.queryByText(/business email/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/operational sites/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/job role/i)).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/fictional/i);
   });
 
   it("does not echo an invalid scheduling address", () => {

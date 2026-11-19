@@ -1,89 +1,68 @@
-"use client";
+import type { CSSProperties } from "react";
 
-import { useEffect, useRef } from "react";
-
-import { CAPTURES, OPTIONAL_CAPTURES } from "./assets";
+import { CAPTURES, OPTIONAL_CAPTURES, type CaptureSlot } from "./assets";
 import { Handset } from "./handset";
 import { ProductWindow } from "./product-window";
 
+const ratio = (slot: CaptureSlot) => (slot.height / slot.width).toFixed(4);
+
 /**
- * Hero composite (art direction §6.1): an exploded 3-D stack of three real
- * screens at ≥1024 px, flat and overlapped below. Pointer parallax is
- * limited to 3° and only runs for fine pointers without reduced motion.
+ * Preloads the hero's LCP image (review r1 ruling #28). The theme follows
+ * the system by default, so each preload is scoped to its colour scheme.
+ */
+function PlannerPreload({ slot }: { slot: CaptureSlot }) {
+  return (
+    <>
+      {(["light", "dark"] as const).map((theme) => (
+        <link
+          key={theme}
+          rel="preload"
+          as="image"
+          type="image/avif"
+          href={`${slot.base}-${theme}.avif`}
+          media={`(min-width: 768px) and (prefers-color-scheme: ${theme})`}
+          fetchPriority="high"
+        />
+      ))}
+    </>
+  );
+}
+
+/**
+ * Hero composite (ATELIER review r1 B1). ≥768: a flat, fully opaque stack —
+ * the planner at the back, the KPI fragment in the middle (when exported)
+ * offset down-left, and the phone in front at the bottom-left overlapping
+ * the planner by about 30 %. <768: the phone alone, centred.
+ * Every proportion comes from the capture files.
  */
 export function HeroComposite() {
-  const sceneRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const scene = sceneRef.current;
-    if (!scene || typeof window.matchMedia !== "function") {
-      return;
-    }
-    const fine = window.matchMedia(
-      "(pointer: fine) and (min-width: 1280px) and (prefers-reduced-motion: no-preference)",
-    );
-    if (!fine.matches) {
-      return;
-    }
-    let tx = 0;
-    let ty = 0;
-    let cx = 0;
-    let cy = 0;
-    let frame = 0;
-    const loop = () => {
-      cx += (tx - cx) * 0.08;
-      cy += (ty - cy) * 0.08;
-      scene.style.setProperty("--px", `${cx.toFixed(3)}deg`);
-      scene.style.setProperty("--py", `${cy.toFixed(3)}deg`);
-      if (Math.abs(tx - cx) > 0.001 || Math.abs(ty - cy) > 0.001) {
-        frame = requestAnimationFrame(loop);
-      } else {
-        frame = 0;
-      }
-    };
-    const onMove = (event: PointerEvent) => {
-      const r = scene.getBoundingClientRect();
-      const nx = (event.clientX - (r.left + r.width / 2)) / window.innerWidth;
-      const ny = (event.clientY - (r.top + r.height / 2)) / window.innerHeight;
-      tx = Math.max(-3, Math.min(3, nx * 6));
-      ty = Math.max(-3, Math.min(3, -ny * 6));
-      if (!frame) {
-        frame = requestAnimationFrame(loop);
-      }
-    };
-    window.addEventListener("pointermove", onMove, { passive: true });
-    return () => {
-      window.removeEventListener("pointermove", onMove);
-      cancelAnimationFrame(frame);
-    };
-  }, []);
+  const kpi = OPTIONAL_CAPTURES.heroKpi;
+  const style = {
+    "--planner-r": ratio(CAPTURES.heroPlanner),
+    "--phone-r": ratio(CAPTURES.heroPhone),
+    ...(kpi ? { "--kpi-r": ratio(kpi) } : {}),
+  } as CSSProperties;
 
   return (
-    <div className="v6-hero-composite" ref={sceneRef}>
+    <div className="v6-hero-composite" style={style}>
+      <PlannerPreload slot={CAPTURES.heroPlanner} />
       <div className="v6-hero-stage">
         <div className="v6-hero-layer v6-hero-l1">
           <ProductWindow
             slot={CAPTURES.heroPlanner}
             priority
-            sizes="(min-width: 1024px) 720px, 640px"
+            sizes="(min-width: 768px) 620px, 1px"
           />
         </div>
-        {OPTIONAL_CAPTURES.heroKpi ? (
+        {kpi ? (
           <div className="v6-hero-layer v6-hero-l2">
-            <ProductWindow
-              slot={OPTIONAL_CAPTURES.heroKpi}
-              sizes="(min-width: 1024px) 420px, 370px"
-            />
+            <ProductWindow slot={kpi} sizes="420px" />
           </div>
         ) : null}
         <div className="v6-hero-layer v6-hero-l3">
-          <Handset
-            slot={CAPTURES.heroPhone}
-            sizes="(min-width: 768px) 210px, 300px"
-          >
+          <Handset slot={CAPTURES.heroPhone} priority sizes="300px">
             <span className="v6-spark" aria-hidden="true" />
           </Handset>
-          <span className="v6-hero-thread-start" data-thread="start" />
         </div>
       </div>
     </div>

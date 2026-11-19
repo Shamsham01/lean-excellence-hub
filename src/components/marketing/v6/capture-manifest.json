@@ -3,6 +3,10 @@
     "width": 2400,
     "height": 1867
   },
+  "hero-kpi": {
+    "width": 1032,
+    "height": 720
+  },
   "hero-phone": {
     "width": 1170,
     "height": 2169
@@ -15,9 +19,13 @@
     "width": 760,
     "height": 438
   },
+  "leanai-proposals": {
+    "width": 922,
+    "height": 1270
+  },
   "step-improve": {
     "width": 2400,
-    "height": 1647
+    "height": 1057
   },
   "step-learn": {
     "width": 2400,
@@ -28,8 +36,8 @@
     "height": 1828
   },
   "step-solve": {
-    "width": 2400,
-    "height": 1495
+    "width": 1533,
+    "height": 1339
   },
   "step-solve-m": {
     "width": 1200,
@@ -46,10 +54,6 @@
   "tile-gemba": {
     "width": 2400,
     "height": 1286
-  },
-  "tile-pps": {
-    "width": 2400,
-    "height": 1182
   },
   "tile-suggestions": {
     "width": 2400,

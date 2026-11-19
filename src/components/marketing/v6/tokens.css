@@ -17,9 +17,9 @@
   --thread-b: #8b9bff;
   --spark: #f59e0b;
   --ok: #10b981;
-  --radar-fill: rgb(70 95 255 / 0.18);
+  --radar-fill: rgb(70 95 255 / 0.22);
   --radar-stroke: #465fff;
-  --radar-grid: #d5dce6;
+  --radar-grid: #b9c3d2;
   --radar-label: #475569;
   /* Product page background inside captures (fades in PIXEL's C1 go here). */
   --capture-bg: #f8fafc;
@@ -40,7 +40,7 @@
   --m: 20px;
   --gutter: 16px;
   --section-y: 96px;
-  --statement-y: 128px;
+  --statement-y: 96px;
   --head-gap: 48px;
   --bento-gap: 16px;
   --tile-pad: 24px;
@@ -65,7 +65,7 @@ html.dark .leh-v6 {
   --ok: #34d399;
   --radar-fill: rgb(91 113 255 / 0.26);
   --radar-stroke: #7b8cff;
-  --radar-grid: #24344d;
+  --radar-grid: #3a4d69;
   --radar-label: #a9b5c7;
   --capture-bg: #090e17;
   --dot: rgb(148 163 184 / 0.08);
@@ -86,7 +86,7 @@ html.dark .leh-v6 {
     --m: 32px;
     --gutter: 20px;
     --section-y: 112px;
-    --statement-y: 160px;
+    --statement-y: 120px;
     --head-gap: 64px;
     --bento-gap: 20px;
     --tile-pad: 32px;
@@ -98,7 +98,13 @@ html.dark .leh-v6 {
     --m: 48px;
     --gutter: 24px;
     --section-y: 160px;
-    --statement-y: 200px;
     --bento-gap: 24px;
+  }
+}
+
+/* Statement rhythm (review r1 M1): 96 / 120 / 160. */
+@media (min-width: 1280px) {
+  .leh-v6 {
+    --statement-y: 160px;
   }
 }
