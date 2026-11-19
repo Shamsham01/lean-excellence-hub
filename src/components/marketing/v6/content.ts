@@ -33,7 +33,7 @@ export const THREAD_STEPS: readonly ThreadStep[] = [
     // ATELIER r2 N2: the Act step shows the actions list, so action-detail
     // appears only in the Action Card.
     desktop: OPTIONAL_CAPTURES.stepActList ?? null,
-    mobile: OPTIONAL_CAPTURES.stepActListM ?? CAPTURES.tileActionsM,
+    mobile: CAPTURES.stepActListM,
   },
   {
     id: "solve",

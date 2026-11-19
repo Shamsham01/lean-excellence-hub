@@ -204,7 +204,7 @@ describe("public marketing homepage", () => {
       "step-solve-m",
       "step-improve-m",
       "step-learn-m",
-      "tile-actions-m",
+      "step-act-list-m",
     ]) {
       expect(sources).toContain(`${slot}-light`);
     }

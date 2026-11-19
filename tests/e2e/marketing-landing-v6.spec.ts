@@ -97,8 +97,8 @@ test("windows never crop and match across themes (ATELIER r1 B2/B3)", async ({
             const r = w.getBoundingClientRect();
             const media = w.parentElement!.getBoundingClientRect();
             return {
-              left: Math.round(r.left - t.left),
-              right: Math.round(t.right - r.right),
+              left: Math.round(r.left - t.left - tile.clientLeft),
+              right: Math.round(t.right - r.right - tile.clientLeft),
               width: Math.round(r.width),
               mediaHeight: Math.round(media.height),
             };

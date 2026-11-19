@@ -85,9 +85,10 @@ export const CAPTURES = {
     "step-learn-m",
     "A published training course on a phone with its objectives.",
   ),
-  tileActionsM: v6(
-    "tile-actions-m",
-    "The actions list on a phone, grouped by due date with owners and status.",
+  /** ATELIER r3 M3: the Act step's phone crop, board view (844×1170). */
+  stepActListM: v6(
+    "step-act-list-m",
+    "Open actions on a phone board, each with an owner, a due date and a status.",
   ),
   actionDetail: v6(
     "action-detail",
@@ -115,12 +116,6 @@ export const OPTIONAL_CAPTURES = {
   stepActList: v6Optional(
     "step-act-list",
     "The actions list grouped by due date with owners and status.",
-  ),
-  /** ATELIER r3 M3: the Act step's phone crop (~430 CSS @2x, open items
-   * first); falls back to tile-actions-m until it lands. */
-  stepActListM: v6Optional(
-    "step-act-list-m",
-    "Open actions on a phone, each with an owner, a due date and a status.",
   ),
   /** 390 px phone crop of the LeanAI proposals, shown alone below 768. */
   leanaiProposalsM: v6Optional(

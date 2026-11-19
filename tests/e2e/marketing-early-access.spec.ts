@@ -122,10 +122,7 @@ test("the finding story switches steps and never shrinks a capture", async ({
   await expect(tab(/Act/)).toHaveAttribute("aria-selected", "true");
   await expect(
     page.locator(".v6-carousel-frame.is-active img:visible"),
-  ).toHaveAttribute(
-    "src",
-    /(step-act-list|tile-actions-m)-(light|dark)\.webp$/,
-  );
+  ).toHaveAttribute("src", /step-act-list(-m)?-(light|dark)\.webp$/);
   await tab(/Learn/).click();
   await expect(tab(/Learn/)).toHaveAttribute("aria-selected", "true");
   await tab(/Learn/).press("Home");
