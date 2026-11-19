@@ -81,7 +81,17 @@ export function GoldenThread({ rootId }: { rootId: string }) {
         let bottom = -Infinity;
         for (const el of anchors) {
           const r = el.getBoundingClientRect();
-          const y = Math.round(r.top - rootRect.top + r.height / 2) + 0.5;
+          // Inside a pinned (sticky) stage, measure where the anchor sits at
+          // pin start, so the line never depends on the scroll position.
+          const stage = el.closest<HTMLElement>("[data-pin-stage]");
+          const pinTrack = stage?.closest<HTMLElement>("[data-pin-track]");
+          const shift =
+            stage && pinTrack
+              ? pinTrack.getBoundingClientRect().top -
+                stage.getBoundingClientRect().top
+              : 0;
+          const y =
+            Math.round(r.top + shift - rootRect.top + r.height / 2) + 0.5;
           top = Math.min(top, y);
           bottom = Math.max(bottom, y);
           if (el.dataset.thread === "end") {

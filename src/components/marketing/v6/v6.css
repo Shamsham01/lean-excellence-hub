@@ -639,19 +639,136 @@ html.dark .leh-v6 .v6-hero-devices-img {
 }
 
 /* =========================================================
-   3 · Golden Thread carousel (§6.3)
+   3 · Golden Thread: one finding, five steps (§6.3; scroll story)
+   ≥1024 + motion: the section pins for 100svh and vertical scroll moves a
+   horizontal track, resting briefly on each step.
+   <1024: a native swipe track with the rail in sync.
+   ≥1024 + reduced motion: the tabbed 16:10 carousel.
    ========================================================= */
-.v6-rail,
-.v6-carousel-stage {
+.v6-rail {
+  --rail-gap: 8px;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--rail-gap);
+}
+.v6-rail-line,
+.v6-rail-fill {
+  position: absolute;
+  left: 0;
+  top: 5px;
+  height: 2px;
+  border-radius: 2px;
+  width: calc((100% + var(--rail-gap)) / 5 * 4 + 6px);
+}
+.v6-rail-line {
+  background: var(--line);
+}
+.v6-rail-fill {
+  background: linear-gradient(90deg, var(--thread-a), var(--thread-b));
+  transform-origin: left center;
+  transform: scaleX(calc(var(--active) / 4));
+}
+.v6-rail-tab {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 44px;
+  padding: 0 0 4px;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--ink);
+}
+.v6-rail-node {
+  position: relative;
+  z-index: 1;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 2px solid var(--line-strong);
+  transition:
+    background 320ms ease,
+    border-color 320ms ease,
+    box-shadow 320ms ease;
+}
+.v6-rail-tab.is-done .v6-rail-node {
+  background: var(--thread-a);
+  border-color: var(--thread-a);
+}
+.v6-rail-tab[aria-selected="true"] .v6-rail-node {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+.v6-rail-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 12px;
+  white-space: nowrap;
+}
+.v6-rail-head .v6-kicker {
   display: none;
 }
-/* <1024: the five steps as a list on the thread. */
-.v6-steps {
-  display: grid;
-  gap: 40px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.v6-rail-title {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink-3);
+  transition: color 320ms ease;
+}
+.v6-rail-tab[aria-selected="true"] .v6-rail-title,
+.v6-rail-tab:hover .v6-rail-title {
+  color: var(--ink);
+}
+.v6-rail-module {
+  display: none;
+}
+@media (min-width: 640px) {
+  .v6-rail-head .v6-kicker {
+    display: inline;
+  }
+  .v6-rail-title {
+    font-size: 0.9375rem;
+  }
+}
+
+/* <1024: native swipe track. Panels are 88% wide so the next one peeks. */
+.v6-hviewport {
+  margin-top: 24px;
+  margin-inline: calc(-1 * var(--m));
+  padding-inline: var(--m);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--m);
+  scrollbar-width: none;
+}
+.v6-hviewport::-webkit-scrollbar {
+  display: none;
+}
+.v6-htrack {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gutter);
+}
+.v6-htrack::after {
+  content: "";
+  flex: 0 0 1px;
+}
+.v6-hpanel {
+  flex: 0 0 88%;
+  min-width: 0;
+  scroll-snap-align: start;
+}
+.v6-hpanel-desk,
+.v6-carousel-nav {
+  display: none;
 }
 .v6-step .v6-h3 {
   margin-top: 8px;
@@ -685,89 +802,43 @@ html.dark .leh-v6 .v6-hero-devices-img {
   }
 }
 
+/* The desktop window (pin and tabs). */
+.v6-frame-shot {
+  position: relative;
+}
+.v6-frame-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.v6-frame-shot.is-phone {
+  max-width: 100%;
+  height: 100%;
+  margin-inline: auto;
+  padding-top: 24px;
+  overflow: hidden;
+}
+.v6-frame-fade {
+  position: absolute;
+  inset: auto 0 0;
+  height: 64px;
+  background: linear-gradient(to bottom, transparent, var(--screen));
+  pointer-events: none;
+}
+
 @media (min-width: 1024px) {
-  .v6-steps {
-    display: none;
-  }
   .v6-rail {
-    position: relative;
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: var(--gutter);
+    --rail-gap: var(--gutter);
   }
-  .v6-rail-line,
-  .v6-rail-fill {
-    position: absolute;
-    left: 0;
-    top: 5px;
-    height: 2px;
-    border-radius: 2px;
-  }
-  .v6-rail-line {
-    width: calc((100% + var(--gutter)) / 5 * 4 + 6px);
-    background: var(--line);
-  }
-  .v6-rail-fill {
-    width: calc((100% + var(--gutter)) / 5 * var(--active) + 6px);
-    background: linear-gradient(90deg, var(--thread-a), var(--thread-b));
-    transition: width 320ms var(--ease-out);
-  }
-  .v6-rail-tab {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0;
-    padding: 0 0 4px;
-    text-align: left;
-    background: none;
-    border: 0;
-    cursor: pointer;
-    color: var(--ink);
-  }
-  .v6-rail-node {
-    position: relative;
-    z-index: 1;
-    width: 12px;
-    height: 12px;
-    border-radius: 999px;
-    background: var(--bg);
-    border: 2px solid var(--line-strong);
-    transition:
-      background 320ms ease,
-      border-color 320ms ease,
-      box-shadow 320ms ease;
-  }
-  .v6-rail-tab.is-done .v6-rail-node {
-    background: var(--thread-a);
-    border-color: var(--thread-a);
-  }
-  .v6-rail-tab[aria-selected="true"] .v6-rail-node {
-    background: var(--accent);
-    border-color: var(--accent);
-    box-shadow: 0 0 0 4px var(--accent-soft);
-  }
-  /* Review r1 M7: index and title on one line; the module wraps to ≤2. */
   .v6-rail-head {
-    display: flex;
-    align-items: baseline;
     gap: 10px;
     margin-top: 20px;
-    white-space: nowrap;
   }
   .v6-rail-title {
     font-size: 1.25rem;
-    line-height: 1.4;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    color: var(--ink-3);
-    transition: color 320ms ease;
-  }
-  .v6-rail-tab[aria-selected="true"] .v6-rail-title,
-  .v6-rail-tab:hover .v6-rail-title {
-    color: var(--ink);
   }
   .v6-rail-module {
+    display: block;
     margin-top: 4px;
     max-width: 100%;
     overflow-wrap: anywhere;
@@ -776,56 +847,142 @@ html.dark .leh-v6 .v6-hero-devices-img {
     font-weight: 500;
     color: var(--ink-3);
   }
-  .v6-carousel-stage {
-    display: block;
-    position: relative;
-    margin-top: 32px;
-    container-type: inline-size;
+  .v6-hviewport {
+    margin-inline: 0;
+    padding-inline: 0;
+    overflow: visible;
+    scroll-snap-type: none;
   }
-  /* Review r1 B2 + ATELIER r3: the stage is a fixed 16:10 in both themes.
-     Captures are never cropped or squashed: a wider one is top-aligned on
-     the screen colour, its bottom edge fading out over 96 px. */
-  .v6-carousel-frames {
-    position: relative;
-    aspect-ratio: 16 / 10;
+  .v6-hpanel-swipe {
+    display: none;
+  }
+  .v6-hpanel-desk {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+  .v6-hpanel-body {
     background: var(--screen);
-  }
-  .v6-frame-shot {
-    position: relative;
-  }
-  .v6-frame-shot.is-phone {
-    max-width: 100%;
-    height: 100%;
-    margin-inline: auto;
-    padding-top: 24px;
     overflow: hidden;
   }
-  .v6-frame-fade {
-    position: absolute;
-    inset: auto 0 0;
-    height: 96px;
-    background: linear-gradient(to bottom, transparent, var(--screen));
-    pointer-events: none;
+}
+
+/* ≥1024 + motion: pinned horizontal story. */
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+  .v6-page section.v6-why {
+    padding-block: 0;
+    /* Anchors and snap land on the pin start. */
+    scroll-margin-top: 0;
   }
-  .v6-carousel-frame {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    transform: translateX(8px);
-    transition:
-      opacity 320ms var(--ease-out),
-      transform 320ms var(--ease-out);
-    pointer-events: none;
+  .v6-why-track {
+    /* One screen pinned, plus ~0.7 screen of scroll per step. */
+    height: calc(100svh + 4 * 70svh);
   }
-  .v6-carousel-frame img {
-    display: block;
-    width: 100%;
-    height: auto;
+  .v6-why-stage {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100svh;
+    box-sizing: border-box;
+    padding-top: calc(64px + clamp(16px, 3svh, 32px));
+    padding-bottom: clamp(20px, 3.5svh, 40px);
   }
-  .v6-carousel-frame.is-active {
-    opacity: 1;
-    transform: none;
-    pointer-events: auto;
+  .v6-why-inner {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+  }
+  /* Kicker + H2 left, lede right: one compact header band. */
+  .v6-why .v6-head {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--gutter);
+    align-items: end;
+  }
+  .v6-why .v6-head .v6-kicker {
+    grid-column: 1 / -1;
+  }
+  .v6-why .v6-head .v6-h2 {
+    grid-column: 1 / span 6;
+    margin-top: 14px;
+  }
+  .v6-why .v6-head .v6-lede {
+    grid-column: 7 / -1;
+    margin-top: 0;
+    max-width: none;
+  }
+  .v6-why-visual {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+    margin-top: clamp(20px, 3.5svh, 36px);
+  }
+  .v6-why .v6-carousel {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .v6-why .v6-rail-head {
+    margin-top: 12px;
+  }
+  .v6-why .v6-hviewport {
+    flex: 1;
+    min-height: 0;
+    margin-top: clamp(14px, 2.5svh, 24px);
+  }
+  .v6-why .v6-htrack {
+    align-items: stretch;
+    height: 100%;
+    /* The next panel waits beyond the viewport edge: no slivers. */
+    column-gap: calc(50vw - 50% + 24px);
+    will-change: transform;
+  }
+  .v6-why .v6-htrack::after {
+    display: none;
+  }
+  .v6-why .v6-hpanel {
+    flex: 0 0 100%;
+    display: flex;
+    align-items: flex-start;
+    height: 100%;
+  }
+  /* The window fills the height left over, never taller than its 16:10
+     capture; the capture keeps its width (UI text ~12 px) and runs under a
+     64 px fade at the bottom. */
+  .v6-why .v6-hpanel-desk {
+    height: 100%;
+    max-height: calc(min(1200px, 100vw - 2 * var(--m)) * 0.625 + 36px);
+  }
+  .v6-why .v6-hpanel-body {
+    flex: 1;
+    min-height: 0;
+  }
+}
+
+/* ≥1024 + reduced motion: the tabbed carousel (ATELIER r3: 16:10 stage). */
+@media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
+  .v6-hviewport {
+    margin-top: 32px;
+  }
+  .v6-htrack {
+    display: grid;
+  }
+  .v6-hpanel {
+    grid-area: 1 / 1;
+    visibility: hidden;
+  }
+  .v6-hpanel.is-active {
+    visibility: visible;
+  }
+  .v6-hpanel-body {
+    aspect-ratio: 16 / 10;
+  }
+  .v6-hpanel-body:not([data-wide]) .v6-frame-fade {
+    display: none;
   }
   .v6-carousel-nav {
     display: flex;
@@ -853,7 +1010,8 @@ html.dark .leh-v6 .v6-hero-devices-img {
 }
 
 /* =========================================================
-   4 · Action Card (§6.4)
+   4 · Action Card (§6.4; scroll story): the phone turns to the action.
+   ≥768 + motion: pinned for one extra screen. <768: scrubs in passing.
    ========================================================= */
 .v6-action-grid {
   display: grid;
@@ -865,34 +1023,60 @@ html.dark .leh-v6 .v6-hero-devices-img {
 .v6-action-copy .v6-lede {
   margin-top: 20px;
 }
-/* The action drawer needs ≥808 px to keep its UI text ≥10 px; below 1024
-   the phone crop (action-detail-m) shows at its natural size. */
 .v6-action-visual {
   position: relative;
+  display: flex;
+  justify-content: center;
 }
-.v6-action-desktop {
-  display: none;
+.v6-scrub-phone {
+  position: relative;
+  height: min(560px, 72svh);
+  aspect-ratio: 632 / 1280;
 }
-@media (min-width: 1024px) {
-  /* ATELIER r2 N3: the portrait drawer-top capture (1344×1544) shown well
-     under 960 CSS px and capped at ~820 px tall so it never towers over the
-     copy: 820 × 1344 / 1544 ≈ 714 px wide. */
-  .v6-action-desktop {
-    display: block;
-    width: 100%;
-    max-width: min(714px, calc(820px * 1344 / 1544));
+.v6-scrub-still,
+.v6-scrub-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+/* Theme picks the still via .cap-*; state picks which still is seen. No JS:
+   the final pose. JS + motion: the first pose until the frames draw. */
+.v6-scrub-still.is-first,
+.v6-scrub-canvas {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  html.js .v6-scrub-still.is-first {
+    opacity: 1;
   }
-  .v6-action-mobile {
-    display: none;
+  html.js .v6-scrub-still.is-poster,
+  html.js .v6-scrub-phone[data-ready] .v6-scrub-still.is-first {
+    opacity: 0;
+  }
+  html.js .v6-scrub-phone[data-ready] .v6-scrub-canvas {
+    opacity: 1;
   }
 }
-/* ATELIER r3 M2: 768-1023 is a 5/7 grid — copy left, the -m window right,
-   tops aligned. */
-@media (min-width: 768px) and (max-width: 1023px) {
+.v6-scrub-shadow {
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  bottom: -6px;
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(15 23 42 / 0.16), transparent);
+  pointer-events: none;
+}
+html.dark .v6-scrub-shadow {
+  background: radial-gradient(closest-side, rgb(0 0 0 / 0.6), transparent);
+}
+
+@media (min-width: 768px) {
   .v6-action-grid {
     grid-template-columns: repeat(12, minmax(0, 1fr));
     column-gap: var(--gutter);
-    align-items: start;
+    align-items: center;
   }
   .v6-action-copy {
     grid-column: 1 / span 5;
@@ -900,27 +1084,65 @@ html.dark .leh-v6 .v6-hero-devices-img {
   .v6-action-visual {
     grid-column: 6 / -1;
   }
-  .v6-action-mobile {
-    margin-left: auto;
+}
+@media (min-width: 1024px) {
+  .v6-action-copy {
+    grid-column: 1 / span 6;
+  }
+  .v6-action-visual {
+    grid-column: 7 / -1;
   }
 }
 @media (min-width: 1280px) {
-  .v6-action-grid {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    column-gap: var(--gutter);
-    /* Review r1 M5: the copy is centred on the visual. */
-    align-items: center;
-  }
   .v6-action-copy {
-    grid-column: 1 / span 4;
+    grid-column: 1 / span 5;
   }
-  /* ATELIER r3 M4: the window's right edge sits on the container edge. */
-  .v6-action-visual {
-    grid-column: 5 / -1;
+}
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .v6-page section.v6-action {
+    padding-block: 0;
+    scroll-margin-top: 0;
   }
-  .v6-action-desktop {
-    margin-left: auto;
+  .v6-scrub-track {
+    height: 200svh;
   }
+  .v6-scrub-stage {
+    position: sticky;
+    top: 0;
+    display: flex;
+    align-items: center;
+    height: 100svh;
+    box-sizing: border-box;
+    padding-top: 64px;
+  }
+  .v6-scrub-stage > .v6-container {
+    width: 100%;
+  }
+  .v6-scrub-phone {
+    height: min(640px, 100svh - 64px - 96px);
+  }
+  /* The divider sits on the section edge, not on the pinned container. */
+  .v6-action .v6-container::before {
+    display: none;
+  }
+  .v6-action::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: max(var(--m), (100% - 1200px) / 2);
+    right: max(var(--m), (100% - 1200px) / 2);
+    height: 1px;
+    background: var(--line);
+  }
+}
+
+/* Lenis (≥1024, fine pointer, motion allowed). */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-stopped {
+  overflow: clip;
 }
 
 /* =========================================================

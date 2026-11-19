@@ -84,7 +84,7 @@ test("windows never crop and match across themes (ATELIER r1 B2/B3)", async ({
       await page.waitForTimeout(400);
       heights.push(
         await page
-          .locator(".v6-carousel-frames")
+          .locator(".v6-hpanel.is-active .v6-hpanel-desk")
           .evaluate((el) => Math.round(el.getBoundingClientRect().height)),
       );
     }

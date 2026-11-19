@@ -18,13 +18,16 @@ import {
   OVERALL_SCORE,
   PILLARS,
   SCORE_MAX,
+  THREAD_STEPS,
 } from "./content";
+import { ActionScrub } from "./action-scrub";
 import { GoldenThread } from "./golden-thread";
 import { HeroComposite } from "./hero-composite";
 import { LeanAiBeats } from "./leanai-beats";
 import { MaturityRadar } from "./maturity-radar";
 import { V6Motion } from "./motion";
 import { ProductWindow } from "./product-window";
+import { SmoothScroll } from "./scroll-engine";
 import { ThreadCarousel } from "./thread-carousel";
 
 const ROOT_ID = "v6-landing";
@@ -79,10 +82,16 @@ export function V6Landing() {
   return (
     <div className="v6-page" id={ROOT_ID}>
       <V6Motion rootId={ROOT_ID} />
+      <SmoothScroll rootId={ROOT_ID} />
       <GoldenThread rootId={ROOT_ID} />
 
       {/* 1 · Hero */}
-      <section id="connect" className="v6-hero" aria-labelledby="v6-hero-title">
+      <section
+        id="connect"
+        className="v6-hero"
+        aria-labelledby="v6-hero-title"
+        data-snap
+      >
         <div className="v6-hero-aurora" aria-hidden="true" />
         <div className="v6-container v6-hero-grid">
           <div className="v6-hero-copy">
@@ -111,7 +120,11 @@ export function V6Landing() {
       </section>
 
       {/* 2 · Statement */}
-      <section className="v6-statement" aria-label="Positioning statement">
+      <section
+        className="v6-statement"
+        aria-label="Positioning statement"
+        data-snap
+      >
         <div className="v6-container" data-reveal>
           <p className="v6-mega">
             <span className="v6-mega-line">Operational excellence.</span>{" "}
@@ -124,65 +137,69 @@ export function V6Landing() {
         </div>
       </section>
 
-      {/* 3 · Golden Thread carousel */}
-      <section id="why" className="v6-section" aria-labelledby="v6-why-title">
-        <div className="v6-container">
-          <SectionHead
-            id="v6-why-title"
-            kicker="From one finding"
-            title="One finding. Every next step connected."
-            lede="A quality or operational issue is identified during a Gemba walk. Lean Excellence Hub connects that observation to action, structured problem solving, an improvement project and benefit validation."
-          />
-          <div className="v6-visual" data-reveal>
-            <ThreadCarousel />
+      {/* 3 · Golden Thread: pinned horizontal story ≥1024, swipe below */}
+      <section
+        id="why"
+        className="v6-section v6-why"
+        aria-labelledby="v6-why-title"
+        data-snap
+      >
+        <div
+          className="v6-why-track"
+          data-pin-track
+          data-pin-steps={THREAD_STEPS.length}
+        >
+          <div className="v6-why-stage" data-pin-stage>
+            <div className="v6-container v6-why-inner">
+              <SectionHead
+                id="v6-why-title"
+                kicker="From one finding"
+                title="One finding. Every next step connected."
+                lede="A quality or operational issue is identified during a Gemba walk. Lean Excellence Hub connects that observation to action, structured problem solving, an improvement project and benefit validation."
+              />
+              <div className="v6-visual v6-why-visual" data-reveal>
+                <ThreadCarousel />
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 4 · Action Card */}
+      {/* 4 · Action Card: the phone turns to the action as the page scrolls */}
       <section
+        id="action"
         className="v6-section v6-action"
         aria-labelledby="v6-action-title"
+        data-snap
       >
-        <div className="v6-container v6-action-grid">
-          <div className="v6-action-copy" data-reveal>
-            <p className="v6-kicker" data-thread="node">
-              The Action Card
-            </p>
-            <h2 className="v6-h2" id="v6-action-title">
-              Accountability you can see on the floor and on the dashboard.
-            </h2>
-            <p className="v6-lede">
-              The same object carries owner, due date, linked source and status
-              whether it started on a Gemba walk, a 5S audit or a
-              problem-solving case.
-            </p>
-            <div className="v6-ctas">
-              <DemoButton />
+        <ActionScrub
+          label={CAPTURES.actionDetailM.alt}
+          copy={
+            <div className="v6-action-copy" data-reveal>
+              <p className="v6-kicker" data-thread="node">
+                The Action Card
+              </p>
+              <h2 className="v6-h2" id="v6-action-title">
+                Accountability you can see on the floor and on the dashboard.
+              </h2>
+              <p className="v6-lede">
+                The same object carries owner, due date, linked source and
+                status whether it started on a Gemba walk, a 5S audit or a
+                problem-solving case.
+              </p>
+              <div className="v6-ctas">
+                <DemoButton />
+              </div>
             </div>
-          </div>
-          <div className="v6-action-visual" data-reveal>
-            <div className="v6-stage-glow" aria-hidden="true" />
-            {/* Desktop drawer from 1024; the phone crop below it. */}
-            <ProductWindow
-              slot={CAPTURES.actionDetail}
-              sizes="(min-width: 1280px) 900px, 100vw"
-              className="v6-action-desktop"
-            />
-            <ProductWindow
-              slot={CAPTURES.actionDetailM}
-              sizes="420px"
-              className="v6-action-mobile"
-              style={{ maxWidth: `${CAPTURES.actionDetailM.width / 2}px` }}
-            />
-          </div>
-        </div>
+          }
+        />
       </section>
 
       {/* 5 · Platform */}
       <section
         id="platform"
         className="v6-section"
+        data-snap
         aria-labelledby="v6-platform-title"
       >
         <div className="v6-container">
@@ -296,6 +313,7 @@ export function V6Landing() {
       <section
         id="leanai"
         className="v6-section"
+        data-snap
         aria-labelledby="v6-leanai-title"
       >
         <div className="v6-container v6-leanai-grid">
@@ -350,7 +368,12 @@ export function V6Landing() {
       </section>
 
       {/* 7 · FAQ */}
-      <section id="faq" className="v6-section" aria-labelledby="v6-faq-title">
+      <section
+        id="faq"
+        className="v6-section"
+        aria-labelledby="v6-faq-title"
+        data-snap
+      >
         <div className="v6-container v6-faq-grid">
           <div className="v6-faq-head" data-reveal>
             <p className="v6-kicker" data-thread="node">
@@ -385,7 +408,12 @@ export function V6Landing() {
       </section>
 
       {/* 8 · Close */}
-      <section id="close" className="v6-close" aria-labelledby="v6-close-title">
+      <section
+        id="close"
+        className="v6-close"
+        aria-labelledby="v6-close-title"
+        data-snap
+      >
         <div className="v6-close-art" aria-hidden="true" />
         <div className="v6-container v6-close-inner" data-reveal>
           <div className="v6-close-mark" data-thread="end">

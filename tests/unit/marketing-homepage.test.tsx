@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import {
   cleanup,
   fireEvent,
@@ -47,6 +47,7 @@ vi.mock("@/modules/identity/session", () => ({
 import Home, { metadata } from "@/app/page";
 import { ThemeProvider } from "@/app/theme-provider";
 import { MarketingHome } from "@/components/marketing/home";
+import { restingPosition } from "@/components/marketing/v6/thread-carousel";
 
 describe("public marketing homepage", () => {
   afterEach(() => {
@@ -192,14 +193,15 @@ describe("public marketing homepage", () => {
       .map((el) => el.getAttribute("src") ?? el.getAttribute("srcset") ?? "")
       .join(" ");
     expect(sources).toMatch(/hero-devices-/);
-    expect(sources).toMatch(/action-detail-/);
+    // Scroll story: the Action Card is the scroll-scrubbed phone, so the
+    // action-detail drawer captures are no longer on the landing.
+    expect(sources).not.toMatch(/action-detail-/);
     expect(sources).not.toMatch(
       /hero-dashboard|step-act-(light|dark|m)|leanai-panel-(light|dark)|tile-projects|tile-pps/,
     );
     // PIXEL round 3: the 390 px phone crops are delivered and wired.
     for (const slot of [
       "step-observe-m",
-      "action-detail-m",
       "step-solve-m",
       "step-improve-m",
       "step-learn-m",
@@ -208,6 +210,81 @@ describe("public marketing homepage", () => {
       expect(sources).toContain(`${slot}-light`);
     }
     expect(container.querySelector("#projects-benefits")).toBeNull();
+  });
+
+  it("turns the Action Card phone to the action as the page scrolls", () => {
+    const { container } = render(<MarketingHome />);
+
+    const section = container.querySelector("section#action");
+    expect(section).not.toBeNull();
+    const track = section?.querySelector("[data-pin-track]");
+    expect(track).not.toBeNull();
+    const phone = section?.querySelector(".v6-scrub-phone");
+    expect(phone).toHaveAttribute("role", "img");
+    expect(phone?.getAttribute("aria-label")).toMatch(/owner, due date/);
+    expect(phone?.querySelector("canvas")).not.toBeNull();
+    // Light and dark stills: the first pose and the final (poster) pose.
+    const stills = Array.from(
+      phone?.querySelectorAll<HTMLImageElement>("img.v6-scrub-still") ?? [],
+    ).map((img) => img.getAttribute("src"));
+    expect(stills.sort()).toEqual([
+      "/marketing/v6/scrub/first-dark.webp",
+      "/marketing/v6/scrub/first-light.webp",
+      "/marketing/v6/scrub/poster-dark.webp",
+      "/marketing/v6/scrub/poster-light.webp",
+    ]);
+    // Copy and CTA unchanged.
+    expect(section?.textContent).toMatch(
+      /Accountability you can see on the floor and on the dashboard\./,
+    );
+    expect(section?.querySelectorAll("a")).toHaveLength(1);
+    for (const theme of ["light", "dark"]) {
+      for (const frame of ["000", "074"]) {
+        expect(
+          existsSync(`public/marketing/v6/scrub/${theme}/${frame}.webp`),
+        ).toBe(true);
+      }
+      expect(existsSync(`public/marketing/v6/scrub/${theme}/075.webp`)).toBe(
+        false,
+      );
+    }
+  });
+
+  it("pins From one finding and rests on each step", () => {
+    const { container } = render(<MarketingHome />);
+    const track = container.querySelector("#why [data-pin-track]");
+    expect(track).toHaveAttribute("data-pin-steps", "5");
+    expect(container.querySelectorAll("#why [role=tabpanel]")).toHaveLength(5);
+    expect(restingPosition(0, 5)).toBe(0);
+    expect(restingPosition(1, 5)).toBe(4);
+    expect(restingPosition(0.5, 5)).toBe(2);
+    // A short rest either side of each step.
+    expect(restingPosition(0.04, 5)).toBe(0);
+    expect(restingPosition(0.5 + 0.04, 5)).toBe(2);
+    expect(restingPosition(0.375, 5)).toBeCloseTo(1.5, 5);
+  });
+
+  it("snaps gently only where it cannot fight the reader", () => {
+    const { container } = render(<MarketingHome />);
+    const snaps = Array.from(
+      container.querySelectorAll<HTMLElement>("section[data-snap]"),
+    ).map((el) => el.id || el.className.split(" ")[0]);
+    expect(snaps).toEqual([
+      "connect",
+      "v6-statement",
+      "why",
+      "action",
+      "platform",
+      "leanai",
+      "faq",
+      "close",
+    ]);
+    const engine = readFileSync(
+      "src/components/marketing/v6/scroll-engine.tsx",
+      "utf8",
+    );
+    expect(engine).toMatch(/\(pointer: fine\)/);
+    expect(engine).toMatch(/prefers-reduced-motion: no-preference/);
   });
 
   it("draws the pillar maturity radar with the real values", () => {

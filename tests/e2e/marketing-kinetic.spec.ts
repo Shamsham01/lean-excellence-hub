@@ -147,7 +147,8 @@ test("vertical wheel over the finding story continues the page", async ({
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/#why");
-  const stage = page.locator(".v6-carousel-stage");
+  // Scroll story: the finding story is pinned and wheel input moves the page.
+  const stage = page.locator(".v6-why .v6-hviewport");
   await expect(stage).toBeVisible();
   const box = await stage.boundingBox();
 
@@ -200,9 +201,11 @@ test("selecting a connected step shows that record", async ({ page }) => {
   await solve.click();
   await expect(solve).toHaveAttribute("aria-selected", "true");
   await expect(
-    page.locator(".v6-carousel-frame.is-active img:visible"),
+    page.locator(".v6-hpanel.is-active .v6-hpanel-desk img:visible"),
   ).toHaveAttribute("src", /step-solve-(light|dark)\.webp$/);
-  await expect(page.getByRole("tabpanel")).toBeVisible();
+  await expect(page.locator("#v6-panel-solve")).toBeInViewport({
+    ratio: 0.6,
+  });
 });
 
 test("tablet width keeps the headline, preview and platform reachable", async ({
