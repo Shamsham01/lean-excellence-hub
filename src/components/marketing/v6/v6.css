@@ -865,11 +865,11 @@ html.dark .v6-hero-aurora::before {
   display: none;
 }
 @media (min-width: 1024px) {
-  /* ATELIER r2 N3: the modal-only drawer at ≤960 CSS px (text ≥13 px). */
+  /* ATELIER r2 N3: the modal-only drawer (1312 px at 1.0x) shown at
+     ≤720 CSS px — text ~15 px, well inside the ≤960 px / ≥13 px brief. */
   .v6-action-desktop {
     display: block;
-    max-width: 960px;
-    margin-left: auto;
+    max-width: 720px;
   }
   .v6-action-mobile {
     display: none;
@@ -888,6 +888,9 @@ html.dark .v6-hero-aurora::before {
   .v6-action-visual {
     grid-column: 5 / -1;
     margin-right: -40px;
+  }
+  .v6-action-desktop {
+    margin-left: auto;
   }
 }
 

@@ -195,7 +195,7 @@ describe("public marketing homepage", () => {
     expect(sources).toMatch(/hero-phone-/);
     expect(sources).toMatch(/action-detail-/);
     expect(sources).not.toMatch(
-      /hero-dashboard|step-act|leanai-panel-(light|dark)|tile-projects|tile-pps/,
+      /hero-dashboard|step-act-(light|dark|m)|leanai-panel-(light|dark)|tile-projects|tile-pps/,
     );
     // PIXEL round 3: the 390 px phone crops are delivered and wired.
     for (const slot of [
