@@ -105,7 +105,7 @@ export function ThreadCarousel() {
         panels.forEach((panel, k) => {
           if (panel) {
             panel.style.opacity = String(
-              1 - Math.min(1, Math.abs(pos - k)) * 0.65,
+              1 - Math.min(1, Math.abs(pos - k)) * 0.4,
             );
           }
         });
@@ -308,18 +308,24 @@ export function ThreadCarousel() {
                 {step.mobile ? (
                   <figure
                     className="v6-window v6-step-window"
-                    style={{ maxWidth: `${step.mobile.width / 2}px` }}
+                    style={{
+                      ["--cap-w" as string]: `${step.mobile.width / 2}px`,
+                    }}
                   >
                     <div className="v6-window-chrome" aria-hidden="true">
                       <i />
                       <i />
                       <i />
                     </div>
-                    <div className="v6-window-body">
-                      <ThemedCapture
-                        slot={step.mobile}
-                        sizes="(min-width: 640px) 420px, 100vw"
-                      />
+                    <div className="v6-window-body v6-step-body">
+                      <div className="v6-step-shot">
+                        <ThemedCapture
+                          slot={step.mobile}
+                          sizes="(min-width: 768px) 482px, (min-width: 640px) 420px, 100vw"
+                        />
+                      </div>
+                      {/* m1: every phone crop ends under the same 64 px fade. */}
+                      <span className="v6-frame-fade" aria-hidden="true" />
                     </div>
                   </figure>
                 ) : null}

@@ -780,25 +780,49 @@ html.dark .leh-v6 .v6-hero-devices-img {
 .v6-step-window {
   margin-top: 20px;
 }
-/* ATELIER r3 M2: 768-1023 — each step is 5/7, text left and the -m window
-   right, tops aligned. */
+/* Swipe windows (<1024): the phone crop at its natural width (never wider
+   than its 2x export), its bottom under the 64 px fade. */
+.v6-step-window {
+  max-width: var(--cap-w);
+}
+.v6-step-body {
+  overflow: hidden;
+  background: var(--screen);
+}
+.v6-step-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.v6-step-body .v6-frame-fade {
+  position: absolute;
+  inset: auto 0 0;
+  height: 64px;
+  background: linear-gradient(to bottom, transparent, var(--screen));
+  pointer-events: none;
+}
+/* ATELIER r2 B1: 768-1023 stacks like 390 — label, heading and line above,
+   the window below at full panel width. The crop sits centred at up to
+   1.25x its natural width on the screen colour; the window is sized so the
+   rail, panel and fade fit one screen under the header. Only the active
+   panel's text shows, so the next panel peeks in by its window edge. */
 @media (min-width: 768px) and (max-width: 1023px) {
-  .v6-step {
-    display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    grid-template-rows: auto auto auto 1fr;
-    column-gap: var(--gutter);
-    align-items: start;
-  }
-  .v6-step > :not(.v6-step-window) {
-    grid-column: 1 / span 5;
-  }
-  .v6-step > .v6-step-window {
-    grid-column: 6 / -1;
-    grid-row: 1 / -1;
-    margin-top: 0;
-    justify-self: end;
+  .v6-step-window {
+    max-width: none;
     width: 100%;
+  }
+  .v6-step-body {
+    height: clamp(320px, calc(100svh - 64px - 248px), 760px);
+  }
+  .v6-step-shot {
+    width: min(100%, calc(var(--cap-w) * 1.25));
+    margin-inline: auto;
+  }
+  .v6-hpanel .v6-step > :not(.v6-step-window) {
+    transition: opacity 240ms var(--ease-out);
+  }
+  .v6-hpanel:not(.is-active) .v6-step > :not(.v6-step-window) {
+    opacity: 0;
   }
 }
 
