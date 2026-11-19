@@ -1,5 +1,4 @@
 import Link from "next/link";
-import type { CSSProperties } from "react";
 import { ArrowRight, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -245,32 +244,31 @@ export function V6Landing() {
                       className={cn(
                         "v6-tile v6-bento-tile",
                         `v6-tile-${tile.id}`,
-                        !tile.slot && "is-text-only",
+                        !tile.slot && !tile.desktop && "is-text-only",
+                        tile.desktop && "has-desktop",
                       )}
                       data-reveal
-                      style={
-                        tile.slot
-                          ? ({
-                              "--ar": (
-                                tile.slot.width / tile.slot.height
-                              ).toFixed(4),
-                              // Natural CSS width of a 2x phone capture.
-                              "--nat-w": `${tile.slot.width / 2}px`,
-                            } as CSSProperties)
-                          : undefined
-                      }
                     >
                       <div className="v6-tile-head">
                         <h3 className="v6-h3">{tile.name}</h3>
                         <p className="v6-small">{tile.line}</p>
                       </div>
-                      {tile.slot ? (
+                      {tile.slot || tile.desktop ? (
                         <div className="v6-tile-media">
-                          <ProductWindow
-                            slot={tile.slot}
-                            sizes="390px"
-                            className="v6-tile-window"
-                          />
+                          {tile.slot ? (
+                            <ProductWindow
+                              slot={tile.slot}
+                              sizes="420px"
+                              className="v6-tile-window is-phone"
+                            />
+                          ) : null}
+                          {tile.desktop ? (
+                            <ProductWindow
+                              slot={tile.desktop}
+                              sizes="(min-width: 1024px) 600px, 1px"
+                              className="v6-tile-window is-desktop"
+                            />
+                          ) : null}
                         </div>
                       ) : null}
                     </article>

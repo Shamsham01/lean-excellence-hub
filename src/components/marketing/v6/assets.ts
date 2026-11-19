@@ -138,6 +138,26 @@ export const OPTIONAL_CAPTURES = {
     "tile-training-m",
     "The training catalogue on a phone with published courses.",
   ),
+  /** ATELIER r4 P1: 640 CSS @2x bento capture, used from 1024. */
+  tileGembaD: v6Optional(
+    "tile-gemba-d",
+    "Completed Gemba walks with their sites, areas and status.",
+  ),
+  /** ATELIER r4 P1: 640 CSS @2x bento capture, used from 1024. */
+  tile5sD: v6Optional(
+    "tile-5s-d",
+    "A 5S audit section with question scores and a linked action.",
+  ),
+  /** ATELIER r4 P1: 640 CSS @2x bento capture, used from 1024. */
+  tileSuggestionsD: v6Optional(
+    "tile-suggestions-d",
+    "An improvement idea with what was noticed, the proposed change and the expected benefit.",
+  ),
+  /** ATELIER r4 P1: 640 CSS @2x bento capture, used from 1024. */
+  tileTrainingD: v6Optional(
+    "tile-training-d",
+    "The training catalogue with published courses.",
+  ),
   leanaiFrag: v6Optional(
     "leanai-panel-frag",
     "The LeanAI panel facilitating the current problem-solving stage.",

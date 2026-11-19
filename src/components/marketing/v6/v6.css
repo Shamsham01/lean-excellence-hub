@@ -1139,6 +1139,40 @@ html.dark .v6-hero-aurora::before {
     transparent
   );
 }
+/* ATELIER r4 P1: the phone crop below 1024; the 640 CSS @2x -d capture
+   from 1024 when it exists. */
+.v6-tile-window.is-desktop {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .v6-bento-tile.has-desktop .v6-tile-window.is-phone {
+    display: none;
+  }
+  .v6-bento-tile.has-desktop .v6-tile-window.is-desktop {
+    display: block;
+  }
+}
+/* ATELIER r4 P1: 768-1023 stays one column, each tile split 5/7 like the
+   steps — title and line left, the phone window right, its top on the
+   title's top, bleeding off the tile bottom under the fade. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .v6-bento-tile:not(.is-text-only) {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--gutter);
+    align-items: start;
+    padding: 24px 24px 0;
+  }
+  .v6-bento-tile .v6-tile-head {
+    grid-column: 1 / span 5;
+    padding-inline: 0;
+  }
+  .v6-bento-tile .v6-tile-media {
+    grid-column: 6 / -1;
+    grid-row: 1;
+    margin: 0;
+  }
+}
 .v6-tile-window {
   width: 100%;
   box-shadow:

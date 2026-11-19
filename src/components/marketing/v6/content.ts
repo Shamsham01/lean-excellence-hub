@@ -74,6 +74,11 @@ export type BentoTile = {
    * then shows its text only, never a capture with sub-10 px text.
    */
   slot: CaptureSlot | null;
+  /**
+   * ATELIER r4 P1: the 640 CSS @2x capture shown from 1024 px (2x2). Until it
+   * lands the tile keeps its phone crop there.
+   */
+  desktop: CaptureSlot | null;
 };
 
 /** ATELIER r2 N2: Gemba | 5S, then Suggestions | Training & Skills. */
@@ -84,12 +89,14 @@ export const BENTO_ROWS: readonly (readonly BentoTile[])[] = [
       name: "Gemba",
       line: "See the work where it happens.",
       slot: OPTIONAL_CAPTURES.tileGembaM,
+      desktop: OPTIONAL_CAPTURES.tileGembaD,
     },
     {
       id: "five-s",
       name: "5S",
       line: "Turn standards into repeatable practice.",
       slot: OPTIONAL_CAPTURES.tile5sM,
+      desktop: OPTIONAL_CAPTURES.tile5sD,
     },
   ],
   [
@@ -98,12 +105,14 @@ export const BENTO_ROWS: readonly (readonly BentoTile[])[] = [
       name: "Suggestions",
       line: "Turn frontline ideas into visible decisions.",
       slot: OPTIONAL_CAPTURES.tileSuggestionsM,
+      desktop: OPTIONAL_CAPTURES.tileSuggestionsD,
     },
     {
       id: "training-skills",
       name: "Training & Skills",
       line: "Build capability against your standards.",
       slot: OPTIONAL_CAPTURES.tileTrainingM,
+      desktop: OPTIONAL_CAPTURES.tileTrainingD,
     },
   ],
 ];
