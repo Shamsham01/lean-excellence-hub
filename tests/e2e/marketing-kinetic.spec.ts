@@ -201,7 +201,7 @@ test("selecting a connected step shows that record", async ({ page }) => {
   await solve.click();
   await expect(solve).toHaveAttribute("aria-selected", "true");
   await expect(
-    page.locator(".v6-hpanel.is-active .v6-hpanel-desk img:visible"),
+    page.locator(".v6-hpanel.is-active .v6-hpanel-body img:visible"),
   ).toHaveAttribute("src", /step-solve-(light|dark)\.webp$/);
   await expect(page.locator("#v6-panel-solve")).toBeInViewport({
     ratio: 0.6,

@@ -962,7 +962,7 @@ html.dark .leh-v6 .v6-hero-devices-img {
     align-items: stretch;
     height: 100%;
     /* The next panel waits beyond the viewport edge: no slivers. */
-    column-gap: calc(50vw - 50% + 24px);
+    column-gap: calc(50vw - 50% + 96px);
     will-change: transform;
   }
   .v6-why .v6-htrack::after {
@@ -979,7 +979,7 @@ html.dark .leh-v6 .v6-hero-devices-img {
      64 px fade at the bottom. */
   .v6-why .v6-hpanel-desk {
     height: 100%;
-    max-height: calc(min(1200px, 100vw - 2 * var(--m)) * 0.625 + 36px);
+    max-height: calc(min(1200px, 100vw - 2 * var(--m)) * 0.625);
   }
   .v6-why .v6-hpanel-body {
     flex: 1;
@@ -1868,5 +1868,114 @@ html.dark .v6-close-art {
   .leh-v6 *::after {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* ---------- Finding story ≥1024: frameless window, tile lifted in place
+   (ATELIER 2b). The window is the capture with a 1 px ring and the accent
+   glow; once a step settles the rest of the screen dims a touch and its
+   key tile rises 4% on the same pixels. Positions are `cqw` of the window,
+   so the tile matches the capture at every width and in both themes. */
+@media (min-width: 1024px) {
+  .v6-hpanel-desk.v6-window {
+    --lift-dim: 20%;
+    --lift-ring: rgb(70 95 255 / 0.2);
+    --lift-shadow:
+      0 1px 2px rgb(15 23 42 / 0.06), 0 10px 24px -12px rgb(15 23 42 / 0.16),
+      0 28px 64px -24px rgb(15 23 42 / 0.24);
+    position: relative;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    container-type: inline-size;
+  }
+  html.dark .leh-v6 .v6-hpanel-desk.v6-window {
+    --lift-dim: 28%;
+    --lift-ring: rgb(70 95 255 / 0.5);
+    --lift-shadow:
+      0 12px 28px -10px rgb(0 0 0 / 0.6), 0 32px 72px -20px rgb(0 0 0 / 0.75),
+      0 0 40px -12px rgb(70 95 255 / 0.35);
+  }
+  .v6-hpanel-desk.v6-window::before {
+    content: "";
+    position: absolute;
+    inset: -56px 0;
+    z-index: -1;
+    background: radial-gradient(
+      60% 55% at 50% 55%,
+      var(--glow),
+      transparent 70%
+    );
+    pointer-events: none;
+  }
+  .v6-hpanel-desk .v6-hpanel-body {
+    border-radius: 14px;
+    box-shadow:
+      0 0 0 1px var(--line),
+      var(--shadow-window);
+  }
+  .v6-hpanel-desk .v6-frame-shot:not(.is-phone) {
+    margin-top: calc(var(--sy, 0) * -1cqw);
+  }
+  .v6-frame-dim {
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, var(--screen) var(--lift-dim), transparent);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 400ms var(--ease-out);
+  }
+  .v6-lift {
+    position: absolute;
+    left: calc(var(--lx) * 1cqw);
+    top: calc(var(--ly) * 1cqw);
+    z-index: 1;
+    width: calc(var(--lw) * 1cqw);
+    height: calc(var(--lh) * 1cqw);
+    border-radius: calc(var(--lr) * 1cqw);
+    box-shadow:
+      0 0 0 1px var(--lift-ring),
+      var(--lift-shadow);
+    opacity: 0;
+    transform: scale(1);
+    transform-origin: 50% 50%;
+    pointer-events: none;
+    transition:
+      opacity 400ms var(--ease-out),
+      transform 400ms var(--ease-out);
+  }
+  .v6-lift-clip {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: inherit;
+  }
+  .v6-lift-shot {
+    position: absolute;
+    left: calc(var(--lx) * -1cqw);
+    top: calc(var(--ly0) * -1cqw);
+    width: 100cqw;
+  }
+  .v6-lift-shot img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .v6-carousel[data-mode="pin"] .v6-hpanel[data-lifted][data-fit] .v6-lift,
+  .v6-carousel[data-mode="tabs"] .v6-hpanel.is-active[data-fit] .v6-lift {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+  .v6-carousel[data-mode="pin"] .v6-hpanel[data-lifted][data-fit] .v6-frame-dim,
+  .v6-carousel[data-mode="tabs"] .v6-hpanel.is-active[data-fit] .v6-frame-dim {
+    opacity: 1;
+  }
+}
+@media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
+  .v6-lift,
+  .v6-frame-dim {
+    transition: none;
   }
 }

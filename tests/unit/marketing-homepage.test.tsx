@@ -159,7 +159,13 @@ describe("public marketing homepage", () => {
       );
       expect(Number(img.getAttribute("width"))).toBeGreaterThan(0);
       expect(Number(img.getAttribute("height"))).toBeGreaterThan(0);
-      expect(img.getAttribute("alt")).toBeTruthy();
+      // The lifted-tile overlay repeats its window's capture: hidden, no alt.
+      if (img.closest(".v6-lift")) {
+        expect(img.closest('[aria-hidden="true"]')).not.toBeNull();
+        expect(img.getAttribute("alt")).toBe("");
+      } else {
+        expect(img.getAttribute("alt")).toBeTruthy();
+      }
     }
     // No drawn product vignettes on the landing.
     expect(container.querySelector(".marketing-action-card")).toBeNull();

@@ -6,12 +6,13 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type KeyboardEvent,
 } from "react";
 
 import { cn } from "@/lib/utils";
 
-import { THREAD_STEPS } from "./content";
+import { THREAD_STEPS, type ThreadStep } from "./content";
 import {
   docTop,
   getScrollY,
@@ -27,6 +28,54 @@ const PIN_MEDIA =
 const WIDE_MEDIA = "(min-width: 1024px)";
 /** Share of each step-to-step segment spent resting on a step. */
 const REST = 0.2;
+
+/**
+ * ATELIER 2b: the capture's hidden top and its lifted tile as percentages of
+ * the capture width. CSS turns them into `cqw` of the window, so the tile
+ * sits on the same capture pixels at every size and in both themes.
+ */
+export function liftStyle(step: ThreadStep): CSSProperties | undefined {
+  const slot = step.desktop;
+  if (!slot || !step.lift) {
+    return undefined;
+  }
+  const pct = (v: number) => `${((v / slot.width) * 100).toFixed(4)}`;
+  const { x, y, w, h, r } = step.lift;
+  const shift = step.shift ?? 0;
+  return {
+    ["--sy" as string]: pct(shift),
+    ["--lx" as string]: pct(x),
+    ["--ly" as string]: pct(y - shift),
+    ["--ly0" as string]: pct(y),
+    ["--lw" as string]: pct(w),
+    ["--lh" as string]: pct(h),
+    ["--lr" as string]: pct(r),
+  };
+}
+
+/** Screen kept below a lifted tile, in CSS px. */
+export const LIFT_AIR = 32;
+
+/** Whether the lifted tile fits inside the window above its bottom edge. */
+export function liftFits(
+  step: ThreadStep,
+  windowWidth: number,
+  windowHeight: number,
+): boolean {
+  const slot = step.desktop;
+  if (!slot || !step.lift || windowWidth <= 0) {
+    return false;
+  }
+  const bottom =
+    ((step.lift.y + step.lift.h - (step.shift ?? 0)) / slot.width) *
+    windowWidth;
+  // The 1.04 lift grows the tile by 2% each way; below it the window keeps
+  // at least 32 px of screen, or the tile stays flat (short viewports).
+  return (
+    bottom + step.lift.h * 0.02 * (windowWidth / slot.width) + LIFT_AIR <=
+    windowHeight
+  );
+}
 
 /** Scroll progress → panel position, resting on each step for a moment. */
 export function restingPosition(progress: number, count: number): number {
@@ -107,6 +156,15 @@ export function ThreadCarousel() {
             panel.style.opacity = String(
               1 - Math.min(1, Math.abs(pos - k)) * 0.4,
             );
+            // Lift the key tile only once the step has settled.
+            const settled = Math.abs(pos - k) < 0.002;
+            if (settled !== (panel.dataset.lifted === "true")) {
+              if (settled) {
+                panel.dataset.lifted = "true";
+              } else {
+                delete panel.dataset.lifted;
+              }
+            }
           }
         });
       }
@@ -172,9 +230,49 @@ export function ThreadCarousel() {
       window.removeEventListener("resize", measure);
       ro?.disconnect();
       track.style.transform = "";
-      panels.forEach((p) => p && (p.style.opacity = ""));
+      panels.forEach((p) => {
+        if (p) {
+          p.style.opacity = "";
+          delete p.dataset.lifted;
+        }
+      });
     };
   }, [mode, count, setActiveIndex]);
+
+  // Which lifted tiles fit their window at the current size.
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) {
+      return;
+    }
+    const panels = panelRefs.current;
+    const check = () => {
+      panels.forEach((panel, k) => {
+        const step = THREAD_STEPS[k];
+        const body = panel?.querySelector<HTMLElement>(".v6-hpanel-body");
+        if (!panel || !step || !body) {
+          return;
+        }
+        const fits = liftFits(step, body.clientWidth, body.clientHeight);
+        if (fits !== (panel.dataset.fit === "true")) {
+          if (fits) {
+            panel.dataset.fit = "true";
+          } else {
+            delete panel.dataset.fit;
+          }
+        }
+      });
+    };
+    check();
+    const ro =
+      typeof ResizeObserver === "function" ? new ResizeObserver(check) : null;
+    ro?.observe(viewport);
+    window.addEventListener("resize", check);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener("resize", check);
+    };
+  }, [mode]);
 
   const go = useCallback(
     (index: number, focus = false) => {
@@ -263,13 +361,12 @@ export function ThreadCarousel() {
               aria-labelledby={`v6-tab-${step.id}`}
               className={cn("v6-hpanel", index === active && "is-active")}
             >
-              {/* ≥1024: the desktop capture in the coded window. */}
-              <figure className="v6-window v6-hpanel-desk">
-                <div className="v6-window-chrome" aria-hidden="true">
-                  <i />
-                  <i />
-                  <i />
-                </div>
+              {/* ≥1024: the desktop capture in a frameless window; its key
+                  tile lifts in place when the step settles (ATELIER 2b). */}
+              <figure
+                className="v6-window v6-hpanel-desk"
+                style={liftStyle(step)}
+              >
                 <div
                   className="v6-window-body v6-hpanel-body"
                   data-wide={
@@ -295,7 +392,23 @@ export function ThreadCarousel() {
                     </div>
                   ) : null}
                   <span className="v6-frame-fade" aria-hidden="true" />
+                  {step.desktop && step.lift ? (
+                    <span className="v6-frame-dim" aria-hidden="true" />
+                  ) : null}
                 </div>
+                {step.desktop && step.lift ? (
+                  <div className="v6-lift" aria-hidden="true">
+                    <div className="v6-lift-clip">
+                      <div className="v6-lift-shot">
+                        <ThemedCapture
+                          slot={step.desktop}
+                          sizes="(min-width: 1360px) 1200px, 92vw"
+                          decorative
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
               </figure>
 
               {/* <1024: the step's copy and its phone capture. */}

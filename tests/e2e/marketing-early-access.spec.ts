@@ -142,7 +142,7 @@ test("the finding story pins at 1024+ and its rail drives the scroll", async ({
     await expect(carousel).toHaveAttribute("data-mode", "pin");
     // Five desktop windows, one per step; captures keep their own aspect
     // (never squashed) and the swipe panels stay hidden.
-    const frames = carousel.locator(".v6-hpanel-desk img:visible");
+    const frames = carousel.locator(".v6-hpanel-body img:visible");
     await expect(frames).toHaveCount(5);
     for (const image of await frames.all()) {
       await expect(image).not.toHaveCSS("object-fit", "cover");
@@ -172,8 +172,33 @@ test("the finding story pins at 1024+ and its rail drives the scroll", async ({
       .poll(() => page.evaluate(() => window.scrollY))
       .toBeGreaterThan(startY + 100);
     await expect(
-      page.locator(".v6-hpanel.is-active .v6-hpanel-desk img:visible"),
+      page.locator(".v6-hpanel.is-active .v6-hpanel-body img:visible"),
     ).toHaveAttribute("src", /step-act-list(-m)?-(light|dark)\.webp$/);
+    // Once settled, ACT-2026-0020 lifts in place over the same pixels.
+    const act = page.locator("#v6-panel-act");
+    await expect(act).toHaveAttribute("data-lifted", "true");
+    await expect(act).toHaveAttribute("data-fit", "true");
+    await expect(act.locator(".v6-lift")).toHaveCSS("opacity", "1");
+    const [shot, tile] = await Promise.all(
+      [".v6-hpanel-body img:visible", ".v6-lift img:visible"].map((sel) =>
+        act.locator(sel).evaluate((img) => {
+          const r = img.getBoundingClientRect();
+          return { left: r.left, top: r.top, width: r.width };
+        }),
+      ),
+    );
+    // Undo the 1.04 scale around the tile centre before comparing.
+    const clip = await act.locator(".v6-lift").evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return { cx: r.left + r.width / 2, cy: r.top + r.height / 2 };
+    });
+    expect(
+      Math.abs(clip.cx + (tile!.left - clip.cx) / 1.04 - shot!.left),
+    ).toBeLessThan(0.5);
+    expect(
+      Math.abs(clip.cy + (tile!.top - clip.cy) / 1.04 - shot!.top),
+    ).toBeLessThan(0.5);
+    expect(Math.abs(tile!.width / 1.04 - shot!.width)).toBeLessThan(0.5);
     const box = await stage.boundingBox();
     expect(Math.abs(box?.y ?? 99)).toBeLessThanOrEqual(1);
 
@@ -212,7 +237,7 @@ test("with reduced motion the finding story is a tabbed carousel at 1024+", asyn
   await next.click();
   await expect(tab(/Act/)).toHaveAttribute("aria-selected", "true");
   await expect(
-    page.locator(".v6-hpanel.is-active .v6-hpanel-desk img:visible"),
+    page.locator(".v6-hpanel.is-active .v6-hpanel-body img:visible"),
   ).toHaveAttribute("src", /step-act-list(-m)?-(light|dark)\.webp$/);
   // Tabs switch in place; they never scroll the page.
   expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);

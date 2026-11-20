@@ -12,6 +12,22 @@ export type ThreadStep = {
   desktop: CaptureSlot | null;
   /** Narrow-viewport (390 px phone) crop, shown at its natural aspect. */
   mobile?: CaptureSlot | undefined;
+  /**
+   * ATELIER 2b: the one real tile in the desktop capture that lifts in place
+   * when the step settles. Pixel box in the capture's own coordinates.
+   */
+  lift?: StepLift | undefined;
+  /** Capture pixels hidden above the window, so the lifted tile fits. */
+  shift?: number | undefined;
+};
+
+export type StepLift = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  /** Corner radius in capture pixels. */
+  r: number;
 };
 
 export const THREAD_STEPS: readonly ThreadStep[] = [
@@ -23,6 +39,9 @@ export const THREAD_STEPS: readonly ThreadStep[] = [
     module: "Gemba",
     desktop: CAPTURES.stepObserve,
     mobile: CAPTURES.stepObserveM,
+    // The issue observed on the walk.
+    lift: { x: 172, y: 869, w: 2057, h: 150, r: 16 },
+    shift: 390,
   },
   {
     id: "act",
@@ -34,6 +53,8 @@ export const THREAD_STEPS: readonly ThreadStep[] = [
     // appears only in the Action Card.
     desktop: OPTIONAL_CAPTURES.stepActList ?? null,
     mobile: CAPTURES.stepActListM,
+    // ACT-2026-0020, the action raised from that finding.
+    lift: { x: 1, y: 13, w: 2397, h: 144, r: 24 },
   },
   {
     id: "solve",
@@ -43,6 +64,8 @@ export const THREAD_STEPS: readonly ThreadStep[] = [
     module: "Problem solving",
     desktop: CAPTURES.stepSolve,
     mobile: CAPTURES.stepSolveM,
+    // The provisional why chain.
+    lift: { x: 682, y: 56, w: 1717, h: 611, r: 24 },
   },
   {
     id: "improve",
@@ -52,6 +75,8 @@ export const THREAD_STEPS: readonly ThreadStep[] = [
     module: "Projects & Benefits",
     desktop: CAPTURES.stepImprove,
     mobile: CAPTURES.stepImproveM,
+    // The project problem statement.
+    lift: { x: 78, y: 72, w: 2265, h: 202, r: 18 },
   },
   {
     id: "learn",
@@ -61,6 +86,9 @@ export const THREAD_STEPS: readonly ThreadStep[] = [
     module: "Standards & skills",
     desktop: CAPTURES.stepLearn,
     mobile: CAPTURES.stepLearnM,
+    // The published course version.
+    lift: { x: 63, y: 481, w: 2275, h: 713, r: 24 },
+    shift: 460,
   },
 ];
 
