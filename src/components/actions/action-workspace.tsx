@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   completeAction,
@@ -44,7 +44,11 @@ import {
   unlinkActionFromCiProject,
 } from "@/app/(platform)/platform/projects/linking-actions";
 import { ProjectLinkField } from "@/components/projects/project-link-field";
-import type { ActionDetail, AssignablePerson } from "@/lib/actions/types";
+import type {
+  ActionDetail,
+  ActionStatusHistoryEntry,
+  AssignablePerson,
+} from "@/lib/actions/types";
 import type { ProjectSelectorOption } from "@/lib/projects/types";
 
 function sourceLabel(source: ActionDetail["source"]): string {
@@ -55,21 +59,7 @@ function sourceLabel(source: ActionDetail["source"]): string {
   return reference || title || "Source record";
 }
 
-export function ActionWorkspace({
-  detail,
-  comments,
-  evidence,
-  assignablePeople,
-  canUploadEvidence,
-  canPostComments = false,
-  currentCommentAuthor = null,
-  assigneeAvatarUrl = null,
-  fiveSQuestionPrompt = null,
-  projectOptions = [],
-  requiresSiteSelection = false,
-  onMutated,
-  showBackLink = true,
-}: {
+type ActionWorkspaceProps = {
   detail: ActionDetail;
   comments: ActionPlannerComment[];
   evidence: EvidenceItem[];
@@ -87,22 +77,82 @@ export function ActionWorkspace({
   requiresSiteSelection?: boolean;
   onMutated?: () => void;
   showBackLink?: boolean;
-}) {
+};
+
+export function ActionWorkspace(props: ActionWorkspaceProps) {
+  return <ActionWorkspaceContent key={props.detail.id} {...props} />;
+}
+
+function ActionWorkspaceContent({
+  detail,
+  comments,
+  evidence,
+  assignablePeople,
+  canUploadEvidence,
+  canPostComments = false,
+  currentCommentAuthor = null,
+  assigneeAvatarUrl = null,
+  fiveSQuestionPrompt = null,
+  projectOptions = [],
+  requiresSiteSelection = false,
+  onMutated,
+  showBackLink = true,
+}: ActionWorkspaceProps) {
   const router = useRouter();
-  const [title, setTitle] = useState(detail.title);
-  const [description, setDescription] = useState(detail.description ?? "");
-  const [priority, setPriority] = useState(detail.priority);
-  const [dueDate, setDueDate] = useState(toDateInputValue(detail.due_at));
-  const [assigneeId, setAssigneeId] = useState(
-    detail.assignees[0]?.membership_id ?? "",
-  );
+  const serverFields = {
+    title: detail.title,
+    description: detail.description ?? "",
+    priority: detail.priority,
+    dueDate: toDateInputValue(detail.due_at),
+    assigneeId: detail.assignees[0]?.membership_id ?? "",
+  };
+  const [fields, setFields] = useState(serverFields);
+  const savedFields = useRef(serverFields);
+  const { title, description, priority, dueDate, assigneeId } = fields;
+  const [liveStatus, setLiveStatus] = useState(detail.status);
+  const [history, setHistory] = useState(detail.status_history);
+  const liveVersion = useRef(detail.version);
+  useEffect(() => {
+    if (detail.version <= liveVersion.current) return;
+
+    liveVersion.current = detail.version;
+    setLiveStatus(detail.status);
+    setHistory(detail.status_history);
+
+    const previous = savedFields.current;
+    const next = {
+      title: detail.title,
+      description: detail.description ?? "",
+      priority: detail.priority,
+      dueDate: toDateInputValue(detail.due_at),
+      assigneeId: detail.assignees[0]?.membership_id ?? "",
+    };
+    savedFields.current = next;
+    setFields((current) => ({
+      title: current.title === previous.title ? next.title : current.title,
+      description:
+        current.description === previous.description
+          ? next.description
+          : current.description,
+      priority:
+        current.priority === previous.priority
+          ? next.priority
+          : current.priority,
+      dueDate:
+        current.dueDate === previous.dueDate ? next.dueDate : current.dueDate,
+      assigneeId:
+        current.assigneeId === previous.assigneeId
+          ? next.assigneeId
+          : current.assigneeId,
+    }));
+  }, [detail]);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
   const [commentPostDelta, setCommentPostDelta] = useState(0);
   const commentCount = comments.length + commentPostDelta;
 
-  const editable = isActionEditable(detail.status);
+  const editable = isActionEditable(liveStatus);
   const permissions = detail.permissions;
   const reference = formatActionReference(detail.action_number, detail.title);
   const source = detail.source;
@@ -113,18 +163,43 @@ export function ActionWorkspace({
 
   async function run(
     key: string,
-    task: () => Promise<{ error?: string; ok?: true }>,
+    task: (expectedVersion: number) => Promise<{ error?: string; ok?: true }>,
+    onSuccess?: (nextVersion: number) => void,
   ) {
     setPending(key);
     setError(null);
     setMessage(null);
-    const result = await task();
+    const expectedVersion = liveVersion.current;
+    const result = await task(expectedVersion);
     setPending(null);
     if (result.error) {
       setError(result.error);
       return;
     }
-    router.refresh();
+    const nextVersion = expectedVersion + 1;
+    if (nextVersion > liveVersion.current) {
+      liveVersion.current = nextVersion;
+      onSuccess?.(nextVersion);
+    }
+    void router.refresh();
+  }
+
+  function applyTransition(
+    fromStatus: string,
+    toStatus: string,
+    nextVersion: number,
+  ) {
+    setLiveStatus(toStatus);
+    const entry: ActionStatusHistoryEntry = {
+      id: `local-${fromStatus}-${toStatus}-${nextVersion}`,
+      from_status: fromStatus,
+      to_status: toStatus,
+      reason: null,
+      created_at: new Date().toISOString(),
+      actor_membership_id: currentCommentAuthor?.membership_id ?? "",
+      actor_display_name: currentCommentAuthor?.display_name ?? "",
+    };
+    setHistory((current) => [...current, entry]);
   }
 
   return (
@@ -150,10 +225,10 @@ export function ActionWorkspace({
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Badge
-            variant={actionStatusBadgeVariant(detail.status)}
+            variant={actionStatusBadgeVariant(liveStatus)}
             data-testid="action-status"
           >
-            {actionStatusLabel(detail.status)}
+            {actionStatusLabel(liveStatus)}
           </Badge>
           <Badge variant="secondary" data-testid="action-priority">
             {actionPriorityLabel(detail.priority)}
@@ -241,18 +316,22 @@ export function ActionWorkspace({
         className="flex flex-wrap gap-2"
         data-testid="action-lifecycle-actions"
       >
-        {permissions.can_start && detail.status === "open" ? (
+        {permissions.can_start && liveStatus === "open" ? (
           <Button
             size="sm"
             variant="outline"
             disabled={pending !== null}
             onClick={() =>
-              run("start", () =>
-                transitionActionStatus({
-                  actionId: detail.id,
-                  toStatus: "in_progress",
-                  expectedVersion: detail.version,
-                }),
+              run(
+                "start",
+                (expectedVersion) =>
+                  transitionActionStatus({
+                    actionId: detail.id,
+                    toStatus: "in_progress",
+                    expectedVersion,
+                  }),
+                (nextVersion) =>
+                  applyTransition(liveStatus, "in_progress", nextVersion),
               )
             }
             data-testid="action-start-button"
@@ -261,16 +340,20 @@ export function ActionWorkspace({
           </Button>
         ) : null}
         {permissions.can_complete &&
-        (detail.status === "open" || detail.status === "in_progress") ? (
+        (liveStatus === "open" || liveStatus === "in_progress") ? (
           <Button
             size="sm"
             disabled={pending !== null}
             onClick={() =>
-              run("complete", () =>
-                completeAction({
-                  actionId: detail.id,
-                  expectedVersion: detail.version,
-                }),
+              run(
+                "complete",
+                (expectedVersion) =>
+                  completeAction({
+                    actionId: detail.id,
+                    expectedVersion,
+                  }),
+                (nextVersion) =>
+                  applyTransition(liveStatus, "completed", nextVersion),
               )
             }
             data-testid="action-complete-button"
@@ -279,18 +362,22 @@ export function ActionWorkspace({
           </Button>
         ) : null}
         {permissions.can_cancel &&
-        (detail.status === "open" || detail.status === "in_progress") ? (
+        (liveStatus === "open" || liveStatus === "in_progress") ? (
           <Button
             size="sm"
             variant="outline"
             disabled={pending !== null}
             onClick={() =>
-              run("cancel", () =>
-                transitionActionStatus({
-                  actionId: detail.id,
-                  toStatus: "cancelled",
-                  expectedVersion: detail.version,
-                }),
+              run(
+                "cancel",
+                (expectedVersion) =>
+                  transitionActionStatus({
+                    actionId: detail.id,
+                    toStatus: "cancelled",
+                    expectedVersion,
+                  }),
+                (nextVersion) =>
+                  applyTransition(liveStatus, "cancelled", nextVersion),
               )
             }
             data-testid="action-cancel-button"
@@ -299,17 +386,21 @@ export function ActionWorkspace({
           </Button>
         ) : null}
         {permissions.can_reopen &&
-        (detail.status === "completed" || detail.status === "cancelled") ? (
+        (liveStatus === "completed" || liveStatus === "cancelled") ? (
           <Button
             size="sm"
             variant="outline"
             disabled={pending !== null}
             onClick={() =>
-              run("reopen", () =>
-                reopenAction({
-                  actionId: detail.id,
-                  expectedVersion: detail.version,
-                }),
+              run(
+                "reopen",
+                (expectedVersion) =>
+                  reopenAction({
+                    actionId: detail.id,
+                    expectedVersion,
+                  }),
+                (nextVersion) =>
+                  applyTransition(liveStatus, "open", nextVersion),
               )
             }
             data-testid="action-reopen-button"
@@ -381,16 +472,25 @@ export function ActionWorkspace({
                   data-testid="action-edit-form"
                   onSubmit={(event) => {
                     event.preventDefault();
-                    void run("save", async () => {
+                    void run("save", async (expectedVersion) => {
                       const result = await updateActionFields({
                         actionId: detail.id,
                         title,
                         description,
                         priority,
                         dueAt: dateInputToDueAt(dueDate),
-                        expectedVersion: detail.version,
+                        expectedVersion,
                       });
                       if (!result.error) {
+                        if (liveVersion.current === expectedVersion) {
+                          savedFields.current = {
+                            ...savedFields.current,
+                            title,
+                            description,
+                            priority,
+                            dueDate,
+                          };
+                        }
                         setMessage("Changes saved.");
                       }
                       return result;
@@ -402,7 +502,10 @@ export function ActionWorkspace({
                     <Input
                       id="action-title"
                       value={title}
-                      onChange={(event) => setTitle(event.target.value)}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setFields((current) => ({ ...current, title: value }));
+                      }}
                       required
                       data-testid="action-title-input"
                     />
@@ -413,7 +516,13 @@ export function ActionWorkspace({
                       id="action-description"
                       rows={4}
                       value={description}
-                      onChange={(event) => setDescription(event.target.value)}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setFields((current) => ({
+                          ...current,
+                          description: value,
+                        }));
+                      }}
                       data-testid="action-description-input"
                     />
                   </div>
@@ -424,7 +533,13 @@ export function ActionWorkspace({
                         id="action-priority"
                         className="flex min-h-11 w-full rounded-md border border-border bg-elevated px-3 py-2 text-sm"
                         value={priority}
-                        onChange={(event) => setPriority(event.target.value)}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setFields((current) => ({
+                            ...current,
+                            priority: value,
+                          }));
+                        }}
                         data-testid="action-priority-input"
                       >
                         {ACTION_PRIORITIES.map((option) => (
@@ -440,7 +555,13 @@ export function ActionWorkspace({
                         id="action-due"
                         type="date"
                         value={dueDate}
-                        onChange={(event) => setDueDate(event.target.value)}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setFields((current) => ({
+                            ...current,
+                            dueDate: value,
+                          }));
+                        }}
                         data-testid="action-due-input"
                       />
                     </div>
@@ -476,12 +597,18 @@ export function ActionWorkspace({
                   data-testid="action-assign-form"
                   onSubmit={(event) => {
                     event.preventDefault();
-                    void run("assign", async () => {
+                    void run("assign", async (expectedVersion) => {
                       const result = await setActionAssignee({
                         actionId: detail.id,
                         membershipId: assigneeId || null,
                       });
                       if (!result.error) {
+                        if (liveVersion.current === expectedVersion) {
+                          savedFields.current = {
+                            ...savedFields.current,
+                            assigneeId,
+                          };
+                        }
                         setMessage(
                           assigneeId
                             ? "Assignee updated."
@@ -497,7 +624,13 @@ export function ActionWorkspace({
                     id="action-assignee"
                     className="flex min-h-11 w-full rounded-md border border-border bg-elevated px-3 py-2 text-sm"
                     value={assigneeId}
-                    onChange={(event) => setAssigneeId(event.target.value)}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setFields((current) => ({
+                        ...current,
+                        assigneeId: value,
+                      }));
+                    }}
                     data-testid="action-assignee-input"
                   >
                     <option value="">Unassigned</option>
@@ -553,10 +686,10 @@ export function ActionWorkspace({
               <CardTitle>History</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2 text-sm">
-              {detail.status_history.length === 0 ? (
+              {history.length === 0 ? (
                 <p className="text-muted-foreground">No status history yet.</p>
               ) : (
-                detail.status_history.map((entry) => (
+                history.map((entry) => (
                   <div
                     key={entry.id}
                     className="flex flex-col gap-1 rounded-lg border border-border px-3 py-3 sm:flex-row sm:items-start sm:justify-between"

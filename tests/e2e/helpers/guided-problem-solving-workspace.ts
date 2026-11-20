@@ -1,5 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 
+import { DEMO_PROBLEM_SOLVING_CASE } from "../../../scripts/demo-seed/constants";
+
 /** Call before the first navigation in a spec so auto-draft does not race Lean AI sends. */
 export async function disableProblemSolvingStageAutoDraft(page: Page) {
   await page.addInitScript(() => {
@@ -9,6 +11,43 @@ export async function disableProblemSolvingStageAutoDraft(page: Page) {
 
 export function leanAiPanel(page: Page) {
   return page.getByTestId("lean-ai-panel");
+}
+
+function demoTitlePortfolioItems(page: Page) {
+  return page
+    .locator('[data-testid^="problem-solving-portfolio-item-"]')
+    .filter({ hasText: DEMO_PROBLEM_SOLVING_CASE.title });
+}
+
+/** Active demo row only — no closed fallback (M12 / Lean AI specs). */
+export function activeDemoCasePortfolioLink(page: Page) {
+  return demoTitlePortfolioItems(page).filter({ hasText: "Active" }).first();
+}
+
+/**
+ * Seeded Bodmin demo case for portfolio navigation specs: prefer an Active row
+ * that already has hypotheses (full M11 seed), otherwise the closed seeded row.
+ */
+export async function richDemoCasePortfolioLink(page: Page) {
+  const activeWithHypotheses = demoTitlePortfolioItems(page)
+    .filter({ hasText: "Active" })
+    .filter({ hasText: /[1-9]\d* hypotheses/ });
+  const closedWithHypotheses = demoTitlePortfolioItems(page)
+    .filter({ hasText: "Closed" })
+    .filter({ hasText: /[1-9]\d* hypotheses/ });
+  if (await activeWithHypotheses.count()) return activeWithHypotheses.first();
+  return closedWithHypotheses.first();
+}
+
+/** Opens the demo title case; fails when no Active row exists (no closed-case fallback). */
+export async function openDemoProblemSolvingCaseFromPortfolio(page: Page) {
+  await page.goto("/platform/problem-solving");
+  await expect(
+    page.getByTestId("problem-solving-portfolio-page"),
+  ).toBeVisible();
+  const activeItem = activeDemoCasePortfolioLink(page);
+  await expect(activeItem).toBeVisible({ timeout: 30_000 });
+  await activeItem.click();
 }
 
 export async function ensureLeanAiPanelOpen(page: Page) {

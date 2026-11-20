@@ -21,8 +21,8 @@ import {
   problemSolvingClientTurnError,
   retainProblemSolvingTurnKey,
 } from "@/platform/ai/ai-turn-messages";
-import { isProblemSolvingCaseOpenForAiDraft } from "@/lib/problem-solving/status";
 import type { AiSessionMode, FacilitatorEnvelope } from "@/platform/ai/types";
+import { isProblemSolvingCaseOpenForAiDraft } from "@/lib/problem-solving/status";
 import { cn } from "@/lib/utils";
 
 export type PendingProposal = InlineAiProposal;
@@ -36,11 +36,15 @@ type AiFacilitatorPanelProps = {
   stageTitle?: string | null;
   caseStatus?: string;
   canUseAi: boolean;
+  /** When false, case is terminal: show copilot read-only but block sends. */
+  caseDraftingEnabled?: boolean;
   providerAvailable: boolean;
   layout?: "card" | "dock";
   collapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
   pendingProposals: PendingProposal[];
+  /** Stage-scoped count shown in canvas (server + chat); aligns footer with pending list. */
+  visibleStagePendingCount?: number;
   onPendingProposalsChange: (proposals: PendingProposal[]) => void;
   draftOverride?: string;
   onDraftOverrideConsumed?: () => void;
@@ -66,11 +70,13 @@ export function AiFacilitatorPanel({
   stageTitle,
   caseStatus,
   canUseAi,
+  caseDraftingEnabled,
   providerAvailable,
   layout = "dock",
   collapsed = false,
   onCollapsedChange,
   pendingProposals,
+  visibleStagePendingCount,
   onPendingProposalsChange,
   draftOverride,
   onDraftOverrideConsumed,
@@ -194,16 +200,14 @@ export function AiFacilitatorPanel({
     }
   }
 
-  const caseOpenForAi =
-    caseStatus === undefined || caseStatus === null
-      ? true
-      : isProblemSolvingCaseOpenForAiDraft(caseStatus);
+  const draftingEnabled =
+    caseDraftingEnabled ?? isProblemSolvingCaseOpenForAiDraft(caseStatus ?? "");
 
   const disabledReason = !canUseAi
     ? "You do not have permission to use Lean AI on this case."
     : !providerAvailable
       ? "Lean AI is not enabled or configured for this environment."
-      : !caseOpenForAi
+      : !draftingEnabled
         ? "This case is closed or cancelled; Lean AI is not available."
         : null;
 
@@ -463,12 +467,13 @@ export function AiFacilitatorPanel({
             ))}
             <div ref={messagesEndRef} />
           </div>
-          {pendingProposals.length > 0 ? (
+          {(visibleStagePendingCount ?? pendingProposals.length) > 0 ? (
             <p
               className="mt-3 text-xs text-muted-foreground"
               data-testid="lean-ai-proposals"
             >
-              {pendingProposals.length} proposal(s) waiting in the stage canvas.
+              {visibleStagePendingCount ?? pendingProposals.length} proposal(s)
+              waiting in the stage canvas.
             </p>
           ) : null}
         </div>

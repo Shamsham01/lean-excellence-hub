@@ -7,6 +7,7 @@ import {
 } from "../../scripts/demo-seed/constants";
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
+  richDemoCasePortfolioLink,
   disableProblemSolvingStageAutoDraft,
   goToProblemSolvingPortfolio,
   openProblemSolvingStage,
@@ -75,9 +76,7 @@ test.describe("NAV-CLICK-001 Problem Solving and Maturity navigation", () => {
     ).toBeVisible();
 
     await openProblemSolvingHub(page);
-    const caseRow = page
-      .getByRole("link", { name: new RegExp(DEMO_CASE_TITLE) })
-      .first();
+    const caseRow = await richDemoCasePortfolioLink(page);
     await expect(caseRow).toBeVisible();
     const caseHref = await caseRow.getAttribute("href");
     expect(caseHref).toMatch(/\/platform\/problem-solving\/[0-9a-f-]{36}$/);

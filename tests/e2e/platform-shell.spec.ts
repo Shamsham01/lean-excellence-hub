@@ -13,6 +13,7 @@ import {
 import { expectModulePageHeading } from "./helpers/module-page-heading";
 import { openMobileDrawer } from "./helpers/open-mobile-drawer";
 import { platformSidebarSignOut } from "./helpers/platform-sign-out";
+import { richDemoCasePortfolioLink } from "./helpers/guided-problem-solving-workspace";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -287,9 +288,7 @@ test.describe("authenticated platform shell", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await signInAsDemoUser(page, "manager");
     await page.goto("/platform/problem-solving");
-    await page
-      .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
-      .click();
+    await (await richDemoCasePortfolioLink(page)).click();
     await expect(page.getByTestId("problem-solving-workspace")).toBeVisible({
       timeout: 30_000,
     });

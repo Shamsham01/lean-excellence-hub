@@ -10,7 +10,6 @@ import {
   openProblemSolvingStage,
   sendLeanAiPrompt,
 } from "./helpers/guided-problem-solving-workspace";
-import { DEMO_PROBLEM_SOLVING_CASE } from "../../scripts/demo-seed/constants";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -36,13 +35,9 @@ test.describe("Milestone 12 closure", () => {
     await disableProblemSolvingStageAutoDraft(page);
   });
 
-  test("manager opens Lean AI on seeded case", async ({ page }) => {
+  test("manager opens Lean AI on active case", async ({ page }) => {
     await signInAsDemoUser(page, "manager");
-    await page.goto("/platform/problem-solving");
-    await page
-      .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
-      .click();
-    await expectGuidedProblemSolvingWorkspace(page);
+    await createActiveCaseAndOpenLeanAi(page);
   });
 
   test("challenge mode distinguishes assumptions using fake provider", async ({

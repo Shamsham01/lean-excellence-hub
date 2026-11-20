@@ -10,12 +10,17 @@ import { callProblemSolvingRpc } from "@/lib/problem-solving/supabase-untyped";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
 import { loadProjectPickerOptions } from "@/lib/projects/load-project-picker-options";
 import { projectLinkSummaryFromServer } from "@/lib/projects/project-link-summary";
+import { resolveSiteUnitId } from "@/modules/organisation/applicability-unit-tree";
+import { loadAccessibleOrganisationUnits } from "@/modules/organisation/site-context-server";
 import { listEligibleOrganisations } from "@/modules/organisations/context";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { loadWorkplaceRecordView } from "@/modules/workplace/access";
 import { isApplicationAiProviderAvailable } from "@/platform/ai/config";
 import { recoverProblemSolvingAiRunsForCase } from "@/platform/ai/recover-problem-solving-ai-runs";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
+import { isTerminalCaseStatus } from "@/lib/problem-solving/case-lifecycle";
+
+export const dynamic = "force-dynamic";
 
 export default async function ProblemSolvingCaseDetailPage({
   params,
@@ -42,7 +47,6 @@ export default async function ProblemSolvingCaseDetailPage({
     canVerifyCause,
     canClose,
     canUseAi,
-    projectPicker,
   ] = await Promise.all([
     callProblemSolvingRpc<ProblemSolvingCaseDetail>(
       supabase,
@@ -55,10 +59,14 @@ export default async function ProblemSolvingCaseDetailPage({
     currentMemberHasPermission("problem_solving.verify_cause"),
     currentMemberHasPermission("problem_solving.close"),
     currentMemberHasPermission("ai.use"),
-    loadProjectPickerOptions(),
   ]);
 
   const detail = await resolveProblemSolvingDetailAccess(detailResult);
+  const units = await loadAccessibleOrganisationUnits();
+  const siteUnitId = resolveSiteUnitId(detail.organisation_unit_id, units);
+  const projectPicker = siteUnitId
+    ? await loadProjectPickerOptions(undefined, { siteUnitId })
+    : { projects: [], requiresSiteSelection: true };
   if (canUseAi) {
     await recoverProblemSolvingAiRunsForCase(supabase, caseId);
   }
@@ -78,7 +86,9 @@ export default async function ProblemSolvingCaseDetailPage({
   const canEditProjectLink =
     (canManage || canContribute) && ["draft", "active"].includes(detail.status);
   const pendingAiProposals =
-    canUseAi && isApplicationAiProviderAvailable()
+    canUseAi &&
+    isApplicationAiProviderAvailable() &&
+    !isTerminalCaseStatus(detail.status)
       ? await loadCasePendingAiProposals(supabase, caseId, {
           canManage,
           canContribute,
@@ -101,7 +111,7 @@ export default async function ProblemSolvingCaseDetailPage({
       data-testid="problem-solving-detail-page"
     >
       <CaseWorkspace
-        key={caseId}
+        key={`${caseId}:${detail.status}`}
         detail={detail}
         targetDueDateLabel={targetDueDateLabel}
         currentConditionItems={workspaceData.currentConditionItems}

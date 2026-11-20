@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -83,6 +83,10 @@ export function UnifiedCauseAnalysis({
   const [manualStatement, setManualStatement] = useState("");
   const [manualCategory, setManualCategory] = useState<string>("");
   const [manualFishboneNodeId, setManualFishboneNodeId] = useState("");
+  const fishboneAddMutationKeyRef = useRef<{
+    fingerprint: string;
+    key: string;
+  } | null>(null);
 
   const fishboneAnalysis = useMemo(() => {
     const fishbones = analyses.filter(
@@ -139,15 +143,29 @@ export function UnifiedCauseAnalysis({
       setFishboneMessage(null);
       return;
     }
+    if (loading) return;
     setLoading(true);
     setFishboneError(null);
     setFishboneMessage(null);
-    const result = await addFishboneCause({ caseId, category, label });
+    const fingerprint = JSON.stringify([caseId, category, label]);
+    if (fishboneAddMutationKeyRef.current?.fingerprint !== fingerprint) {
+      fishboneAddMutationKeyRef.current = {
+        fingerprint,
+        key: crypto.randomUUID(),
+      };
+    }
+    const result = await addFishboneCause({
+      caseId,
+      category,
+      label,
+      mutationKey: fishboneAddMutationKeyRef.current.key,
+    });
     setLoading(false);
     if (result.error) {
       setFishboneError(result.error);
       return;
     }
+    fishboneAddMutationKeyRef.current = null;
     setNewCauseByCategory((current) => ({ ...current, [category]: "" }));
     setFishboneMessage("Cause added to fishbone.");
     router.refresh();

@@ -36,13 +36,16 @@ describe("StageAutoDraftTrigger on closed cases", () => {
         canUseAi
         providerAvailable
         hasProblemData
-        caseOpen={false}
+        caseStatus="closed"
       />,
     );
 
-    const button = screen.getByTestId("pps-stage-auto-draft-button");
-    expect(button).toBeDisabled();
-    expect(screen.getByText(/closed or cancelled/i)).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("pps-stage-auto-draft"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("pps-stage-auto-draft-button"),
+    ).not.toBeInTheDocument();
 
     await waitFor(() => {
       expect(draftMock).not.toHaveBeenCalled();

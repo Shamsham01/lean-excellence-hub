@@ -40,6 +40,7 @@ export function ProblemSolvingActionDialog({
 }: ProblemSolvingActionDialogProps) {
   const [title, setTitle] = useState(defaultTitle);
   const [description, setDescription] = useState("");
+  const [expectedResult, setExpectedResult] = useState("");
   const [dueAt, setDueAt] = useState("");
   const [assigneeId, setAssigneeId] = useState(defaultMembershipId ?? "");
   const [assignablePeople, setAssignablePeople] = useState<
@@ -79,6 +80,7 @@ export function ProblemSolvingActionDialog({
       setAssigneeId(defaultMembershipId ?? "");
       setDueAt("");
       setDescription("");
+      setExpectedResult("");
       setError(null);
     }
     onOpenChange(next);
@@ -102,6 +104,9 @@ export function ProblemSolvingActionDialog({
       title: title.trim(),
       contextRole,
       ...(description.trim() ? { description: description.trim() } : {}),
+      ...(expectedResult.trim()
+        ? { expectedResult: expectedResult.trim() }
+        : {}),
       ...(containmentId ? { containmentId } : {}),
       ...(countermeasureId ? { countermeasureId } : {}),
       dueAt: new Date(`${dueAt}T12:00:00`).toISOString(),
@@ -142,6 +147,19 @@ export function ProblemSolvingActionDialog({
               onChange={(event) => setDescription(event.target.value)}
             />
           </div>
+          {contextRole === "countermeasure" ? (
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="pps-action-expected">Expected result</Label>
+              <Textarea
+                id="pps-action-expected"
+                rows={2}
+                value={expectedResult}
+                onChange={(event) => setExpectedResult(event.target.value)}
+                data-testid="pps-action-create-expected"
+                placeholder="What should change after this action is done?"
+              />
+            </div>
+          ) : null}
           <div className="flex flex-col gap-1">
             <Label htmlFor="pps-action-assignee">Assignee</Label>
             <select

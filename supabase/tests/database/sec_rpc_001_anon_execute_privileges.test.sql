@@ -60,12 +60,14 @@ values
   ('public.update_suggestion_draft(uuid,text,text,text,text,uuid,uuid,uuid)'),
   ('public.upsert_five_s_audit_answer(uuid,uuid,boolean,text,numeric,date,jsonb)'),
   ('public.upsert_gemba_walk_answer(uuid,uuid,boolean,text,numeric,date,jsonb)'),
-  ('public.withdraw_suggestion(uuid,text)');
+  ('public.withdraw_suggestion(uuid,text)'),
+  ('public.upsert_problem_solving_sustain_plan(uuid,text,uuid,text,date)'),
+  ('public.delete_hypothesis_test(uuid)');
 
 select is(
   (select count(*) from sec_rpc_restricted_sigs),
-  52::bigint,
-  'SEC-RPC-001 operational revoke inventory has 52 signatures'
+  54::bigint,
+  'SEC-RPC-001 operational revoke inventory has 54 signatures'
 );
 
 select is(

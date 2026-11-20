@@ -185,6 +185,7 @@ export type ProblemSolvingActionSummary = {
   id: string;
   title: string;
   description: string | null;
+  expected_result?: string | null;
   status: string;
   priority: string;
   due_at: string | null;
@@ -248,6 +249,10 @@ export type ProblemSolvingCaseDetail = {
   cancelled_at: string | null;
   cancelled_by_membership_id: string | null;
   target_due_at: string | null;
+  sustain_plan_standardised: string | null;
+  sustain_plan_owner_membership_id: string | null;
+  sustain_plan_monitoring: string | null;
+  sustain_plan_review_date: string | null;
   activated_at: string | null;
   created_by_membership_id: string;
   created_at: string;

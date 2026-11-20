@@ -434,7 +434,7 @@ select throws_ok(
 select ok(
   not has_function_privilege(
     'authenticated',
-    'private.create_problem_solving_action(text, uuid, text, uuid, uuid, uuid, text, text, timestamptz, uuid)',
+    'private.create_problem_solving_action(text, uuid, text, uuid, uuid, uuid, text, text, timestamptz, uuid, text)',
     'execute'
   ),
   'authenticated cannot execute private create_problem_solving_action overload'

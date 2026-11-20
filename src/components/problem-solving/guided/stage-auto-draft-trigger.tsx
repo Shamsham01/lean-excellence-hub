@@ -12,6 +12,7 @@ import {
   invokeProblemSolvingTurnAction,
   shouldRetainProblemSolvingTurnKey,
 } from "@/lib/problem-solving/problem-solving-ai-turn-client";
+import { isProblemSolvingCaseOpenForAiDraft } from "@/lib/problem-solving/status";
 
 type StageAutoDraftTriggerProps = {
   caseId: string;
@@ -23,7 +24,8 @@ type StageAutoDraftTriggerProps = {
   canUseAi: boolean;
   providerAvailable: boolean;
   hasProblemData: boolean;
-  caseOpen: boolean;
+  caseStatus?: string;
+  stagePendingCount?: number;
   onDraftComplete?: () => void;
 };
 
@@ -41,7 +43,8 @@ export function StageAutoDraftTrigger({
   canUseAi,
   providerAvailable,
   hasProblemData,
-  caseOpen,
+  caseStatus = "active",
+  stagePendingCount = 0,
   onDraftComplete,
 }: StageAutoDraftTriggerProps) {
   const router = useRouter();
@@ -52,10 +55,11 @@ export function StageAutoDraftTrigger({
   const pendingTurnRef = useRef<{ idempotencyKey: string } | null>(null);
 
   const stageLabel = stageTitle ?? stageKey;
+  const caseOpenForAiDraft = isProblemSolvingCaseOpenForAiDraft(caseStatus);
 
   const runDraft = useCallback(
     async (fromAuto = false) => {
-      if (!canUseAi || !providerAvailable || !caseOpen) return;
+      if (!canUseAi || !providerAvailable || !caseOpenForAiDraft) return;
       setLoading(true);
       setMessage(null);
       setIsError(false);
@@ -134,7 +138,7 @@ export function StageAutoDraftTrigger({
       autoDraftPrompt,
       canUseAi,
       caseId,
-      caseOpen,
+      caseOpenForAiDraft,
       currentStageKey,
       onDraftComplete,
       providerAvailable,
@@ -150,7 +154,7 @@ export function StageAutoDraftTrigger({
       !canUseAi ||
       !providerAvailable ||
       !hasProblemData ||
-      !caseOpen ||
+      !caseOpenForAiDraft ||
       autoRan.current
     ) {
       return;
@@ -171,13 +175,17 @@ export function StageAutoDraftTrigger({
     canUseAi,
     providerAvailable,
     hasProblemData,
-    caseOpen,
+    caseOpenForAiDraft,
     caseId,
     stageKey,
     runDraft,
   ]);
 
   if (!canUseAi || !providerAvailable) {
+    return null;
+  }
+
+  if (!caseOpenForAiDraft) {
     return null;
   }
 
@@ -191,11 +199,11 @@ export function StageAutoDraftTrigger({
         type="button"
         size="sm"
         variant="secondary"
-        disabled={loading || !hasProblemData || !caseOpen}
+        disabled={loading || !hasProblemData || !caseOpenForAiDraft}
         onClick={() => runDraft(false)}
         data-testid="pps-stage-auto-draft-button"
         title={
-          !caseOpen
+          !caseOpenForAiDraft
             ? "Stage drafts are only available on draft or active cases"
             : hasProblemData
               ? "Generate one bounded draft for this stage visit"
@@ -204,7 +212,7 @@ export function StageAutoDraftTrigger({
       >
         {loading ? "Drafting…" : "Draft this stage"}
       </Button>
-      {!caseOpen ? (
+      {!caseOpenForAiDraft ? (
         <p className="w-full text-xs text-muted-foreground">
           This case is closed or cancelled — stage drafts are disabled.
         </p>
@@ -213,7 +221,7 @@ export function StageAutoDraftTrigger({
           Add problem or current-condition facts first.
         </p>
       ) : null}
-      {message ? (
+      {message && stagePendingCount === 0 && !message.includes("ready") ? (
         <p
           className={
             isError
@@ -223,6 +231,15 @@ export function StageAutoDraftTrigger({
           role={isError ? "alert" : "status"}
         >
           {message}
+        </p>
+      ) : message && stagePendingCount > 0 ? (
+        <p
+          className="w-full text-xs text-muted-foreground"
+          role="status"
+          data-testid="pps-stage-auto-draft-status"
+        >
+          {stagePendingCount} proposal(s) ready for {stageLabel} — review
+          Pending Lean AI proposals below.
         </p>
       ) : null}
     </div>
