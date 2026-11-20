@@ -5,6 +5,7 @@ import type { ProjectPortfolioItem } from "@/lib/projects/types";
 import {
   phaseStatusLabel,
   projectPriorityLabel,
+  projectStatusBadgeVariant,
   projectStatusLabel,
 } from "@/lib/projects/status";
 
@@ -12,6 +13,10 @@ describe("project status presentation", () => {
   it("formats project status labels", () => {
     expect(projectStatusLabel("on_hold")).toBe("On Hold");
     expect(projectStatusLabel("completed")).toBe("Completed");
+  });
+
+  it("uses the success badge for completed projects", () => {
+    expect(projectStatusBadgeVariant("completed")).toBe("success");
   });
 
   it("formats priority and phase labels", () => {

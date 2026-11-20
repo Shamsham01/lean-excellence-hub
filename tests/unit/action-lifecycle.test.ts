@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { mapActionMutationError } from "@/lib/actions/errors";
 import {
   actionPriorityLabel,
+  actionStatusBadgeVariant,
   actionStatusLabel,
   allowedActionTransitions,
   dateInputToDueAt,
@@ -15,6 +16,10 @@ describe("action status helpers", () => {
   it("labels statuses and priorities in product language", () => {
     expect(actionStatusLabel("in_progress")).toBe("In progress");
     expect(actionPriorityLabel("urgent")).toBe("Urgent");
+  });
+
+  it("uses the success badge for completed actions", () => {
+    expect(actionStatusBadgeVariant("completed")).toBe("success");
   });
 
   it("uses the action number as the human-readable reference", () => {
