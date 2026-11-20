@@ -80,12 +80,7 @@ type ActionWorkspaceProps = {
 };
 
 export function ActionWorkspace(props: ActionWorkspaceProps) {
-  return (
-    <ActionWorkspaceContent
-      key={`${props.detail.id}:${props.detail.version}`}
-      {...props}
-    />
-  );
+  return <ActionWorkspaceContent key={props.detail.id} {...props} />;
 }
 
 function ActionWorkspaceContent({
@@ -104,24 +99,53 @@ function ActionWorkspaceContent({
   showBackLink = true,
 }: ActionWorkspaceProps) {
   const router = useRouter();
-  const [title, setTitle] = useState(detail.title);
-  const [description, setDescription] = useState(detail.description ?? "");
-  const [priority, setPriority] = useState(detail.priority);
-  const [dueDate, setDueDate] = useState(toDateInputValue(detail.due_at));
-  const [assigneeId, setAssigneeId] = useState(
-    detail.assignees[0]?.membership_id ?? "",
-  );
+  const serverFields = {
+    title: detail.title,
+    description: detail.description ?? "",
+    priority: detail.priority,
+    dueDate: toDateInputValue(detail.due_at),
+    assigneeId: detail.assignees[0]?.membership_id ?? "",
+  };
+  const [fields, setFields] = useState(serverFields);
+  const savedFields = useRef(serverFields);
+  const { title, description, priority, dueDate, assigneeId } = fields;
   const [liveStatus, setLiveStatus] = useState(detail.status);
-  const [liveVersion, setLiveVersion] = useState(detail.version);
   const [history, setHistory] = useState(detail.status_history);
-  const appliedVersionRef = useRef(detail.version);
+  const liveVersion = useRef(detail.version);
   useEffect(() => {
-    if (detail.version < appliedVersionRef.current) return;
-    appliedVersionRef.current = detail.version;
+    if (detail.version <= liveVersion.current) return;
+
+    liveVersion.current = detail.version;
     setLiveStatus(detail.status);
-    setLiveVersion(detail.version);
     setHistory(detail.status_history);
-  }, [detail.status, detail.version, detail.status_history]);
+
+    const previous = savedFields.current;
+    const next = {
+      title: detail.title,
+      description: detail.description ?? "",
+      priority: detail.priority,
+      dueDate: toDateInputValue(detail.due_at),
+      assigneeId: detail.assignees[0]?.membership_id ?? "",
+    };
+    savedFields.current = next;
+    setFields((current) => ({
+      title: current.title === previous.title ? next.title : current.title,
+      description:
+        current.description === previous.description
+          ? next.description
+          : current.description,
+      priority:
+        current.priority === previous.priority
+          ? next.priority
+          : current.priority,
+      dueDate:
+        current.dueDate === previous.dueDate ? next.dueDate : current.dueDate,
+      assigneeId:
+        current.assigneeId === previous.assigneeId
+          ? next.assigneeId
+          : current.assigneeId,
+    }));
+  }, [detail]);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
@@ -139,27 +163,33 @@ function ActionWorkspaceContent({
 
   async function run(
     key: string,
-    task: () => Promise<{ error?: string; ok?: true }>,
-    onSuccess?: () => void,
+    task: (expectedVersion: number) => Promise<{ error?: string; ok?: true }>,
+    onSuccess?: (nextVersion: number) => void,
   ) {
     setPending(key);
     setError(null);
     setMessage(null);
-    const result = await task();
+    const expectedVersion = liveVersion.current;
+    const result = await task(expectedVersion);
     setPending(null);
     if (result.error) {
       setError(result.error);
       return;
     }
-    onSuccess?.();
+    const nextVersion = expectedVersion + 1;
+    if (nextVersion > liveVersion.current) {
+      liveVersion.current = nextVersion;
+      onSuccess?.(nextVersion);
+    }
     void router.refresh();
   }
 
-  function applyTransition(fromStatus: string, toStatus: string) {
-    const nextVersion = liveVersion + 1;
-    appliedVersionRef.current = nextVersion;
+  function applyTransition(
+    fromStatus: string,
+    toStatus: string,
+    nextVersion: number,
+  ) {
     setLiveStatus(toStatus);
-    setLiveVersion(nextVersion);
     const entry: ActionStatusHistoryEntry = {
       id: `local-${fromStatus}-${toStatus}-${nextVersion}`,
       from_status: fromStatus,
@@ -294,13 +324,14 @@ function ActionWorkspaceContent({
             onClick={() =>
               run(
                 "start",
-                () =>
+                (expectedVersion) =>
                   transitionActionStatus({
                     actionId: detail.id,
                     toStatus: "in_progress",
-                    expectedVersion: liveVersion,
+                    expectedVersion,
                   }),
-                () => applyTransition(liveStatus, "in_progress"),
+                (nextVersion) =>
+                  applyTransition(liveStatus, "in_progress", nextVersion),
               )
             }
             data-testid="action-start-button"
@@ -316,12 +347,13 @@ function ActionWorkspaceContent({
             onClick={() =>
               run(
                 "complete",
-                () =>
+                (expectedVersion) =>
                   completeAction({
                     actionId: detail.id,
-                    expectedVersion: liveVersion,
+                    expectedVersion,
                   }),
-                () => applyTransition(liveStatus, "completed"),
+                (nextVersion) =>
+                  applyTransition(liveStatus, "completed", nextVersion),
               )
             }
             data-testid="action-complete-button"
@@ -338,13 +370,14 @@ function ActionWorkspaceContent({
             onClick={() =>
               run(
                 "cancel",
-                () =>
+                (expectedVersion) =>
                   transitionActionStatus({
                     actionId: detail.id,
                     toStatus: "cancelled",
-                    expectedVersion: liveVersion,
+                    expectedVersion,
                   }),
-                () => applyTransition(liveStatus, "cancelled"),
+                (nextVersion) =>
+                  applyTransition(liveStatus, "cancelled", nextVersion),
               )
             }
             data-testid="action-cancel-button"
@@ -361,12 +394,13 @@ function ActionWorkspaceContent({
             onClick={() =>
               run(
                 "reopen",
-                () =>
+                (expectedVersion) =>
                   reopenAction({
                     actionId: detail.id,
-                    expectedVersion: liveVersion,
+                    expectedVersion,
                   }),
-                () => applyTransition(liveStatus, "open"),
+                (nextVersion) =>
+                  applyTransition(liveStatus, "open", nextVersion),
               )
             }
             data-testid="action-reopen-button"
@@ -438,19 +472,25 @@ function ActionWorkspaceContent({
                   data-testid="action-edit-form"
                   onSubmit={(event) => {
                     event.preventDefault();
-                    void run("save", async () => {
+                    void run("save", async (expectedVersion) => {
                       const result = await updateActionFields({
                         actionId: detail.id,
                         title,
                         description,
                         priority,
                         dueAt: dateInputToDueAt(dueDate),
-                        expectedVersion: liveVersion,
+                        expectedVersion,
                       });
                       if (!result.error) {
-                        const nextVersion = liveVersion + 1;
-                        appliedVersionRef.current = nextVersion;
-                        setLiveVersion(nextVersion);
+                        if (liveVersion.current === expectedVersion) {
+                          savedFields.current = {
+                            ...savedFields.current,
+                            title,
+                            description,
+                            priority,
+                            dueDate,
+                          };
+                        }
                         setMessage("Changes saved.");
                       }
                       return result;
@@ -462,7 +502,10 @@ function ActionWorkspaceContent({
                     <Input
                       id="action-title"
                       value={title}
-                      onChange={(event) => setTitle(event.target.value)}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setFields((current) => ({ ...current, title: value }));
+                      }}
                       required
                       data-testid="action-title-input"
                     />
@@ -473,7 +516,13 @@ function ActionWorkspaceContent({
                       id="action-description"
                       rows={4}
                       value={description}
-                      onChange={(event) => setDescription(event.target.value)}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setFields((current) => ({
+                          ...current,
+                          description: value,
+                        }));
+                      }}
                       data-testid="action-description-input"
                     />
                   </div>
@@ -484,7 +533,13 @@ function ActionWorkspaceContent({
                         id="action-priority"
                         className="flex min-h-11 w-full rounded-md border border-border bg-elevated px-3 py-2 text-sm"
                         value={priority}
-                        onChange={(event) => setPriority(event.target.value)}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setFields((current) => ({
+                            ...current,
+                            priority: value,
+                          }));
+                        }}
                         data-testid="action-priority-input"
                       >
                         {ACTION_PRIORITIES.map((option) => (
@@ -500,7 +555,13 @@ function ActionWorkspaceContent({
                         id="action-due"
                         type="date"
                         value={dueDate}
-                        onChange={(event) => setDueDate(event.target.value)}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setFields((current) => ({
+                            ...current,
+                            dueDate: value,
+                          }));
+                        }}
                         data-testid="action-due-input"
                       />
                     </div>
@@ -536,15 +597,18 @@ function ActionWorkspaceContent({
                   data-testid="action-assign-form"
                   onSubmit={(event) => {
                     event.preventDefault();
-                    void run("assign", async () => {
+                    void run("assign", async (expectedVersion) => {
                       const result = await setActionAssignee({
                         actionId: detail.id,
                         membershipId: assigneeId || null,
                       });
                       if (!result.error) {
-                        const nextVersion = liveVersion + 1;
-                        appliedVersionRef.current = nextVersion;
-                        setLiveVersion(nextVersion);
+                        if (liveVersion.current === expectedVersion) {
+                          savedFields.current = {
+                            ...savedFields.current,
+                            assigneeId,
+                          };
+                        }
                         setMessage(
                           assigneeId
                             ? "Assignee updated."
@@ -560,7 +624,13 @@ function ActionWorkspaceContent({
                     id="action-assignee"
                     className="flex min-h-11 w-full rounded-md border border-border bg-elevated px-3 py-2 text-sm"
                     value={assigneeId}
-                    onChange={(event) => setAssigneeId(event.target.value)}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setFields((current) => ({
+                        ...current,
+                        assigneeId: value,
+                      }));
+                    }}
                     data-testid="action-assignee-input"
                   >
                     <option value="">Unassigned</option>

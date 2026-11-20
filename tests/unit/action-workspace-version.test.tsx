@@ -111,7 +111,7 @@ it("uses the refreshed version when starting after a field save", async () => {
   expect(screen.getByTestId("action-history")).toHaveTextContent(/In progress/);
 });
 
-it("uses the post-assign version when a stale detail render arrives before Start", async () => {
+it("keeps local v3 through stale and equal refreshes, then adopts server v4", async () => {
   assign.mockResolvedValue({ ok: true });
   transition.mockResolvedValue({ ok: true });
   const detail: ActionDetail = {
@@ -142,7 +142,7 @@ it("uses the post-assign version when a stale detail render arrives before Start
       can_complete: false,
       can_start: true,
       can_reopen: false,
-      can_cancel: false,
+      can_cancel: true,
     },
   };
   const props = {
@@ -179,6 +179,91 @@ it("uses the post-assign version when a stale detail render arrives before Start
   await waitFor(() =>
     expect(transition).toHaveBeenCalledWith(
       expect.objectContaining({ expectedVersion: 2 }),
+    ),
+  );
+  await waitFor(() =>
+    expect(screen.getByTestId("action-status")).toHaveTextContent(
+      "In progress",
+    ),
+  );
+  fireEvent.change(screen.getByTestId("action-title-input"), {
+    target: { value: "Unsaved title" },
+  });
+
+  const historyTab = screen.getByRole("tab", { name: "History" });
+  fireEvent.mouseDown(historyTab);
+  fireEvent.click(historyTab);
+  for (const version of [2, 3]) {
+    view.rerender(
+      <ActionWorkspace {...props} detail={{ ...detail, version }} />,
+    );
+    expect(screen.getByTestId("action-status")).toHaveTextContent(
+      "In progress",
+    );
+    expect(screen.queryByTestId("action-start-button")).not.toBeInTheDocument();
+    expect(screen.getByTestId("action-history")).toHaveTextContent(
+      /Open → In progress/,
+    );
+  }
+
+  const overviewTab = screen.getByRole("tab", { name: "Overview" });
+  fireEvent.mouseDown(overviewTab);
+  fireEvent.click(overviewTab);
+  expect(screen.getByTestId("action-title-input")).toHaveValue("Unsaved title");
+
+  transition.mockResolvedValueOnce({ error: "Refresh required" });
+  fireEvent.click(screen.getByTestId("action-cancel-button"));
+  expect(transition).toHaveBeenLastCalledWith({
+    actionId: "a",
+    toStatus: "cancelled",
+    expectedVersion: 3,
+  });
+  await screen.findByRole("alert");
+
+  view.rerender(
+    <ActionWorkspace
+      {...props}
+      detail={{
+        ...detail,
+        version: 4,
+        status: "open",
+        title: "Server title",
+        description: "Server description",
+        status_history: [
+          {
+            id: "server-entry",
+            from_status: "in_progress",
+            to_status: "open",
+            reason: null,
+            created_at: detail.created_at,
+            actor_membership_id: "m",
+            actor_display_name: "Sam",
+          },
+        ],
+      }}
+    />,
+  );
+  expect(screen.getByTestId("action-status")).toHaveTextContent("Open");
+  expect(screen.getByTestId("action-title-input")).toHaveValue("Unsaved title");
+  expect(screen.getByTestId("action-description-input")).toHaveValue(
+    "Server description",
+  );
+
+  fireEvent.mouseDown(historyTab);
+  fireEvent.click(historyTab);
+  expect(screen.getByTestId("action-history")).toHaveTextContent(
+    /In progress → Open/,
+  );
+
+  fireEvent.click(screen.getByTestId("action-start-button"));
+  expect(transition).toHaveBeenLastCalledWith({
+    actionId: "a",
+    toStatus: "in_progress",
+    expectedVersion: 4,
+  });
+  await waitFor(() =>
+    expect(screen.getByTestId("action-status")).toHaveTextContent(
+      "In progress",
     ),
   );
 });
