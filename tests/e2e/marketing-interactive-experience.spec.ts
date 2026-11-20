@@ -1,11 +1,13 @@
 import { expect, test } from "@playwright/test";
 
+import { HERO_HEADLINE } from "../../src/lib/marketing/landing-copy";
+
 test("homepage does not host the interactive playground", async ({ page }) => {
   await page.goto("/");
 
   await expect(
     page.getByRole("heading", {
-      name: "Make continuous improvement visible, accountable and measurable.",
+      name: HERO_HEADLINE,
     }),
   ).toBeVisible();
   await expect(
