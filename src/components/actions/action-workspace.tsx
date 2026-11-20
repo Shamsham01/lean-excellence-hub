@@ -542,7 +542,9 @@ function ActionWorkspaceContent({
                         membershipId: assigneeId || null,
                       });
                       if (!result.error) {
-                        setLiveVersion((version) => version + 1);
+                        const nextVersion = liveVersion + 1;
+                        appliedVersionRef.current = nextVersion;
+                        setLiveVersion(nextVersion);
                         setMessage(
                           assigneeId
                             ? "Assignee updated."

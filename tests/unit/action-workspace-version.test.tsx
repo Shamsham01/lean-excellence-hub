@@ -8,9 +8,10 @@ import {
 import { afterEach, expect, it, vi } from "vitest";
 import type { ActionDetail } from "@/lib/actions/types";
 
-const { save, transition } = vi.hoisted(() => ({
+const { save, transition, assign } = vi.hoisted(() => ({
   save: vi.fn(),
   transition: vi.fn(),
+  assign: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("@/app/(platform)/platform/actions/actions", () => ({
@@ -18,7 +19,7 @@ vi.mock("@/app/(platform)/platform/actions/actions", () => ({
   transitionActionStatus: transition,
   completeAction: vi.fn(),
   reopenAction: vi.fn(),
-  setActionAssignee: vi.fn(),
+  setActionAssignee: assign,
 }));
 vi.mock("@/components/actions/action-planner-labels-field", () => ({
   ActionPlannerLabelsField: () => null,
@@ -108,4 +109,76 @@ it("uses the refreshed version when starting after a field save", async () => {
   fireEvent.mouseDown(historyTab);
   fireEvent.click(historyTab);
   expect(screen.getByTestId("action-history")).toHaveTextContent(/In progress/);
+});
+
+it("uses the post-assign version when a stale detail render arrives before Start", async () => {
+  assign.mockResolvedValue({ ok: true });
+  transition.mockResolvedValue({ ok: true });
+  const detail: ActionDetail = {
+    id: "a",
+    action_number: "A-1",
+    title: "Old",
+    description: null,
+    status: "open",
+    priority: "medium",
+    due_at: null,
+    completed_at: null,
+    verified_at: null,
+    unit_id: "line",
+    unit_name: "Line",
+    site_unit_id: "site",
+    source_resource_id: null,
+    source: null,
+    created_by_membership_id: "m",
+    created_by_display_name: "Sam",
+    created_at: "2026-01-01",
+    updated_at: "2026-01-01",
+    version: 1,
+    assignees: [],
+    status_history: [],
+    permissions: {
+      can_update: true,
+      can_assign: true,
+      can_complete: false,
+      can_start: true,
+      can_reopen: false,
+      can_cancel: false,
+    },
+  };
+  const props = {
+    detail,
+    comments: [],
+    evidence: [],
+    assignablePeople: [
+      {
+        membership_id: "m2",
+        display_name: "Alex",
+        avatar_url: null,
+      },
+    ],
+    canUploadEvidence: false,
+  };
+  const view = render(<ActionWorkspace {...props} />);
+  fireEvent.change(screen.getByTestId("action-assignee-input"), {
+    target: { value: "m2" },
+  });
+  fireEvent.submit(screen.getByTestId("action-assign-form"));
+  await waitFor(() =>
+    expect(assign).toHaveBeenCalledWith({
+      actionId: "a",
+      membershipId: "m2",
+    }),
+  );
+  view.rerender(
+    <ActionWorkspace
+      {...props}
+      detail={{ ...detail, status_history: [...detail.status_history] }}
+    />,
+  );
+  fireEvent.click(screen.getByTestId("action-start-button"));
+  await waitFor(() =>
+    expect(transition).toHaveBeenCalledWith(
+      expect.objectContaining({ expectedVersion: 2 }),
+    ),
+  );
 });
