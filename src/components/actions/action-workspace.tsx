@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   completeAction,
@@ -44,7 +44,11 @@ import {
   unlinkActionFromCiProject,
 } from "@/app/(platform)/platform/projects/linking-actions";
 import { ProjectLinkField } from "@/components/projects/project-link-field";
-import type { ActionDetail, AssignablePerson } from "@/lib/actions/types";
+import type {
+  ActionDetail,
+  ActionStatusHistoryEntry,
+  AssignablePerson,
+} from "@/lib/actions/types";
 import type { ProjectSelectorOption } from "@/lib/projects/types";
 
 function sourceLabel(source: ActionDetail["source"]): string {
@@ -109,6 +113,15 @@ function ActionWorkspaceContent({
   );
   const [liveStatus, setLiveStatus] = useState(detail.status);
   const [liveVersion, setLiveVersion] = useState(detail.version);
+  const [history, setHistory] = useState(detail.status_history);
+  const appliedVersionRef = useRef(detail.version);
+  useEffect(() => {
+    if (detail.version < appliedVersionRef.current) return;
+    appliedVersionRef.current = detail.version;
+    setLiveStatus(detail.status);
+    setLiveVersion(detail.version);
+    setHistory(detail.status_history);
+  }, [detail.status, detail.version, detail.status_history]);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
@@ -140,6 +153,23 @@ function ActionWorkspaceContent({
     }
     onSuccess?.();
     void router.refresh();
+  }
+
+  function applyTransition(fromStatus: string, toStatus: string) {
+    const nextVersion = liveVersion + 1;
+    appliedVersionRef.current = nextVersion;
+    setLiveStatus(toStatus);
+    setLiveVersion(nextVersion);
+    const entry: ActionStatusHistoryEntry = {
+      id: `local-${fromStatus}-${toStatus}-${nextVersion}`,
+      from_status: fromStatus,
+      to_status: toStatus,
+      reason: null,
+      created_at: new Date().toISOString(),
+      actor_membership_id: currentCommentAuthor?.membership_id ?? "",
+      actor_display_name: currentCommentAuthor?.display_name ?? "",
+    };
+    setHistory((current) => [...current, entry]);
   }
 
   return (
@@ -270,10 +300,7 @@ function ActionWorkspaceContent({
                     toStatus: "in_progress",
                     expectedVersion: liveVersion,
                   }),
-                () => {
-                  setLiveStatus("in_progress");
-                  setLiveVersion((version) => version + 1);
-                },
+                () => applyTransition(liveStatus, "in_progress"),
               )
             }
             data-testid="action-start-button"
@@ -294,10 +321,7 @@ function ActionWorkspaceContent({
                     actionId: detail.id,
                     expectedVersion: liveVersion,
                   }),
-                () => {
-                  setLiveStatus("completed");
-                  setLiveVersion((version) => version + 1);
-                },
+                () => applyTransition(liveStatus, "completed"),
               )
             }
             data-testid="action-complete-button"
@@ -320,10 +344,7 @@ function ActionWorkspaceContent({
                     toStatus: "cancelled",
                     expectedVersion: liveVersion,
                   }),
-                () => {
-                  setLiveStatus("cancelled");
-                  setLiveVersion((version) => version + 1);
-                },
+                () => applyTransition(liveStatus, "cancelled"),
               )
             }
             data-testid="action-cancel-button"
@@ -345,10 +366,7 @@ function ActionWorkspaceContent({
                     actionId: detail.id,
                     expectedVersion: liveVersion,
                   }),
-                () => {
-                  setLiveStatus("open");
-                  setLiveVersion((version) => version + 1);
-                },
+                () => applyTransition(liveStatus, "open"),
               )
             }
             data-testid="action-reopen-button"
@@ -430,7 +448,9 @@ function ActionWorkspaceContent({
                         expectedVersion: liveVersion,
                       });
                       if (!result.error) {
-                        setLiveVersion((version) => version + 1);
+                        const nextVersion = liveVersion + 1;
+                        appliedVersionRef.current = nextVersion;
+                        setLiveVersion(nextVersion);
                         setMessage("Changes saved.");
                       }
                       return result;
@@ -594,10 +614,10 @@ function ActionWorkspaceContent({
               <CardTitle>History</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2 text-sm">
-              {detail.status_history.length === 0 ? (
+              {history.length === 0 ? (
                 <p className="text-muted-foreground">No status history yet.</p>
               ) : (
-                detail.status_history.map((entry) => (
+                history.map((entry) => (
                   <div
                     key={entry.id}
                     className="flex flex-col gap-1 rounded-lg border border-border px-3 py-3 sm:flex-row sm:items-start sm:justify-between"

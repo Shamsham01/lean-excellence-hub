@@ -104,4 +104,8 @@ it("uses the refreshed version when starting after a field save", async () => {
       expect.objectContaining({ expectedVersion: 2 }),
     ),
   );
+  const historyTab = screen.getByRole("tab", { name: "History" });
+  fireEvent.mouseDown(historyTab);
+  fireEvent.click(historyTab);
+  expect(screen.getByTestId("action-history")).toHaveTextContent(/In progress/);
 });

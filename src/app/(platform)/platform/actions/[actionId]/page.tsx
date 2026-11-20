@@ -54,7 +54,6 @@ export default async function ActionDetailPage({
 
   return (
     <ActionWorkspace
-      key={`${detail.id}:${detail.version}`}
       detail={detail}
       comments={comments}
       evidence={evidence}
