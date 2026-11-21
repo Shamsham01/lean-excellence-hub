@@ -41,7 +41,7 @@ export default async function FiveSAuditPage({
   const { data: audit } = await supabase
     .from("five_s_audits")
     .select(
-      "id, status, submission_id, standard_version_id, overall_score_percent, target_percent, result_status, standard_name_snapshot, unit_name_snapshot, completed_at",
+      "id, status, submission_id, standard_version_id, overall_score_percent, target_percent, result_status, standard_name_snapshot, unit_name_snapshot, completed_at, site_unit_id",
     )
     .eq("id", id)
     .maybeSingle();
@@ -221,6 +221,7 @@ export default async function FiveSAuditPage({
         description={audit.unit_name_snapshot ?? "In progress"}
       />
       <FiveSAuditWorkspace
+        siteUnitId={audit.site_unit_id}
         auditId={id}
         status={audit.status}
         sections={sections}

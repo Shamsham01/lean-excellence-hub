@@ -59,6 +59,7 @@ type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 type GembaObservationPanelProps = {
   walkId: string;
+  siteUnitId?: string | null;
   observations: WalkObservation[];
   evidence: EvidenceItem[];
   canEdit: boolean;
@@ -89,6 +90,7 @@ function isMutationSuccess(result: unknown) {
 
 export function GembaObservationPanel({
   walkId,
+  siteUnitId = null,
   observations,
   evidence,
   canEdit,
@@ -708,6 +710,7 @@ export function GembaObservationPanel({
                       <GembaAuditRaiseAction
                         linkContext={{
                           walkId,
+                          siteUnitId,
                           observationId: observation.id,
                           defaultTitle: observation.observation_text.slice(
                             0,

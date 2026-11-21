@@ -50,6 +50,7 @@ type Section = {
 
 type AuditWorkspaceProps = {
   auditId: string;
+  siteUnitId?: string | null;
   status: string;
   sections: Section[];
   answers: Record<
@@ -124,6 +125,7 @@ function isCompleteSuccess(result: unknown) {
 
 export function FiveSAuditWorkspace({
   auditId,
+  siteUnitId = null,
   status,
   sections,
   answers,
@@ -474,6 +476,7 @@ export function FiveSAuditWorkspace({
               key={current.question.id}
               linkContext={{
                 auditId,
+                siteUnitId,
                 sectionId: current.section.id,
                 questionId: current.question.id,
                 defaultTitle: current.question.prompt,

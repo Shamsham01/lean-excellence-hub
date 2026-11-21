@@ -21,6 +21,24 @@ export function isCiProjectLinkableStatus(status: string): boolean {
   return (CI_PROJECT_LINKABLE_STATUSES as readonly string[]).includes(status);
 }
 
+export const ACTION_PROJECT_STATUSES = ["draft", "active", "on_hold"] as const;
+
+export const ACTION_PROJECT_EMPTY_HINT =
+  "No draft, active or on-hold projects in your current scope";
+
+export function isActionProjectStatus(status: string): boolean {
+  return (ACTION_PROJECT_STATUSES as readonly string[]).includes(status);
+}
+
+export function actionProjectStatusLabel(status: string): string {
+  return status === "on_hold" ? "On hold" : projectStatusLabel(status);
+}
+
+export function actionProjectStatusHint(status: string): string | undefined {
+  if (status === "draft") return "Project not yet approved";
+  if (status === "on_hold") return "Project is on hold; due dates may slip";
+}
+
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
 export const PROJECT_PRIORITIES = [

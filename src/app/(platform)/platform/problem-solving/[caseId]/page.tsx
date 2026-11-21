@@ -151,6 +151,7 @@ export default async function ProblemSolvingCaseDetailPage({
         providerAvailable={providerAvailable}
         pendingAiProposals={pendingAiProposals}
         linkedProject={linkedProject}
+        projectSiteUnitId={siteUnitId}
         projectOptions={projectPicker.projects}
         requiresSiteSelection={projectPicker.requiresSiteSelection}
         canEditProjectLink={canEditProjectLink}

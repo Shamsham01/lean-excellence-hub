@@ -16,6 +16,23 @@ function isCompletedYtd(item: ProjectPortfolioItem, year: number): boolean {
   return new Date(item.actual_end_at).getFullYear() === year;
 }
 
+export function projectIdsCountingTowardsActionProgress(
+  projects: readonly Pick<
+    ProjectPortfolioItem,
+    "id" | "status" | "actual_start_at"
+  >[],
+): string[] {
+  return projects
+    .filter(
+      ({ status, actual_start_at }) =>
+        status === "active" ||
+        status === "on_hold" ||
+        status === "completed" ||
+        (status === "cancelled" && actual_start_at != null),
+    )
+    .map(({ id }) => id);
+}
+
 export function computePortfolioMetrics(
   items: ProjectPortfolioItem[],
   openActions = 0,

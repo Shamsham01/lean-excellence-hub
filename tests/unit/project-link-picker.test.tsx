@@ -89,3 +89,97 @@ describe("ProjectLinkField", () => {
     );
   });
 });
+
+describe("action project picker", () => {
+  const actionProjects = [
+    "draft",
+    "active",
+    "on_hold",
+    "completed",
+    "cancelled",
+    "submitted",
+    "approved",
+  ] as const;
+
+  const projects = actionProjects.map((status) => ({
+    ...options[0]!,
+    id: status,
+    project_number: `PRJ-${status}`,
+    title: `Project ${status}`,
+    status,
+  }));
+
+  it("offers only eligible projects with status badges and hints", () => {
+    render(
+      <ProjectLinkField
+        forAction
+        linked={null}
+        options={projects}
+        canEdit
+        onLink={async () => ({})}
+        onUnlink={async () => ({})}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("combobox", { name: /link to project/i }));
+    expect(screen.getAllByRole("option")).toHaveLength(3);
+    for (const label of ["Draft", "Active", "On hold"]) {
+      expect(
+        screen.getByText(label, { selector: "span.rounded-md" }),
+      ).toBeVisible();
+    }
+    expect(screen.getByText("Project not yet approved")).toBeVisible();
+    expect(
+      screen.getByText("Project is on hold; due dates may slip"),
+    ).toBeVisible();
+  });
+
+  it("shows the scoped empty state when only ineligible projects are present", () => {
+    render(
+      <ProjectLinkField
+        forAction
+        linked={null}
+        options={projects.slice(3)}
+        canEdit
+        onLink={async () => ({})}
+        onUnlink={async () => ({})}
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        "No draft, active or on-hold projects in your current scope",
+      ),
+    ).toBeVisible();
+    expect(screen.getByRole("combobox")).toBeDisabled();
+  });
+
+  it.each(["completed", "cancelled"])(
+    "keeps the existing %s link visible and read-only",
+    (status) => {
+      render(
+        <ProjectLinkField
+          forAction
+          linked={{
+            id: status,
+            project_number: "PRJ-001",
+            title: "Walkway clearance",
+            status,
+            href: `/platform/projects/${status}`,
+            can_open: true,
+          }}
+          options={projects}
+          canEdit
+          onLink={async () => ({})}
+          onUnlink={async () => ({})}
+        />,
+      );
+      expect(
+        screen.getByRole("link", { name: /walkway clearance/i }),
+      ).toBeVisible();
+      expect(screen.getByTestId("project-link-field-frozen")).toBeVisible();
+      expect(screen.queryByRole("button", { name: "Unlink" })).toBeNull();
+      expect(screen.queryByRole("combobox")).toBeNull();
+    },
+  );
+});

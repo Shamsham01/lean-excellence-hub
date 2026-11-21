@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/sheet";
 import { ArrowLeft, X } from "lucide-react";
 import type { ActionDetail, AssignablePerson } from "@/lib/actions/types";
+import type { ProjectPickerOptions } from "@/lib/projects/load-project-picker-options";
 
 type LoadedSheetState = {
   detail: ActionDetail;
@@ -31,6 +32,7 @@ type LoadedSheetState = {
   currentCommentAuthor: ActionCommentAuthor | null;
   assigneeAvatarUrl: string | null;
   fiveSQuestionPrompt: string | null;
+  projectPicker?: ProjectPickerOptions;
 };
 
 export function ActionDetailSheet({
@@ -154,6 +156,10 @@ export function ActionDetailSheet({
                 currentCommentAuthor={state.currentCommentAuthor}
                 assigneeAvatarUrl={state.assigneeAvatarUrl}
                 fiveSQuestionPrompt={state.fiveSQuestionPrompt}
+                projectOptions={state.projectPicker?.projects ?? []}
+                requiresSiteSelection={
+                  state.projectPicker?.requiresSiteSelection ?? false
+                }
                 onMutated={reloadSheet}
                 showBackLink={false}
               />

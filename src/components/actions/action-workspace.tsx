@@ -442,6 +442,7 @@ function ActionWorkspaceContent({
                 showWhenEmpty={permissions.can_update}
               />
               <ProjectLinkField
+                forAction
                 linked={detail.linked_project ?? null}
                 options={projectOptions}
                 canEdit={permissions.can_update && editable}

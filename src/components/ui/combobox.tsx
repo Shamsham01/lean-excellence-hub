@@ -1,13 +1,18 @@
 "use client";
 
 import { Check, ChevronsUpDown } from "lucide-react";
+import type { ReactNode } from "react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-export type ComboboxOption = { value: string; label: string };
+export type ComboboxOption = {
+  value: string;
+  label: string;
+  content?: ReactNode;
+};
 
 export function Combobox({
   options,
@@ -106,6 +111,9 @@ export function Combobox({
             className="mb-2 h-8"
             aria-label={`${accessibleName} search`}
             onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.preventDefault();
+            }}
             autoFocus
           />
           <ul
@@ -132,7 +140,7 @@ export function Combobox({
                       setQuery("");
                     }}
                   >
-                    {option.label}
+                    {option.content ?? option.label}
                     {value === option.value ? (
                       <Check className="size-4 text-primary" aria-hidden />
                     ) : null}

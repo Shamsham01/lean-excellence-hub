@@ -110,6 +110,13 @@ export function mapCiProjectLinkError(error: unknown): string {
   }
 
   if (code === "55000" || /55000/.test(raw)) {
+    if (
+      /only draft, active and on hold projects can accept action links/i.test(
+        raw,
+      )
+    ) {
+      return "Only Draft, Active and On hold projects can accept action links.";
+    }
     if (/completed or cancelled and cannot accept new links/i.test(raw)) {
       return "This project is completed or cancelled and cannot accept new links.";
     }

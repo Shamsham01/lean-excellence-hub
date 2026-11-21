@@ -11,11 +11,13 @@ import {
   initiateActionEvidenceUpload,
   loadActionCreateContext,
 } from "@/app/(platform)/platform/actions/actions";
+import { createMaturityAction } from "@/app/(platform)/platform/maturity/actions";
+import { linkActionToCiProject } from "@/app/(platform)/platform/projects/linking-actions";
 import {
   ActionCreateEvidencePicker,
   type ActionCreateEvidenceDraft,
 } from "@/components/actions/action-create-evidence-picker";
-import { createMaturityAction } from "@/app/(platform)/platform/maturity/actions";
+import { ActionProjectPicker } from "@/components/actions/action-project-picker";
 import { labelChipTextClass } from "@/lib/actions/label-contrast";
 import type { ActionLabel, AssignablePerson } from "@/lib/actions/types";
 import { RelatedRecordsPanel } from "@/components/improvement/related-records-panel";
@@ -33,6 +35,7 @@ import { Label } from "@/components/ui/label";
 import { EphemeralToast } from "@/components/ui/ephemeral-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { uploadEvidenceFileClient } from "@/lib/attachments/upload-evidence-client";
+import type { ProjectPickerOptions } from "@/lib/projects/load-project-picker-options";
 import { cn } from "@/lib/utils";
 
 type MaturityActionContext = {
@@ -47,6 +50,7 @@ export type FiveSActionLinkContext = {
   sectionId: string;
   questionId: string;
   defaultTitle: string;
+  siteUnitId?: string | null;
 };
 
 export type GembaActionLinkContext = {
@@ -55,6 +59,7 @@ export type GembaActionLinkContext = {
   questionId?: string | null;
   observationId?: string | null;
   defaultTitle: string;
+  siteUnitId?: string | null;
 };
 
 type ActionCreateDialogProps = {
@@ -90,6 +95,7 @@ export function ActionCreateDialog({
   const formRef = useRef<HTMLFormElement>(null);
   const wasOpenRef = useRef(false);
   const idempotencyKeyRef = useRef<string | null>(null);
+  const createWarningRef = useRef<string | undefined>(undefined);
   const [queryText, setQueryText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -102,6 +108,9 @@ export function ActionCreateDialog({
   );
   const [assigneeId, setAssigneeId] = useState("");
   const [dueAt, setDueAt] = useState("");
+  const [projectPicker, setProjectPicker] = useState<ProjectPickerOptions>();
+  const [projectId, setProjectId] = useState<string | null>(null);
+  const [projectLinked, setProjectLinked] = useState(false);
   const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([]);
   const [checklistDraft, setChecklistDraft] = useState("");
   const [checklistTitles, setChecklistTitles] = useState<string[]>([]);
@@ -115,6 +124,7 @@ export function ActionCreateDialog({
 
   const plannerMode = !maturityContext;
   const raisedFromAudit = Boolean(fiveSLinkContext ?? gembaLinkContext);
+  const siteUnitId = (fiveSLinkContext ?? gembaLinkContext)?.siteUnitId ?? null;
   const labelsLoading = plannerMode && open && !createContextLoaded;
 
   useEffect(() => {
@@ -130,8 +140,9 @@ export function ActionCreateDialog({
   useEffect(() => {
     if (!open || !plannerMode) return;
     let cancelled = false;
-    void loadActionCreateContext().then((ctx) => {
+    void loadActionCreateContext({ siteUnitId }).then((ctx) => {
       if (cancelled) return;
+      setProjectPicker(ctx.projectPicker);
       setCatalogLabels(ctx.labels);
       setCanAssignOthers(ctx.canAssign);
       const people =
@@ -159,7 +170,7 @@ export function ActionCreateDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, plannerMode, fiveSLinkContext, gembaLinkContext]);
+  }, [open, plannerMode, raisedFromAudit, siteUnitId]);
 
   useEffect(() => {
     const linkContext = fiveSLinkContext ?? gembaLinkContext;
@@ -182,6 +193,9 @@ export function ActionCreateDialog({
   function resetPlannerFields() {
     setAssigneeId("");
     setDueAt("");
+    setProjectId(null);
+    setProjectLinked(false);
+    setProjectPicker(undefined);
     setSelectedLabelIds([]);
     setChecklistDraft("");
     setChecklistTitles([]);
@@ -191,6 +205,7 @@ export function ActionCreateDialog({
     setEvidenceDrafts([]);
     setEvidenceError(null);
     setCreatedActionId(null);
+    createWarningRef.current = undefined;
   }
 
   function resetForm() {
@@ -218,6 +233,7 @@ export function ActionCreateDialog({
     return Boolean(
       assigneeId ||
       dueAt ||
+      projectId ||
       selectedLabelIds.length > 0 ||
       checklistTitles.length > 0 ||
       checklistDraft.trim() ||
@@ -352,7 +368,6 @@ export function ActionCreateDialog({
     }
 
     let actionId = createdActionId;
-    let createWarning: string | undefined;
 
     const idempotencyKey =
       idempotencyKeyRef.current ??
@@ -409,9 +424,18 @@ export function ActionCreateDialog({
         actionId = result.id;
         setCreatedActionId(result.id);
         onActionPersisted?.(result.id);
-        if (result.warning) {
-          createWarning = result.warning;
+        createWarningRef.current = result.warning;
+      }
+
+      if (projectId && !projectLinked) {
+        const link = await linkActionToCiProject(actionId, projectId);
+        if (link.error) {
+          setError(
+            `Action created. ${link.error} Choose a project or clear the selection, then submit again.`,
+          );
+          return;
         }
+        setProjectLinked(true);
       }
 
       const uploadFailures =
@@ -429,13 +453,13 @@ export function ActionCreateDialog({
       onCreated?.(actionId);
       idempotencyKeyRef.current = null;
       onOpenChange(false);
-      if (createWarning) {
-        setToastMessage(createWarning);
+      if (createWarningRef.current) {
+        setToastMessage(createWarningRef.current);
       }
     } catch {
       setError(
         actionId
-          ? "Something went wrong while uploading attachments. Try again."
+          ? "The action was created, but setup could not finish. Try again."
           : "Something went wrong while creating the action. Try again.",
       );
     } finally {
@@ -538,6 +562,14 @@ export function ActionCreateDialog({
 
             {plannerMode ? (
               <>
+                {projectPicker ? (
+                  <ActionProjectPicker
+                    picker={projectPicker}
+                    value={projectId}
+                    onChange={setProjectId}
+                    disabled={pending || projectLinked}
+                  />
+                ) : null}
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="action-create-assignee">
                     Assignee{raisedFromAudit ? " *" : ""}
@@ -774,10 +806,12 @@ export function ActionCreateDialog({
               >
                 {pending
                   ? createdActionId
-                    ? "Uploading…"
+                    ? "Saving…"
                     : "Creating…"
                   : createdActionId
-                    ? "Retry upload"
+                    ? evidenceError
+                      ? "Retry upload"
+                      : "Finish setup"
                     : "Create action"}
               </Button>
             </DialogFooter>
