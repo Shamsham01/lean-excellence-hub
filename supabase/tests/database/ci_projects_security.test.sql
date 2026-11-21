@@ -1,6 +1,42 @@
 begin;
 
-select plan(24);
+select plan(35);
+select ok(
+  not has_table_privilege('authenticated', 'public.ci_projects', 'UPDATE'),
+  'authenticated has no table-wide UPDATE privilege'
+);
+
+select ok(
+  not has_any_column_privilege('authenticated', 'public.ci_projects', 'UPDATE'),
+  'authenticated has no column UPDATE privileges'
+);
+
+select ok(
+  not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'ci_projects'
+      and policyname = 'ci_projects_update_manage'
+  ),
+  'the direct UPDATE policy is gone'
+);
+
+select ok(
+  proc.proowner = 'lean_hub_private_owner'::regrole
+    and has_function_privilege(proc.proowner, proc.oid, 'EXECUTE')
+    and not exists (
+      select 1
+      from aclexplode(coalesce(proc.proacl, acldefault('f', proc.proowner))) acl
+      where acl.privilege_type = 'EXECUTE' and acl.grantee <> proc.proowner
+    ),
+  proc.proname || ' is owned by lean_hub_private_owner with owner-only EXECUTE'
+)
+from pg_proc proc
+where proc.oid in (
+  'private.guard_ci_project_lifecycle_columns()'::regprocedure,
+  'private.guard_action_project_link_status()'::regprocedure
+)
+order by proc.proname;
+
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
   raw_app_meta_data, raw_user_meta_data, is_sso_user, is_anonymous
@@ -30,6 +66,7 @@ create temporary table project_ids (
   id uuid not null
 ) on commit drop;
 
+grant select on project_ids to lean_hub_private_owner;
 grant select, insert on project_ids to authenticated;
 
 insert into project_ids (key, id)
@@ -360,6 +397,26 @@ select is(
 );
 
 select ok(
+  public.return_project_to_draft((select id from project_ids where key = 'project')),
+  'submitted project returns to draft'
+);
+
+select ok(
+  exists (
+    select 1 from public.ci_projects project
+    where project.id = (select id from project_ids where key = 'project')
+      and project.status = 'draft'
+      and project.updated_at > project.charter_submitted_at
+  ),
+  'return to draft bumps updated_at'
+);
+
+select ok(
+  public.submit_project((select id from project_ids where key = 'project')),
+  'returned draft can be submitted again'
+);
+
+select ok(
   public.approve_project((select id from project_ids where key = 'project')),
   'submitted project approves'
 );
@@ -367,6 +424,30 @@ select ok(
 select ok(
   public.start_project((select id from project_ids where key = 'project')),
   'approved project starts'
+);
+
+select ok(
+  public.hold_project((select id from project_ids where key = 'project')),
+  'active project can be placed on hold'
+);
+
+create temporary table project_timestamp on commit drop as
+select updated_at from public.ci_projects
+where id = (select id from project_ids where key = 'project');
+
+select ok(
+  public.resume_project((select id from project_ids where key = 'project')),
+  'on-hold project resumes'
+);
+
+select ok(
+  exists (
+    select 1 from public.ci_projects project
+    where project.id = (select id from project_ids where key = 'project')
+      and project.status = 'active'
+      and project.updated_at > (select updated_at from project_timestamp)
+  ),
+  'resume bumps updated_at'
 );
 
 select ok(
@@ -439,6 +520,8 @@ select ok(
   'completion snapshot is persisted'
 );
 
+set local role lean_hub_private_owner;
+
 select throws_ok(
   format(
     'update public.ci_projects set title = %L where id = %L',
@@ -450,5 +533,6 @@ select throws_ok(
   'completed project record is immutable'
 );
 
+reset role;
 select * from finish();
 rollback;
