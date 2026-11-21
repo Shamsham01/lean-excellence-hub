@@ -167,6 +167,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
   > | null>(null);
   const pendingHydrationSaveSkipRef = useRef(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [resolvedProposalIds, setResolvedProposalIds] = useState<string[]>([]);
   const [pendingProposals, setPendingProposals] = useState<PendingProposal[]>(
     [],
   );
@@ -191,8 +192,8 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
 
   const displayedCurrentStage = displayedStageDerivation.stage;
 
-  const caseAllowsAi =
-    canUseAi && caseStatusAllowsLeanAiDrafting(detail.status);
+  const progressStageId =
+    displayedCurrentStage?.id ?? detail.current_method_stage_id;
 
   const urlStageSemanticKey = useMemo(() => {
     const raw = searchParams.get("stage")?.trim() ?? "";
@@ -385,14 +386,12 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
           ...row,
           ai_session_id: "",
         })),
-      ).filter((proposal) =>
-        pendingAiProposalMatchesViewStage({
-          proposal_type: proposal.proposal_type,
-          semantic_stage_key: proposal.semantic_stage_key ?? null,
-          viewStageKey: stageKey,
-        }),
+      ).filter(
+        (proposal) =>
+          proposal.status === "pending" &&
+          !resolvedProposalIds.includes(proposal.id),
       ),
-    [stagePendingAiProposals, stageChatProposals, stageKey],
+    [stagePendingAiProposals, stageChatProposals, resolvedProposalIds],
   );
 
   const hasProblemData = Boolean(
@@ -404,21 +403,25 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     detail.status === "active" &&
     sortedStages.length > 0;
 
-  const progressStageId =
-    displayedCurrentStage?.id ?? detail.current_method_stage_id;
-
   const isViewingCurrentStage =
     viewStageId === progressStageId ||
     (viewStageId == null && progressStageId == null);
 
   const viewingFutureStage = useMemo(() => {
-    if (!viewStage || !progressStageId || detail.status !== "active") {
+    if (!viewStage || !progressStageId || isTerminalCaseStatus(detail.status)) {
       return false;
     }
     const progressRow = sortedStages.find((row) => row.id === progressStageId);
     if (!progressRow) return false;
     return viewStage.display_order > progressRow.display_order;
   }, [viewStage, progressStageId, detail.status, sortedStages]);
+
+  const caseAllowsAi =
+    canUseAi && caseStatusAllowsLeanAiDrafting(detail.status);
+  const stageAllowsAi =
+    caseAllowsAi && providerAvailable && !viewingFutureStage;
+  const canEditStage =
+    !viewingFutureStage && !isTerminalCaseStatus(detail.status);
 
   const notify = useCallback(
     (message: string, tone: "success" | "error" = "success") => {
@@ -454,6 +457,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
   };
 
   async function handleAcceptProposal(proposal: PendingProposal) {
+    if (!stageAllowsAi || proposalBusy) return;
     setProposalBusy(true);
     const result = await acceptProblemSolvingAiProposal({
       caseId: detail.id,
@@ -466,11 +470,13 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
       return;
     }
     setPendingProposals((prev) => prev.filter((p) => p.id !== proposal.id));
+    setResolvedProposalIds((prev) => [...prev, proposal.id]);
     notify("Proposal accepted.");
     router.refresh();
   }
 
   async function handleRejectProposal(proposalId: string) {
+    if (!stageAllowsAi || proposalBusy) return;
     setProposalBusy(true);
     const result = await rejectProblemSolvingAiProposal({
       caseId: detail.id,
@@ -482,6 +488,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
       return;
     }
     setPendingProposals((prev) => prev.filter((p) => p.id !== proposalId));
+    setResolvedProposalIds((prev) => [...prev, proposalId]);
     notify("Proposal rejected");
     router.refresh();
   }
@@ -496,10 +503,10 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
           analyses={analyses}
           analysisNodes={analysisNodes}
           hypothesisTests={hypothesisTests}
-          canContribute={canContribute || canManage}
-          canManage={canManage}
-          canVerifyCause={canVerifyCause}
-          canEditCaseDefinition={canEditCaseDefinition}
+          canContribute={canEditStage && (canContribute || canManage)}
+          canManage={canEditStage && canManage}
+          canVerifyCause={canEditStage && canVerifyCause}
+          canEditCaseDefinition={canEditStage && canEditCaseDefinition}
           membershipNameById={membershipNameById}
         />
       );
@@ -510,13 +517,13 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
           <CurrentConditionPanel
             caseId={detail.id}
             items={currentConditionItems}
-            canContribute={canContribute || canManage}
+            canContribute={canEditStage && (canContribute || canManage)}
           />
           <ContainmentPanel
             siteUnitId={projectSiteUnitId}
             caseId={detail.id}
             containments={containments}
-            canContribute={canContribute || canManage}
+            canContribute={canEditStage && (canContribute || canManage)}
             defaultAssigneeMembershipId={currentMembershipId ?? null}
           />
         </>
@@ -528,7 +535,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
           siteUnitId={projectSiteUnitId}
           caseId={detail.id}
           containments={containments}
-          canContribute={canContribute || canManage}
+          canContribute={canEditStage && (canContribute || canManage)}
           defaultAssigneeMembershipId={currentMembershipId ?? null}
         />
       );
@@ -539,8 +546,8 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
           siteUnitId={projectSiteUnitId}
           caseId={detail.id}
           detail={detail}
-          canContribute={canContribute || canManage}
-          canManage={canManage}
+          canContribute={canEditStage && (canContribute || canManage)}
+          canManage={canEditStage && canManage}
           defaultAssigneeMembershipId={currentMembershipId ?? null}
         />
       );
@@ -550,7 +557,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
         <VerificationPanel
           caseId={detail.id}
           detail={detail}
-          canManage={canManage}
+          canManage={canEditStage && canManage}
           membershipNameById={membershipNameById}
         />
       );
@@ -561,7 +568,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
           caseId={detail.id}
           detail={detail}
           membershipNameById={membershipNameById}
-          canManage={canManage}
+          canManage={canEditStage && canManage}
         />
       );
     }
@@ -569,12 +576,12 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
       <OverviewPanel
         detail={detail}
         evidence={evidence}
-        canContribute={canContribute || canManage}
-        canEditCaseDefinition={canEditCaseDefinition}
+        canContribute={canEditStage && (canContribute || canManage)}
+        canEditCaseDefinition={canEditStage && canEditCaseDefinition}
         linkedProject={linkedProject}
         projectOptions={projectOptions}
         requiresSiteSelection={requiresSiteSelection}
-        canEditProjectLink={canEditProjectLink}
+        canEditProjectLink={canEditStage && canEditProjectLink}
       />
     );
   }
@@ -585,12 +592,16 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
       caseTitle={detail.title}
       stageKey={stageKey}
       viewStageKey={stageKey}
-      currentStageKey={detail.current_stage?.semantic_stage_key ?? null}
+      currentStageKey={
+        displayedCurrentStage?.semantic_stage_key ??
+        detail.current_stage?.semantic_stage_key ??
+        null
+      }
       stageTitle={viewStage?.title ?? detail.current_stage?.title ?? null}
       caseStatus={detail.status}
       canUseAi={canUseAi}
       providerAvailable={providerAvailable}
-      caseDraftingEnabled={caseAllowsAi}
+      caseDraftingEnabled={caseAllowsAi && !viewingFutureStage}
       layout="dock"
       collapsed={copilotCollapsed}
       onCollapsedChange={(next) => {
@@ -611,6 +622,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     isMobileViewport && mobileCopilotOpen ? (
       <div
         data-testid="pps-lean-ai-dock"
+        hidden={viewingFutureStage}
         className="fixed inset-x-0 bottom-0 z-30 flex max-h-[58dvh] min-h-0 w-full max-w-full flex-col overflow-x-hidden rounded-t-2xl border-t border-border bg-background shadow-2xl"
       >
         {copilot}
@@ -681,7 +693,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
               canMoveStage={canMoveStage}
               advancing={movingStage}
               leanAiOpen={leanAiPanelOpen}
-              canToggleLeanAi={caseAllowsAi && providerAvailable}
+              canToggleLeanAi={stageAllowsAi}
               onToggleLeanAi={toggleLeanAiPanel}
               {...(viewStageId && canMoveStage && !isViewingCurrentStage
                 ? {
@@ -692,14 +704,18 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
             />
 
             <div className="mt-3">
-              {caseAllowsAi ? (
+              {stageAllowsAi ? (
                 <StageAutoDraftTrigger
+                  key={stageKey ?? "DEFINE"}
+                  autoDraft={isViewingCurrentStage}
                   caseId={detail.id}
                   stageKey={stageKey ?? "DEFINE"}
                   stageTitle={stageConfig.title}
                   viewStageKey={stageKey ?? "DEFINE"}
                   currentStageKey={
-                    detail.current_stage?.semantic_stage_key ?? null
+                    displayedCurrentStage?.semantic_stage_key ??
+                    detail.current_stage?.semantic_stage_key ??
+                    null
                   }
                   autoDraftPrompt={stageConfig.autoDraftPrompt}
                   canUseAi={canUseAi}
@@ -720,7 +736,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
             </div>
 
             <div className="mt-4 flex flex-col gap-4">
-              {caseAllowsAi && providerAvailable ? (
+              {stageAllowsAi ? (
                 <PendingAiProposalsList
                   caseId={detail.id}
                   initialProposals={unifiedStagePendingProposals}
@@ -747,7 +763,12 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
         {!isMobileViewport ? (
           <div
             data-testid="pps-lean-ai-dock"
-            className="hidden min-h-0 max-w-full min-w-0 shrink-0 overflow-x-hidden lg:flex"
+            hidden={viewingFutureStage}
+            className={
+              viewingFutureStage
+                ? "hidden"
+                : "hidden min-h-0 max-w-full min-w-0 shrink-0 overflow-x-hidden lg:flex"
+            }
           >
             {copilot}
           </div>
@@ -758,7 +779,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
         ? createPortal(mobileCopilotSheet, document.body)
         : null}
 
-      {caseAllowsAi && providerAvailable && !leanAiPanelOpen ? (
+      {stageAllowsAi && !leanAiPanelOpen ? (
         <div className="pointer-events-none fixed right-4 bottom-4 z-20 flex max-w-[calc(100%-2rem)] gap-2 lg:hidden">
           <Button
             type="button"
@@ -773,7 +794,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
           </Button>
         </div>
       ) : null}
-      {caseAllowsAi && providerAvailable && mobileCopilotOpen ? (
+      {stageAllowsAi && mobileCopilotOpen ? (
         <div className="pointer-events-none fixed right-4 bottom-4 z-40 flex gap-2 lg:hidden">
           <Button
             type="button"

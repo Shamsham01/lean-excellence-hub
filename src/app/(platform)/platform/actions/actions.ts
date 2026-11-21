@@ -712,6 +712,12 @@ export async function loadActionSheetPayload(
     };
   }
 
+  const { data: actionFields } = await supabase
+    .from("actions")
+    .select("expected_result")
+    .eq("id", detail.id)
+    .maybeSingle();
+
   const canUploadEvidence =
     await currentMemberHasPermission("attachments.upload");
   const canPostComments = await currentMemberHasPermission("comments.create");
@@ -851,7 +857,10 @@ export async function loadActionSheetPayload(
 
   return {
     payload: {
-      detail,
+      detail: {
+        ...detail,
+        expected_result: actionFields?.expected_result ?? null,
+      },
       ...(projectPicker ? { projectPicker } : {}),
       comments: enrichedComments,
       legacyComments: (comments ?? []) as CommentRow[],

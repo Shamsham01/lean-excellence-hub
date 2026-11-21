@@ -58,6 +58,10 @@ async function openActiveCaseFishboneStage(
   ).toBeVisible({ timeout: 15_000 });
   const caseBaseUrl = page.url().replace(/\?.*$/, "");
   await page.goto(`${caseBaseUrl}?stage=ROOT_CAUSE_ANALYSIS`);
+  const preview = page.getByTestId("pps-stage-not-reached-notice");
+  await expect(preview).toBeVisible();
+  await page.getByTestId("pps-advance-to-viewed-stage").click();
+  await expect(preview).toBeHidden({ timeout: 15_000 });
   await expect(page.getByTestId("pps-unified-cause-analysis")).toBeVisible({
     timeout: 15_000,
   });

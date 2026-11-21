@@ -46,7 +46,8 @@ it("uses the refreshed version when starting after a field save", async () => {
     id: "a",
     action_number: "A-1",
     title: "Old",
-    description: null,
+    description: "Adjust the seal guide.",
+    expected_result: "Seal defects fall below 2%.",
     status: "open",
     priority: "medium",
     due_at: null,
@@ -81,6 +82,10 @@ it("uses the refreshed version when starting after a field save", async () => {
     canUploadEvidence: false,
   };
   const view = render(<ActionWorkspace {...props} />);
+  expect(
+    screen.getByRole("heading", { name: "Expected result" }),
+  ).toBeInTheDocument();
+  expect(screen.getByText("Seal defects fall below 2%.")).toBeInTheDocument();
   fireEvent.change(screen.getByTestId("action-title-input"), {
     target: { value: "New" },
   });

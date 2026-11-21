@@ -1,10 +1,10 @@
 import { expect, test } from "@playwright/test";
 
-import { DEMO_PROBLEM_SOLVING_CASE } from "../../scripts/demo-seed/constants";
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
   disableProblemSolvingStageAutoDraft,
   expectGuidedProblemSolvingWorkspace,
+  openDemoProblemSolvingCaseFromPortfolio,
   openProblemSolvingStage,
 } from "./helpers/guided-problem-solving-workspace";
 
@@ -19,12 +19,14 @@ test.describe("Problem solving root cause stage draft", () => {
 
     await signInAsDemoUser(page, "manager");
     await disableProblemSolvingStageAutoDraft(page);
-    await page.goto("/platform/problem-solving");
-    await page
-      .getByRole("link", { name: DEMO_PROBLEM_SOLVING_CASE.title })
-      .click();
+    await openDemoProblemSolvingCaseFromPortfolio(page);
     await expectGuidedProblemSolvingWorkspace(page);
     await openProblemSolvingStage(page, "ROOT_CAUSE_ANALYSIS");
+    const preview = page.getByTestId("pps-stage-not-reached-notice");
+    if (await preview.isVisible()) {
+      await page.getByTestId("pps-advance-to-viewed-stage").click();
+      await expect(preview).toBeHidden({ timeout: 15_000 });
+    }
 
     const draftButton = page.getByTestId("pps-stage-auto-draft-button");
     await expect(draftButton).toBeVisible();

@@ -1,4 +1,10 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const draftMock = vi.fn();
@@ -13,11 +19,12 @@ vi.mock("@/app/(platform)/platform/problem-solving/ai/actions", () => ({
 }));
 
 vi.mock("@/lib/problem-solving/problem-solving-ai-turn-client", () => ({
-  invokeProblemSolvingTurnAction: vi.fn(),
+  invokeProblemSolvingTurnAction: ({ invoke }: { invoke: () => unknown }) =>
+    invoke(),
   shouldRetainProblemSolvingTurnKey: () => false,
 }));
 
-describe("StageAutoDraftTrigger on closed cases", () => {
+describe("StageAutoDraftTrigger", () => {
   afterEach(() => {
     cleanup();
     draftMock.mockReset();
@@ -50,5 +57,37 @@ describe("StageAutoDraftTrigger on closed cases", () => {
     await waitFor(() => {
       expect(draftMock).not.toHaveBeenCalled();
     });
+  });
+
+  it("tries auto-drafting once per case and stage even when the first attempt fails", async () => {
+    const { StageAutoDraftTrigger } =
+      await import("@/components/problem-solving/guided/stage-auto-draft-trigger");
+    draftMock.mockResolvedValue({ error: "Timed out" });
+    const stage = (
+      <StageAutoDraftTrigger
+        caseId="case-1"
+        stageKey="ROOT_CAUSE_ANALYSIS"
+        autoDraftPrompt="Draft RCA"
+        canUseAi
+        providerAvailable
+        hasProblemData
+      />
+    );
+    const first = render(stage);
+    expect(await screen.findByRole("alert")).toHaveTextContent("Timed out");
+    first.unmount();
+
+    render(stage);
+    const button = screen.getByTestId("pps-stage-auto-draft-button");
+    expect(button).toHaveTextContent("Draft this stage");
+    expect(draftMock).toHaveBeenCalledTimes(1);
+
+    draftMock.mockResolvedValue({ data: { pendingProposalCount: 3 } });
+    fireEvent.click(button);
+    await waitFor(() => expect(button).toBeEnabled());
+    expect(draftMock).toHaveBeenCalledTimes(2);
+    expect(
+      screen.queryByTestId("pps-stage-auto-draft-status"),
+    ).not.toBeInTheDocument();
   });
 });

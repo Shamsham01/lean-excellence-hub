@@ -85,7 +85,7 @@ export function StageCanvasHeader({
           data-testid="pps-stage-not-reached-notice"
           role="status"
         >
-          Not reached yet — this stage is read-only until the case progresses
+          Not yet reached. This stage is read-only until the case progresses
           here.
         </p>
       ) : null}

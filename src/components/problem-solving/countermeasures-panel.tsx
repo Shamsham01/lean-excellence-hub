@@ -44,7 +44,17 @@ export function CountermeasuresPanel({
   >({});
   const [actionDialogFor, setActionDialogFor] = useState<string | null>(null);
   const [actionDefaultTitle, setActionDefaultTitle] = useState("");
-  const [raiseAnotherFor, setRaiseAnotherFor] = useState<string | null>(null);
+  const [createdActions, setCreatedActions] = useState<
+    Record<
+      string,
+      {
+        id: string;
+        title: string;
+        status: string;
+        expected_result: string | null;
+      }
+    >
+  >({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -54,7 +64,7 @@ export function CountermeasuresPanel({
 
   async function handleCreate(event: React.FormEvent) {
     event.preventDefault();
-    if (!title.trim()) return;
+    if (loading || !title.trim()) return;
     setLoading(true);
     const result = await createCountermeasure({
       caseId,
@@ -131,10 +141,36 @@ export function CountermeasuresPanel({
             <p className="text-muted-foreground">No countermeasures yet.</p>
           ) : (
             detail.countermeasures.map((item) => {
-              const linkedActions = detail.actions.filter(
-                (action) => action.countermeasure_id === item.id,
+              const causeIds = new Set(
+                item.cause_links.map((link) => link.hypothesis_id),
               );
-              const primaryLinked = linkedActions[0];
+              const relatedCountermeasures = detail.countermeasures.filter(
+                (countermeasure) =>
+                  countermeasure.id === item.id ||
+                  countermeasure.cause_links.some((link) =>
+                    causeIds.has(link.hypothesis_id),
+                  ),
+              );
+              const linkedActions = relatedCountermeasures.flatMap(
+                (countermeasure) => {
+                  const saved = detail.actions.filter(
+                    (action) => action.countermeasure_id === countermeasure.id,
+                  );
+                  const created = createdActions[countermeasure.id];
+                  return created &&
+                    !saved.some((action) => action.id === created.id)
+                    ? [...saved, created]
+                    : saved;
+                },
+              );
+              const canRaiseAction =
+                canManage &&
+                [
+                  "selected",
+                  "implementing",
+                  "implemented",
+                  "effective",
+                ].includes(item.status);
               return (
                 <div
                   key={item.id}
@@ -200,49 +236,41 @@ export function CountermeasuresPanel({
                       </div>
                     ) : null}
                   </div>
-                  {canManage &&
-                  [
-                    "selected",
-                    "implementing",
-                    "implemented",
-                    "effective",
-                  ].includes(item.status) ? (
-                    <div className="border-t border-border pt-2">
-                      {primaryLinked && raiseAnotherFor !== item.id ? (
-                        <div className="flex flex-col gap-2 text-sm">
+                  {linkedActions.length > 0 || canRaiseAction ? (
+                    <div className="flex flex-col gap-2 border-t border-border pt-2">
+                      {linkedActions.map((action) => (
+                        <div key={action.id}>
                           <AppLink
-                            href={`/platform/actions/${primaryLinked.id}`}
+                            href={`/platform/actions/${action.id}`}
                             className="font-medium hover:underline"
                             data-testid={`countermeasure-linked-action-${item.id}`}
                           >
-                            {primaryLinked.title} ·{" "}
-                            {actionStatusLabel(primaryLinked.status)}
+                            {action.title} · {actionStatusLabel(action.status)}
                           </AppLink>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={loading}
-                            onClick={() => setRaiseAnotherFor(item.id)}
-                            data-testid={`countermeasure-raise-another-${item.id}`}
-                          >
-                            Raise another
-                          </Button>
+                          {action.expected_result ? (
+                            <p className="text-muted-foreground">
+                              Expected result: {action.expected_result}
+                            </p>
+                          ) : null}
                         </div>
-                      ) : (
+                      ))}
+                      {canRaiseAction ? (
                         <Button
                           size="sm"
                           variant="outline"
-                          disabled={loading}
+                          className="self-start"
+                          disabled={loading || linkedActions.length > 0}
                           onClick={() => {
                             setActionDefaultTitle(`Implement: ${item.title}`);
                             setActionDialogFor(item.id);
-                            setRaiseAnotherFor(null);
                           }}
                           data-testid={`link-countermeasure-action-${item.id}`}
                         >
-                          Raise action
+                          {linkedActions.length > 0
+                            ? "Action already linked"
+                            : "Raise action"}
                         </Button>
-                      )}
+                      ) : null}
                     </div>
                   ) : null}
                 </div>
@@ -267,7 +295,13 @@ export function CountermeasuresPanel({
         countermeasureId={actionDialogFor}
         defaultTitle={actionDefaultTitle}
         defaultMembershipId={defaultAssigneeMembershipId ?? null}
-        onCreated={() => {
+        onCreated={(action) => {
+          if (actionDialogFor) {
+            setCreatedActions((current) => ({
+              ...current,
+              [actionDialogFor]: { ...action, status: "open" },
+            }));
+          }
           setMessage("Countermeasure action linked");
           router.refresh();
         }}

@@ -58,6 +58,45 @@ describe("client mutation keys on retry", () => {
     vi.clearAllMocks();
   });
 
+  it("keeps test drafts scoped to each hypothesis when cards reorder", () => {
+    const second = {
+      ...hypothesis,
+      id: "hyp-2",
+      statement: "Seal temperature",
+    };
+    const workspace = (hypotheses: (typeof hypothesis)[]) => (
+      <UnifiedCauseAnalysis
+        caseId="case-1"
+        detail={
+          {
+            status: "active",
+            hypotheses,
+          } as unknown as ProblemSolvingCaseDetail
+        }
+        analyses={[]}
+        analysisNodes={[]}
+        hypothesisTests={[]}
+        canContribute
+        canManage
+        canVerifyCause
+        canEditCaseDefinition
+        membershipNameById={{}}
+      />
+    );
+    const { rerender } = render(workspace([hypothesis, second]));
+    fireEvent.change(screen.getByTestId("hypothesis-test-question-hyp-1"), {
+      target: { value: "Does the seal move?" },
+    });
+    rerender(workspace([second, hypothesis]));
+    expect(screen.getByTestId("hypothesis-test-question-hyp-2")).toHaveValue(
+      "",
+    );
+    expect(screen.getByTestId("create-hypothesis-test-hyp-2")).toBeDisabled();
+    expect(screen.getByTestId("hypothesis-test-question-hyp-1")).toHaveValue(
+      "Does the seal move?",
+    );
+  });
+
   it("reuses the same mutation key when create test fails then retries", async () => {
     createHypothesisTestMock
       .mockResolvedValueOnce({ error: "network timeout" })

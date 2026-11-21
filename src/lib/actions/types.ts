@@ -60,6 +60,7 @@ export type ActionDetail = {
   action_number: string;
   title: string;
   description: string | null;
+  expected_result?: string | null;
   status: ActionStatus | string;
   priority: ActionPriority | string;
   due_at: string | null;
