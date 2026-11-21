@@ -176,7 +176,7 @@ export function LeanAiAssistantPanel({
           >
             <div
               className={cn(
-                "max-w-[92%] rounded-2xl px-3 py-2.5 text-sm leading-relaxed sm:max-w-[85%]",
+                "max-w-[92%] min-w-0 rounded-2xl px-3 py-2.5 text-sm leading-relaxed sm:max-w-[85%]",
                 message.role === "user"
                   ? "bg-primary text-primary-foreground"
                   : "border border-border/60 bg-card text-foreground shadow-[var(--shadow-theme-xs)]",

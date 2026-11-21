@@ -495,23 +495,39 @@ test.describe("LeanAI persistent workspace assistant", () => {
 
     await loginAndSelectOrganisation(page, user, user.organisationAName);
     await waitForAssistantContext(page);
-    const input = page.getByTestId("leanai-assistant-input");
+    const input = page.getByRole("textbox", { name: "Ask LeanAI" });
+    const send = page.getByRole("button", { name: "Send", exact: true });
     await expect(input).toBeEnabled();
-    await expect(page.getByTestId("leanai-assistant-send")).toBeVisible();
+    await expect(send).toBeVisible();
     await input.fill("First line");
+    const singleLineHeight = await input.evaluate(
+      (element) => element.clientHeight,
+    );
     await input.press("Control+Enter");
     await expect(input).toHaveValue("First line\n");
     await input.press("Shift+Enter");
     await expect(input).toHaveValue("First line\n\n");
     await input.press("Meta+Enter");
     await expect(input).toHaveValue("First line\n\n\n");
-    await input.fill("First line\nSecond line\nformat sample");
+    expect(
+      await input.evaluate((element) => element.clientHeight),
+    ).toBeGreaterThan(singleLineHeight);
+    await input.fill("Line of text\n".repeat(30));
+    expect(
+      await input.evaluate(
+        (element) => element.scrollHeight - element.clientHeight,
+      ),
+    ).toBeGreaterThan(0);
+    await expect(send).toBeVisible();
+
+    const draft = "**First line**\nSecond line\nformat sample";
+    await input.fill(draft);
     await input.press("Enter");
 
     const userMessage = page.getByTestId("leanai-assistant-user-message");
-    await expect(userMessage).toContainText("First line");
-    await expect(userMessage).toContainText("Second line");
-    await expect(userMessage).toContainText("format sample");
+    const userText = userMessage.locator("p").last();
+    await expect(userText).toHaveJSProperty("textContent", draft);
+    await expect(userText).toHaveCSS("white-space", "pre-wrap");
     await expect(userMessage.locator("strong")).toHaveCount(0);
 
     const answer = page.getByTestId("leanai-assistant-assistant-message");
@@ -538,8 +554,9 @@ test.describe("LeanAI persistent workspace assistant", () => {
     await page.reload();
     await page.getByTestId("leanai-assistant-open").click();
     await expect(page.getByTestId("leanai-assistant-pane")).toBeVisible();
-    await expect(page.getByTestId("leanai-assistant-input")).toBeVisible();
-    await expect(page.getByTestId("leanai-assistant-send")).toBeVisible();
+    await expect(input).toBeVisible();
+    await expect(send).toBeVisible();
+    await expect(userText).toHaveJSProperty("textContent", draft);
     await expect(page.getByRole("heading", { name: "Next step" })).toBeVisible({
       timeout: 15_000,
     });
@@ -550,5 +567,18 @@ test.describe("LeanAI persistent workspace assistant", () => {
     );
     expect(mobileOverflow).toBeLessThanOrEqual(1);
     await screenshotIfPossible(page, "leanai-assistant-markdown-mobile.png");
+    await input.fill("Mobile first line");
+    await input.press("Shift+Enter");
+    await expect(input).toHaveValue("Mobile first line\n");
+    await input.press("End");
+    await page.keyboard.insertText("format sample");
+    await send.click();
+    await expect(userMessage.last().locator("p").last()).toHaveJSProperty(
+      "textContent",
+      "Mobile first line\nformat sample",
+    );
+    await expect(
+      answer.last().getByRole("heading", { name: "Next step" }),
+    ).toBeVisible({ timeout: 30_000 });
   });
 });

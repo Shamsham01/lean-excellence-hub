@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 
-import { Paperclip, Send } from "lucide-react";
+import { Paperclip } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -64,11 +64,20 @@ export function LeanAiComposer({
 }) {
   const inputId = useId();
   const hintId = useId();
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const detectedEnterSends = useFinePointerEnterSends();
   const sendOnEnter = enterSends ?? detectedEnterSends;
   const hint = sendOnEnter
     ? "Enter sends. Ctrl+Enter, Shift+Enter, or Command+Enter adds a line."
     : "Enter adds a line. Send asks LeanAI.";
+
+  useLayoutEffect(() => {
+    const input = inputRef.current;
+    if (!input || window.CSS?.supports?.("field-sizing", "content")) return;
+
+    input.style.height = "auto";
+    input.style.height = `${input.scrollHeight}px`;
+  }, [value]);
 
   return (
     <form
@@ -101,6 +110,7 @@ export function LeanAiComposer({
           <Paperclip className="size-4" aria-hidden />
         </Button>
         <Textarea
+          ref={inputRef}
           id={inputId}
           rows={1}
           value={value}
@@ -113,7 +123,7 @@ export function LeanAiComposer({
           }
           aria-describedby={hintId}
           data-testid="leanai-assistant-input"
-          className="min-h-10 flex-1 resize-none border-0 bg-transparent px-1 py-2 shadow-none focus-visible:ring-0"
+          className="[field-sizing:content] max-h-32 min-h-10 min-w-0 flex-1 resize-none overflow-y-auto border-0 bg-transparent px-1 py-2 shadow-none"
           onChange={(event) =>
             onChange(event.target.value.slice(0, LEANAI_COMPOSER_MAX_LENGTH))
           }
@@ -136,15 +146,16 @@ export function LeanAiComposer({
             ) {
               event.preventDefault();
               const target = event.currentTarget;
-              const start = target.selectionStart ?? target.value.length;
-              const end = target.selectionEnd ?? start;
-              const next =
-                `${target.value.slice(0, start)}\n${target.value.slice(end)}`.slice(
-                  0,
-                  LEANAI_COMPOSER_MAX_LENGTH,
-                );
+              const { selectionStart: start, selectionEnd: end } = target;
+              if (
+                target.value.length - (end - start) >=
+                LEANAI_COMPOSER_MAX_LENGTH
+              ) {
+                return;
+              }
+              const next = `${target.value.slice(0, start)}\n${target.value.slice(end)}`;
               onChange(next);
-              const caret = Math.min(start + 1, next.length);
+              const caret = start + 1;
               requestAnimationFrame(() => {
                 target.setSelectionRange(caret, caret);
               });
@@ -167,11 +178,10 @@ export function LeanAiComposer({
           type="submit"
           size="sm"
           disabled={disabled || sending || value.trim().length === 0}
-          className="size-9 shrink-0 rounded-full p-0"
+          className="shrink-0 rounded-full"
           data-testid="leanai-assistant-send"
-          aria-label="Send message"
         >
-          <Send className="size-4" aria-hidden />
+          Send
         </Button>
       </div>
       <p id={hintId} className="text-xs text-muted-foreground">
