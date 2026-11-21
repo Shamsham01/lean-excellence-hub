@@ -1,6 +1,6 @@
 begin;
 
-select plan(137);
+select plan(155);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -848,6 +848,51 @@ select throws_ok(
 );
 
 insert into work_link_ids (key, id)
+select 'link_methodology', public.create_ci_project_methodology_draft(
+  'Work link methodology',
+  'work-link-methodology'
+);
+
+insert into work_link_ids (key, id)
+select 'link_methodology_version', version_row.id
+from public.ci_project_methodology_versions version_row
+where version_row.methodology_id = (select id from work_link_ids where key = 'link_methodology')
+  and version_row.version_number = 1;
+
+select public.add_ci_project_methodology_phase(
+  (select id from work_link_ids where key = 'link_methodology_version'),
+  'define',
+  'Define',
+  1
+);
+
+select public.publish_ci_project_methodology_version(
+  (select id from work_link_ids where key = 'link_methodology_version')
+);
+
+reset role;
+
+create function pg_temp.submit_work_link_project(target_project_id uuid)
+returns boolean
+language plpgsql
+as $$
+begin
+  perform public.update_ci_project_draft(
+    target_project_id,
+    target_methodology_version_id := (select id from work_link_ids where key = 'link_methodology_version')
+  );
+  perform public.assign_ci_project_team_member(
+    target_project_id,
+    (select id from work_link_ids where key = 'owner_membership'),
+    'owner'
+  );
+  return public.submit_project(target_project_id);
+end;
+$$;
+
+set local role authenticated;
+
+insert into work_link_ids (key, id)
 select 'completed_project', public.create_improvement_project(
   'Completed link target',
   (select id from work_link_ids where key = 'unit'),
@@ -856,10 +901,13 @@ select 'completed_project', public.create_improvement_project(
   'Impact'
 );
 
-update public.ci_projects
-set status = 'completed',
-    actual_end_at = statement_timestamp()
-where id = (select id from work_link_ids where key = 'completed_project');
+select pg_temp.submit_work_link_project((select id from work_link_ids where key = 'completed_project'));
+select public.approve_project((select id from work_link_ids where key = 'completed_project'));
+select public.start_project((select id from work_link_ids where key = 'completed_project'));
+select public.complete_project(
+  (select id from work_link_ids where key = 'completed_project'),
+  'Project outcome'
+);
 
 select throws_ok(
   format(
@@ -909,10 +957,13 @@ select lives_ok(
   'frozen case links to project before completion'
 );
 
-update public.ci_projects
-set status = 'completed',
-    actual_end_at = statement_timestamp()
-where id = (select id from work_link_ids where key = 'frozen_case_project');
+select pg_temp.submit_work_link_project((select id from work_link_ids where key = 'frozen_case_project'));
+select public.approve_project((select id from work_link_ids where key = 'frozen_case_project'));
+select public.start_project((select id from work_link_ids where key = 'frozen_case_project'));
+select public.complete_project(
+  (select id from work_link_ids where key = 'frozen_case_project'),
+  'Project outcome'
+);
 
 select throws_ok(
   format(
@@ -1346,6 +1397,59 @@ select ok(
   public.switch_organisation((select id from work_link_ids where key = 'organisation')),
   'site-scoped manager selects organisation'
 );
+
+with edited as (
+  update public.ci_projects
+  set title = 'Manager-edited project', scope_in = 'Updated charter scope'
+  where id = (select id from work_link_ids where key = 'project')
+  returning title, scope_in
+)
+select is(
+  (select array[title, scope_in] from edited),
+  array['Manager-edited project', 'Updated charter scope'],
+  'site-scoped manager can directly edit the title and charter scope'
+);
+
+select throws_ok(
+  format(
+    'update public.ci_projects set status = %L where id = %L',
+    'cancelled',
+    (select id from work_link_ids where key = 'project')
+  ),
+  '42501',
+  'permission denied for table ci_projects',
+  'authenticated manager lacks the column privilege to update status'
+);
+
+reset role;
+-- Temporarily grant the columns to test the trigger independently of the ACL.
+grant update (status, actual_start_at) on public.ci_projects to authenticated;
+set local role authenticated;
+
+select throws_ok(
+  format(
+    'update public.ci_projects set status = %L where id = %L',
+    'cancelled',
+    (select id from work_link_ids where key = 'project')
+  ),
+  '42501',
+  'protected CI project columns must be changed through project operations',
+  'lifecycle trigger rejects a direct status change even with the column grant'
+);
+
+select throws_ok(
+  format(
+    'update public.ci_projects set actual_start_at = statement_timestamp() where id = %L',
+    (select id from work_link_ids where key = 'project')
+  ),
+  '42501',
+  'protected CI project columns must be changed through project operations',
+  'lifecycle trigger also rejects a direct actual start timestamp change'
+);
+
+reset role;
+revoke update (status, actual_start_at) on public.ci_projects from authenticated;
+set local role authenticated;
 
 select throws_ok(
   format(
@@ -2111,26 +2215,23 @@ select is(
   'linking the action leaves the project in Draft'
 );
 
-update public.ci_projects
-set status = 'on_hold', actual_start_at = statement_timestamp()
-where id = (select id from work_link_ids where key = 'status_test_project');
-
 select lives_ok(
   format(
     'select public.create_project_action(%L, %L::uuid)',
-    'New action from On hold project',
+    'New action from Draft project',
     (select id from work_link_ids where key = 'status_test_project')
   ),
-  'creating a new linked action on an On hold project succeeds'
+  'creating a new linked action on a Draft project succeeds'
 );
 
 select public.unlink_action_from_ci_project(
   (select id from work_link_ids where key = 'status_test_action')
 );
 
-update public.ci_projects
-set status = 'submitted', actual_start_at = null
-where id = (select id from work_link_ids where key = 'status_test_project');
+select ok(
+  pg_temp.submit_work_link_project((select id from work_link_ids where key = 'status_test_project')),
+  'draft project submits through the lifecycle RPC'
+);
 
 select lives_ok(
   format(
@@ -2161,9 +2262,10 @@ select public.unlink_action_from_ci_project(
   (select id from work_link_ids where key = 'status_test_action')
 );
 
-update public.ci_projects
-set status = 'approved'
-where id = (select id from work_link_ids where key = 'status_test_project');
+select ok(
+  public.approve_project((select id from work_link_ids where key = 'status_test_project')),
+  'submitted project approves through the lifecycle RPC'
+);
 
 select lives_ok(
   format(
@@ -2189,6 +2291,109 @@ select is(
   'approved',
   'linking actions leaves the project in Approved'
 );
+
+select ok(
+  public.start_project((select id from work_link_ids where key = 'status_test_project')),
+  'approved project activates through the lifecycle RPC'
+);
+
+select ok(
+  public.hold_project((select id from work_link_ids where key = 'status_test_project')),
+  'active project goes on hold through the lifecycle RPC'
+);
+
+select lives_ok(
+  format(
+    'select public.create_project_action(%L, %L::uuid)',
+    'New action from On hold project',
+    (select id from work_link_ids where key = 'status_test_project')
+  ),
+  'creating a new linked action on an On hold project succeeds'
+);
+
+insert into work_link_ids (key, id)
+select 'direct_link_action', public.create_action(
+  'Test direct action context writes',
+  target_unit_id := (select id from work_link_ids where key = 'unit')
+);
+
+set local role lean_hub_private_owner;
+
+select throws_ok(
+  format(
+    'insert into public.ci_project_action_context
+       (organisation_id, action_id, project_id, created_by_membership_id)
+     values (%L, %L, %L, %L)',
+    (select id from work_link_ids where key = 'organisation'),
+    (select id from work_link_ids where key = 'direct_link_action'),
+    attempt.project_id,
+    (select id from work_link_ids where key = 'owner_membership')
+  ),
+  attempt.errcode,
+  attempt.message,
+  attempt.description
+)
+from (
+  values
+    (
+      (select id from work_link_ids where key = 'cancelled_project'),
+      '55000',
+      'This project is completed or cancelled and cannot accept new links.',
+      'action context trigger rejects a direct insert for a cancelled project'
+    ),
+    (
+      (select id from work_link_ids where key = 'completed_project'),
+      '55000',
+      'This project is completed or cancelled and cannot accept new links.',
+      'action context trigger rejects a direct insert for a completed project'
+    ),
+    (
+      gen_random_uuid(),
+      '42501',
+      'project link is not authorised',
+      'action context trigger rejects a direct insert for a missing project'
+    )
+) as attempt(project_id, errcode, message, description);
+
+select throws_ok(
+  format(
+    'update public.ci_project_action_context set project_id = %L
+     where organisation_id = %L and action_id = %L',
+    (select id from work_link_ids where key = 'cancelled_project'),
+    (select id from work_link_ids where key = 'organisation'),
+    (select id from work_link_ids where key = 'status_test_action')
+  ),
+  '55000',
+  'This project is completed or cancelled and cannot accept new links.',
+  'action context trigger rejects moving an existing link to a cancelled project'
+);
+
+reset role;
+
+select is(
+  pg_get_userbyid(proowner)::text,
+  'lean_hub_private_owner',
+  'action link guard is owned by the private application role'
+)
+from pg_proc
+where oid = 'private.guard_action_project_link_status()'::regprocedure;
+
+select ok(
+  not exists (
+    select 1
+    from aclexplode(coalesce(proc.proacl, acldefault('f', proc.proowner))) acl
+    where acl.grantee = 0 and acl.privilege_type = 'EXECUTE'
+  ),
+  'PUBLIC cannot execute the action link guard'
+)
+from pg_proc proc
+where proc.oid = 'private.guard_action_project_link_status()'::regprocedure;
+
+select ok(
+  not has_function_privilege(role_name, 'private.guard_action_project_link_status()', 'EXECUTE'),
+  role_name || ' cannot execute the action link guard'
+)
+from (values ('anon'), ('authenticated'), ('service_role')) as roles(role_name);
 
 select * from finish();
 rollback;
