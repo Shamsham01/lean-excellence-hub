@@ -94,9 +94,11 @@ describe("LeanAiComposer", () => {
 
   it("keeps a visible Send button and refuses a blank draft", () => {
     const { onSubmit } = renderComposer({ value: "   " });
-    const send = screen.getByTestId("leanai-assistant-send");
+    const send = screen.getByRole("button", { name: "Send", exact: true });
     expect(send).toBeVisible();
     expect(send).toBeDisabled();
+    expect(send).toHaveTextContent("Send");
+    fireEvent.keyDown(screen.getByLabelText("Ask LeanAI"), { key: "Enter" });
     fireEvent.click(send);
     expect(onSubmit).not.toHaveBeenCalled();
   });
@@ -109,9 +111,43 @@ describe("LeanAiComposer", () => {
     expect(onChange).toHaveBeenCalledWith("x".repeat(2000));
   });
 
-  it("shows the touch-keyboard hint when Enter does not send", () => {
-    renderComposer({ enterSends: false, value: "Hello" });
+  it("preserves a full draft and allows a selected character to be replaced with a newline", () => {
+    const value = "x".repeat(2000);
+    const { onChange, onSubmit } = renderComposer({ value });
+    const input = screen.getByLabelText<HTMLTextAreaElement>("Ask LeanAI");
+    expect(input.maxLength).toBe(2000);
+    input.setSelectionRange(0, 0);
+    fireEvent.keyDown(input, { key: "Enter", ctrlKey: true });
+    expect(onChange).not.toHaveBeenCalled();
+
+    input.setSelectionRange(0, 1);
+    fireEvent.keyDown(input, { key: "Enter", ctrlKey: true });
+    expect(onChange).toHaveBeenCalledWith(`\n${value.slice(1)}`);
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it.each([{ sending: true }, { disabled: true }])(
+    "blocks form submission when %j",
+    (overrides) => {
+      const { onSubmit } = renderComposer(overrides);
+      const input = screen.getByLabelText<HTMLTextAreaElement>("Ask LeanAI");
+      expect(input).toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: "Send", exact: true }),
+      ).toBeDisabled();
+      fireEvent.submit(input.form!);
+      expect(onSubmit).not.toHaveBeenCalled();
+    },
+  );
+
+  it("lets touch users insert a line with Enter and submit with Send", () => {
+    const { onSubmit } = renderComposer({ enterSends: false, value: "Hello" });
     expect(screen.getByText(/Enter adds a line/i)).toBeVisible();
-    expect(screen.getByTestId("leanai-assistant-send")).toBeEnabled();
+    expect(
+      fireEvent.keyDown(screen.getByLabelText("Ask LeanAI"), { key: "Enter" }),
+    ).toBe(true);
+    expect(onSubmit).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Send", exact: true }));
+    expect(onSubmit).toHaveBeenCalledTimes(1);
   });
 });
