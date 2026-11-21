@@ -5,7 +5,8 @@ import { LehBrand } from "@/components/brand/leh-brand";
 import { Button } from "@/components/ui/button";
 import {
   DEMO_BOOKING_CTA,
-  REQUEST_FREE_ACCESS_CTA,
+  GET_FREE_ACCESS_CTA,
+  GET_FREE_ACCESS_HREF,
 } from "@/lib/marketing/demo-booking";
 import { cn } from "@/lib/utils";
 
@@ -74,11 +75,10 @@ export function MarketingWordmark({
 }) {
   return (
     <LehBrand
-      className={cn(!compact && "leh-brand--contained-lockup")}
       decorative={decorative}
-      lockupOnDarkSurface={!compact}
       lockupRasterOnly={!compact}
       priority={priority}
+      responsive={!compact}
       strapline={!compact}
       variant={compact ? "compact" : "full"}
     />
@@ -99,10 +99,22 @@ export function RequestDemoControl({
   );
 }
 
-export function RequestFreeAccessControl() {
+/** Opens the early-access request page. */
+export function RequestFreeAccessControl({
+  size = "default",
+  className,
+}: {
+  size?: "default" | "sm";
+  className?: string;
+}) {
   return (
-    <Button asChild variant="outline" className="marketing-cta-outline">
-      <Link href="/demo">{REQUEST_FREE_ACCESS_CTA}</Link>
+    <Button
+      asChild
+      size={size}
+      variant="outline"
+      className={cn("marketing-cta-outline", className)}
+    >
+      <Link href={GET_FREE_ACCESS_HREF}>{GET_FREE_ACCESS_CTA}</Link>
     </Button>
   );
 }

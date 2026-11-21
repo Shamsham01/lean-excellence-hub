@@ -1,0 +1,114 @@
+{
+  "action-detail": {
+    "width": 1344,
+    "height": 1544
+  },
+  "action-detail-m": {
+    "width": 772,
+    "height": 1040
+  },
+  "hero-devices": {
+    "width": 2880,
+    "height": 1600
+  },
+  "hero-kpi": {
+    "width": 1032,
+    "height": 720
+  },
+  "hero-phone": {
+    "width": 1170,
+    "height": 2169
+  },
+  "hero-planner": {
+    "width": 1600,
+    "height": 1200
+  },
+  "leanai-panel-frag": {
+    "width": 760,
+    "height": 438
+  },
+  "leanai-proposals": {
+    "width": 922,
+    "height": 1270
+  },
+  "leanai-proposals-m": {
+    "width": 728,
+    "height": 792
+  },
+  "step-act-list": {
+    "width": 2400,
+    "height": 1460
+  },
+  "step-act-list-m": {
+    "width": 580,
+    "height": 1170
+  },
+  "step-improve": {
+    "width": 2400,
+    "height": 1500
+  },
+  "step-improve-m": {
+    "width": 780,
+    "height": 1352
+  },
+  "step-learn": {
+    "width": 2400,
+    "height": 1500
+  },
+  "step-learn-m": {
+    "width": 772,
+    "height": 776
+  },
+  "step-observe": {
+    "width": 2400,
+    "height": 1500
+  },
+  "step-observe-m": {
+    "width": 772,
+    "height": 1074
+  },
+  "step-solve": {
+    "width": 2400,
+    "height": 1357
+  },
+  "step-solve-m": {
+    "width": 716,
+    "height": 476
+  },
+  "tile-5s-d": {
+    "width": 1232,
+    "height": 542
+  },
+  "tile-5s-m": {
+    "width": 728,
+    "height": 654
+  },
+  "tile-gemba-d": {
+    "width": 1232,
+    "height": 1148
+  },
+  "tile-gemba-m": {
+    "width": 764,
+    "height": 1042
+  },
+  "tile-suggestions-d": {
+    "width": 1232,
+    "height": 620
+  },
+  "tile-suggestions-m": {
+    "width": 728,
+    "height": 676
+  },
+  "tile-training-d": {
+    "width": 1232,
+    "height": 402
+  },
+  "tile-training-m": {
+    "width": 728,
+    "height": 412
+  },
+  "tile-training-skills-m": {
+    "width": 780,
+    "height": 772
+  }
+}

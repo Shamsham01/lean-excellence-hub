@@ -1,0 +1,111 @@
+/* Landing v6 tokens (ATELIER art direction §4). Scoped to .leh-v6 so the
+   app tokens are untouched. Theme switch = html.dark .leh-v6. */
+.leh-v6 {
+  --bg: #f7f8fb;
+  --surface: #ffffff;
+  --surface-2: #f1f4f9;
+  --surface-3: #e9eef5;
+  --line: #e3e8ef;
+  --line-strong: #cbd5e1;
+  --ink: #0b1220;
+  --ink-2: #3b4658;
+  --ink-3: #5b6b82;
+  --accent: #465fff;
+  --accent-text: #2f45e6;
+  --accent-soft: rgb(70 95 255 / 0.1);
+  --thread-a: #465fff;
+  --thread-b: #8b9bff;
+  --spark: #f59e0b;
+  --ok: #10b981;
+  --radar-fill: rgb(70 95 255 / 0.22);
+  --radar-stroke: #465fff;
+  --radar-grid: #b9c3d2;
+  --radar-label: #475569;
+  /* Product page background inside captures (fades in PIXEL's C1 go here). */
+  --capture-bg: #f8fafc;
+  --screen: var(--capture-bg);
+  --dot: rgb(15 23 42 / 0.07);
+  --aurora: rgb(70 95 255 / 0.1);
+  --glow: rgb(70 95 255 / 0.08);
+  --grain-opacity: 0.03;
+  --art-opacity: 0.55;
+  --shadow-window:
+    0 1px 2px rgb(15 23 42 / 0.06), 0 12px 32px -8px rgb(15 23 42 / 0.12),
+    0 40px 80px -24px rgb(70 95 255 / 0.18);
+  --shadow-tile:
+    0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px -12px rgb(15 23 42 / 0.1);
+  --handset-bezel: var(--surface-2);
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* Grid (§4): margin 20 / 32 / 48, content max 1200. */
+  --m: 20px;
+  --gutter: 16px;
+  --section-y: 96px;
+  --statement-y: 96px;
+  --head-gap: 48px;
+  --bento-gap: 16px;
+  --tile-pad: 24px;
+}
+
+html.dark .leh-v6 {
+  --bg: #070b14;
+  --surface: #0e1522;
+  --surface-2: #121b2a;
+  --surface-3: #172235;
+  --line: #1e2d42;
+  --line-strong: #2a3b55;
+  --ink: #eef2f8;
+  --ink-2: #a9b5c7;
+  --ink-3: #8090a8;
+  --accent: #465fff;
+  --accent-text: #8b9bff;
+  --accent-soft: rgb(91 113 255 / 0.16);
+  --thread-a: #5b71ff;
+  --thread-b: #a5b2ff;
+  --spark: #fbbf24;
+  --ok: #34d399;
+  --radar-fill: rgb(91 113 255 / 0.26);
+  --radar-stroke: #7b8cff;
+  --radar-grid: #3a4d69;
+  --radar-label: #a9b5c7;
+  --capture-bg: #090e17;
+  --dot: rgb(148 163 184 / 0.08);
+  --aurora: rgb(70 95 255 / 0.22);
+  --glow: rgb(70 95 255 / 0.16);
+  --grain-opacity: 0.05;
+  --art-opacity: 0.7;
+  --shadow-window:
+    inset 0 1px 0 rgb(255 255 255 / 0.04), 0 30px 80px -20px rgb(0 0 0 / 0.65),
+    0 0 120px -30px rgb(70 95 255 / 0.35);
+  --shadow-tile:
+    inset 0 1px 0 rgb(255 255 255 / 0.03), 0 20px 40px -24px rgb(0 0 0 / 0.6);
+  --handset-bezel: #05080f;
+}
+
+@media (min-width: 640px) {
+  .leh-v6 {
+    --m: 32px;
+    --gutter: 20px;
+    --section-y: 112px;
+    --statement-y: 120px;
+    --head-gap: 64px;
+    --bento-gap: 20px;
+    --tile-pad: 32px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .leh-v6 {
+    --m: 48px;
+    --gutter: 24px;
+    --section-y: 160px;
+    --bento-gap: 24px;
+  }
+}
+
+/* Statement rhythm (review r1 M1): 96 / 120 / 160. */
+@media (min-width: 1280px) {
+  .leh-v6 {
+    --statement-y: 160px;
+  }
+}
