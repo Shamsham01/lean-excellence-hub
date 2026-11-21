@@ -21,6 +21,7 @@ import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
 
 type CountermeasuresPanelProps = {
   caseId: string;
+  siteUnitId?: string | null;
   detail: ProblemSolvingCaseDetail;
   canContribute: boolean;
   canManage: boolean;
@@ -29,6 +30,7 @@ type CountermeasuresPanelProps = {
 
 export function CountermeasuresPanel({
   caseId,
+  siteUnitId = null,
   detail,
   canContribute,
   canManage,
@@ -288,6 +290,7 @@ export function CountermeasuresPanel({
           if (!next) setActionDialogFor(null);
         }}
         caseId={caseId}
+        siteUnitId={siteUnitId}
         contextRole="countermeasure"
         countermeasureId={actionDialogFor}
         defaultTitle={actionDefaultTitle}

@@ -8,7 +8,9 @@ import {
 } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
+import { loadActionCreateContext } from "@/app/(platform)/platform/actions/actions";
 import { createProblemSolvingAction } from "@/app/(platform)/platform/problem-solving/actions";
+import { linkActionToCiProject } from "@/app/(platform)/platform/projects/linking-actions";
 import { CountermeasuresPanel } from "@/components/problem-solving/countermeasures-panel";
 import type {
   ProblemSolvingCaseDetail,
@@ -23,6 +25,9 @@ vi.mock("@/app/(platform)/platform/actions/actions", () => ({
   loadActionCreateContext: vi.fn().mockResolvedValue({
     assignablePeople: [{ membership_id: "member-1", display_name: "Sam" }],
   }),
+}));
+vi.mock("@/app/(platform)/platform/projects/linking-actions", () => ({
+  linkActionToCiProject: vi.fn(),
 }));
 
 const countermeasure = {
@@ -139,4 +144,90 @@ it("saves the expected result separately and prevents a second action while pend
   expect(
     screen.getByTestId("countermeasure-linked-action-cm-1"),
   ).toHaveAttribute("href", "/platform/actions/action-2");
+});
+
+it("retries linking a Draft project and immediately shows the created countermeasure action", async () => {
+  vi.mocked(loadActionCreateContext).mockResolvedValueOnce({
+    labels: [],
+    assignablePeople: [],
+    canManageLabels: true,
+    canAssign: true,
+    currentMembershipId: null,
+    projectPicker: {
+      requiresSiteSelection: false,
+      projects: [
+        {
+          id: "draft-project",
+          project_number: "PRJ-1",
+          title: "Draft project",
+          status: "draft",
+          unit_id: "site-1",
+        },
+      ],
+    },
+  });
+  vi.mocked(createProblemSolvingAction).mockResolvedValueOnce({
+    id: "action-3",
+  });
+  vi.mocked(linkActionToCiProject)
+    .mockResolvedValueOnce({ error: "Please retry." })
+    .mockResolvedValueOnce({});
+
+  render(
+    <CountermeasuresPanel
+      caseId="case-1"
+      siteUnitId="site-1"
+      detail={detail}
+      defaultAssigneeMembershipId="member-1"
+      canContribute
+      canManage
+    />,
+  );
+  fireEvent.click(screen.getByTestId("link-countermeasure-action-cm-1"));
+  const expectedResult = screen.getByLabelText("Expected result");
+  expect(expectedResult).toHaveAttribute("maxlength", "2000");
+  fireEvent.change(expectedResult, {
+    target: { value: " Defects fall below 2% " },
+  });
+  fireEvent.change(screen.getByLabelText("Due date"), {
+    target: { value: "2026-12-01" },
+  });
+  fireEvent.click(
+    await screen.findByRole("combobox", { name: "CI project (optional)" }),
+  );
+  fireEvent.click(screen.getByRole("option", { name: /PRJ-1/ }));
+  const submit = screen.getByTestId("pps-action-create-submit");
+  const form = submit.closest("form")!;
+  fireEvent.submit(form);
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    /Action created\. Please retry\..*submit again/,
+  );
+  expect(expectedResult).toBeDisabled();
+  expect(submit).toHaveTextContent("Finish setup");
+  fireEvent.submit(form);
+
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(createProblemSolvingAction).toHaveBeenCalledTimes(1);
+  expect(linkActionToCiProject).toHaveBeenCalledTimes(2);
+  expect(linkActionToCiProject).toHaveBeenNthCalledWith(
+    1,
+    "action-3",
+    "draft-project",
+  );
+  expect(linkActionToCiProject).toHaveBeenNthCalledWith(
+    2,
+    "action-3",
+    "draft-project",
+  );
+  expect(loadActionCreateContext).toHaveBeenCalledWith({
+    siteUnitId: "site-1",
+  });
+  expect(screen.getByTestId("link-countermeasure-action-cm-1")).toBeDisabled();
+  expect(
+    screen.getByTestId("countermeasure-linked-action-cm-1"),
+  ).toHaveAttribute("href", "/platform/actions/action-3");
+  expect(
+    screen.getAllByText("Expected result: Defects fall below 2%"),
+  ).toHaveLength(2);
 });

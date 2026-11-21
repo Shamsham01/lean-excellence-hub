@@ -18,6 +18,7 @@ import type { ProblemSolvingContainment } from "@/lib/problem-solving/types";
 
 type ContainmentPanelProps = {
   caseId: string;
+  siteUnitId?: string | null;
   containments: ProblemSolvingContainment[];
   canContribute: boolean;
   defaultAssigneeMembershipId?: string | null;
@@ -25,6 +26,7 @@ type ContainmentPanelProps = {
 
 export function ContainmentPanel({
   caseId,
+  siteUnitId = null,
   containments,
   canContribute,
   defaultAssigneeMembershipId,
@@ -165,6 +167,7 @@ export function ContainmentPanel({
           if (!open) setActionDialogFor(null);
         }}
         caseId={caseId}
+        siteUnitId={siteUnitId}
         contextRole="containment"
         containmentId={actionDialogFor}
         defaultTitle="Containment follow-up"

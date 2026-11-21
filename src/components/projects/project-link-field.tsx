@@ -9,7 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { InlineAlert } from "@/components/ui/alert";
 import {
+  ACTION_PROJECT_EMPTY_HINT,
+  actionProjectStatusHint,
+  actionProjectStatusLabel,
   formatProjectReference,
+  isActionProjectStatus,
   isCiProjectLinkableStatus,
   projectStatusLabel,
 } from "@/lib/projects/status";
@@ -22,6 +26,7 @@ type ProjectLinkFieldProps = {
   label?: string;
   linked: ProjectLinkSummary | null;
   options: ProjectSelectorOption[];
+  forAction?: boolean;
   canEdit: boolean;
   requiresSiteSelection?: boolean;
   onLink: (projectId: string) => Promise<{ error?: string }>;
@@ -33,6 +38,7 @@ export function ProjectLinkField({
   label = "CI project",
   linked,
   options,
+  forAction = false,
   canEdit,
   requiresSiteSelection = false,
   onLink,
@@ -44,6 +50,13 @@ export function ProjectLinkField({
   const [pickerOpenValue, setPickerOpenValue] = useState<string | null>(null);
 
   const summary = linked;
+  const hasOptions = options.some(
+    (option) => !forAction || isActionProjectStatus(option.status),
+  );
+  const statusHint =
+    forAction && summary?.status
+      ? actionProjectStatusHint(summary.status)
+      : null;
   const linkMutable =
     !summary ||
     (summary.can_open &&
@@ -102,7 +115,10 @@ export function ProjectLinkField({
             )}
             {summary.status ? (
               <span className="text-muted-foreground">
-                · {projectStatusLabel(summary.status)}
+                ·{" "}
+                {forAction
+                  ? actionProjectStatusLabel(summary.status)
+                  : projectStatusLabel(summary.status)}
               </span>
             ) : null}
           </Badge>
@@ -125,6 +141,18 @@ export function ProjectLinkField({
         ) : null}
       </div>
 
+      {statusHint ? (
+        <p
+          className={
+            summary?.status === "on_hold"
+              ? "text-xs text-warning-foreground"
+              : "text-xs text-muted-foreground"
+          }
+        >
+          {statusHint}
+        </p>
+      ) : null}
+
       {summary && !linkMutable ? (
         <p
           className="text-xs text-muted-foreground"
@@ -135,24 +163,26 @@ export function ProjectLinkField({
       ) : null}
 
       {canChangeLink && !summary ? (
-        requiresSiteSelection && options.length === 0 ? (
+        requiresSiteSelection && !hasOptions ? (
           <p
             className="text-sm text-muted-foreground"
             data-testid={`${testId}-needs-site`}
           >
             Select an active site in the sidebar before linking a project.
           </p>
-        ) : options.length === 0 ? (
+        ) : !hasOptions ? (
           <>
             <p
               className="text-sm text-muted-foreground"
               data-testid={`${testId}-no-projects`}
             >
-              No live projects in your current scope. Try another site or create
-              a project first.
+              {forAction
+                ? ACTION_PROJECT_EMPTY_HINT
+                : "No live projects in your current scope. Try another site or create a project first."}
             </p>
             <ProjectLinkPicker
               options={options}
+              forAction={forAction}
               value={pickerOpenValue}
               onChange={(next) => {
                 setPickerOpenValue(next);
@@ -164,6 +194,7 @@ export function ProjectLinkField({
         ) : (
           <ProjectLinkPicker
             options={options}
+            forAction={forAction}
             value={pickerOpenValue}
             onChange={(next) => {
               setPickerOpenValue(next);

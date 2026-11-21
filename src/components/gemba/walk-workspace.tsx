@@ -97,6 +97,7 @@ type Section = {
 
 type GembaWalkWorkspaceProps = {
   walkId: string;
+  siteUnitId?: string | null;
   status: string;
   sections: Section[];
   answers: Record<
@@ -196,6 +197,7 @@ function waitForObservationIdle(
 
 export function GembaWalkWorkspace({
   walkId,
+  siteUnitId = null,
   status,
   sections,
   answers,
@@ -579,6 +581,7 @@ export function GembaWalkWorkspace({
         ) : null}
 
         <GembaObservationPanel
+          siteUnitId={siteUnitId}
           walkId={walkId}
           observations={observations}
           evidence={evidence}

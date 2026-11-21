@@ -132,7 +132,13 @@ test.describe("Project charter lifecycle and benefits lineage", () => {
   }) => {
     await signInAsDemoUser(page, "manager");
     await page.goto(projectPath);
+    await expect(page.getByTestId("project-status")).toHaveText("Submitted");
     await page.getByRole("tab", { name: "Actions" }).click();
+    await expect(
+      page.getByText(
+        "Linked actions count towards project progress once the project is Active.",
+      ),
+    ).toBeVisible();
     await page.getByTestId("project-action-title").fill(actionTitle);
     await page.getByTestId("project-add-action").click();
     await expect(page.getByTestId("project-workspace-message")).toContainText(

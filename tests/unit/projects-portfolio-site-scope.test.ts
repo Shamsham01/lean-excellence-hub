@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { projectIdsCountingTowardsActionProgress } from "@/lib/projects/portfolio-metrics";
+
 import {
   resolvePortfolioOpenActionIds,
   withPortfolioSiteScope,
@@ -120,4 +122,29 @@ describe("resolvePortfolioOpenActionIds", () => {
       ),
     ).toEqual([bodminActionId]);
   });
+});
+
+it("counts linked actions in project progress once their project starts", () => {
+  const project = { id: "project", status: "draft", actual_start_at: null };
+  const context = [{ action_id: "action", project_id: project.id }];
+
+  for (const status of ["draft", "submitted", "approved", "cancelled"]) {
+    expect(
+      resolvePortfolioOpenActionIds(
+        projectIdsCountingTowardsActionProgress([{ ...project, status }]),
+        context,
+      ),
+    ).toEqual([]);
+  }
+
+  for (const status of ["active", "on_hold", "completed", "cancelled"]) {
+    expect(
+      resolvePortfolioOpenActionIds(
+        projectIdsCountingTowardsActionProgress([
+          { ...project, status, actual_start_at: "2026-11-21T12:00:00Z" },
+        ]),
+        context,
+      ),
+    ).toEqual(["action"]);
+  }
 });

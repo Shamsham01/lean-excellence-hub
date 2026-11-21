@@ -27,7 +27,13 @@ import { ProjectHeader } from "@/components/projects/project-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -58,6 +64,8 @@ import {
 } from "@/lib/projects/charter";
 import {
   formatProjectReference,
+  isActionProjectStatus,
+  isPreActiveProjectStatus,
   phaseStatusLabel,
   projectStatusBadgeVariant,
   projectStatusLabel,
@@ -165,14 +173,10 @@ export function ProjectWorkspace({
   const [metricTarget, setMetricTarget] = useState("");
 
   const canEditDraft = canManage && detail.status === "draft";
-  const canEditTeam =
-    canManage && ["draft", "submitted", "approved"].includes(detail.status);
+  const preActive = isPreActiveProjectStatus(detail.status);
+  const canEditTeam = canManage && preActive;
   const canAddMetrics = canEditTeam;
-  const canCreateActions =
-    canManage &&
-    ["draft", "submitted", "approved", "active", "on_hold"].includes(
-      detail.status,
-    );
+  const canCreateActions = canManage && isActionProjectStatus(detail.status);
   const canEditEvidence =
     canUploadEvidence &&
     canManage &&
@@ -738,6 +742,12 @@ export function ProjectWorkspace({
           <Card>
             <CardHeader>
               <CardTitle>Project actions</CardTitle>
+              {preActive ? (
+                <CardDescription>
+                  Linked actions count towards project progress once the project
+                  is Active.
+                </CardDescription>
+              ) : null}
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               {canCreateActions ? (

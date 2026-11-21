@@ -223,10 +223,3 @@
     scroll-behavior: auto;
   }
 }
-
-.demo-copy a,
-.demo-external {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.5rem;
-}

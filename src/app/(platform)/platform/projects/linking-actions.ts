@@ -29,6 +29,7 @@ export async function linkActionToCiProject(
   revalidatePath(`/platform/actions/${actionId}`);
   revalidatePath(`/platform/projects/${projectId}`);
   revalidatePath("/platform/actions");
+  revalidatePath("/platform/projects");
   return {};
 }
 
@@ -44,6 +45,7 @@ export async function unlinkActionFromCiProject(
   if (error) return { error: mapLinkError(error) };
   revalidatePath(`/platform/actions/${actionId}`);
   revalidatePath("/platform/actions");
+  revalidatePath("/platform/projects");
   return {};
 }
 

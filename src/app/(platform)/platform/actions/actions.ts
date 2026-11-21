@@ -12,6 +12,10 @@ import type {
   ActionLabel,
   AssignablePerson,
 } from "@/lib/actions/types";
+import {
+  loadProjectPickerOptions,
+  type ProjectPickerOptions,
+} from "@/lib/projects/load-project-picker-options";
 import { ACTIONS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -304,12 +308,15 @@ export async function setActionCardCover(
   return { ok: true };
 }
 
-export async function loadActionCreateContext(): Promise<{
+export async function loadActionCreateContext(projectScope?: {
+  siteUnitId: string | null;
+}): Promise<{
   labels: ActionLabel[];
   assignablePeople: AssignablePerson[];
   canManageLabels: boolean;
   canAssign: boolean;
   currentMembershipId: string | null;
+  projectPicker?: ProjectPickerOptions;
 }> {
   const supabase = await createServerSupabaseClient();
   const { listEligibleOrganisations } =
@@ -353,6 +360,14 @@ export async function loadActionCreateContext(): Promise<{
     canManageLabels: canUpdate,
     canAssign,
     currentMembershipId,
+    ...(canUpdate && projectScope
+      ? {
+          projectPicker: await loadProjectPickerOptions(undefined, {
+            ...projectScope,
+            forAction: true,
+          }),
+        }
+      : {}),
   };
 }
 
@@ -676,6 +691,7 @@ type ActionSheetPayload = {
   currentCommentAuthor: ActionCommentAuthor | null;
   assigneeAvatarUrl: string | null;
   fiveSQuestionPrompt: string | null;
+  projectPicker?: ProjectPickerOptions;
 };
 
 export async function loadActionSheetPayload(
@@ -832,12 +848,20 @@ export async function loadActionSheetPayload(
     }
   }
 
+  const projectPicker = detail.permissions.can_update
+    ? await loadProjectPickerOptions(undefined, {
+        siteUnitId: detail.site_unit_id,
+        forAction: true,
+      })
+    : undefined;
+
   return {
     payload: {
       detail: {
         ...detail,
         expected_result: actionFields?.expected_result ?? null,
       },
+      ...(projectPicker ? { projectPicker } : {}),
       comments: enrichedComments,
       legacyComments: (comments ?? []) as CommentRow[],
       evidence: (evidence ?? [])

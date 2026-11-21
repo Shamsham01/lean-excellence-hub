@@ -45,7 +45,7 @@ export default async function GembaWalkPage({
   const { data: walk } = await supabase
     .from("gemba_walks")
     .select(
-      "id, status, submission_id, definition_version_id, summary_notes, definition_name_snapshot, unit_name_snapshot, completed_at",
+      "id, status, submission_id, definition_version_id, summary_notes, definition_name_snapshot, unit_name_snapshot, completed_at, site_unit_id",
     )
     .eq("id", id)
     .maybeSingle();
@@ -232,6 +232,7 @@ export default async function GembaWalkPage({
       />
 
       <GembaWalkWorkspace
+        siteUnitId={walk.site_unit_id}
         walkId={id}
         status={walk.status}
         sections={sections}

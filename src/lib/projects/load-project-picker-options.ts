@@ -1,4 +1,5 @@
 import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
+import { ACTION_PROJECT_STATUSES } from "@/lib/projects/status";
 import { callProjectRpc } from "@/lib/projects/supabase-untyped";
 import type {
   ProjectPortfolioResponse,
@@ -15,6 +16,7 @@ export type ProjectPickerScope = {
   /** Record site — used when session site is unset or wrong for this link target. */
   siteUnitId?: string | null;
   unitId?: string | null;
+  forAction?: boolean;
 };
 
 const PICKER_PAGE_SIZE = 100;
@@ -101,11 +103,28 @@ export async function loadProjectPickerOptions(
     portfolioArgs.target_unit_id = scope.unitId;
   }
 
-  let projects = await loadLinkableProjects(supabase, portfolioArgs);
+  const loadProjects = async (args: Record<string, unknown>) => {
+    if (!scope?.forAction) return loadLinkableProjects(supabase, args);
+    const groups = await Promise.all(
+      ACTION_PROJECT_STATUSES.map((status) =>
+        loadLinkableProjects(supabase, { ...args, target_status: status }),
+      ),
+    );
+    return groups.flat();
+  };
 
-  if (projects.length === 0 && siteUnitId && !recordSiteUnitId) {
-    const { target_site_unit_id: _omit, ...withoutSite } = portfolioArgs;
-    projects = await loadLinkableProjects(supabase, withoutSite);
+  let projects = await loadProjects(portfolioArgs);
+
+  // Preserve the existing fallback only when the site has no linkable projects.
+  if (
+    projects.length === 0 &&
+    siteUnitId &&
+    !recordSiteUnitId &&
+    (!scope?.forAction ||
+      (await fetchPortfolioPage(supabase, portfolioArgs, 1)).total_count === 0)
+  ) {
+    delete portfolioArgs.target_site_unit_id;
+    projects = await loadProjects(portfolioArgs);
   }
 
   return {
