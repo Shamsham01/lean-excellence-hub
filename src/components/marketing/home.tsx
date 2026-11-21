@@ -1,10 +1,10 @@
-import { EditorialHome } from "./editorial/home";
 import { MarketingShell } from "./shell";
+import { V6Landing } from "./v6/landing";
 
 export function MarketingHome() {
   return (
     <MarketingShell>
-      <EditorialHome />
+      <V6Landing />
     </MarketingShell>
   );
 }

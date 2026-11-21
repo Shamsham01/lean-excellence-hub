@@ -1,55 +1,77 @@
 import Link from "next/link";
 
-import { landingCopy, landingNav } from "@/lib/marketing/landing-copy";
-
 import {
-  MarketingContainer,
-  MarketingWordmark,
-  RequestFreeAccessControl,
-} from "./primitives";
+  DEMO_BOOKING_CTA,
+  GET_FREE_ACCESS_CTA,
+  GET_FREE_ACCESS_HREF,
+} from "@/lib/marketing/demo-booking";
+
+import { MarketingAppearanceMenu } from "./appearance-menu";
+import { MarketingWordmark } from "./primitives";
+
+const PLATFORM_LINKS = [
+  { href: "/#platform", label: "Platform" },
+  { href: "/#why", label: "Why LEH" },
+  { href: "/#leanai", label: "LeanAI" },
+  { href: "/#faq", label: "FAQ" },
+] as const;
 
 export function MarketingFooter() {
   return (
-    <footer className="marketing-footer marketing-footer-sleek">
-      <MarketingContainer>
-        <div className="marketing-footer-sleek-grid">
-          <div className="marketing-footer-brand">
-            <MarketingWordmark />
+    <footer className="marketing-footer v6-footer">
+      <div className="v6-container">
+        <div className="v6-footer-grid">
+          <div className="v6-footer-brand">
+            <MarketingWordmark compact decorative />
+            <p>One connected system for Continuous Improvement.</p>
           </div>
 
-          <nav aria-label="Platform" className="marketing-footer-nav-col">
-            <p className="marketing-footer-heading">Platform</p>
-            <ul className="marketing-footer-list" role="list">
-              {landingNav.map((item) => (
+          <div className="v6-footer-col">
+            <h2>Platform</h2>
+            <ul role="list">
+              {PLATFORM_LINKS.map((item) => (
                 <li key={item.href}>
-                  <Link href={item.href}>{item.label}</Link>
+                  <a href={item.href}>{item.label}</a>
                 </li>
               ))}
-              <li>
-                <Link href="/#five-s">{landingCopy.fiveS.kicker}</Link>
-              </li>
             </ul>
-          </nav>
+          </div>
 
-          <nav aria-label="Access" className="marketing-footer-nav-col">
-            <p className="marketing-footer-heading">Access</p>
-            <ul className="marketing-footer-list" role="list">
+          <div className="v6-footer-col">
+            <h2>Access</h2>
+            <ul role="list">
+              <li>
+                <Link href="/demo">{DEMO_BOOKING_CTA}</Link>
+              </li>
+              <li>
+                <Link href={GET_FREE_ACCESS_HREF}>{GET_FREE_ACCESS_CTA}</Link>
+              </li>
               <li>
                 <Link href="/login">Sign in</Link>
               </li>
             </ul>
-            <div className="mt-2">
-              <RequestFreeAccessControl />
-            </div>
-          </nav>
+          </div>
+
+          <div className="v6-footer-col">
+            <h2>Company</h2>
+            <ul role="list">
+              <li>
+                <Link href="/privacy">Privacy</Link>
+              </li>
+              <li>
+                <Link href="/terms">Terms</Link>
+              </li>
+            </ul>
+          </div>
         </div>
 
-        <div className="marketing-footer-bottom">
-          <p className="marketing-footer-copyright">
+        <div className="v6-footer-bottom">
+          <p className="m-0">
             © {new Date().getFullYear()} Lean Excellence Hub
           </p>
+          <MarketingAppearanceMenu />
         </div>
-      </MarketingContainer>
+      </div>
     </footer>
   );
 }

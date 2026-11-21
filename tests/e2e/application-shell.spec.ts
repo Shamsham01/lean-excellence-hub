@@ -1,16 +1,11 @@
 import { expect, test } from "@playwright/test";
 
-import {
-  HERO_HEADLINE,
-  landingCopy,
-} from "../../src/lib/marketing/landing-copy";
-
 test("renders the commercial landing page", async ({ page }) => {
   await page.goto("/");
 
   await expect(
     page.getByRole("heading", {
-      name: HERO_HEADLINE,
+      name: "Make continuous improvement visible, accountable and measurable.",
     }),
   ).toBeVisible();
   await expect(
@@ -20,16 +15,18 @@ test("renders the commercial landing page", async ({ page }) => {
     page.getByRole("link", { name: "Sign in" }).first(),
   ).toHaveAttribute("href", "/login");
   await expect(
-    page.getByRole("link", { name: "Book a live demo" }).first(),
+    page.getByRole("link", { name: "Book a demo" }).first(),
   ).toHaveAttribute("href", "/demo");
   await expect(
-    page.locator("#hero").getByRole("link", { name: "Request free access" }),
-  ).toHaveAttribute("href", "/demo");
+    page.getByRole("link", { name: "Explore the platform" }).first(),
+  ).toHaveAttribute("href", "#platform");
   await expect(page).toHaveTitle(
     "Lean Excellence Hub — Operational Excellence & Continuous Improvement Platform",
   );
   await expect(page.getByText("Application baseline")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /Appearance/ })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Appearance" }).first(),
+  ).toBeVisible();
 });
 
 test("mobile navigation reaches in-page sections and sign-in", async ({
@@ -44,7 +41,7 @@ test("mobile navigation reaches in-page sections and sign-in", async ({
   await mobileNav.getByRole("link", { name: "Platform" }).click();
   await expect(page).toHaveURL(/#platform/);
   await expect(
-    page.getByRole("heading", { name: landingCopy.platform.title }),
+    page.getByRole("heading", { name: "One connected improvement system." }),
   ).toBeVisible();
 
   await page.getByRole("button", { name: "Open menu" }).click();
@@ -52,6 +49,27 @@ test("mobile navigation reaches in-page sections and sign-in", async ({
   await page.getByRole("banner").getByRole("link", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/login/);
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+});
+
+test("marketing appearance menu persists light and dark", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "Appearance" }).first().click();
+  await page.getByRole("menuitemradio", { name: "Light" }).click();
+  await expect(page.locator("html")).toHaveClass(/light/);
+  await expect
+    .poll(() => page.evaluate(() => window.localStorage.getItem("theme")))
+    .toBe("light");
+
+  await page.reload();
+  await expect(page.locator("html")).toHaveClass(/light/);
+
+  await page.getByRole("button", { name: "Appearance" }).first().click();
+  await page.getByRole("menuitemradio", { name: "Dark" }).click();
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  await expect
+    .poll(() => page.evaluate(() => window.localStorage.getItem("theme")))
+    .toBe("dark");
 });
 
 test("demo page stays truthful when booking is not configured", async ({

@@ -206,8 +206,9 @@ body {
 .dark .text-primary {
   color: var(--primary-text);
 }
-.marketing .text-primary {
-  color: var(--accent-foreground);
+.dark .marketing .text-primary,
+.dark .marketing-appearance-menu .text-primary {
+  color: var(--primary);
 }
 
 *:focus-visible {
@@ -420,9 +421,15 @@ body {
 
 /* Marketing homepage primitives — scoped so the authenticated platform is unchanged. */
 
-/* Official LEH brand tokens (TOKENS.md). */
-.marketing {
-  color-scheme: dark;
+/* Official LEH brand tokens (TOKENS.md). Cool neutrals, accent from tokens,
+   semantic success / warning / critical only. The appearance menu is portalled
+   outside `.marketing`, so it shares these tokens. */
+.marketing,
+.marketing-appearance-menu {
+  /* Canonical TOKENS.md sRGB anchors — marketing aliases these exactly. */
+  --leh-canvas-light: #f8fafc;
+  --leh-card-light: #ffffff;
+  --leh-border-light: #e2e8f0;
   --leh-canvas-dark: #090e17;
   --leh-card-dark: #121b2a;
   --leh-border-dark: #1e2d42;
@@ -434,8 +441,62 @@ body {
   --leh-on-canvas-dark: #f1f5f9;
   --leh-on-canvas-dark-muted: #94a3b8;
 
-  --leh-ink: var(--leh-on-canvas-dark);
-  --leh-ink-muted: var(--leh-on-canvas-dark-muted);
+  --leh-ink: oklch(0.207681 0.039824 265.755);
+  --leh-ink-muted: oklch(0.554391 0.040718 257.417);
+  --leh-surface: oklch(0.964765 0.006635 250.535);
+  --leh-muted: oklch(0.950858 0.009516 251.683);
+  --leh-line: var(--leh-border-light);
+  --leh-line-strong: oklch(0.784545 0.01806 257.557);
+  --leh-accent-soft: oklch(0.959182 0.017425 249.186);
+  --leh-accent-ink: oklch(0.416657 0.154156 268.218);
+  --leh-accent-line: oklch(0.818553 0.099518 270);
+  /* “Connected” highlights use accent family (retired decorative teal). */
+  --leh-connected-bg: oklch(0.963343 0.015089 249.965);
+  --leh-connected-ink: oklch(0.455 0.145 268.5);
+
+  --leh-highlight: inset 0 1px 0 oklch(1 0 0 / 0.75);
+  --leh-shadow-header: 0 10px 24px -20px oklch(0.22 0.025 260 / 0.45);
+  --leh-shadow-press: 0 1px 2px oklch(0.22 0.025 260 / 0.16);
+  --leh-shadow-hover: 0 6px 14px -8px oklch(0.22 0.025 260 / 0.32);
+
+  --background: var(--leh-canvas-light);
+  --foreground: var(--leh-ink);
+  --surface: var(--leh-surface);
+  --elevated: var(--leh-card-light);
+  --card: var(--leh-card-light);
+  --card-foreground: var(--leh-ink);
+  --muted: var(--leh-muted);
+  --muted-foreground: var(--leh-ink-muted);
+  --border: var(--leh-line);
+  --primary: var(--leh-accent);
+  /* WCAG AA: white on primary fill */
+  --primary-foreground: oklch(1 0 none);
+  --accent: var(--leh-accent-soft);
+  --accent-foreground: var(--leh-accent-ink);
+  --ring: var(--leh-accent);
+  --success: var(--leh-success);
+  --success-foreground: oklch(0.98 0.01 162);
+  --warning: var(--leh-warning);
+  --warning-foreground: oklch(0.28 0.06 70);
+  --destructive: var(--leh-critical);
+  --destructive-foreground: oklch(0.98 0.01 25);
+  /* Dark ink on light semantic tints (success/warning fills fail as body text on white). */
+  --leh-on-success-tint: oklch(0.32 0.07 160);
+  --leh-on-warning-tint: oklch(0.35 0.08 55);
+  --leh-on-destructive-tint: oklch(0.38 0.14 25);
+
+  --marketing-shadow:
+    0 1px 2px oklch(0.22 0.02 260 / 0.05),
+    0 8px 20px -10px oklch(0.22 0.02 260 / 0.12);
+  --marketing-shadow-lift:
+    0 1px 2px oklch(0.22 0.02 260 / 0.06),
+    0 22px 44px -22px oklch(0.22 0.02 260 / 0.22);
+}
+
+.dark .marketing,
+.dark .marketing-appearance-menu {
+  --leh-ink: oklch(0.95 0.008 260);
+  --leh-ink-muted: oklch(0.710672 0.035114 256.788);
   --leh-surface: oklch(0.19 0.024 260);
   --leh-muted: oklch(0.26 0.026 260);
   --leh-line: var(--leh-border-dark);
@@ -512,6 +573,40 @@ body {
 }
 
 .marketing-landing {
+  /* Light: panel one step below raised card (slate-50 / white) — oklch only in this block */
+  --marketing-vignette-panel: oklch(0.985 0.002 248);
+  --marketing-vignette-raised: oklch(1 0 none);
+  --marketing-vignette-border: color-mix(
+    in oklab,
+    oklch(0.929 0.008 255) 62%,
+    var(--primary) 38%
+  );
+  --marketing-vignette-inner: oklch(0.968 0.007 248);
+  --marketing-vignette-chrome: color-mix(
+    in oklab,
+    oklch(0.985 0.002 248) 45%,
+    oklch(1 0 none) 55%
+  );
+  --marketing-ambient: color-mix(
+    in oklab,
+    var(--primary) 4%,
+    var(--background)
+  );
+  background:
+    radial-gradient(
+      120% 55% at 50% -15%,
+      color-mix(in oklab, var(--primary) 14%, transparent) 0%,
+      transparent 58%
+    ),
+    linear-gradient(
+      180deg,
+      var(--marketing-ambient) 0%,
+      var(--background) 42%,
+      var(--background) 100%
+    );
+}
+
+.dark .marketing-landing {
   /* Dark: canvas panel, card-level preview — reuse LEH marketing tokens (TOKENS.md anchors) */
   --marketing-vignette-panel: var(--background);
   --marketing-vignette-raised: var(--card);
@@ -530,6 +625,18 @@ body {
     var(--card) 52%,
     var(--muted) 48%
   );
+  background:
+    radial-gradient(
+      110% 50% at 50% -12%,
+      color-mix(in oklab, var(--primary) 18%, transparent) 0%,
+      transparent 55%
+    ),
+    linear-gradient(
+      180deg,
+      var(--marketing-ambient) 0%,
+      var(--background) 38%,
+      var(--background) 100%
+    );
 }
 
 .marketing-landing .marketing-header-bar {
@@ -555,7 +662,7 @@ body {
 
 @media (min-width: 768px) {
   .marketing-footer-sleek .marketing-footer-sleek-grid {
-    grid-template-columns: minmax(10rem, 1.15fr) repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(10rem, 1.15fr) repeat(3, minmax(0, 1fr));
     gap: 1rem 1.75rem;
     align-items: start;
   }
@@ -563,7 +670,6 @@ body {
 
 .marketing-footer-sleek .marketing-footer-brand .leh-brand {
   --leh-brand-lockup: 13.5rem;
-  --leh-brand-lockup-height: 4.5rem;
 }
 
 .marketing-footer-sleek .marketing-footer-heading {
@@ -999,6 +1105,11 @@ html:has(> body > .marketing) {
   background: var(--muted);
 }
 
+.marketing-appearance-group {
+  display: flex;
+  gap: 0.4rem;
+}
+
 .marketing-icon-button {
   width: 2.5rem;
   height: 2.5rem;
@@ -1026,6 +1137,13 @@ html:has(> body > .marketing) {
     height: 2.25rem;
     min-height: 2.25rem;
   }
+}
+
+.marketing-appearance-menu {
+  border-color: var(--border);
+  background: var(--elevated);
+  color: var(--foreground);
+  box-shadow: var(--leh-highlight), var(--marketing-shadow-lift);
 }
 
 .marketing {
@@ -4067,42 +4185,5 @@ html:has(> body > .marketing) {
       opacity: 1;
       transform: none;
     }
-  }
-}
-
-.marketing .marketing-cta-outline {
-  border-color: var(--muted-foreground);
-  background: transparent;
-  color: var(--foreground);
-}
-
-.marketing .marketing-cta-outline:hover {
-  background: var(--accent);
-}
-
-.marketing :is(a, button, summary, [tabindex]):focus-visible {
-  outline: 2px solid var(--accent-foreground);
-  outline-offset: 3px;
-}
-
-.marketing .marketing-nav-link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.5rem;
-}
-
-.marketing .marketing-home-link {
-  min-width: 0;
-  overflow: hidden;
-}
-
-@media (max-width: 639px) {
-  .marketing .marketing-home-link {
-    max-width: 36vw;
-  }
-
-  .marketing .marketing-header .leh-brand-lockup {
-    width: 36vw;
-    max-width: 100%;
   }
 }

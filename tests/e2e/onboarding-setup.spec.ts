@@ -1,7 +1,5 @@
 import { expect, test } from "@playwright/test";
 
-import { HERO_HEADLINE } from "../../src/lib/marketing/landing-copy";
-
 import {
   ensureOnboardingE2eOrganisation,
   onboardingE2eCredentials,
@@ -97,7 +95,7 @@ test.describe("organisation onboarding", () => {
     await page.goto("/");
     await expect(
       page.getByRole("heading", {
-        name: HERO_HEADLINE,
+        name: "Make continuous improvement visible, accountable and measurable.",
       }),
     ).toBeVisible();
     await expect(
