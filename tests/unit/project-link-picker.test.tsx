@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { ProjectLinkField } from "@/components/projects/project-link-field";
@@ -93,12 +99,12 @@ describe("ProjectLinkField", () => {
 describe("action project picker", () => {
   const actionProjects = [
     "draft",
+    "submitted",
+    "approved",
     "active",
     "on_hold",
     "completed",
     "cancelled",
-    "submitted",
-    "approved",
   ] as const;
 
   const projects = actionProjects.map((status) => ({
@@ -122,16 +128,22 @@ describe("action project picker", () => {
     );
 
     fireEvent.click(screen.getByRole("combobox", { name: /link to project/i }));
-    expect(screen.getAllByRole("option")).toHaveLength(3);
-    for (const label of ["Draft", "Active", "On hold"]) {
+    const expected = [
+      { status: "Draft", hint: "Project not yet approved" },
+      { status: "Submitted", hint: "Project not yet active" },
+      { status: "Approved", hint: "Project not yet active" },
+      { status: "Active" },
+      { status: "On hold", hint: "Project is on hold; due dates may slip" },
+    ];
+    const options = screen.getAllByRole("option");
+    expect(options).toHaveLength(expected.length);
+    expected.forEach(({ status, hint }, index) => {
+      const option = within(options[index]!);
       expect(
-        screen.getByText(label, { selector: "span.rounded-md" }),
+        option.getByText(status, { selector: "span.rounded-md" }),
       ).toBeVisible();
-    }
-    expect(screen.getByText("Project not yet approved")).toBeVisible();
-    expect(
-      screen.getByText("Project is on hold; due dates may slip"),
-    ).toBeVisible();
+      if (hint) expect(option.getByText(hint)).toBeVisible();
+    });
   });
 
   it("shows the scoped empty state when only ineligible projects are present", () => {
@@ -139,7 +151,7 @@ describe("action project picker", () => {
       <ProjectLinkField
         forAction
         linked={null}
-        options={projects.slice(3)}
+        options={projects.slice(5)}
         canEdit
         onLink={async () => ({})}
         onUnlink={async () => ({})}
@@ -147,9 +159,7 @@ describe("action project picker", () => {
     );
 
     expect(
-      screen.getByText(
-        "No draft, active or on-hold projects in your current scope",
-      ),
+      screen.getByText("No open projects in your current scope"),
     ).toBeVisible();
     expect(screen.getByRole("combobox")).toBeDisabled();
   });

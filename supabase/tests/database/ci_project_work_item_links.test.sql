@@ -1,6 +1,6 @@
 begin;
 
-select plan(133);
+select plan(137);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -2132,30 +2132,62 @@ update public.ci_projects
 set status = 'submitted', actual_start_at = null
 where id = (select id from work_link_ids where key = 'status_test_project');
 
-select throws_ok(
+select lives_ok(
   format(
     'select public.link_action_to_ci_project(%L::uuid, %L::uuid)',
     (select id from work_link_ids where key = 'status_test_action'),
     (select id from work_link_ids where key = 'status_test_project')
   ),
-  '55000',
-  'Only Draft, Active and On hold projects can accept action links.',
-  'Submitted projects reject new link writes'
+  'Submitted projects accept links from existing actions'
+);
+
+select lives_ok(
+  format(
+    'select public.create_project_action(%L, %L::uuid)',
+    'New action from Submitted project',
+    (select id from work_link_ids where key = 'status_test_project')
+  ),
+  'Submitted projects can create linked actions'
+);
+
+select is(
+  (select status from public.ci_projects where id =
+    (select id from work_link_ids where key = 'status_test_project')),
+  'submitted',
+  'linking actions leaves the project in Submitted'
+);
+
+select public.unlink_action_from_ci_project(
+  (select id from work_link_ids where key = 'status_test_action')
 );
 
 update public.ci_projects
 set status = 'approved'
 where id = (select id from work_link_ids where key = 'status_test_project');
 
-select throws_ok(
+select lives_ok(
+  format(
+    'select public.link_action_to_ci_project(%L::uuid, %L::uuid)',
+    (select id from work_link_ids where key = 'status_test_action'),
+    (select id from work_link_ids where key = 'status_test_project')
+  ),
+  'Approved projects accept links from existing actions'
+);
+
+select lives_ok(
   format(
     'select public.create_project_action(%L, %L::uuid)',
     'New action from Approved project',
     (select id from work_link_ids where key = 'status_test_project')
   ),
-  '55000',
-  'Only Draft, Active and On hold projects can accept action links.',
-  'Approved projects reject actions created through the project'
+  'Approved projects can create linked actions'
+);
+
+select is(
+  (select status from public.ci_projects where id =
+    (select id from work_link_ids where key = 'status_test_project')),
+  'approved',
+  'linking actions leaves the project in Approved'
 );
 
 select * from finish();

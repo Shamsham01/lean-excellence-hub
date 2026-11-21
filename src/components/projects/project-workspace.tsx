@@ -65,6 +65,7 @@ import {
 import {
   formatProjectReference,
   isActionProjectStatus,
+  isPreActiveProjectStatus,
   phaseStatusLabel,
   projectStatusBadgeVariant,
   projectStatusLabel,
@@ -172,8 +173,8 @@ export function ProjectWorkspace({
   const [metricTarget, setMetricTarget] = useState("");
 
   const canEditDraft = canManage && detail.status === "draft";
-  const canEditTeam =
-    canManage && ["draft", "submitted", "approved"].includes(detail.status);
+  const preActive = isPreActiveProjectStatus(detail.status);
+  const canEditTeam = canManage && preActive;
   const canAddMetrics = canEditTeam;
   const canCreateActions = canManage && isActionProjectStatus(detail.status);
   const canEditEvidence =
@@ -741,7 +742,7 @@ export function ProjectWorkspace({
           <Card>
             <CardHeader>
               <CardTitle>Project actions</CardTitle>
-              {detail.status === "draft" ? (
+              {preActive ? (
                 <CardDescription>
                   Linked actions count towards project progress once the project
                   is Active.

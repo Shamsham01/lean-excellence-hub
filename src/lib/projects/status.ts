@@ -8,26 +8,30 @@ export const PROJECT_STATUSES = [
   "cancelled",
 ] as const;
 
-/** Projects that can be selected when linking operational work items. */
-export const CI_PROJECT_LINKABLE_STATUSES = [
-  "draft",
-  "submitted",
-  "approved",
+const PRE_ACTIVE_PROJECT_STATUSES = ["draft", "submitted", "approved"] as const;
+
+export const ACTION_PROJECT_STATUSES = [
+  ...PRE_ACTIVE_PROJECT_STATUSES,
   "active",
   "on_hold",
 ] as const;
 
-export function isCiProjectLinkableStatus(status: string): boolean {
-  return (CI_PROJECT_LINKABLE_STATUSES as readonly string[]).includes(status);
-}
-
-export const ACTION_PROJECT_STATUSES = ["draft", "active", "on_hold"] as const;
+/** Projects that can be selected when linking operational work items. */
+export const CI_PROJECT_LINKABLE_STATUSES = ACTION_PROJECT_STATUSES;
 
 export const ACTION_PROJECT_EMPTY_HINT =
-  "No draft, active or on-hold projects in your current scope";
+  "No open projects in your current scope";
+
+export function isPreActiveProjectStatus(status: string): boolean {
+  return (PRE_ACTIVE_PROJECT_STATUSES as readonly string[]).includes(status);
+}
 
 export function isActionProjectStatus(status: string): boolean {
   return (ACTION_PROJECT_STATUSES as readonly string[]).includes(status);
+}
+
+export function isCiProjectLinkableStatus(status: string): boolean {
+  return isActionProjectStatus(status);
 }
 
 export function actionProjectStatusLabel(status: string): string {
@@ -36,6 +40,7 @@ export function actionProjectStatusLabel(status: string): string {
 
 export function actionProjectStatusHint(status: string): string | undefined {
   if (status === "draft") return "Project not yet approved";
+  if (isPreActiveProjectStatus(status)) return "Project not yet active";
   if (status === "on_hold") return "Project is on hold; due dates may slip";
 }
 

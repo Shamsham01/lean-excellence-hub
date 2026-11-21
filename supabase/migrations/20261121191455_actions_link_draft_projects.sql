@@ -28,8 +28,8 @@ begin
       using errcode = '55000';
   end if;
 
-  if project_status not in ('draft', 'active', 'on_hold') then
-    raise exception 'Only Draft, Active and On hold projects can accept action links.'
+  if project_status not in ('draft', 'submitted', 'approved', 'active', 'on_hold') then
+    raise exception 'Only open projects can accept action links.'
       using errcode = '55000';
   end if;
 
