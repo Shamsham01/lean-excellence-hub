@@ -591,6 +591,15 @@ function ActionWorkspaceContent({
                 </div>
               )}
 
+              {detail.expected_result ? (
+                <div className="flex flex-col gap-1 text-sm">
+                  <h3 className="font-medium">Expected result</h3>
+                  <p className="whitespace-pre-wrap text-muted-foreground">
+                    {detail.expected_result}
+                  </p>
+                </div>
+              ) : null}
+
               {permissions.can_assign && editable ? (
                 <form
                   className="flex flex-col gap-3 border-t border-border pt-4"

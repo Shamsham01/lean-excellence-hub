@@ -1,9 +1,18 @@
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import type { ReactNode } from "react";
 import { act } from "react";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { acceptProblemSolvingAiProposal } from "@/app/(platform)/platform/problem-solving/ai/actions";
+import type { CasePendingAiProposal } from "@/lib/problem-solving/load-case-pending-ai-proposals";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
 import {
   ppsCopilotStorageKey,
@@ -147,6 +156,49 @@ function installMobileMatchMedia() {
   });
 }
 
+function renderWorkspace(
+  CaseWorkspace: typeof import("@/components/problem-solving/case-workspace").CaseWorkspace,
+  detail = baseDetail,
+  pendingAiProposals: CasePendingAiProposal[] = [],
+) {
+  return (
+    <CaseWorkspace
+      detail={detail}
+      currentConditionItems={[]}
+      containments={[]}
+      analyses={[]}
+      analysisNodes={[]}
+      hypothesisTests={[]}
+      methodStages={methodStages}
+      methods={[]}
+      pinnedMethodVersion={null}
+      comments={[]}
+      evidence={[]}
+      membershipNameById={{}}
+      auditActivity={[]}
+      canManage
+      canContribute
+      canFacilitate={false}
+      canVerifyCause
+      canEditCaseDefinition
+      canClose={false}
+      canUseAi
+      providerAvailable
+      pendingAiProposals={pendingAiProposals}
+    />
+  );
+}
+
+const pendingProposal: CasePendingAiProposal = {
+  id: "proposal-1",
+  proposal_type: "hypothesis",
+  payload_json: {},
+  human_explanation: "Check the seal alignment",
+  status: "pending",
+  ai_session_id: "session-1",
+  semantic_stage_key: "ROOT_CAUSE_ANALYSIS",
+};
+
 describe("CaseWorkspace SSR hydration", () => {
   beforeEach(() => {
     HTMLElement.prototype.scrollTo = vi.fn();
@@ -160,6 +212,7 @@ describe("CaseWorkspace SSR hydration", () => {
   });
 
   afterEach(() => {
+    cleanup();
     window.localStorage.removeItem(ppsCopilotStorageKey(CASE_ID));
     window.sessionStorage.clear();
     vi.restoreAllMocks();
@@ -179,32 +232,7 @@ describe("CaseWorkspace SSR hydration", () => {
     const { CaseWorkspace } =
       await import("@/components/problem-solving/case-workspace");
 
-    const workspace = (
-      <CaseWorkspace
-        detail={baseDetail}
-        currentConditionItems={[]}
-        containments={[]}
-        analyses={[]}
-        analysisNodes={[]}
-        hypothesisTests={[]}
-        methodStages={methodStages}
-        methods={[]}
-        pinnedMethodVersion={null}
-        comments={[]}
-        evidence={[]}
-        membershipNameById={{}}
-        auditActivity={[]}
-        canManage
-        canContribute
-        canFacilitate={false}
-        canVerifyCause={false}
-        canEditCaseDefinition={false}
-        canClose={false}
-        canUseAi
-        providerAvailable
-        pendingAiProposals={[]}
-      />
-    );
+    const workspace = renderWorkspace(CaseWorkspace);
 
     const html = renderToString(workspace);
     expect(html).toContain("Hide Lean AI");
@@ -218,5 +246,72 @@ describe("CaseWorkspace SSR hydration", () => {
 
     expect(hydrationErrors).toEqual([]);
     consoleError.mockRestore();
+  });
+
+  it("shows a later stage as a read-only preview and enables editing once reached", async () => {
+    const { CaseWorkspace } =
+      await import("@/components/problem-solving/case-workspace");
+    const define = methodStages[0]!;
+    const view = render(
+      renderWorkspace(
+        CaseWorkspace,
+        {
+          ...baseDetail,
+          problem_statement: null,
+          current_method_stage_id: define.id,
+          current_stage: define,
+        },
+        [pendingProposal],
+      ),
+    );
+    expect(
+      screen.getByTestId("pps-stage-not-reached-notice"),
+    ).toHaveTextContent("Not yet reached");
+    expect(screen.getByTestId("pps-stage-DEFINE")).toBeEnabled();
+    expect(screen.getByTestId("pps-stage-ROOT_CAUSE_ANALYSIS")).toBeEnabled();
+    expect(
+      screen.queryByTestId("pps-manual-hypothesis-form"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("pps-stage-auto-draft-button"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ai-proposal-accept")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ai-facilitator-mock")).not.toBeInTheDocument();
+    view.rerender(
+      renderWorkspace(CaseWorkspace, baseDetail, [pendingProposal]),
+    );
+    expect(
+      screen.queryByTestId("pps-stage-not-reached-notice"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByTestId("pps-manual-hypothesis-form"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("ai-proposal-accept")).toBeEnabled();
+  });
+
+  it("counts only proposals shown in the stage list and removes accepted ones before refresh", async () => {
+    const { CaseWorkspace } =
+      await import("@/components/problem-solving/case-workspace");
+    vi.mocked(acceptProblemSolvingAiProposal).mockResolvedValue({ ok: true });
+    render(
+      renderWorkspace(CaseWorkspace, baseDetail, [
+        pendingProposal,
+        { ...pendingProposal, id: "done", status: "accepted" },
+        { ...pendingProposal, id: "other-stage", semantic_stage_key: "DEFINE" },
+      ]),
+    );
+
+    expect(screen.getAllByTestId("ai-proposal-card")).toHaveLength(1);
+    expect(screen.getByTestId("pps-stage-auto-draft-status")).toHaveTextContent(
+      "1 proposal(s) ready",
+    );
+    fireEvent.click(screen.getByTestId("ai-proposal-accept"));
+
+    await waitFor(() =>
+      expect(screen.queryByTestId("ai-proposal-card")).not.toBeInTheDocument(),
+    );
+    expect(
+      screen.queryByTestId("pps-stage-auto-draft-status"),
+    ).not.toBeInTheDocument();
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { createProblemSolvingAction } from "@/app/(platform)/platform/problem-solving/actions";
 import { loadActionCreateContext } from "@/app/(platform)/platform/actions/actions";
@@ -24,7 +24,11 @@ type ProblemSolvingActionDialogProps = {
   countermeasureId?: string | null;
   defaultTitle?: string;
   defaultMembershipId?: string | null;
-  onCreated?: () => void;
+  onCreated?: (action: {
+    id: string;
+    title: string;
+    expected_result: string | null;
+  }) => void;
 };
 
 export function ProblemSolvingActionDialog({
@@ -46,6 +50,7 @@ export function ProblemSolvingActionDialog({
   const [assignablePeople, setAssignablePeople] = useState<
     Array<{ membership_id: string; display_name: string }>
   >([]);
+  const submitting = useRef(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,6 +80,7 @@ export function ProblemSolvingActionDialog({
   }, [open, defaultMembershipId]);
 
   function handleDialogOpenChange(next: boolean) {
+    if (submitting.current) return;
     if (next) {
       setTitle(defaultTitle);
       setAssigneeId(defaultMembershipId ?? "");
@@ -88,6 +94,7 @@ export function ProblemSolvingActionDialog({
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (!open || submitting.current) return;
     if (!title.trim()) {
       setError("Title is required.");
       return;
@@ -96,29 +103,42 @@ export function ProblemSolvingActionDialog({
       setError("Due date is required.");
       return;
     }
+    submitting.current = true;
     setLoading(true);
     setError(null);
     const resolvedAssignee = assigneeId || defaultMembershipId || "";
-    const result = await createProblemSolvingAction({
-      caseId,
-      title: title.trim(),
-      contextRole,
-      ...(description.trim() ? { description: description.trim() } : {}),
-      ...(expectedResult.trim()
-        ? { expectedResult: expectedResult.trim() }
-        : {}),
-      ...(containmentId ? { containmentId } : {}),
-      ...(countermeasureId ? { countermeasureId } : {}),
-      dueAt: new Date(`${dueAt}T12:00:00`).toISOString(),
-      ...(resolvedAssignee ? { assigneeMembershipId: resolvedAssignee } : {}),
-    });
-    setLoading(false);
-    if (result.error) {
-      setError(result.error);
-      return;
+    const trimmedTitle = title.trim();
+    const trimmedExpectedResult = expectedResult.trim();
+    try {
+      const result = await createProblemSolvingAction({
+        caseId,
+        title: trimmedTitle,
+        contextRole,
+        ...(description.trim() ? { description: description.trim() } : {}),
+        ...(trimmedExpectedResult
+          ? { expectedResult: trimmedExpectedResult }
+          : {}),
+        ...(containmentId ? { containmentId } : {}),
+        ...(countermeasureId ? { countermeasureId } : {}),
+        dueAt: new Date(`${dueAt}T12:00:00`).toISOString(),
+        ...(resolvedAssignee ? { assigneeMembershipId: resolvedAssignee } : {}),
+      });
+      if (result.error || !result.id) {
+        setError(result.error ?? "Could not create action.");
+        return;
+      }
+      onCreated?.({
+        id: result.id,
+        title: trimmedTitle,
+        expected_result: trimmedExpectedResult || null,
+      });
+      onOpenChange(false);
+    } catch {
+      setError("Could not create action.");
+    } finally {
+      submitting.current = false;
+      setLoading(false);
     }
-    handleDialogOpenChange(false);
-    onCreated?.();
   }
 
   return (
@@ -153,6 +173,7 @@ export function ProblemSolvingActionDialog({
               <Textarea
                 id="pps-action-expected"
                 rows={2}
+                maxLength={2000}
                 value={expectedResult}
                 onChange={(event) => setExpectedResult(event.target.value)}
                 data-testid="pps-action-create-expected"

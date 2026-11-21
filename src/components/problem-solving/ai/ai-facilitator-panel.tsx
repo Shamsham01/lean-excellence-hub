@@ -223,7 +223,7 @@ export function AiFacilitatorPanel({
 
   async function handleSend() {
     const userMessage = (draftInputRef.current?.value ?? draft).trim();
-    if (!userMessage || disabledReason) return;
+    if (!userMessage || disabledReason || loading) return;
     setLoading(true);
     setError(null);
     try {

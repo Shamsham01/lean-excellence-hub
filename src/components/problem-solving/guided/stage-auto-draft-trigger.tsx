@@ -26,6 +26,7 @@ type StageAutoDraftTriggerProps = {
   hasProblemData: boolean;
   caseStatus?: string;
   stagePendingCount?: number;
+  autoDraft?: boolean;
   onDraftComplete?: () => void;
 };
 
@@ -45,109 +46,106 @@ export function StageAutoDraftTrigger({
   hasProblemData,
   caseStatus = "active",
   stagePendingCount = 0,
+  autoDraft = true,
   onDraftComplete,
 }: StageAutoDraftTriggerProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [isError, setIsError] = useState(false);
-  const autoRan = useRef(false);
+  const inFlight = useRef(false);
   const pendingTurnRef = useRef<{ idempotencyKey: string } | null>(null);
 
   const stageLabel = stageTitle ?? stageKey;
   const caseOpenForAiDraft = isProblemSolvingCaseOpenForAiDraft(caseStatus);
 
-  const runDraft = useCallback(
-    async (fromAuto = false) => {
-      if (!canUseAi || !providerAvailable || !caseOpenForAiDraft) return;
-      setLoading(true);
-      setMessage(null);
-      setIsError(false);
+  const runDraft = useCallback(async () => {
+    if (
+      !canUseAi ||
+      !providerAvailable ||
+      !caseOpenForAiDraft ||
+      !hasProblemData ||
+      inFlight.current
+    )
+      return;
+    inFlight.current = true;
+    window.sessionStorage.setItem(storageKey(caseId, stageKey), "1");
+    setLoading(true);
+    setMessage(null);
 
-      const idempotencyKey =
-        pendingTurnRef.current?.idempotencyKey ??
-        `stage-draft-${caseId}-${stageKey}-${crypto.randomUUID()}`;
-      pendingTurnRef.current = { idempotencyKey };
+    const idempotencyKey =
+      pendingTurnRef.current?.idempotencyKey ??
+      `stage-draft-${caseId}-${stageKey}-${crypto.randomUUID()}`;
+    pendingTurnRef.current = { idempotencyKey };
 
-      try {
-        const result = await invokeProblemSolvingTurnAction({
-          invoke: () =>
-            draftProblemSolvingStage({
-              caseId,
-              stageKey,
-              viewStageKey: viewStageKey ?? stageKey,
-              currentStageKey: currentStageKey ?? null,
-              message: autoDraftPrompt,
-              idempotencyKey,
-            }),
-          reconcile: () =>
-            reconcileProblemSolvingStageDraft({
-              caseId,
-              idempotencyKey,
-              stageKey,
-              viewStageKey: viewStageKey ?? stageKey,
-            }),
-        });
+    try {
+      const result = await invokeProblemSolvingTurnAction({
+        invoke: () =>
+          draftProblemSolvingStage({
+            caseId,
+            stageKey,
+            viewStageKey: viewStageKey ?? stageKey,
+            currentStageKey: currentStageKey ?? null,
+            message: autoDraftPrompt,
+            idempotencyKey,
+          }),
+        reconcile: () =>
+          reconcileProblemSolvingStageDraft({
+            caseId,
+            idempotencyKey,
+            stageKey,
+            viewStageKey: viewStageKey ?? stageKey,
+          }),
+      });
 
-        if (result.error || !result.data) {
-          setIsError(true);
-          setMessage(result.error ?? "Could not run stage draft.");
-          if (
-            result.error &&
-            shouldRetainProblemSolvingTurnKey(result.error) &&
-            pendingTurnRef.current
-          ) {
-            return;
-          }
-          pendingTurnRef.current = null;
+      if (result.error || !result.data) {
+        setMessage(result.error ?? "Could not run stage draft.");
+        if (
+          result.error &&
+          shouldRetainProblemSolvingTurnKey(result.error) &&
+          pendingTurnRef.current
+        ) {
           return;
         }
-
         pendingTurnRef.current = null;
-
-        const pendingProposalCount =
-          "pendingProposalCount" in result.data &&
-          typeof result.data.pendingProposalCount === "number"
-            ? result.data.pendingProposalCount
-            : 0;
-
-        if (pendingProposalCount <= 0) {
-          setIsError(true);
-          setMessage(
-            `Lean AI finished but did not create any proposals for ${stageLabel}. Try again or ask in the Lean AI panel.`,
-          );
-          router.refresh();
-          return;
-        }
-
-        if (typeof window !== "undefined") {
-          window.sessionStorage.setItem(storageKey(caseId, stageKey), "1");
-        }
-        setMessage(
-          fromAuto
-            ? `${pendingProposalCount} proposal(s) ready for ${stageLabel} — review Pending Lean AI proposals below.`
-            : `${pendingProposalCount} proposal(s) for ${stageLabel} — see Pending Lean AI proposals below.`,
-        );
-        onDraftComplete?.();
-        router.refresh();
-      } finally {
-        setLoading(false);
+        return;
       }
-    },
-    [
-      autoDraftPrompt,
-      canUseAi,
-      caseId,
-      caseOpenForAiDraft,
-      currentStageKey,
-      onDraftComplete,
-      providerAvailable,
-      router,
-      stageKey,
-      stageLabel,
-      viewStageKey,
-    ],
-  );
+
+      pendingTurnRef.current = null;
+
+      const pendingProposalCount =
+        "pendingProposalCount" in result.data &&
+        typeof result.data.pendingProposalCount === "number"
+          ? result.data.pendingProposalCount
+          : 0;
+
+      if (pendingProposalCount <= 0) {
+        setMessage(
+          `Lean AI finished but did not create any proposals for ${stageLabel}. Try again or ask in the Lean AI panel.`,
+        );
+        router.refresh();
+        return;
+      }
+
+      onDraftComplete?.();
+      router.refresh();
+    } finally {
+      inFlight.current = false;
+      setLoading(false);
+    }
+  }, [
+    autoDraftPrompt,
+    canUseAi,
+    caseId,
+    caseOpenForAiDraft,
+    currentStageKey,
+    hasProblemData,
+    onDraftComplete,
+    providerAvailable,
+    router,
+    stageKey,
+    stageLabel,
+    viewStageKey,
+  ]);
 
   useEffect(() => {
     if (
@@ -155,7 +153,7 @@ export function StageAutoDraftTrigger({
       !providerAvailable ||
       !hasProblemData ||
       !caseOpenForAiDraft ||
-      autoRan.current
+      !autoDraft
     ) {
       return;
     }
@@ -166,12 +164,15 @@ export function StageAutoDraftTrigger({
     if (window.sessionStorage.getItem(storageKey(caseId, stageKey))) {
       return;
     }
-    autoRan.current = true;
-    const timer = window.setTimeout(() => {
-      void runDraft(true);
-    }, 0);
+    if (stagePendingCount > 0) {
+      window.sessionStorage.setItem(storageKey(caseId, stageKey), "1");
+      return;
+    }
+    const timer = window.setTimeout(() => void runDraft(), 0);
     return () => window.clearTimeout(timer);
   }, [
+    autoDraft,
+    stagePendingCount,
     canUseAi,
     providerAvailable,
     hasProblemData,
@@ -200,13 +201,13 @@ export function StageAutoDraftTrigger({
         size="sm"
         variant="secondary"
         disabled={loading || !hasProblemData || !caseOpenForAiDraft}
-        onClick={() => runDraft(false)}
+        onClick={() => void runDraft()}
         data-testid="pps-stage-auto-draft-button"
         title={
           !caseOpenForAiDraft
             ? "Stage drafts are only available on draft or active cases"
             : hasProblemData
-              ? "Generate one bounded draft for this stage visit"
+              ? "Generate proposals for this stage"
               : "Add a problem statement or current-condition facts first"
         }
       >
@@ -221,18 +222,12 @@ export function StageAutoDraftTrigger({
           Add problem or current-condition facts first.
         </p>
       ) : null}
-      {message && stagePendingCount === 0 && !message.includes("ready") ? (
-        <p
-          className={
-            isError
-              ? "w-full text-xs text-destructive"
-              : "w-full text-xs text-muted-foreground"
-          }
-          role={isError ? "alert" : "status"}
-        >
+      {message ? (
+        <p className="w-full text-xs text-destructive" role="alert">
           {message}
         </p>
-      ) : message && stagePendingCount > 0 ? (
+      ) : null}
+      {stagePendingCount > 0 ? (
         <p
           className="w-full text-xs text-muted-foreground"
           role="status"
