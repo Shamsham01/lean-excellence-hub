@@ -94,7 +94,7 @@ describe("LeanAiComposer", () => {
 
   it("keeps a visible Send button and refuses a blank draft", () => {
     const { onSubmit } = renderComposer({ value: "   " });
-    const send = screen.getByRole("button", { name: "Send", exact: true });
+    const send = screen.getByRole("button", { name: "Send" });
     expect(send).toBeVisible();
     expect(send).toBeDisabled();
     expect(send).toHaveTextContent("Send");
@@ -132,9 +132,7 @@ describe("LeanAiComposer", () => {
       const { onSubmit } = renderComposer(overrides);
       const input = screen.getByLabelText<HTMLTextAreaElement>("Ask LeanAI");
       expect(input).toBeDisabled();
-      expect(
-        screen.getByRole("button", { name: "Send", exact: true }),
-      ).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Send" })).toBeDisabled();
       fireEvent.submit(input.form!);
       expect(onSubmit).not.toHaveBeenCalled();
     },
@@ -147,7 +145,7 @@ describe("LeanAiComposer", () => {
       fireEvent.keyDown(screen.getByLabelText("Ask LeanAI"), { key: "Enter" }),
     ).toBe(true);
     expect(onSubmit).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Send", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
     expect(onSubmit).toHaveBeenCalledTimes(1);
   });
 });
