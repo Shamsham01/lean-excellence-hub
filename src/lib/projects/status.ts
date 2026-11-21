@@ -83,6 +83,7 @@ export function projectStatusBadgeVariant(
   | "information" {
   switch (status) {
     case "active":
+    case "completed":
       return "success";
     case "approved":
       return "information";
@@ -90,8 +91,6 @@ export function projectStatusBadgeVariant(
       return "warning";
     case "on_hold":
       return "warning";
-    case "completed":
-      return "secondary";
     case "cancelled":
       return "destructive";
     default:

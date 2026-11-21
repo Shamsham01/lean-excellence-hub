@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/platform/page-header";
 import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { AppLink } from "@/components/ui/app-link";
 import { Card, CardContent } from "@/components/ui/card";
+import { formatFiveSAuditScoreBand } from "@/modules/5s/audit-status";
 import { FIVE_S_PERMISSIONS } from "@/modules/operational/permissions";
 import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -59,7 +60,9 @@ export default async function FiveSHistoryPage() {
                 </div>
                 <div className="text-right text-sm">
                   <p className="font-medium">{audit.overall_score_percent}%</p>
-                  <p className="text-muted-foreground">{audit.result_status}</p>
+                  <p className="text-muted-foreground">
+                    {formatFiveSAuditScoreBand(audit.result_status)}
+                  </p>
                 </div>
               </AppLink>
             ))

@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { formatFiveSAuditScoreBand } from "@/modules/5s/audit-status";
 import { FIVE_S_PERMISSIONS } from "@/modules/operational/permissions";
 import {
   loadWorkplaceRecordFallback,
@@ -185,8 +186,13 @@ export default async function FiveSAuditPage({
               {audit.overall_score_percent}%
             </p>
             <p className="text-sm text-muted-foreground">
-              Target {audit.target_percent}% · {audit.result_status} ·{" "}
-              {audit.unit_name_snapshot}
+              {[
+                `Target ${audit.target_percent}%`,
+                formatFiveSAuditScoreBand(audit.result_status),
+                audit.unit_name_snapshot,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             </p>
             <Button variant="outline" asChild className="mt-4">
               <AppLink

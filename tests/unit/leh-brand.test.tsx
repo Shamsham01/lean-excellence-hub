@@ -403,7 +403,7 @@ describe("site identity metadata", () => {
     ).toBe(true);
   });
 
-  it("renders sidebar lockups with SVG-first theme sources in a full-width slot", () => {
+  it("renders sidebar lockups with SVG-first theme sources in a smaller slot", () => {
     render(
       <LehBrand
         decorative
@@ -412,6 +412,8 @@ describe("site identity metadata", () => {
       />,
     );
     const brand = screen.getByTestId("leh-brand");
+    const css = readFileSync("src/components/brand/leh-brand.css", "utf8");
+    expect(css).toMatch(/\.leh-brand--platform-sidebar \{[^}]*\bwidth: 83%;/);
     expect(brand.querySelector("picture source")).not.toBeNull();
     const vectorSources = [...brand.querySelectorAll("source")].map((node) =>
       node.getAttribute("srcset"),
