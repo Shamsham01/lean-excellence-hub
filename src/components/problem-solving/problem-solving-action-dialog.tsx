@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 
 import { createProblemSolvingAction } from "@/app/(platform)/platform/problem-solving/actions";
 import { loadActionCreateContext } from "@/app/(platform)/platform/actions/actions";
+import { linkActionToCiProject } from "@/app/(platform)/platform/projects/linking-actions";
+import { ActionProjectPicker } from "@/components/actions/action-project-picker";
+import type { ProjectPickerOptions } from "@/lib/projects/load-project-picker-options";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,6 +22,7 @@ type ProblemSolvingActionDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   caseId: string;
+  siteUnitId?: string | null;
   contextRole: "containment" | "countermeasure";
   containmentId?: string | null;
   countermeasureId?: string | null;
@@ -31,6 +35,7 @@ export function ProblemSolvingActionDialog({
   open,
   onOpenChange,
   caseId,
+  siteUnitId = null,
   contextRole,
   containmentId,
   countermeasureId,
@@ -42,6 +47,9 @@ export function ProblemSolvingActionDialog({
   const [description, setDescription] = useState("");
   const [expectedResult, setExpectedResult] = useState("");
   const [dueAt, setDueAt] = useState("");
+  const [projectPicker, setProjectPicker] = useState<ProjectPickerOptions>();
+  const [projectId, setProjectId] = useState<string | null>(null);
+  const [createdActionId, setCreatedActionId] = useState<string | null>(null);
   const [assigneeId, setAssigneeId] = useState(defaultMembershipId ?? "");
   const [assignablePeople, setAssignablePeople] = useState<
     Array<{ membership_id: string; display_name: string }>
@@ -52,8 +60,9 @@ export function ProblemSolvingActionDialog({
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    void loadActionCreateContext().then((ctx) => {
+    void loadActionCreateContext({ siteUnitId }).then((ctx) => {
       if (cancelled) return;
+      setProjectPicker(ctx.projectPicker);
       setAssignablePeople(
         ctx.assignablePeople.map((person) => ({
           membership_id: person.membership_id,
@@ -72,13 +81,15 @@ export function ProblemSolvingActionDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, defaultMembershipId]);
+  }, [open, defaultMembershipId, siteUnitId]);
 
   function handleDialogOpenChange(next: boolean) {
     if (next) {
       setTitle(defaultTitle);
       setAssigneeId(defaultMembershipId ?? "");
       setDueAt("");
+      setProjectId(null);
+      setCreatedActionId(null);
       setDescription("");
       setExpectedResult("");
       setError(null);
@@ -88,6 +99,7 @@ export function ProblemSolvingActionDialog({
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (loading) return;
     if (!title.trim()) {
       setError("Title is required.");
       return;
@@ -98,27 +110,49 @@ export function ProblemSolvingActionDialog({
     }
     setLoading(true);
     setError(null);
-    const resolvedAssignee = assigneeId || defaultMembershipId || "";
-    const result = await createProblemSolvingAction({
-      caseId,
-      title: title.trim(),
-      contextRole,
-      ...(description.trim() ? { description: description.trim() } : {}),
-      ...(expectedResult.trim()
-        ? { expectedResult: expectedResult.trim() }
-        : {}),
-      ...(containmentId ? { containmentId } : {}),
-      ...(countermeasureId ? { countermeasureId } : {}),
-      dueAt: new Date(`${dueAt}T12:00:00`).toISOString(),
-      ...(resolvedAssignee ? { assigneeMembershipId: resolvedAssignee } : {}),
-    });
-    setLoading(false);
-    if (result.error) {
-      setError(result.error);
-      return;
+    try {
+      let actionId = createdActionId;
+      if (!actionId) {
+        const resolvedAssignee = assigneeId || defaultMembershipId || "";
+        const result = await createProblemSolvingAction({
+          caseId,
+          title: title.trim(),
+          contextRole,
+          ...(description.trim() ? { description: description.trim() } : {}),
+          ...(expectedResult.trim()
+            ? { expectedResult: expectedResult.trim() }
+            : {}),
+          ...(containmentId ? { containmentId } : {}),
+          ...(countermeasureId ? { countermeasureId } : {}),
+          dueAt: new Date(`${dueAt}T12:00:00`).toISOString(),
+          ...(resolvedAssignee
+            ? { assigneeMembershipId: resolvedAssignee }
+            : {}),
+        });
+        if (result.error || !result.id) {
+          setError(result.error ?? "The action could not be created.");
+          return;
+        }
+        actionId = result.id;
+        setCreatedActionId(actionId);
+      }
+
+      if (projectId) {
+        const link = await linkActionToCiProject(actionId, projectId);
+        if (link.error) {
+          setError(
+            `Action created. ${link.error} Choose a project or clear the selection, then submit again.`,
+          );
+          return;
+        }
+      }
+      handleDialogOpenChange(false);
+      onCreated?.();
+    } catch {
+      setError("The action setup could not finish. Try again.");
+    } finally {
+      setLoading(false);
     }
-    handleDialogOpenChange(false);
-    onCreated?.();
   }
 
   return (
@@ -133,6 +167,7 @@ export function ProblemSolvingActionDialog({
             <Input
               id="pps-action-title"
               value={title}
+              disabled={loading || Boolean(createdActionId)}
               onChange={(event) => setTitle(event.target.value)}
               data-testid="pps-action-create-title"
               required
@@ -144,6 +179,7 @@ export function ProblemSolvingActionDialog({
               id="pps-action-description"
               rows={2}
               value={description}
+              disabled={loading || Boolean(createdActionId)}
               onChange={(event) => setDescription(event.target.value)}
             />
           </div>
@@ -154,6 +190,7 @@ export function ProblemSolvingActionDialog({
                 id="pps-action-expected"
                 rows={2}
                 value={expectedResult}
+                disabled={loading || Boolean(createdActionId)}
                 onChange={(event) => setExpectedResult(event.target.value)}
                 data-testid="pps-action-create-expected"
                 placeholder="What should change after this action is done?"
@@ -166,6 +203,7 @@ export function ProblemSolvingActionDialog({
               id="pps-action-assignee"
               className="border-input min-h-11 rounded-md border bg-background px-3 py-2 text-sm"
               value={assigneeId}
+              disabled={loading || Boolean(createdActionId)}
               onChange={(event) => setAssigneeId(event.target.value)}
               data-testid="pps-action-create-assignee"
               required
@@ -184,11 +222,20 @@ export function ProblemSolvingActionDialog({
               id="pps-action-due"
               type="date"
               value={dueAt}
+              disabled={loading || Boolean(createdActionId)}
               onChange={(event) => setDueAt(event.target.value)}
               data-testid="pps-action-create-due"
               required
             />
           </div>
+          {projectPicker ? (
+            <ActionProjectPicker
+              picker={projectPicker}
+              value={projectId}
+              onChange={setProjectId}
+              disabled={loading}
+            />
+          ) : null}
           {error ? (
             <p className="text-sm text-destructive" role="alert">
               {error}
@@ -199,7 +246,13 @@ export function ProblemSolvingActionDialog({
             disabled={loading}
             data-testid="pps-action-create-submit"
           >
-            {loading ? "Creating…" : "Create action"}
+            {createdActionId
+              ? loading
+                ? "Saving…"
+                : "Finish setup"
+              : loading
+                ? "Creating…"
+                : "Create action"}
           </Button>
         </form>
       </DialogContent>

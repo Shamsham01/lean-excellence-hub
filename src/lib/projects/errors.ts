@@ -110,6 +110,9 @@ export function mapCiProjectLinkError(error: unknown): string {
   }
 
   if (code === "55000" || /55000/.test(raw)) {
+    if (/only open projects can accept action links/i.test(raw)) {
+      return "Only open projects can accept action links.";
+    }
     if (/completed or cancelled and cannot accept new links/i.test(raw)) {
       return "This project is completed or cancelled and cannot accept new links.";
     }

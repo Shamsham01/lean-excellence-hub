@@ -110,6 +110,7 @@ type CaseWorkspaceProps = {
   providerAvailable: boolean;
   pendingAiProposals?: CasePendingAiProposal[];
   linkedProject?: ProjectLinkSummary | null;
+  projectSiteUnitId?: string | null;
   projectOptions?: ProjectSelectorOption[];
   requiresSiteSelection?: boolean;
   canEditProjectLink?: boolean;
@@ -144,6 +145,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     providerAvailable,
     pendingAiProposals = [],
     linkedProject = null,
+    projectSiteUnitId = null,
     projectOptions = [],
     requiresSiteSelection = false,
     canEditProjectLink = false,
@@ -511,6 +513,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
             canContribute={canContribute || canManage}
           />
           <ContainmentPanel
+            siteUnitId={projectSiteUnitId}
             caseId={detail.id}
             containments={containments}
             canContribute={canContribute || canManage}
@@ -522,6 +525,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     if (key === "CONTAIN") {
       return (
         <ContainmentPanel
+          siteUnitId={projectSiteUnitId}
           caseId={detail.id}
           containments={containments}
           canContribute={canContribute || canManage}
@@ -532,6 +536,7 @@ export function CaseWorkspace(props: CaseWorkspaceProps) {
     if (key === "COUNTERMEASURES" || key === "COUNTERMEASURE") {
       return (
         <CountermeasuresPanel
+          siteUnitId={projectSiteUnitId}
           caseId={detail.id}
           detail={detail}
           canContribute={canContribute || canManage}

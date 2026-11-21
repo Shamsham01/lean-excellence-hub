@@ -1,6 +1,6 @@
 begin;
 
-select plan(128);
+select plan(137);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -2080,6 +2080,115 @@ select ok(
 );
 
 set local role authenticated;
+
+insert into work_link_ids (key, id)
+select 'status_test_project', public.create_improvement_project(
+  'Project action status guard',
+  (select id from work_link_ids where key = 'unit'),
+  'Problem',
+  'Objective',
+  'Impact'
+);
+
+insert into work_link_ids (key, id)
+select 'status_test_action', public.create_action(
+  'Test supported project link statuses',
+  target_unit_id := (select id from work_link_ids where key = 'unit')
+);
+
+select ok(
+  public.link_action_to_ci_project(
+    (select id from work_link_ids where key = 'status_test_action'),
+    (select id from work_link_ids where key = 'status_test_project')
+  ),
+  'a Draft project accepts an action link'
+);
+
+select is(
+  (select status from public.ci_projects where id =
+    (select id from work_link_ids where key = 'status_test_project')),
+  'draft',
+  'linking the action leaves the project in Draft'
+);
+
+update public.ci_projects
+set status = 'on_hold', actual_start_at = statement_timestamp()
+where id = (select id from work_link_ids where key = 'status_test_project');
+
+select lives_ok(
+  format(
+    'select public.create_project_action(%L, %L::uuid)',
+    'New action from On hold project',
+    (select id from work_link_ids where key = 'status_test_project')
+  ),
+  'creating a new linked action on an On hold project succeeds'
+);
+
+select public.unlink_action_from_ci_project(
+  (select id from work_link_ids where key = 'status_test_action')
+);
+
+update public.ci_projects
+set status = 'submitted', actual_start_at = null
+where id = (select id from work_link_ids where key = 'status_test_project');
+
+select lives_ok(
+  format(
+    'select public.link_action_to_ci_project(%L::uuid, %L::uuid)',
+    (select id from work_link_ids where key = 'status_test_action'),
+    (select id from work_link_ids where key = 'status_test_project')
+  ),
+  'Submitted projects accept links from existing actions'
+);
+
+select lives_ok(
+  format(
+    'select public.create_project_action(%L, %L::uuid)',
+    'New action from Submitted project',
+    (select id from work_link_ids where key = 'status_test_project')
+  ),
+  'Submitted projects can create linked actions'
+);
+
+select is(
+  (select status from public.ci_projects where id =
+    (select id from work_link_ids where key = 'status_test_project')),
+  'submitted',
+  'linking actions leaves the project in Submitted'
+);
+
+select public.unlink_action_from_ci_project(
+  (select id from work_link_ids where key = 'status_test_action')
+);
+
+update public.ci_projects
+set status = 'approved'
+where id = (select id from work_link_ids where key = 'status_test_project');
+
+select lives_ok(
+  format(
+    'select public.link_action_to_ci_project(%L::uuid, %L::uuid)',
+    (select id from work_link_ids where key = 'status_test_action'),
+    (select id from work_link_ids where key = 'status_test_project')
+  ),
+  'Approved projects accept links from existing actions'
+);
+
+select lives_ok(
+  format(
+    'select public.create_project_action(%L, %L::uuid)',
+    'New action from Approved project',
+    (select id from work_link_ids where key = 'status_test_project')
+  ),
+  'Approved projects can create linked actions'
+);
+
+select is(
+  (select status from public.ci_projects where id =
+    (select id from work_link_ids where key = 'status_test_project')),
+  'approved',
+  'linking actions leaves the project in Approved'
+);
 
 select * from finish();
 rollback;

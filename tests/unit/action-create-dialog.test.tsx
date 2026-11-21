@@ -8,6 +8,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { linkActionToCiProject } from "@/app/(platform)/platform/projects/linking-actions";
 import { ActionCreateDialog } from "@/components/actions/action-create-form";
 import {
   createPlannerAction,
@@ -19,6 +20,10 @@ vi.mock("@/app/(platform)/platform/actions/actions", () => ({
   loadActionCreateContext: vi.fn(),
   initiateActionEvidenceUpload: vi.fn(),
   confirmActionEvidenceUpload: vi.fn(),
+}));
+
+vi.mock("@/app/(platform)/platform/projects/linking-actions", () => ({
+  linkActionToCiProject: vi.fn(),
 }));
 
 vi.mock("@/lib/attachments/upload-evidence-client", () => ({
@@ -331,5 +336,57 @@ describe("ActionCreateDialog", () => {
     await waitFor(() =>
       expect(createPlannerActionMock).toHaveBeenCalledTimes(1),
     );
+  });
+
+  it("retries a Draft project link on the action already created", async () => {
+    const onCreated = vi.fn();
+    loadActionCreateContextMock.mockResolvedValueOnce({
+      labels: [],
+      assignablePeople: [],
+      canManageLabels: true,
+      canAssign: true,
+      currentMembershipId: null,
+      projectPicker: {
+        requiresSiteSelection: false,
+        projects: [
+          {
+            id: "draft-project",
+            project_number: "PRJ-1",
+            title: "Draft project",
+            status: "draft",
+            unit_id: "site",
+          },
+        ],
+      },
+    });
+    createPlannerActionMock.mockResolvedValueOnce({ ok: true, id: "action" });
+    const link = vi.mocked(linkActionToCiProject);
+    link
+      .mockResolvedValueOnce({ error: "Please retry." })
+      .mockResolvedValueOnce({});
+
+    render(
+      <ActionCreateDialog open onOpenChange={vi.fn()} onCreated={onCreated} />,
+    );
+    fireEvent.change(screen.getByLabelText("Title"), {
+      target: { value: "Follow up" },
+    });
+    fireEvent.click(
+      await screen.findByRole("combobox", { name: "CI project (optional)" }),
+    );
+    fireEvent.click(screen.getByRole("option", { name: /PRJ-1/ }));
+    fireEvent.click(screen.getByTestId("actions-create-submit"));
+
+    expect(
+      await screen.findByText(/Action created\. Please retry\./),
+    ).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Finish setup" }));
+
+    await waitFor(() => expect(onCreated).toHaveBeenCalledWith("action"));
+    expect(createPlannerActionMock).toHaveBeenCalledTimes(1);
+    expect(link.mock.calls).toEqual([
+      ["action", "draft-project"],
+      ["action", "draft-project"],
+    ]);
   });
 });

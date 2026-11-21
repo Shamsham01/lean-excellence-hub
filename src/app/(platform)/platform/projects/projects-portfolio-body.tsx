@@ -1,6 +1,9 @@
 import { ProjectPortfolio } from "@/components/projects/project-portfolio";
 import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
-import { computePortfolioMetrics } from "@/lib/projects/portfolio-metrics";
+import {
+  computePortfolioMetrics,
+  projectIdsCountingTowardsActionProgress,
+} from "@/lib/projects/portfolio-metrics";
 import {
   resolvePortfolioOpenActionIds,
   withPortfolioSiteScope,
@@ -66,7 +69,7 @@ export async function ProjectsPortfolioBody({
   };
 
   const allItems = (metricsData?.items as ProjectPortfolioItem[]) ?? [];
-  const scopedProjectIds = allItems.map((item) => item.id);
+  const scopedProjectIds = projectIdsCountingTowardsActionProgress(allItems);
 
   const activeProjectIds = allItems
     .filter((item) => item.status === "active")
