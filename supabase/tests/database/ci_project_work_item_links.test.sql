@@ -1,6 +1,6 @@
 begin;
 
-select plan(155);
+select plan(157);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -828,12 +828,26 @@ select 'cancelled_project', public.create_improvement_project(
   'Impact'
 );
 
+create temporary table cancelled_project_timestamp on commit drop as
+select updated_at from public.ci_projects
+where id = (select id from work_link_ids where key = 'cancelled_project');
+
 select ok(
   public.cancel_project(
     (select id from work_link_ids where key = 'cancelled_project'),
     'No longer pursuing'
   ),
   'second project is cancelled'
+);
+
+select ok(
+  exists (
+    select 1 from public.ci_projects project
+    where project.id = (select id from work_link_ids where key = 'cancelled_project')
+      and project.status = 'cancelled'
+      and project.updated_at > (select updated_at from cancelled_project_timestamp)
+  ),
+  'cancel bumps updated_at'
 );
 
 select throws_ok(
@@ -1398,16 +1412,24 @@ select ok(
   'site-scoped manager selects organisation'
 );
 
-with edited as (
-  update public.ci_projects
-  set title = 'Manager-edited project', scope_in = 'Updated charter scope'
-  where id = (select id from work_link_ids where key = 'project')
-  returning title, scope_in
-)
-select is(
-  (select array[title, scope_in] from edited),
-  array['Manager-edited project', 'Updated charter scope'],
-  'site-scoped manager can directly edit the title and charter scope'
+select throws_ok(
+  format(
+    'update public.ci_projects set title = %L where id = %L',
+    'Manager-edited project',
+    (select id from work_link_ids where key = 'project')
+  ),
+  '42501',
+  'permission denied for table ci_projects',
+  'site-scoped manager cannot directly edit the project title'
+);
+
+select ok(
+  public.update_ci_project_draft(
+    (select id from work_link_ids where key = 'project'),
+    target_title := 'Manager-edited project',
+    target_scope_in := 'Updated charter scope'
+  ),
+  'site-scoped manager can edit the draft through its RPC'
 );
 
 select throws_ok(
@@ -1422,7 +1444,9 @@ select throws_ok(
 );
 
 reset role;
--- Temporarily grant the columns to test the trigger independently of the ACL.
+-- Restore test-only access to exercise the trigger independently of the ACL and RLS.
+create policy test_ci_projects_update on public.ci_projects for update to authenticated
+using (true);
 grant update (status, actual_start_at) on public.ci_projects to authenticated;
 set local role authenticated;
 
@@ -1449,6 +1473,7 @@ select throws_ok(
 
 reset role;
 revoke update (status, actual_start_at) on public.ci_projects from authenticated;
+drop policy test_ci_projects_update on public.ci_projects;
 set local role authenticated;
 
 select throws_ok(
