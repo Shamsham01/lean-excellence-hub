@@ -85,7 +85,9 @@ function UnitTreeNode({
             className="size-4 shrink-0"
             data-testid="applicable-unit-checkbox"
           />
-          <span className="min-w-0 break-words">{node.name}</span>
+          <span className="min-w-0 break-words max-sm:wrap-anywhere">
+            {node.name}
+          </span>
         </label>
       ) : (
         <p
@@ -184,13 +186,18 @@ export function ApplicableUnitsPickerDialog({
           aria-label="Search sites and areas"
           data-testid="applicable-units-picker-search"
         />
-        <SiteGroupList
-          siteGroups={siteGroups}
-          matchingIds={matchingIds}
-          draft={draft}
-          setDraft={setDraft}
-          search={search}
-        />
+        <div
+          data-testid="applicable-units-picker-list"
+          className="min-w-0 max-sm:max-h-[44dvh] max-sm:touch-pan-y max-sm:overflow-x-hidden max-sm:overflow-y-auto max-sm:overscroll-y-contain"
+        >
+          <SiteGroupList
+            siteGroups={siteGroups}
+            matchingIds={matchingIds}
+            draft={draft}
+            setDraft={setDraft}
+            search={search}
+          />
+        </div>
         {footer}
       </div>
     </ResponsiveFormDialog>

@@ -24,11 +24,12 @@ import { cn } from "@/lib/utils";
 
 const MOBILE_SHEET_QUERY = "(max-width: 639px)";
 
-export function useMobileFormSheet(): boolean {
+export function useMobileFormSheet(enabled = true): boolean {
   const [mobile, setMobile] = useState(false);
 
   useEffect(() => {
     if (
+      !enabled ||
       typeof window === "undefined" ||
       typeof window.matchMedia !== "function"
     ) {
@@ -39,9 +40,9 @@ export function useMobileFormSheet(): boolean {
     sync();
     media.addEventListener("change", sync);
     return () => media.removeEventListener("change", sync);
-  }, []);
+  }, [enabled]);
 
-  return mobile;
+  return enabled && mobile;
 }
 
 export type ResponsiveFormDialogProps = {

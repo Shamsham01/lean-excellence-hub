@@ -15,7 +15,7 @@ export function usesChromiumCdpTouch(testInfo: TestInfo) {
   return testInfo.project.name === "chromium-pixel7";
 }
 
-async function dispatchCdpTouchSwipe(
+export async function dispatchCdpTouchSwipe(
   page: Page,
   x: number,
   startY: number,
@@ -34,6 +34,7 @@ async function dispatchCdpTouchSwipe(
     type: "touchEnd",
     touchPoints: [],
   });
+  await client.detach();
 }
 
 /** Chromium-only CDP touch swipe. Returns false on WebKit (callers must not invoke CDP). */
