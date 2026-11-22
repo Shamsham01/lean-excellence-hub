@@ -1,4 +1,3 @@
-
 ### Protected ci_projects columns
 
 Since #421, changes to status, lifecycle dates, charter submission, methodology
