@@ -1,0 +1,1981 @@
+/* ---------- Page canvas: ONE background per theme (§3) ---------- */
+html:has(.leh-v6) {
+  background: #f7f8fb;
+}
+html.dark:has(.leh-v6) {
+  background: #070b14;
+}
+
+.marketing.leh-v6 {
+  position: relative;
+  isolation: isolate;
+  background: transparent;
+  color: var(--ink);
+  --background: var(--bg);
+  --foreground: var(--ink);
+  --muted-foreground: var(--ink-2);
+  --border: var(--line);
+  --ring: var(--accent);
+}
+
+.v6-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--bg);
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    var(--dot) 1px,
+    transparent 0
+  );
+  background-size: 24px 24px;
+}
+
+.v6-canvas::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("/marketing/v6/art/g4-grain.png");
+  background-size: 256px 256px;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: overlay;
+}
+
+.leh-v6 .cap-dark,
+html.dark .leh-v6 .cap-light {
+  display: none;
+}
+html.dark .leh-v6 .cap-dark {
+  display: block;
+}
+
+.v6-page {
+  position: relative;
+  overflow-x: clip;
+}
+
+.v6-page section {
+  position: relative;
+  background: transparent;
+}
+
+.v6-container {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: calc(1200px + 2 * var(--m));
+  margin-inline: auto;
+  padding-inline: var(--m);
+}
+
+.v6-page :where(h1, h2, h3, p) {
+  margin: 0;
+}
+
+/* ---------- Type ---------- */
+.v6-kicker {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--accent-text);
+  white-space: nowrap;
+}
+
+.v6-mega {
+  font-size: clamp(3rem, 1rem + 7vw, 7.5rem);
+  line-height: 0.95;
+  letter-spacing: -0.045em;
+  font-weight: 600;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.v6-display {
+  font-size: clamp(2.5rem, 1.25rem + 4.2vw, 4.5rem);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  font-weight: 600;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.v6-h2 {
+  font-size: clamp(2rem, 1.35rem + 2.4vw, 3.25rem);
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+  font-weight: 600;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.v6-h3 {
+  font-size: 1.25rem;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.v6-lede {
+  font-size: clamp(1.0625rem, 1rem + 0.3vw, 1.25rem);
+  line-height: 1.6;
+  letter-spacing: -0.005em;
+  color: var(--ink-2);
+  max-width: 56ch;
+  text-wrap: pretty;
+}
+
+.v6-small {
+  font-size: 0.875rem;
+  line-height: 1.45;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.v6-gradient-text {
+  background: linear-gradient(90deg, var(--thread-a), var(--thread-b));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.v6-head .v6-h2 {
+  margin-top: 16px;
+}
+.v6-head .v6-lede {
+  margin-top: 20px;
+}
+.v6-visual {
+  margin-top: var(--head-gap);
+}
+
+/* ---------- Buttons & links ---------- */
+.leh-v6 .v6-btn {
+  height: 48px;
+  padding-inline: 22px;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  transition:
+    transform 160ms var(--ease-out),
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+.leh-v6 .v6-btn-primary {
+  background: var(--accent);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    0 8px 20px -10px rgb(70 95 255 / 0.7);
+}
+.leh-v6 .v6-btn-primary:hover {
+  background: #3b51e6;
+}
+.leh-v6 .v6-btn-secondary {
+  background: var(--surface);
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+.leh-v6 .v6-btn-secondary:hover {
+  border-color: var(--accent);
+  background: var(--surface);
+  color: var(--ink);
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .leh-v6 .v6-btn:hover {
+    transform: translateY(-1px);
+  }
+}
+
+.leh-v6 :is(a, button, summary):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.v6-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 32px;
+}
+.v6-ctas-centre {
+  justify-content: center;
+}
+
+.v6-text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 20px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--accent-text);
+  text-decoration: none;
+}
+.v6-text-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* ---------- ProductWindow (§5.1) ---------- */
+.v6-window {
+  position: relative;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-window);
+  overflow: hidden;
+}
+.v6-window-chrome {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding-left: 14px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+}
+.v6-window-chrome i {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--line-strong);
+}
+.v6-window-body {
+  position: relative;
+  background: var(--capture-bg);
+}
+.v6-window-body img,
+.v6-handset-screen img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+@media (min-width: 768px) {
+  .v6-window {
+    border-radius: 14px;
+  }
+  .v6-window-chrome {
+    height: 36px;
+  }
+}
+
+/* ---------- Handset (§5.2) ---------- */
+.v6-handset {
+  position: relative;
+  margin: 0;
+  padding: 8px;
+  border-radius: 40px;
+  background: var(--handset-bezel);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow-window);
+}
+.v6-handset-screen {
+  position: relative;
+  border-radius: 30px;
+  overflow: hidden;
+  background: var(--capture-bg);
+}
+.v6-spark {
+  position: absolute;
+  left: 19%;
+  top: 43.6%;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--spark);
+  box-shadow:
+    0 0 0 4px rgb(245 158 11 / 0.22),
+    0 0 14px 2px rgb(245 158 11 / 0.55);
+}
+
+.v6-stage-glow {
+  position: absolute;
+  inset: -12% -8%;
+  z-index: -1;
+  background: radial-gradient(50% 50% at 50% 40%, var(--glow), transparent 70%);
+  pointer-events: none;
+}
+
+/* ---------- Thread (§8 motion 2; review r1 B4: ≥1280 only) ---------- */
+@media (max-width: 1279px) {
+  .v6-thread {
+    display: none;
+  }
+}
+.v6-thread {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+.v6-thread-track {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1;
+  opacity: 0.7;
+}
+.v6-thread-line {
+  fill: none;
+  stroke: url(#v6-thread-gradient);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+html.dark .v6-thread-line,
+html.dark .v6-thread-node circle {
+  filter: drop-shadow(0 0 6px rgb(91 113 255 / 0.6));
+}
+.v6-thread-node circle {
+  fill: var(--bg);
+  stroke: var(--line-strong);
+  stroke-width: 2;
+  transition:
+    fill 320ms ease,
+    stroke 320ms ease;
+}
+.v6-thread-stub {
+  stroke: var(--line);
+  stroke-width: 2;
+  transition: stroke 320ms ease;
+}
+.v6-thread-node.is-reached circle {
+  fill: var(--thread-a);
+  stroke: var(--thread-a);
+}
+.v6-thread-node.is-reached .v6-thread-stub {
+  stroke: var(--thread-a);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .v6-thread-node.is-reached {
+    animation: v6-pulse 600ms var(--ease-out) 1;
+  }
+}
+@keyframes v6-pulse {
+  50% {
+    transform: scale(1.4);
+  }
+}
+
+/* ---------- Reveal (§7.1) ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  html.js .leh-v6 [data-reveal] {
+    opacity: 0;
+    transform: translateY(16px);
+    transition:
+      opacity 600ms var(--ease-out),
+      transform 600ms var(--ease-out);
+  }
+  html.js .leh-v6 [data-reveal].is-in {
+    opacity: 1;
+    transform: none;
+  }
+  html.js .leh-v6 .v6-bento [data-reveal]:nth-child(2) {
+    transition-delay: 60ms;
+  }
+  html.js .leh-v6 .v6-bento [data-reveal]:nth-child(3) {
+    transition-delay: 120ms;
+  }
+}
+
+/* =========================================================
+   1 · Hero (§6.1)
+   ========================================================= */
+.v6-hero {
+  padding-top: 24px;
+}
+.v6-hero-aurora {
+  position: absolute;
+  inset: -64px 0 0;
+  pointer-events: none;
+  z-index: -1;
+  background: radial-gradient(
+    60% 50% at 70% 30%,
+    var(--aurora),
+    transparent 70%
+  );
+}
+.v6-hero-aurora::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: 70% 40%;
+  opacity: var(--art-opacity);
+  mask-image: radial-gradient(70% 70% at 65% 40%, #000 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(
+    70% 70% at 65% 40%,
+    #000 30%,
+    transparent 75%
+  );
+}
+@media (max-width: 1023px) {
+  .v6-hero-aurora::before {
+    opacity: calc(var(--art-opacity) * 0.5);
+    mask-image: radial-gradient(60% 40% at 90% 55%, #000 20%, transparent 75%);
+    -webkit-mask-image: radial-gradient(
+      60% 40% at 90% 55%,
+      #000 20%,
+      transparent 75%
+    );
+  }
+}
+/* G1 is decorative: it loads only after the page (and the LCP planner). */
+html.v6-art .v6-hero-aurora::before {
+  background-image: url("/marketing/v6/art/g1-hero-light.webp");
+}
+html.v6-art.dark .v6-hero-aurora::before {
+  background-image: url("/marketing/v6/art/g1-hero-dark.webp");
+}
+/* The art fades in from opacity 0 so it never replaces the planner as the
+   LCP element (ruling #28). An opacity fade is not motion, so it also runs
+   under reduced motion. */
+html.v6-art .v6-hero-aurora::before {
+  animation: v6-art-in 900ms ease both !important;
+}
+@keyframes v6-art-in {
+  from {
+    opacity: 0;
+  }
+}
+html.dark .v6-hero-aurora::before {
+  mix-blend-mode: screen;
+}
+
+.v6-hero-grid {
+  display: grid;
+  gap: 32px;
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .v6-hero-grid {
+    gap: 40px;
+  }
+}
+.v6-hero-copy .v6-display {
+  margin-top: 16px;
+}
+/* Review r1 M2: the H1 is held to 64 px from 1280 (3.25rem at 1024). */
+@media (min-width: 1024px) {
+  .v6-hero-copy .v6-display {
+    font-size: 3.25rem;
+  }
+}
+/* The display size is held so the H1 stays at 4 lines in the
+   narrower device-hero copy column (432 px at 1280, 486 px at 1440). */
+@media (min-width: 1280px) {
+  .v6-hero-copy .v6-display {
+    font-size: 3rem;
+  }
+}
+@media (min-width: 1440px) {
+  .v6-hero-copy .v6-display {
+    font-size: 3.375rem;
+  }
+}
+.v6-hero-copy .v6-lede {
+  margin-top: 20px;
+}
+.v6-hero-copy .v6-ctas .v6-btn {
+  flex: 1 1 100%;
+}
+@media (min-width: 640px) {
+  .v6-hero-copy .v6-ctas .v6-btn {
+    flex: 0 0 auto;
+  }
+}
+
+/* Hero devices mockup (exp/hero-devices). One themed image, no frame.
+   The source canvas is 2880×1600 with transparent padding (left 274,
+   right 55). The stage is cropped to the visible 2551×1600 so the
+   devices sit flush with the column and align with the copy top. */
+.v6-hero-composite {
+  position: relative;
+  width: 100%;
+}
+.v6-hero-devices {
+  width: 100%;
+  /* Room for the contact shadow under the devices. */
+  padding-bottom: 32px;
+}
+.v6-hero-devices-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2551 / 1600;
+  overflow: visible;
+}
+.v6-hero-devices .v6-cap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.v6-hero-devices-img {
+  position: absolute;
+  top: 0;
+  left: calc(100% * -274 / 2551);
+  width: calc(100% * 2880 / 2551);
+  max-width: none;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 18px 28px rgb(15 23 42 / 0.16))
+    drop-shadow(0 4px 10px rgb(15 23 42 / 0.08));
+}
+html.dark .leh-v6 .v6-hero-devices-img {
+  filter: drop-shadow(0 22px 36px rgb(0 0 0 / 0.5))
+    drop-shadow(0 6px 14px rgb(0 0 0 / 0.28));
+}
+@media (prefers-reduced-motion: no-preference) {
+  .v6-hero-devices {
+    animation: v6-hero-in 700ms var(--ease-out) both;
+  }
+}
+@keyframes v6-hero-in {
+  from {
+    opacity: 0;
+    translate: 0 16px;
+  }
+}
+
+/* ≥1024: copy on the left, devices on the right. The cluster bleeds
+   toward the 1360 container (80 px past the 1200 content) but stays
+   at least 16 px inside the viewport so it never clips or scrolls. */
+@media (min-width: 1024px) {
+  .v6-hero {
+    padding-top: 72px;
+  }
+  .v6-hero-grid {
+    --hero-bleed: min(
+      80px,
+      calc(var(--m) - 16px + max(0px, (100vw - (1200px + 2 * var(--m))) / 2))
+    );
+    /* Seven twelfths of the 1200 content, before the bleed. */
+    --hero-7: calc((100% - 11 * var(--gutter)) * 7 / 12 + 6 * var(--gutter));
+    display: grid;
+    /* Keep the copy at least 480 px so the H1 stays at 4 lines;
+       leftover width goes to the devices. */
+    grid-template-columns: 480px minmax(0, 1fr);
+    column-gap: var(--gutter);
+    row-gap: 0;
+    /* Heights are close once the H1 is 4 lines; top-align so the
+       kicker sits on the device tops (the shadow padding would
+       otherwise lift the cluster if we centred the boxes). */
+    align-items: start;
+  }
+  .v6-hero-copy {
+    grid-column: 1;
+  }
+  .v6-hero-composite {
+    grid-column: 2;
+    margin-inline: 0 calc(-1 * var(--hero-bleed));
+    width: auto;
+    max-width: none;
+  }
+}
+/* ≥1280: hold the visible cluster in the 760–800 px band. */
+@media (min-width: 1280px) {
+  .v6-hero-grid {
+    --hero-visible: clamp(
+      760px,
+      calc(var(--hero-7) + var(--hero-bleed)),
+      800px
+    );
+    grid-template-columns:
+      minmax(0, 1fr)
+      calc(var(--hero-visible) - var(--hero-bleed));
+  }
+}
+
+/* =========================================================
+   2 · Statement (§6.2)
+   ========================================================= */
+.v6-statement {
+  padding-block: var(--statement-y);
+}
+/* Review r1 M1: centred; two lines from 1024 up, one per phrase. */
+.v6-statement .v6-container {
+  text-align: center;
+}
+.v6-statement .v6-mega-line {
+  display: block;
+}
+@media (min-width: 1024px) {
+  .v6-statement .v6-mega {
+    font-size: min(7.5rem, 7.6vw);
+  }
+  .v6-statement .v6-mega-line {
+    white-space: nowrap;
+  }
+}
+.v6-statement-sub {
+  margin: 24px auto 0;
+  max-width: 48ch;
+}
+
+/* ---------- Sections ---------- */
+.v6-section {
+  padding-block: var(--section-y);
+  scroll-margin-top: 88px;
+}
+.v6-page section[id] {
+  scroll-margin-top: 88px;
+}
+.v6-section + .v6-section .v6-container::before {
+  content: "";
+  position: absolute;
+  left: var(--m);
+  right: var(--m);
+  top: calc(-1 * var(--section-y));
+  height: 1px;
+  background: var(--line);
+}
+
+/* =========================================================
+   3 · Golden Thread: one finding, five steps (§6.3; scroll story)
+   ≥1024 + motion: the section pins for 100svh and vertical scroll moves a
+   horizontal track, resting briefly on each step.
+   <1024: a native swipe track with the rail in sync.
+   ≥1024 + reduced motion: the tabbed 16:10 carousel.
+   ========================================================= */
+.v6-rail {
+  --rail-gap: 8px;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--rail-gap);
+}
+.v6-rail-line,
+.v6-rail-fill {
+  position: absolute;
+  left: 0;
+  top: 5px;
+  height: 2px;
+  border-radius: 2px;
+  width: calc((100% + var(--rail-gap)) / 5 * 4 + 6px);
+}
+.v6-rail-line {
+  background: var(--line);
+}
+.v6-rail-fill {
+  background: linear-gradient(90deg, var(--thread-a), var(--thread-b));
+  transform-origin: left center;
+  transform: scaleX(calc(var(--active) / 4));
+}
+.v6-rail-tab {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 44px;
+  padding: 0 0 4px;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--ink);
+}
+.v6-rail-node {
+  position: relative;
+  z-index: 1;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 2px solid var(--line-strong);
+  transition:
+    background 320ms ease,
+    border-color 320ms ease,
+    box-shadow 320ms ease;
+}
+.v6-rail-tab.is-done .v6-rail-node {
+  background: var(--thread-a);
+  border-color: var(--thread-a);
+}
+.v6-rail-tab[aria-selected="true"] .v6-rail-node {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+.v6-rail-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 12px;
+  white-space: nowrap;
+}
+.v6-rail-head .v6-kicker {
+  display: none;
+}
+.v6-rail-title {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink-3);
+  transition: color 320ms ease;
+}
+.v6-rail-tab[aria-selected="true"] .v6-rail-title,
+.v6-rail-tab:hover .v6-rail-title {
+  color: var(--ink);
+}
+.v6-rail-module {
+  display: none;
+}
+@media (min-width: 640px) {
+  .v6-rail-head .v6-kicker {
+    display: inline;
+  }
+  .v6-rail-title {
+    font-size: 0.9375rem;
+  }
+}
+
+/* <1024: native swipe track. Panels are 88% wide so the next one peeks. */
+.v6-hviewport {
+  margin-top: 24px;
+  margin-inline: calc(-1 * var(--m));
+  padding-inline: var(--m);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--m);
+  scrollbar-width: none;
+}
+.v6-hviewport::-webkit-scrollbar {
+  display: none;
+}
+.v6-htrack {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gutter);
+}
+.v6-htrack::after {
+  content: "";
+  flex: 0 0 1px;
+}
+.v6-hpanel {
+  flex: 0 0 88%;
+  min-width: 0;
+  scroll-snap-align: start;
+}
+.v6-hpanel-desk,
+.v6-carousel-nav {
+  display: none;
+}
+.v6-step .v6-h3 {
+  margin-top: 8px;
+}
+.v6-step .v6-small {
+  margin-top: 6px;
+  max-width: 34rem;
+}
+.v6-step-window {
+  margin-top: 20px;
+}
+/* Swipe windows (<1024): the phone crop at its natural width (never wider
+   than its 2x export), its bottom under the 64 px fade. */
+.v6-step-window {
+  max-width: var(--cap-w);
+}
+.v6-step-body {
+  overflow: hidden;
+  background: var(--screen);
+}
+.v6-step-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.v6-step-body .v6-frame-fade {
+  position: absolute;
+  inset: auto 0 0;
+  height: 64px;
+  background: linear-gradient(to bottom, transparent, var(--screen));
+  pointer-events: none;
+}
+/* ATELIER r2 B1: 768-1023 stacks like 390 — label, heading and line above,
+   the window below at full panel width. The crop sits centred at up to
+   1.25x its natural width on the screen colour; the window is sized so the
+   rail, panel and fade fit one screen under the header. Only the active
+   panel's text shows, so the next panel peeks in by its window edge. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .v6-step-window {
+    max-width: none;
+    width: 100%;
+  }
+  .v6-step-body {
+    height: clamp(320px, calc(100svh - 64px - 248px), 760px);
+  }
+  .v6-step-shot {
+    width: min(100%, calc(var(--cap-w) * 1.25));
+    margin-inline: auto;
+  }
+  .v6-hpanel .v6-step > :not(.v6-step-window) {
+    transition: opacity 240ms var(--ease-out);
+  }
+  .v6-hpanel:not(.is-active) .v6-step > :not(.v6-step-window) {
+    opacity: 0;
+  }
+}
+
+/* The desktop window (pin and tabs). */
+.v6-frame-shot {
+  position: relative;
+}
+.v6-frame-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.v6-frame-shot.is-phone {
+  max-width: 100%;
+  height: 100%;
+  margin-inline: auto;
+  padding-top: 24px;
+  overflow: hidden;
+}
+.v6-frame-fade {
+  position: absolute;
+  inset: auto 0 0;
+  height: 64px;
+  background: linear-gradient(to bottom, transparent, var(--screen));
+  pointer-events: none;
+}
+
+@media (min-width: 1024px) {
+  .v6-rail {
+    --rail-gap: var(--gutter);
+  }
+  .v6-rail-head {
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .v6-rail-title {
+    font-size: 1.25rem;
+  }
+  .v6-rail-module {
+    display: block;
+    margin-top: 4px;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    font-weight: 500;
+    color: var(--ink-3);
+  }
+  .v6-hviewport {
+    margin-inline: 0;
+    padding-inline: 0;
+    overflow: visible;
+    scroll-snap-type: none;
+  }
+  .v6-hpanel-swipe {
+    display: none;
+  }
+  .v6-hpanel-desk {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+  .v6-hpanel-body {
+    background: var(--screen);
+    overflow: hidden;
+  }
+}
+
+/* ≥1024 + motion: pinned horizontal story. */
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+  .v6-page section.v6-why {
+    padding-block: 0;
+    /* Anchors and snap land on the pin start. */
+    scroll-margin-top: 0;
+  }
+  .v6-why-track {
+    /* One screen pinned, plus ~0.7 screen of scroll per step. */
+    height: calc(100svh + 4 * 70svh);
+  }
+  .v6-why-stage {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100svh;
+    box-sizing: border-box;
+    padding-top: calc(64px + clamp(16px, 3svh, 32px));
+    padding-bottom: clamp(20px, 3.5svh, 40px);
+  }
+  .v6-why-inner {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+  }
+  /* Kicker + H2 left, lede right: one compact header band. */
+  .v6-why .v6-head {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--gutter);
+    align-items: end;
+  }
+  .v6-why .v6-head .v6-kicker {
+    grid-column: 1 / -1;
+  }
+  .v6-why .v6-head .v6-h2 {
+    grid-column: 1 / span 6;
+    margin-top: 14px;
+  }
+  .v6-why .v6-head .v6-lede {
+    grid-column: 7 / -1;
+    margin-top: 0;
+    max-width: none;
+  }
+  .v6-why-visual {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+    margin-top: clamp(20px, 3.5svh, 36px);
+  }
+  .v6-why .v6-carousel {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .v6-why .v6-rail-head {
+    margin-top: 12px;
+  }
+  .v6-why .v6-hviewport {
+    flex: 1;
+    min-height: 0;
+    margin-top: clamp(14px, 2.5svh, 24px);
+  }
+  .v6-why .v6-htrack {
+    align-items: stretch;
+    height: 100%;
+    /* The next panel waits beyond the viewport edge: no slivers. */
+    column-gap: calc(50vw - 50% + 96px);
+    will-change: transform;
+  }
+  .v6-why .v6-htrack::after {
+    display: none;
+  }
+  .v6-why .v6-hpanel {
+    flex: 0 0 100%;
+    display: flex;
+    align-items: flex-start;
+    height: 100%;
+  }
+  /* The window fills the height left over, never taller than its 16:10
+     capture; the capture keeps its width (UI text ~12 px) and runs under a
+     64 px fade at the bottom. */
+  .v6-why .v6-hpanel-desk {
+    height: 100%;
+    max-height: calc(min(1200px, 100vw - 2 * var(--m)) * 0.625);
+  }
+  .v6-why .v6-hpanel-body {
+    flex: 1;
+    min-height: 0;
+  }
+}
+
+/* ≥1024 + reduced motion: the tabbed carousel (ATELIER r3: 16:10 stage). */
+@media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
+  .v6-hviewport {
+    margin-top: 32px;
+  }
+  .v6-htrack {
+    display: grid;
+  }
+  .v6-hpanel {
+    grid-area: 1 / 1;
+    visibility: hidden;
+  }
+  .v6-hpanel.is-active {
+    visibility: visible;
+  }
+  .v6-hpanel-body {
+    aspect-ratio: 16 / 10;
+  }
+  .v6-hpanel-body:not([data-wide]) .v6-frame-fade {
+    display: none;
+  }
+  .v6-carousel-nav {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+  }
+}
+.v6-round-button {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    transform 160ms var(--ease-out);
+}
+.v6-round-button:hover {
+  border-color: var(--accent);
+}
+
+/* =========================================================
+   4 · Action Card (§6.4; scroll story): the phone turns to the action.
+   ≥768 + motion: pinned for one extra screen. <768: scrubs in passing.
+   ========================================================= */
+.v6-action-grid {
+  display: grid;
+  gap: var(--head-gap);
+}
+.v6-action-copy .v6-h2 {
+  margin-top: 16px;
+}
+.v6-action-copy .v6-lede {
+  margin-top: 20px;
+}
+.v6-action-visual {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+.v6-scrub-phone {
+  position: relative;
+  height: min(560px, 72svh);
+  aspect-ratio: 632 / 1280;
+}
+.v6-scrub-still,
+.v6-scrub-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+/* Theme picks the still via .cap-*; state picks which still is seen. No JS:
+   the final pose. JS + motion: the first pose until the frames draw. */
+.v6-scrub-still.is-first,
+.v6-scrub-canvas {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  html.js .v6-scrub-still.is-first {
+    opacity: 1;
+  }
+  html.js .v6-scrub-still.is-poster,
+  html.js .v6-scrub-phone[data-ready] .v6-scrub-still.is-first {
+    opacity: 0;
+  }
+  html.js .v6-scrub-phone[data-ready] .v6-scrub-canvas {
+    opacity: 1;
+  }
+}
+.v6-scrub-shadow {
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  bottom: -6px;
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(15 23 42 / 0.16), transparent);
+  pointer-events: none;
+}
+html.dark .v6-scrub-shadow {
+  background: radial-gradient(closest-side, rgb(0 0 0 / 0.6), transparent);
+}
+
+@media (min-width: 768px) {
+  .v6-action-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--gutter);
+    align-items: center;
+  }
+  .v6-action-copy {
+    grid-column: 1 / span 5;
+  }
+  .v6-action-visual {
+    grid-column: 6 / -1;
+  }
+}
+@media (min-width: 1024px) {
+  .v6-action-copy {
+    grid-column: 1 / span 6;
+  }
+  .v6-action-visual {
+    grid-column: 7 / -1;
+  }
+}
+@media (min-width: 1280px) {
+  .v6-action-copy {
+    grid-column: 1 / span 5;
+  }
+}
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .v6-page section.v6-action {
+    padding-block: 0;
+    scroll-margin-top: 0;
+  }
+  .v6-scrub-track {
+    height: 200svh;
+  }
+  .v6-scrub-stage {
+    position: sticky;
+    top: 0;
+    display: flex;
+    align-items: center;
+    height: 100svh;
+    box-sizing: border-box;
+    padding-top: 64px;
+  }
+  .v6-scrub-stage > .v6-container {
+    width: 100%;
+  }
+  .v6-scrub-phone {
+    height: min(640px, 100svh - 64px - 96px);
+  }
+  /* The divider sits on the section edge, not on the pinned container. */
+  .v6-action .v6-container::before {
+    display: none;
+  }
+  .v6-action::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: max(var(--m), (100% - 1200px) / 2);
+    right: max(var(--m), (100% - 1200px) / 2);
+    height: 1px;
+    background: var(--line);
+  }
+}
+
+/* Lenis (≥1024, fine pointer, motion allowed). */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+
+/* =========================================================
+   5 · Platform: maturity spotlight + bento (§6.5)
+   ========================================================= */
+.v6-tile {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow-tile);
+}
+
+.v6-maturity {
+  display: grid;
+  gap: 40px;
+  padding: 24px;
+  border-radius: 24px;
+}
+.v6-maturity-radar .v6-small {
+  margin-top: 4px;
+}
+/* Review r1 M4: 320 (390) / 360 (768) / 400 (1280) / 440 (1440). */
+.v6-radar {
+  margin: 24px auto 0;
+  width: 100%;
+  max-width: 320px;
+}
+.v6-radar-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.v6-radar-grid polygon,
+.v6-radar-grid line {
+  fill: none;
+  stroke: var(--radar-grid);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.v6-radar-area {
+  fill: var(--radar-fill);
+  stroke: var(--radar-stroke);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.v6-radar-dot {
+  fill: var(--radar-stroke);
+}
+.v6-radar-labels text {
+  font-size: 22px;
+  font-weight: 500;
+  fill: var(--radar-label);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+@media (prefers-reduced-motion: no-preference) {
+  html.js .v6-maturity .v6-radar-shape {
+    transform: scale(0);
+    transition: transform 900ms var(--ease-out);
+  }
+  html.js .v6-maturity.is-drawn .v6-radar-shape {
+    transform: scale(1);
+  }
+  html.js .v6-maturity .v6-pillar-bar i {
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 900ms var(--ease-out) 120ms;
+  }
+  html.js .v6-maturity.is-drawn .v6-pillar-bar i {
+    transform: none;
+  }
+}
+
+.v6-score {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.v6-score-value {
+  font-size: clamp(2.5rem, 1.25rem + 4.2vw, 4.5rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.v6-score-max {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+.v6-pillars {
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.v6-pillars li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 16px;
+  row-gap: 10px;
+  padding-block: 14px;
+  border-top: 1px solid var(--line);
+}
+.v6-pillars li:last-child {
+  border-bottom: 1px solid var(--line);
+}
+.v6-pillar-name {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+.v6-pillar-score {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.9375rem;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.v6-pillar-bar {
+  grid-column: 1 / -1;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.v6-pillar-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--accent);
+}
+
+@media (min-width: 640px) {
+  .v6-maturity {
+    padding: 32px;
+  }
+  .v6-radar {
+    max-width: 360px;
+  }
+}
+/* ≥1024: the card splits 50/50, radar and scores side by side, centred. */
+@media (min-width: 1024px) {
+  .v6-maturity {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 48px;
+    align-items: center;
+    padding: 48px;
+  }
+  .v6-radar {
+    margin-top: 32px;
+    max-width: 400px;
+  }
+}
+@media (min-width: 1440px) {
+  .v6-radar {
+    max-width: 440px;
+  }
+}
+
+/* Bento */
+.v6-bento {
+  display: grid;
+  gap: var(--bento-gap);
+  margin-top: var(--bento-gap);
+  grid-auto-flow: dense;
+}
+.v6-bento-row {
+  display: contents;
+}
+/* ATELIER r3 M1: every tile is identical — the title block and the window
+   share one 24 px inset; the window is calc(100% - 48px) wide, starts 24 px
+   under the title block and bleeds off the bottom under a 64 px fade. The
+   media box is 0.6 × the window width (the shortest capture, Training, still
+   runs past it), so all four tiles crop at the same height. Soft drop shadow
+   only — no side haze. */
+.v6-bento-tile {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 24px 0 0;
+  transition: border-color 160ms ease;
+}
+.v6-bento-tile.is-text-only {
+  padding-bottom: 24px;
+}
+.v6-bento-tile .v6-tile-head {
+  padding-inline: 24px;
+}
+.v6-tile-head .v6-small {
+  margin-top: 4px;
+}
+.v6-tile-media {
+  position: relative;
+  margin: 24px 24px 0;
+  aspect-ratio: 5 / 3;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 64px), transparent);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 calc(100% - 64px),
+    transparent
+  );
+}
+/* ATELIER r4 P1: the phone crop below 1024; the 640 CSS @2x -d capture
+   from 1024 when it exists. */
+.v6-tile-window.is-desktop {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .v6-bento-tile.has-desktop .v6-tile-window.is-phone {
+    display: none;
+  }
+  .v6-bento-tile.has-desktop .v6-tile-window.is-desktop {
+    display: block;
+  }
+  /* The media box is 0.6 × the window width, but never taller than the
+     row's shortest -d window (--row-hr = its height / width), so the short
+     Training capture leaves no gap and both tiles in a row match. */
+  .v6-bento-tile.has-desktop {
+    container-type: inline-size;
+  }
+  .v6-bento-tile.has-desktop .v6-tile-media {
+    aspect-ratio: auto;
+    height: min(
+      (100cqw - 48px) * 0.6,
+      (100cqw - 50px) * var(--row-hr, 0.6) + 38px
+    );
+  }
+  /* The row's shortest capture fits whole: no fade, it sits on the tile's
+     bottom edge. */
+  .v6-bento-tile.is-row-short .v6-tile-media {
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+  .v6-bento-tile.is-row-short .v6-tile-window {
+    border-bottom: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+}
+/* ATELIER r4 P1: 768-1023 stays one column, each tile split 5/7 like the
+   steps — title and line left, the phone window right, its top on the
+   title's top, bleeding off the tile bottom under the fade. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .v6-bento-tile:not(.is-text-only) {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--gutter);
+    align-items: start;
+    padding: 24px 24px 0;
+  }
+  .v6-bento-tile .v6-tile-head {
+    grid-column: 1 / span 5;
+    padding-inline: 0;
+  }
+  .v6-bento-tile .v6-tile-media {
+    grid-column: 6 / -1;
+    grid-row: 1;
+    margin: 0;
+  }
+}
+.v6-tile-window {
+  width: 100%;
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.06),
+    0 6px 16px -8px rgb(15 23 42 / 0.14);
+}
+@media (hover: hover) and (pointer: fine) {
+  .v6-bento-tile:hover {
+    border-color: var(--line-strong);
+  }
+}
+
+@media (min-width: 1024px) {
+  .v6-bento {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+  /* ATELIER r2 N2: 6/6 and 6/6 — every tile holds one 390 px capture, so
+     equal cells balance best. */
+  .v6-bento-row .v6-bento-tile {
+    grid-column: span 6;
+  }
+  /* A row left with one tile takes the full width. */
+  .v6-bento-row .v6-bento-tile:only-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* =========================================================
+   6 · LeanAI (§6.6)
+   ========================================================= */
+.v6-leanai-grid {
+  display: grid;
+  gap: var(--head-gap);
+}
+.v6-beats {
+  display: grid;
+  gap: 24px;
+  margin: var(--head-gap) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.v6-beats li {
+  display: grid;
+  gap: 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.v6-beats li .v6-kicker {
+  color: var(--ink-3);
+  transition: color 320ms ease;
+}
+.v6-beats li .v6-h3 {
+  color: var(--ink-2);
+  transition: color 320ms ease;
+}
+.v6-beats li p {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+.v6-beats li.is-active .v6-kicker {
+  color: var(--accent-text);
+}
+.v6-beats li.is-active .v6-h3 {
+  color: var(--ink);
+}
+.v6-leanai-visual {
+  position: relative;
+}
+/* Base: the proposals focus crop, never narrower than 350 px. */
+.v6-leanai-base .v6-window {
+  min-width: min(350px, 100%);
+  max-width: 560px;
+  margin-inline: auto;
+}
+/* Overlay (≥1024 only): the LeanAI panel fragment in its own window. */
+.v6-leanai-overlay {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .v6-leanai-base .v6-window {
+    max-width: none;
+  }
+  .v6-leanai-overlay {
+    display: block;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 55%;
+    /* The fragment is 760 px wide: never upscale it. */
+    max-width: 760px;
+    z-index: 1;
+  }
+  .v6-leanai-visual.has-overlay .v6-leanai-overlay {
+    /* Anchored bottom-right, 48 px outward on both axes so it overhangs. */
+    right: -48px;
+    bottom: -48px;
+  }
+  html:not(.dark) .leh-v6 .v6-leanai-overlay .v6-window {
+    border: 1px solid var(--line-strong);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  html.js .leh-v6 .v6-leanai-base[data-reveal],
+  html.js .leh-v6 .v6-leanai-overlay[data-reveal] {
+    transform: translateY(12px);
+  }
+  html.js .leh-v6 .v6-leanai-overlay[data-reveal] {
+    transition-delay: 120ms;
+  }
+  html.js .leh-v6 .v6-leanai-base[data-reveal].is-in,
+  html.js .leh-v6 .v6-leanai-overlay[data-reveal].is-in {
+    transform: none;
+  }
+}
+/* Beats stay one column below 1024: one left edge (ruling #18). */
+/* ATELIER r2 N4: the desktop composite reads under 10 px below 768, so it
+   is replaced there by leanai-proposals-m (or by nothing until it exists). */
+@media (max-width: 767px) {
+  .v6-leanai-visual {
+    display: none;
+  }
+}
+@media (min-width: 768px) {
+  .v6-leanai-mobile {
+    display: none;
+  }
+}
+@media (min-width: 1024px) {
+  .v6-leanai-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--gutter);
+    align-items: start;
+  }
+  .v6-leanai-copy {
+    grid-column: 1 / span 5;
+  }
+  .v6-leanai-visual {
+    grid-column: 7 / -1;
+    position: sticky;
+    top: 120px;
+  }
+}
+/* ATELIER r3 n2. */
+@media (min-width: 1280px) {
+  .v6-leanai-visual {
+    top: 96px;
+  }
+}
+
+/* =========================================================
+   7 · FAQ (§6.7)
+   ========================================================= */
+.v6-faq-grid {
+  display: grid;
+  gap: 40px;
+}
+.v6-faq-head .v6-h2 {
+  margin-top: 16px;
+}
+.v6-faq-item {
+  border-top: 1px solid var(--line);
+}
+.v6-faq-item:last-child {
+  border-bottom: 1px solid var(--line);
+}
+.v6-faq-item summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding-block: 20px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--ink);
+}
+.v6-faq-item summary::-webkit-details-marker {
+  display: none;
+}
+.v6-faq-icon {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  color: var(--ink-3);
+  transition: transform 320ms var(--ease-out);
+}
+.v6-faq-item[open] .v6-faq-icon {
+  transform: rotate(45deg);
+  color: var(--accent-text);
+}
+.v6-faq-answer {
+  padding-bottom: 20px;
+  max-width: 64ch;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+.v6-faq-answer .v6-text-link {
+  margin-top: 8px;
+}
+@media (min-width: 1024px) {
+  .v6-faq-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--gutter);
+    align-items: start;
+  }
+  .v6-faq-head {
+    grid-column: 1 / span 4;
+    position: sticky;
+    top: 120px;
+  }
+  .v6-faq-list {
+    grid-column: 6 / -1;
+  }
+}
+
+/* =========================================================
+   8 · Close (§6.8)
+   ========================================================= */
+.v6-close {
+  --close-pad: 128px;
+  padding-block: var(--close-pad);
+  text-align: center;
+}
+@media (min-width: 640px) {
+  .v6-close {
+    --close-pad: 160px;
+  }
+}
+@media (min-width: 1280px) {
+  .v6-close {
+    --close-pad: 200px;
+  }
+}
+.v6-close-art {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: url("/marketing/v6/art/g2-converge-light.webp");
+  background-size: 1400px 788px;
+  background-position: calc(50% - 49px) calc(var(--close-pad) + 48px - 425px);
+  background-repeat: no-repeat;
+  /* ATELIER r3 n1: the art's ground is levelled to pure white (light,
+     multiply) and pure black (dark, screen) so it is a no-op on --bg, and
+     the mask feathers to zero inside the image bounds — no visible ellipse. */
+  opacity: 0.65;
+  mix-blend-mode: multiply;
+  mask-image: radial-gradient(
+    700px 360px at 50% calc(var(--close-pad) + 48px),
+    #000 0%,
+    rgb(0 0 0 / 0.6) 35%,
+    rgb(0 0 0 / 0.22) 62%,
+    rgb(0 0 0 / 0.06) 80%,
+    transparent 92%
+  );
+  -webkit-mask-image: radial-gradient(
+    700px 360px at 50% calc(var(--close-pad) + 48px),
+    #000 0%,
+    rgb(0 0 0 / 0.6) 35%,
+    rgb(0 0 0 / 0.22) 62%,
+    rgb(0 0 0 / 0.06) 80%,
+    transparent 92%
+  );
+}
+html.dark .v6-close-art {
+  background-image: url("/marketing/v6/art/g2-converge-dark.webp");
+  mix-blend-mode: screen;
+  opacity: 0.8;
+}
+.v6-close-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.v6-close-mark {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  margin-bottom: 40px;
+}
+.v6-close-mark::before {
+  content: "";
+  position: absolute;
+  inset: -28px;
+  border-radius: 999px;
+  background: radial-gradient(closest-side, var(--accent-soft), transparent);
+  z-index: -1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .v6-close-mark::before {
+    animation: v6-breathe 2.4s ease-in-out 1;
+  }
+}
+@keyframes v6-breathe {
+  50% {
+    transform: scale(1.18);
+    opacity: 0.7;
+  }
+}
+.v6-close-icon {
+  width: 96px;
+  height: 96px;
+  border-radius: 22px;
+}
+.v6-close-title {
+  margin-top: 16px;
+}
+@media (min-width: 640px) {
+  .v6-close-title span {
+    display: block;
+  }
+}
+.v6-close .v6-lede {
+  margin-top: 20px;
+}
+
+/* =========================================================
+   Header + footer inside the v6 shell
+   ========================================================= */
+.leh-v6 .marketing-header-bar {
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: color-mix(in oklab, var(--bg) 80%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid transparent;
+  box-shadow: none;
+}
+.leh-v6 .marketing-header[data-scrolled="true"] .marketing-header-bar {
+  border-bottom-color: var(--line);
+}
+.leh-v6 .marketing-header .v6-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+}
+.leh-v6 .marketing-mobile-panel {
+  background: var(--bg);
+  border-color: var(--line);
+}
+.leh-v6 .marketing-nav-link {
+  color: var(--ink-2);
+}
+.leh-v6 .marketing-nav-link:hover {
+  color: var(--ink);
+}
+
+.leh-v6 .v6-footer {
+  border-top: 0;
+  padding-block: 0 32px;
+}
+.leh-v6 .v6-footer .v6-container {
+  padding-top: 48px;
+}
+.leh-v6 .v6-footer .v6-container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: var(--m);
+  right: var(--m);
+  height: 1px;
+  background: var(--line);
+}
+.v6-footer-grid {
+  display: grid;
+  gap: 32px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.v6-footer-brand {
+  grid-column: 1 / -1;
+}
+.v6-footer-brand p {
+  margin-top: 12px;
+  max-width: 28ch;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+@media (min-width: 768px) {
+  .v6-footer-grid {
+    grid-template-columns: 2fr repeat(3, minmax(0, 1fr));
+  }
+  .v6-footer-brand {
+    grid-column: auto;
+  }
+}
+.v6-footer-col h2 {
+  margin: 0;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+.v6-footer-col ul {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+.v6-footer-col a {
+  font-size: 0.875rem;
+  color: var(--ink-2);
+  text-decoration: none;
+}
+.v6-footer-col a:hover {
+  color: var(--ink);
+}
+.v6-footer-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 48px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+}
+
+/* ---------- Reduced motion (§7.7) ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .leh-v6 *,
+  .leh-v6 *::before,
+  .leh-v6 *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ---------- Finding story ≥1024: frameless window, tile lifted in place
+   (ATELIER 2b). The window is the capture with a 1 px ring and the accent
+   glow; once a step settles the rest of the screen dims a touch and its
+   key tile rises 4% on the same pixels. Positions are `cqw` of the window,
+   so the tile matches the capture at every width and in both themes. */
+@media (min-width: 1024px) {
+  .v6-hpanel-desk.v6-window {
+    --lift-dim: 20%;
+    --lift-ring: rgb(70 95 255 / 0.2);
+    --lift-shadow:
+      0 1px 2px rgb(15 23 42 / 0.06), 0 10px 24px -12px rgb(15 23 42 / 0.16),
+      0 28px 64px -24px rgb(15 23 42 / 0.24);
+    position: relative;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    container-type: inline-size;
+  }
+  html.dark .leh-v6 .v6-hpanel-desk.v6-window {
+    --lift-dim: 28%;
+    --lift-ring: rgb(70 95 255 / 0.5);
+    --lift-shadow:
+      0 12px 28px -10px rgb(0 0 0 / 0.6), 0 32px 72px -20px rgb(0 0 0 / 0.75),
+      0 0 40px -12px rgb(70 95 255 / 0.35);
+  }
+  .v6-hpanel-desk.v6-window::before {
+    content: "";
+    position: absolute;
+    inset: -56px 0;
+    z-index: -1;
+    background: radial-gradient(
+      60% 55% at 50% 55%,
+      var(--glow),
+      transparent 70%
+    );
+    pointer-events: none;
+  }
+  .v6-hpanel-desk .v6-hpanel-body {
+    border-radius: 14px;
+    box-shadow:
+      0 0 0 1px var(--line),
+      var(--shadow-window);
+  }
+  .v6-hpanel-desk .v6-frame-shot:not(.is-phone) {
+    margin-top: calc(var(--sy, 0) * -1cqw);
+  }
+  .v6-frame-dim {
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, var(--screen) var(--lift-dim), transparent);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 400ms var(--ease-out);
+  }
+  .v6-lift {
+    position: absolute;
+    left: calc(var(--lx) * 1cqw);
+    top: calc(var(--ly) * 1cqw);
+    z-index: 1;
+    width: calc(var(--lw) * 1cqw);
+    height: calc(var(--lh) * 1cqw);
+    border-radius: calc(var(--lr) * 1cqw);
+    box-shadow:
+      0 0 0 1px var(--lift-ring),
+      var(--lift-shadow);
+    opacity: 0;
+    transform: scale(1);
+    transform-origin: 50% 50%;
+    pointer-events: none;
+    transition:
+      opacity 400ms var(--ease-out),
+      transform 400ms var(--ease-out);
+  }
+  .v6-lift-clip {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: inherit;
+  }
+  .v6-lift-shot {
+    position: absolute;
+    left: calc(var(--lx) * -1cqw);
+    top: calc(var(--ly0) * -1cqw);
+    width: 100cqw;
+  }
+  .v6-lift-shot img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .v6-carousel[data-mode="pin"] .v6-hpanel[data-lifted][data-fit] .v6-lift,
+  .v6-carousel[data-mode="tabs"] .v6-hpanel.is-active[data-fit] .v6-lift {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+  .v6-carousel[data-mode="pin"] .v6-hpanel[data-lifted][data-fit] .v6-frame-dim,
+  .v6-carousel[data-mode="tabs"] .v6-hpanel.is-active[data-fit] .v6-frame-dim {
+    opacity: 1;
+  }
+}
+@media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
+  .v6-lift,
+  .v6-frame-dim {
+    transition: none;
+  }
+}

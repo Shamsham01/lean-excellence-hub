@@ -27,13 +27,13 @@ const PRIORITY_LABELS: Record<ActionPriority, string> = {
   urgent: "Urgent",
 };
 
-const STATUS_BADGE_VARIANTS: Record<
-  ActionStatus,
-  "default" | "secondary" | "outline" | "destructive"
-> = {
+type ActionStatusBadgeVariant =
+  "default" | "secondary" | "outline" | "success" | "destructive";
+
+const STATUS_BADGE_VARIANTS: Record<ActionStatus, ActionStatusBadgeVariant> = {
   open: "outline",
   in_progress: "default",
-  completed: "secondary",
+  completed: "success",
   verified: "secondary",
   cancelled: "destructive",
 };
@@ -54,7 +54,7 @@ export function actionPriorityLabel(priority: string): string {
 
 export function actionStatusBadgeVariant(
   status: string,
-): "default" | "secondary" | "outline" | "destructive" {
+): ActionStatusBadgeVariant {
   return STATUS_BADGE_VARIANTS[status as ActionStatus] ?? "secondary";
 }
 

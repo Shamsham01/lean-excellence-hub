@@ -1,9 +1,10 @@
-import { SkillCreateForm } from "@/components/skills/skill-create-form";
+import { SkillCreateDialog } from "@/components/skills/skill-create-dialog";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { SKILLS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 type PageProps = {
@@ -11,6 +12,14 @@ type PageProps = {
 };
 
 export default async function SkillsCatalogPage({ searchParams }: PageProps) {
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: SKILLS_PERMISSIONS.read,
+    module: "skills",
+    title: "Skills",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const query = await searchParams;
   const newRequested = Array.isArray(query.new) ? query.new[0] : query.new;
   const supabase = await createServerSupabaseClient();
@@ -33,7 +42,7 @@ export default async function SkillsCatalogPage({ searchParams }: PageProps) {
     .limit(1);
 
   const isEmpty = !skills?.length;
-  const showCreateForm = canManageCatalog && (newRequested === "1" || false);
+  const openCreateDialog = canManageCatalog && newRequested === "1";
   const draftScaleId = draftScales?.[0]?.scale_id ?? null;
   const scaleHref = draftScaleId
     ? `/platform/skills/scales/${draftScaleId}`
@@ -46,18 +55,15 @@ export default async function SkillsCatalogPage({ searchParams }: PageProps) {
     >
       <PageHeader
         title="Skills catalogue"
-        description="The capabilities people in this organisation need."
         actions={
           <div className="flex flex-wrap gap-2">
-            {canManageCatalog && !showCreateForm ? (
-              <Button size="sm" asChild>
-                <AppLink
-                  href="/platform/skills/catalog?new=1"
-                  data-testid="skills-catalog-new-link"
-                >
-                  New skill
-                </AppLink>
-              </Button>
+            {canManageCatalog && !isEmpty ? (
+              <SkillCreateDialog
+                existingCodes={(skills ?? []).map((skill) => skill.code)}
+                hasPublishedScale={(publishedScales ?? []).length > 0}
+                scaleHref={scaleHref}
+                defaultOpen={openCreateDialog}
+              />
             ) : null}
             <Button variant="outline" size="sm" asChild>
               <AppLink
@@ -71,18 +77,7 @@ export default async function SkillsCatalogPage({ searchParams }: PageProps) {
         }
       />
 
-      {showCreateForm ? (
-        <section className="flex max-w-xl flex-col gap-4">
-          <h2 className="typography-section-title">New skill</h2>
-          <SkillCreateForm
-            existingCodes={(skills ?? []).map((skill) => skill.code)}
-            hasPublishedScale={(publishedScales ?? []).length > 0}
-            scaleHref={scaleHref}
-          />
-        </section>
-      ) : null}
-
-      {isEmpty && !showCreateForm ? (
+      {isEmpty ? (
         <section
           className="flex max-w-xl flex-col gap-3"
           data-testid="skills-catalog-empty"
@@ -93,11 +88,12 @@ export default async function SkillsCatalogPage({ searchParams }: PageProps) {
             you connect it to a job function.
           </p>
           {canManageCatalog ? (
-            <Button className="self-start" asChild>
-              <AppLink href="/platform/skills/catalog?new=1">
-                Create skill
-              </AppLink>
-            </Button>
+            <SkillCreateDialog
+              existingCodes={[]}
+              hasPublishedScale={(publishedScales ?? []).length > 0}
+              scaleHref={scaleHref}
+              defaultOpen={openCreateDialog}
+            />
           ) : null}
         </section>
       ) : null}

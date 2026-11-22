@@ -1,5 +1,6 @@
 import type { ExternalWebSource } from "@/modules/leanai-context/assistant/external-sources";
 import { sanitiseExternalWebSources } from "@/modules/leanai-context/assistant/external-sources";
+import { buildOperationalRetrievalOpenAiTools } from "@/platform/ai/tools/operational-retrieval-schemas";
 
 export const OPENAI_WEB_SEARCH_TOOL = {
   type: "web_search",
@@ -16,7 +17,13 @@ export const WEB_SEARCH_SOURCES_INCLUDE =
 export function workspaceAssistantTools(
   webSearchEnabled: boolean,
 ): Array<Record<string, unknown>> {
-  return webSearchEnabled ? [{ ...OPENAI_WEB_SEARCH_TOOL }] : [];
+  const tools: Array<Record<string, unknown>> = [
+    ...buildOperationalRetrievalOpenAiTools(),
+  ];
+  if (webSearchEnabled) {
+    tools.push({ ...OPENAI_WEB_SEARCH_TOOL });
+  }
+  return tools;
 }
 
 export function providerToolsIncludeWebSearch(

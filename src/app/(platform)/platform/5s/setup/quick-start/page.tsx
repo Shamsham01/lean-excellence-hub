@@ -2,7 +2,10 @@ import { DeployQuickStartForm } from "@/components/module-setup/deploy-quick-sta
 import { QuickStartPreview } from "@/components/module-setup/quick-start-preview";
 import { AppLink } from "@/components/ui/app-link";
 import { FIVE_S_PERMISSIONS } from "@/modules/operational/permissions";
-import { buildSiteScopedUnitOptions } from "@/modules/organisation/site-context";
+import {
+  buildSiteScopedUnitOptions,
+  filterUnitsForActiveSite,
+} from "@/modules/organisation/site-context";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { formatFiveSScaleRange } from "@/modules/5s/scoring-scale";
@@ -28,6 +31,9 @@ export default async function FiveSQuickStartPage() {
   );
   const { units, context } = await loadActiveSiteContext();
   const creationUnits = buildSiteScopedUnitOptions(units, context, {
+    requireConcreteSite: true,
+  });
+  const hierarchyUnits = filterUnitsForActiveSite(units, context, {
     requireConcreteSite: true,
   });
   const counts = fiveSTemplateCounts(template);
@@ -73,6 +79,7 @@ export default async function FiveSQuickStartPage() {
             <DeployQuickStartForm
               action={deployFiveSQuickStart}
               templateKey={template.key}
+              hierarchyUnits={hierarchyUnits}
               units={creationUnits.units}
               requiresSiteSelection={creationUnits.requiresSiteSelection}
               showThreshold

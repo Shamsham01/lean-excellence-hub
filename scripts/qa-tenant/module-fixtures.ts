@@ -313,6 +313,63 @@ export async function seedCookieWorksModuleFixtures(options: {
     target_standard_version_id: fiveSVersion.id,
   });
 
+  const bodminFiveSStandardId = (await expectRpc(
+    options.ciManagerClient,
+    "create_five_s_standard_draft",
+    {
+      target_display_name: "QA Bodmin 5S Standard",
+      target_description: "Site-scoped Bodmin 5S for manager execution tests.",
+      target_threshold_percent: 90,
+    },
+  )) as string;
+
+  const { data: bodminFiveSVersion } = await options.ciManagerClient
+    .from("five_s_standard_versions")
+    .select("id")
+    .eq("standard_id", bodminFiveSStandardId)
+    .eq("version_number", 1)
+    .single();
+
+  if (!bodminFiveSVersion?.id) {
+    throw new Error("Bodmin 5S version missing for QA fixtures.");
+  }
+
+  const bodminSectionId = (await expectRpc(
+    options.ciManagerClient,
+    "add_five_s_section",
+    {
+      target_standard_version_id: bodminFiveSVersion.id,
+      target_title: "Sort",
+      target_position: 1,
+    },
+  )) as string;
+
+  await expectRpc(options.ciManagerClient, "add_five_s_question", {
+    target_standard_version_id: bodminFiveSVersion.id,
+    target_section_id: bodminSectionId,
+    target_question_type: "yes_no",
+    target_prompt: "Meets Bodmin standard?",
+    target_position: 1,
+    target_is_required: true,
+    target_allows_not_applicable: false,
+    target_contributes_to_score: true,
+    target_scoring_metadata: { type: "yes_no", yes_value: 100, no_value: 0 },
+    target_weight: 1,
+  });
+
+  await expectRpc(
+    options.ciManagerClient,
+    "set_five_s_standard_applicable_units",
+    {
+      target_standard_id: bodminFiveSStandardId,
+      target_unit_ids: [bodminPackingId],
+    },
+  );
+
+  await expectRpc(options.ciManagerClient, "publish_five_s_standard_version", {
+    target_standard_version_id: bodminFiveSVersion.id,
+  });
+
   const gembaDefinitionId = (await expectRpc(
     options.ciManagerClient,
     "create_gemba_definition_draft",
@@ -364,6 +421,61 @@ export async function seedCookieWorksModuleFixtures(options: {
         target_definition_version_id: gembaVersion.id,
       },
     );
+
+    const bodminGembaDefinitionId = (await expectRpc(
+      options.ciManagerClient,
+      "create_gemba_definition_draft",
+      {
+        target_display_name: "QA Bodmin Gemba",
+        target_description:
+          "Site-scoped Bodmin gemba for manager execution tests.",
+        target_expected_duration_minutes: 30,
+      },
+    )) as string;
+
+    const { data: bodminGembaVersion } = await options.ciManagerClient
+      .from("gemba_definition_versions")
+      .select("id")
+      .eq("definition_id", bodminGembaDefinitionId)
+      .eq("version_number", 1)
+      .maybeSingle();
+
+    if (bodminGembaVersion?.id) {
+      const bodminGembaSectionId = (await expectRpc(
+        options.ciManagerClient,
+        "add_gemba_section",
+        {
+          target_definition_version_id: bodminGembaVersion.id,
+          target_title: "Floor",
+          target_position: 1,
+        },
+      )) as string;
+
+      await expectRpc(options.ciManagerClient, "add_gemba_question", {
+        target_definition_version_id: bodminGembaVersion.id,
+        target_section_id: bodminGembaSectionId,
+        target_question_type: "long_text",
+        target_prompt: "What did you observe on the Bodmin floor?",
+        target_position: 1,
+      });
+
+      await expectRpc(
+        options.ciManagerClient,
+        "set_gemba_definition_applicable_units",
+        {
+          target_definition_id: bodminGembaDefinitionId,
+          target_unit_ids: [bodminPackingId],
+        },
+      );
+
+      await expectRpc(
+        options.ciManagerClient,
+        "publish_gemba_definition_version",
+        {
+          target_definition_version_id: bodminGembaVersion.id,
+        },
+      );
+    }
   }
 
   await expectRpc(options.ciManagerClient, "create_schedule_definition", {

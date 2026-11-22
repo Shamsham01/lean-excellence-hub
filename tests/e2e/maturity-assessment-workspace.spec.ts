@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
+import { platformMainViewportScrollTop } from "./helpers/platform-main-viewport";
 import {
   answerVisibleScore,
   selectAssessmentScopeAndWaitForEntities,
@@ -10,6 +11,12 @@ import {
   selectFirstScopeEntity,
   selectFrameworkVersion,
 } from "./helpers/maturity-assessment";
+import {
+  openFrameworkAddCriterion,
+  openFrameworkAddLevel,
+  openFrameworkAddPillar,
+  openFrameworkAddQuestion,
+} from "./helpers/form-dialogs";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const FRAMEWORK_NAME = "E2E Readiness Framework";
@@ -49,7 +56,7 @@ async function scrollDeepIntoCriterion(page: Page) {
 async function makeAssessmentContentTall(page: Page) {
   await page.addStyleTag({
     content:
-      '[data-testid^="question-card-"] { min-height: 70vh; } [data-testid="contextual-guidance"] { min-height: 40vh; }',
+      '[data-testid^="question-card-"] { min-height: 70vh; } [data-testid="assessment-guidance-trigger"] { min-height: 2rem; }',
   });
 }
 
@@ -88,14 +95,17 @@ async function createReadinessFramework(page: Page) {
     "Developing",
     "Established",
   ].entries()) {
-    await page.locator("#levelName").fill(name);
-    await page.getByRole("button", { name: "Add level" }).click();
+    await openFrameworkAddLevel(page);
+    const levelDialog = page.getByTestId("framework-add-level-dialog");
+    await levelDialog.locator("#levelName").fill(name);
+    await levelDialog.getByRole("button", { name: "Add level" }).click();
     await expect(page.getByTestId(`edit-level-${index + 1}`)).toBeVisible({
       timeout: 15_000,
     });
   }
 
   await page.getByTestId("framework-step-pillars").click();
+  await openFrameworkAddPillar(page);
   await page.getByLabel("Pillar name").fill("Leadership & Governance");
   await page.getByRole("button", { name: "Add pillar" }).click();
   await expect(page.getByTestId("edit-pillar-1")).toBeVisible({
@@ -111,6 +121,7 @@ async function createReadinessFramework(page: Page) {
     const before = await page
       .locator('[data-testid^="edit-criterion-"]')
       .count();
+    await openFrameworkAddCriterion(page);
     await page.locator("#criterionName").fill(name);
     await page.getByRole("button", { name: "Add criterion" }).click();
     await expect(page.locator('[data-testid^="edit-criterion-"]')).toHaveCount(
@@ -125,15 +136,20 @@ async function createReadinessFramework(page: Page) {
     "Decision-Making & Accountability",
     "Strategy & Priorities",
   ]) {
+    await openFrameworkAddQuestion(page);
+    const questionDialog = page.getByTestId("framework-add-question-dialog");
     await expect
       .poll(async () =>
-        page.locator("#criterionId option").filter({ hasText: name }).count(),
+        questionDialog
+          .locator("#criterionId option")
+          .filter({ hasText: name })
+          .count(),
       )
       .toBeGreaterThan(0);
-    await page.locator("#criterionId").selectOption({
+    await questionDialog.locator("#criterionId").selectOption({
       label: `Leadership & Governance → ${name}`,
     });
-    await page.locator("#questionPrompt").fill(`Rate: ${name}`);
+    await questionDialog.locator("#questionPrompt").fill(`Rate: ${name}`);
     const before = await page
       .locator('[data-testid^="edit-question-"]')
       .count();
@@ -207,7 +223,7 @@ test.describe("Maturity assessment readiness and mobile workspace", () => {
 
     await page.getByTestId("go-to-first-missing").click();
     await expect(
-      page.getByText("Clear Roles & Responsibilities").first(),
+      page.getByRole("heading", { name: "Clear Roles & Responsibilities" }),
     ).toBeVisible();
     await expect(page.getByTestId("workspace-load-error")).toHaveCount(0);
     await expect(
@@ -331,9 +347,25 @@ test.describe("Maturity assessment readiness and mobile workspace", () => {
       await page.getByRole("button", { name: "Next", exact: true }).isEnabled()
     ) {
       await answerVisibleScore(page, 2);
+      await expect(
+        page
+          .getByTestId("criterion-nav-list")
+          .locator(
+            'button[data-completion-state="complete"]:not([data-testid*="-mobile-"])',
+          )
+          .first(),
+      ).toBeVisible();
       await page.getByRole("button", { name: "Next", exact: true }).click();
     }
     await answerVisibleScore(page, 2);
+    await expect(
+      page
+        .getByTestId("criterion-nav-list")
+        .locator(
+          'button[data-completion-state="complete"]:not([data-testid*="-mobile-"])',
+        )
+        .first(),
+    ).toBeVisible();
     await expect(page.getByTestId("complete-self-assessment")).toBeVisible({
       timeout: 10_000,
     });
@@ -372,7 +404,7 @@ test.describe("Maturity assessment readiness and mobile workspace", () => {
       "maturity-mobile-sticky-header-scrolled.png",
     );
 
-    const previousScrollY = await page.evaluate(() => window.scrollY);
+    const previousScrollY = await platformMainViewportScrollTop(page);
     expect(previousScrollY).toBeGreaterThan(200);
 
     await page.getByTestId("next-criterion").click();
@@ -393,7 +425,7 @@ test.describe("Maturity assessment readiness and mobile workspace", () => {
     expect(questionBox, "first question should be on screen").toBeTruthy();
     expect(questionBox!.y).toBeGreaterThan(0);
     expect(questionBox!.y).toBeLessThan(700);
-    const nextScrollY = await page.evaluate(() => window.scrollY);
+    const nextScrollY = await platformMainViewportScrollTop(page);
     expect(nextScrollY).toBeLessThan(previousScrollY - 50);
     await screenshotViewport(page, "maturity-mobile-after-next.png");
 

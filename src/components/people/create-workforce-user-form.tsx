@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,7 +55,8 @@ export function CreateWorkforceUserForm({
   units,
   jobFunctions,
   onCreate,
-}: CreateWorkforceUserFormProps) {
+  onProvisioned,
+}: CreateWorkforceUserFormProps & { onProvisioned?: () => void }) {
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
   const [jobTitle, setJobTitle] = useState("");
@@ -127,6 +130,7 @@ export function CreateWorkforceUserForm({
       displayName: result.displayName,
       temporaryPassword: result.temporaryPassword,
     });
+    onProvisioned?.();
   }
 
   if (credentials) {
@@ -255,7 +259,7 @@ export function CreateWorkforceUserForm({
         <Label htmlFor="roleVersionId">Application role</Label>
         <select
           id="roleVersionId"
-          className="border-input flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm"
+          className="border-input flex h-10 w-full max-w-full min-w-0 rounded-md border bg-background px-3 py-2 text-sm"
           value={roleVersionId}
           onChange={(event) => {
             setRoleVersionId(event.target.value);
@@ -274,7 +278,7 @@ export function CreateWorkforceUserForm({
         <Label htmlFor="scopeKey">Access scope</Label>
         <select
           id="scopeKey"
-          className="border-input flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm"
+          className="border-input flex h-10 w-full max-w-full min-w-0 rounded-md border bg-background px-3 py-2 text-sm"
           value={scopeKey}
           onChange={(event) => setScopeKey(event.target.value)}
           required
@@ -295,7 +299,7 @@ export function CreateWorkforceUserForm({
           <Label htmlFor="jobFunctionId">Job function (optional)</Label>
           <select
             id="jobFunctionId"
-            className="border-input flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm"
+            className="border-input flex h-10 w-full max-w-full min-w-0 rounded-md border bg-background px-3 py-2 text-sm"
             value={jobFunctionId}
             onChange={(event) => setJobFunctionId(event.target.value)}
           >
@@ -315,7 +319,7 @@ export function CreateWorkforceUserForm({
           </Label>
           <select
             id="organisationalUnitId"
-            className="border-input flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm"
+            className="border-input flex h-10 w-full max-w-full min-w-0 rounded-md border bg-background px-3 py-2 text-sm"
             value={organisationalUnitId}
             onChange={(event) => setOrganisationalUnitId(event.target.value)}
             disabled={!jobFunctionId}
@@ -329,11 +333,7 @@ export function CreateWorkforceUserForm({
           </select>
         </div>
       ) : null}
-      {message ? (
-        <p className="text-sm text-destructive" role="alert">
-          {message}
-        </p>
-      ) : null}
+      {message ? <InlineAlert tone="error">{message}</InlineAlert> : null}
       <Button
         type="submit"
         disabled={loading || offers.length === 0}

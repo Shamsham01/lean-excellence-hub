@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { assertPlanModuleWrite } from "@/modules/billing/assert-module-write";
 import { mapProjectMutationError } from "@/lib/projects/errors";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -9,6 +10,10 @@ type RpcArgs = Record<string, unknown>;
 type ActionResult = { error?: string; ok?: true; id?: string };
 
 async function callRpc<T = unknown>(fn: string, args?: RpcArgs): Promise<T> {
+  const moduleGate = await assertPlanModuleWrite("projects");
+  if (!moduleGate.ok) {
+    throw new Error(moduleGate.error);
+  }
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.rpc(
     fn as "create_improvement_project",

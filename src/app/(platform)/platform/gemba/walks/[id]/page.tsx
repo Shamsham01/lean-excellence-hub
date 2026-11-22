@@ -9,6 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { GEMBA_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import {
+  loadWorkplaceRecordFallback,
+  loadWorkplaceRecordView,
+} from "@/modules/workplace/access";
+import { loadProjectPickerOptions } from "@/lib/projects/load-project-picker-options";
+import { resolveProjectLinkSummary } from "@/lib/projects/project-link-summary";
+import type { ProjectLinkSummary } from "@/lib/projects/types";
+import { untypedFrom } from "@/lib/projects/supabase-untyped";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function GembaWalkPage({
@@ -19,6 +27,15 @@ export default async function GembaWalkPage({
   searchParams: Promise<{ prompt?: string }>;
 }) {
   const { id } = await params;
+  const workplaceView = await loadWorkplaceRecordView({
+    readPermission: GEMBA_PERMISSIONS.read,
+    module: "gemba",
+    recordId: id,
+    title: "Gemba walk",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const { prompt } = await searchParams;
   const supabase = await createServerSupabaseClient();
   const canEdit = await currentMemberHasPermission(
@@ -28,11 +45,19 @@ export default async function GembaWalkPage({
   const { data: walk } = await supabase
     .from("gemba_walks")
     .select(
-      "id, status, submission_id, definition_version_id, summary_notes, definition_name_snapshot, unit_name_snapshot, completed_at",
+      "id, status, submission_id, definition_version_id, summary_notes, definition_name_snapshot, unit_name_snapshot, completed_at, site_unit_id",
     )
     .eq("id", id)
     .maybeSingle();
-  if (!walk) notFound();
+  if (!walk) {
+    const workplaceRecord = await loadWorkplaceRecordFallback({
+      module: "gemba",
+      recordId: id,
+      title: "Gemba walk",
+    });
+    if (workplaceRecord) return workplaceRecord;
+    notFound();
+  }
 
   const { data: version } = await supabase
     .from("gemba_definition_versions")
@@ -42,15 +67,17 @@ export default async function GembaWalkPage({
 
   const { data: sectionsRaw } = await supabase
     .from("template_sections")
-    .select("id, title")
-    .eq("template_version_id", version?.template_version_id ?? "");
+    .select("id, title, position")
+    .eq("template_version_id", version?.template_version_id ?? "")
+    .order("position", { ascending: true });
 
   const { data: questionsRaw } = await supabase
     .from("template_questions")
     .select(
-      "id, section_id, prompt, question_type, help_text, is_required, allows_not_applicable",
+      "id, section_id, position, prompt, question_type, help_text, is_required, allows_not_applicable",
     )
-    .eq("template_version_id", version?.template_version_id ?? "");
+    .eq("template_version_id", version?.template_version_id ?? "")
+    .order("position", { ascending: true });
 
   const sections =
     sectionsRaw?.map((s) => ({
@@ -59,6 +86,7 @@ export default async function GembaWalkPage({
       questions:
         questionsRaw
           ?.filter((q) => q.section_id === s.id)
+          .sort((left, right) => left.position - right.position)
           .map((q) => ({
             id: q.id,
             prompt: q.prompt,
@@ -125,11 +153,39 @@ export default async function GembaWalkPage({
     }
   }
 
-  const { data: observations } = await supabase
-    .from("gemba_walk_observations")
-    .select("id, observation_text, observation_type, created_at")
-    .eq("walk_id", id)
-    .order("created_at", { ascending: true });
+  const [projectPicker, observationsResult, gembaActionContexts] =
+    await Promise.all([
+      loadProjectPickerOptions(),
+      untypedFrom(supabase, "gemba_walk_observations")
+        .select(
+          "id, observation_text, observation_type, created_at, linked_project_id",
+        )
+        .eq("walk_id", id)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("gemba_action_context")
+        .select("observation_id")
+        .eq("walk_id", id),
+    ]);
+  const observations = observationsResult.data;
+
+  const actionCountsByObservation: Record<string, number> = {};
+  for (const row of gembaActionContexts.data ?? []) {
+    if (!row.observation_id) continue;
+    actionCountsByObservation[row.observation_id] =
+      (actionCountsByObservation[row.observation_id] ?? 0) + 1;
+  }
+
+  const linkedProjectsByObservationId: Record<
+    string,
+    ProjectLinkSummary | null
+  > = {};
+  for (const observation of observations ?? []) {
+    linkedProjectsByObservationId[observation.id] = resolveProjectLinkSummary(
+      observation.linked_project_id,
+      projectPicker.projects,
+    );
+  }
 
   if (walk.status === "completed") {
     return (
@@ -176,6 +232,7 @@ export default async function GembaWalkPage({
       />
 
       <GembaWalkWorkspace
+        siteUnitId={walk.site_unit_id}
         walkId={id}
         status={walk.status}
         sections={sections}
@@ -186,6 +243,10 @@ export default async function GembaWalkPage({
         canComplete={canEdit && walk.status === "in_progress"}
         initialPromptId={prompt ?? null}
         onComplete={completeGembaWalk}
+        projectOptions={projectPicker.projects}
+        requiresSiteSelection={projectPicker.requiresSiteSelection}
+        linkedProjectsByObservationId={linkedProjectsByObservationId}
+        actionCountsByObservation={actionCountsByObservation}
       />
     </div>
   );

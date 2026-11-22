@@ -2,8 +2,12 @@
 
 import { useEffect, useState, useTransition } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+import { useReportFormDialogPending } from "@/components/ui/report-form-dialog-pending";
+
 import { startAssessment } from "@/app/(platform)/platform/maturity/actions";
 import { Button } from "@/components/ui/button";
+import { Info } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { navigateTo } from "@/lib/navigation/navigate";
 import {
@@ -35,12 +39,14 @@ type StartAssessmentFormProps = {
   versions: FrameworkVersion[];
   people: LeadAssessorOption[];
   defaultVersionId?: string;
+  onStarted?: () => void;
 };
 
 export function StartAssessmentForm({
   versions,
   people,
   defaultVersionId,
+  onStarted,
 }: StartAssessmentFormProps) {
   const [versionId, setVersionId] = useState(defaultVersionId ?? "");
   const [scopeType, setScopeType] = useState<MaturityAssessmentScopeType | "">(
@@ -56,6 +62,7 @@ export function StartAssessmentForm({
   const [entities, setEntities] = useState<ScopeEntity[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  useReportFormDialogPending(pending);
 
   const selectedVersion = versions.find((v) => v.id === versionId);
   const allowedScopes = selectedVersion?.scope_types ?? [];
@@ -123,6 +130,7 @@ export function StartAssessmentForm({
         return;
       }
       if (result.assessmentId) {
+        onStarted?.();
         navigateTo(`/platform/maturity/assessments/${result.assessmentId}`);
       }
     });
@@ -134,11 +142,7 @@ export function StartAssessmentForm({
       className="flex max-w-lg flex-col gap-4"
       data-testid="start-assessment-form"
     >
-      {error ? (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
+      {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="modelVersionId">Framework version</Label>
@@ -221,40 +225,46 @@ export function StartAssessmentForm({
 
       <fieldset className="flex flex-col gap-3 rounded-lg border border-border p-3">
         <legend className="px-1 text-sm font-medium">Assessment type</legend>
-        <label className="flex cursor-pointer flex-col gap-1 rounded-md border border-border p-3 has-[:checked]:border-accent">
-          <span className="flex items-center gap-2 text-sm font-medium">
-            <input
-              type="radio"
-              name="assessmentType"
-              value="self"
-              checked={assessmentType === "self"}
-              onChange={() => setAssessmentType("self")}
-              aria-label="Self assessment"
-              data-testid="assessment-type-self"
-            />
-            Self assessment
-          </span>
-          <span className="text-xs text-muted-foreground">
-            Internal maturity snapshot. Complete directly; does not create an
-            official published result.
+        <label className="flex cursor-pointer items-center gap-2 rounded-md border border-border p-3 has-[:checked]:border-accent">
+          <input
+            type="radio"
+            name="assessmentType"
+            value="self"
+            checked={assessmentType === "self"}
+            onChange={() => setAssessmentType("self")}
+            aria-label="Self assessment"
+            data-testid="assessment-type-self"
+          />
+          <span className="text-sm font-medium">Self assessment</span>
+          <span
+            className="ml-auto text-muted-foreground"
+            title="Internal snapshot without an official published result."
+          >
+            <Info className="size-4" aria-hidden />
+            <span className="sr-only">
+              Internal snapshot without an official published result.
+            </span>
           </span>
         </label>
-        <label className="flex cursor-pointer flex-col gap-1 rounded-md border border-border p-3 has-[:checked]:border-accent">
-          <span className="flex items-center gap-2 text-sm font-medium">
-            <input
-              type="radio"
-              name="assessmentType"
-              value="formal"
-              checked={assessmentType === "formal"}
-              onChange={() => setAssessmentType("formal")}
-              aria-label="Formal assessment"
-              data-testid="assessment-type-formal"
-            />
-            Formal assessment
-          </span>
-          <span className="text-xs text-muted-foreground">
-            Controlled assessment with assessor review, approval and optional
-            official publication.
+        <label className="flex cursor-pointer items-center gap-2 rounded-md border border-border p-3 has-[:checked]:border-accent">
+          <input
+            type="radio"
+            name="assessmentType"
+            value="formal"
+            checked={assessmentType === "formal"}
+            onChange={() => setAssessmentType("formal")}
+            aria-label="Formal assessment"
+            data-testid="assessment-type-formal"
+          />
+          <span className="text-sm font-medium">Formal assessment</span>
+          <span
+            className="ml-auto text-muted-foreground"
+            title="Assessor review with optional official publication."
+          >
+            <Info className="size-4" aria-hidden />
+            <span className="sr-only">
+              Assessor review with optional official publication.
+            </span>
           </span>
         </label>
       </fieldset>
@@ -284,10 +294,6 @@ export function StartAssessmentForm({
               </option>
             ))}
           </select>
-          <p className="text-xs text-muted-foreground">
-            Assigned from the site/organisation People directory. Self
-            assessments do not require a lead assessor.
-          </p>
         </div>
       ) : null}
 

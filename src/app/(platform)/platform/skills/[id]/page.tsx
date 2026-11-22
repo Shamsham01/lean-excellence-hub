@@ -4,12 +4,23 @@ import { VersionStatusBadge } from "@/components/skills/version-status-badge";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
+import { SKILLS_PERMISSIONS } from "@/modules/operational/permissions";
+import { loadWorkplaceRecordView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 type PageProps = { params: Promise<{ id: string }> };
 
 export default async function SkillDetailPage({ params }: PageProps) {
   const { id } = await params;
+  const workplaceView = await loadWorkplaceRecordView({
+    readPermission: SKILLS_PERMISSIONS.read,
+    module: "skills",
+    recordId: id,
+    title: "Skill",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
   const { data: skill } = await supabase
     .from("skills")

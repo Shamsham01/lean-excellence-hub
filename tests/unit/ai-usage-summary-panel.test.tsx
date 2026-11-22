@@ -74,7 +74,7 @@ describe("AiUsageSummaryPanel", () => {
     );
 
     expect(screen.getByTestId("ai-usage-empty").textContent).toContain(
-      "No Lean AI usage recorded this month yet.",
+      "No LeanAI interactions recorded this month yet.",
     );
   });
 
@@ -85,7 +85,7 @@ describe("AiUsageSummaryPanel", () => {
       "Usage summary is unavailable.",
     );
     expect(
-      screen.queryByText("No Lean AI usage recorded this month yet."),
+      screen.queryByText("No LeanAI interactions recorded this month yet."),
     ).toBeNull();
   });
 
@@ -101,5 +101,37 @@ describe("AiUsageSummaryPanel", () => {
       "You are not authorised to view Lean AI usage for this organisation.",
     );
     expect(screen.queryByTestId("ai-usage-empty")).toBeNull();
+  });
+
+  it("explains the higher pause count only when a ceiling is set", () => {
+    const usageSummary = {
+      runs_this_month: 1,
+      input_tokens: 100,
+      output_tokens: 80,
+      cached_input_tokens: 40,
+      reasoning_tokens: 10,
+      tool_calls: 0,
+      provider_distribution: [],
+    };
+
+    const { unmount } = render(
+      <AiUsageSummaryPanel usageSummary={usageSummary} />,
+    );
+    expect(screen.queryByTestId("ai-usage-pause-meter")).toBeNull();
+    unmount();
+
+    render(
+      <AiUsageSummaryPanel
+        usageSummary={usageSummary}
+        governanceCeiling={1000}
+      />,
+    );
+    expect(screen.getByTestId("ai-usage-total-tokens").textContent).toBe("180");
+    expect(screen.getByTestId("ai-usage-pause-meter").textContent).toContain(
+      "230",
+    );
+    expect(screen.getByTestId("ai-usage-pause-meter").textContent).toMatch(
+      /higher than the input and output total/i,
+    );
   });
 });

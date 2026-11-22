@@ -26,7 +26,7 @@ import {
   REALISATION_PATTERNS,
   realisationPatternLabel,
 } from "@/lib/benefits/forecast";
-import { cn } from "@/lib/utils";
+import { WizardStepProgressNav } from "@/components/ui/wizard-step-progress-nav";
 import { formatProjectReference } from "@/lib/projects/status";
 import type { ProjectSelectorOption } from "@/lib/projects/types";
 import { AppLink } from "@/components/ui/app-link";
@@ -118,6 +118,17 @@ export function CreateBenefitWizard({
 
   function prevStep() {
     setStep((current) => Math.max(current - 1, 0));
+  }
+
+  function isStepComplete(stepIndex: number) {
+    switch (stepIndex) {
+      case 0:
+        return Boolean(title.trim() && unitId && ownerId);
+      case 4:
+        return isStandalone || Boolean(sourceProjectId);
+      default:
+        return stepIndex < step;
+    }
   }
 
   async function handleCreate() {
@@ -225,23 +236,14 @@ export function CreateBenefitWizard({
 
   return (
     <div className="flex flex-col gap-6" data-testid="create-benefit-wizard">
-      <nav className="-mx-1 flex [scrollbar-width:none] gap-2 overflow-x-auto px-1 pb-1 [&::-webkit-scrollbar]:hidden">
-        {WIZARD_STEPS.map((label, index) => (
-          <button
-            key={label}
-            type="button"
-            onClick={() => setStep(index)}
-            className={cn(
-              "min-h-9 shrink-0 rounded-md border px-3 py-2 text-xs font-medium",
-              index === step
-                ? "border-primary bg-primary/10 text-foreground"
-                : "border-border text-muted-foreground",
-            )}
-          >
-            {index + 1}. {label}
-          </button>
-        ))}
-      </nav>
+      <WizardStepProgressNav
+        ariaLabel="Create benefit steps"
+        steps={WIZARD_STEPS}
+        activeStep={step}
+        isStepComplete={isStepComplete}
+        onSelectStep={setStep}
+        testId="create-benefit-step-nav"
+      />
 
       <Card>
         <CardHeader>

@@ -109,7 +109,12 @@ export class OpenAIResponsesProvider implements AIProvider {
     try {
       response = await this.client.responses.create(
         buildResponsesCreateParams(prepared),
-        { timeout: prepared.timeoutMs },
+        {
+          timeout: prepared.timeoutMs,
+          ...(prepared.maxRetries !== undefined
+            ? { maxRetries: prepared.maxRetries }
+            : {}),
+        },
       );
     } catch (error) {
       if (error instanceof AiProviderError) throw error;

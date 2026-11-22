@@ -43,9 +43,20 @@ Do not claim "nothing is retained by OpenAI" merely because `store: false` is se
 
 ### Runtime (Netlify)
 
-Foreground execution with conservative `AI_RUN_TIMEOUT_MS` default **45_000** ms (below hosted
-synchronous limits). Bounded tool iterations, context size, and response size. Timeout fails safely;
+Foreground execution with `AI_RUN_TIMEOUT_MS` default **45_000** ms. Netlify synchronous
+functions stop at **60 seconds** and that limit is not configurable. Problem Solving disables
+provider retries (`maxRetries: 0`) and races the provider call against the turn budget so a
+timeout can still call `fail_ai_run` before the host kills the process. The OpenAI SDK otherwise
+retries a connection timeout, and that second attempt is what leaves `ai_runs.status = running`
+with no usage row. Execution claims expire after 70 seconds in PostgreSQL (`claim_ai_run_execution`
+and case-scoped stale recovery) so abandoned rows settle to a terminal status instead of blocking
+the next turn. Bounded tool iterations, context size, and response size. Timeout fails safely;
 core domains continue without AI.
+
+If synchronous Server Actions cannot reliably cover long tool loops, the minimal follow-up is an
+async turn: keep `start_ai_run` + claim in the action, enqueue provider work with a durable lease,
+and let the client poll `reconcileProblemSolvingAiTurn` until `finish_ai_run` or `fail_ai_run`.
+That split is documented here only; M12 does not implement a background worker.
 
 ### Usage ledger
 
@@ -57,10 +68,16 @@ Problem Solving uses `AI_MODEL_DEFAULT` (`gpt-6.1-sol` when unset). The
 operator procedure, reasoning precedence, and illustrative costs are in
 [LEANAI-MODEL-MIGRATION](../operations/LEANAI-MODEL-MIGRATION.md).
 
-Public web research is an additional provider cost. Organisation admins opt in through
-`organisation_ai_settings.web_search_enabled` (default false). Workspace assistant runs record
-whether web search was used, invocation count, and displayed source count. Full web page contents
-are not logged. Monthly token ceilings still apply.
+Public web research is optional and off by default. Organisation admins opt in through
+`organisation_ai_settings.web_search_enabled`. It looks up public pages for current or external
+questions. Those pages are untrusted and are not customer instructions. Web research does not add
+a customer subscription charge. Any provider cost is internal and is not shown in Settings.
+Workspace assistant runs record whether web search was used, invocation count, and displayed
+source count. Full web page contents are not logged. An optional `monthly_token_ceiling`, unset
+by default, pauses new LeanAI interactions when reached. It is organisation governance, not a
+plan quota, and it does not stop other LEH workflows. The customer statement and the internal
+cost follow-up are in
+[leanai-internal-cost-governance.md](./leanai-internal-cost-governance.md).
 
 ### Security controls (authoritative)
 

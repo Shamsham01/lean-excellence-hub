@@ -1,3 +1,7 @@
+import {
+  renderLehEmailBrandHeader,
+  shouldRenderLehEmailEyebrow,
+} from "../../email-brand-header.ts";
 import { escapeHtml } from "../html-escape.ts";
 
 type BrandedOperationalEmailSection = {
@@ -33,6 +37,7 @@ function renderSections(sections: BrandedOperationalEmailSection[]): string {
 
 export function renderBrandedOperationalEmail(
   content: BrandedOperationalEmailContent,
+  appOrigin?: string | null,
 ): string {
   const eyebrow = escapeHtml(content.eyebrow);
   const title = escapeHtml(content.title);
@@ -41,6 +46,8 @@ export function renderBrandedOperationalEmail(
   const ctaUrl = escapeHtml(content.ctaUrl);
   const footer = content.footer ? escapeHtml(content.footer) : "";
   const sections = content.sections ? renderSections(content.sections) : "";
+  const brandHeader = renderLehEmailBrandHeader(appOrigin);
+  const showEyebrow = shouldRenderLehEmailEyebrow(appOrigin);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -49,11 +56,16 @@ export function renderBrandedOperationalEmail(
       <tr>
         <td align="center">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background-color:#ffffff;border:1px solid #e4e4e7;border-radius:12px;padding:32px;">
-            <tr>
+            ${brandHeader}
+            ${
+              showEyebrow
+                ? `<tr>
               <td style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#71717a;padding-bottom:16px;">
                 ${eyebrow}
               </td>
-            </tr>
+            </tr>`
+                : ""
+            }
             <tr>
               <td style="font-size:24px;line-height:1.3;font-weight:700;color:#18181b;padding-bottom:16px;">
                 ${title}

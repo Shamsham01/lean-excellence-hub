@@ -7,6 +7,7 @@ import {
   DEMO_USERS,
 } from "../../scripts/demo-seed/constants";
 import { signInAsDemoUser } from "./helpers/demo-auth";
+import { openRecognitionAwardDialog } from "./helpers/form-dialogs";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const uniqueSuffix = Date.now().toString(36);
@@ -314,16 +315,14 @@ test.describe("NAV-CLICK-001 Training, Skills, and Recognition navigation", () =
     await expect(page.getByTestId("recognition-feed")).toBeVisible();
   });
 
-  test("keyboard Enter on Award recognition navigates", async () => {
+  test("keyboard Enter on Award recognition opens the dialog", async () => {
     await openRecognitionHub(page);
 
     const award = page.getByTestId("recognition-award-link");
-    await expect(award).toHaveAttribute("href", "/platform/recognition/new");
     await award.focus();
     await expect(award).toBeFocused();
     await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(/\/platform\/recognition\/new(?:\?|$)/);
-    await expect(page.getByTestId("award-recognition-page")).toBeVisible();
+    await expect(page.getByTestId("recognition-award-dialog")).toBeVisible();
     await expect(page.getByTestId("award-recognition-form")).toBeVisible();
   });
 

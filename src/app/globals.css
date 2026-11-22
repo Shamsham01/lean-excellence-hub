@@ -3,84 +3,134 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: oklch(0.985 0.004 95);
-  --foreground: oklch(0.22 0.015 255);
-  --surface: oklch(0.99 0.003 95);
+  /* Authenticated product UI — TOKENS.md mandatory hex values; other neutrals follow pre-#339 platform (cool slate, no warm paper). */
+  --background: #f8fafc;
+  --foreground: oklch(0.22 0.014 260);
+  --surface: oklch(0.985 0.003 260);
   --elevated: oklch(1 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.015 255);
-  --muted: oklch(0.955 0.007 95);
-  --muted-foreground: oklch(0.46 0.02 255);
-  --border: oklch(0.88 0.012 95);
-  --primary: oklch(0.42 0.09 250);
-  --primary-foreground: oklch(0.98 0.004 95);
-  --accent: oklch(0.94 0.02 250);
+  --card: #ffffff;
+  --card-foreground: oklch(0.22 0.014 260);
+  --muted: oklch(0.96 0.004 260);
+  --muted-foreground: oklch(0.46 0.018 260);
+  --border: #e2e8f0;
+  --primary: #465fff;
+  --primary-foreground: #ffffff;
+  /* Body-sized links on dark surfaces: use --primary-text (WCAG AA). Brand chroma stays --primary for fills, ring, large chrome. */
+  --primary-text: var(--primary);
+  --accent: oklch(0.945 0.012 250);
   --accent-foreground: oklch(0.28 0.06 250);
-  --success: oklch(0.55 0.14 145);
-  --success-foreground: oklch(0.98 0.01 145);
-  --warning: oklch(0.72 0.14 75);
+  --success: #10b981;
+  --success-foreground: oklch(0.16 0.02 145);
+  --success-text: #047857;
+  --warning: #f59e0b;
   --warning-foreground: oklch(0.28 0.06 75);
-  --destructive: oklch(0.55 0.2 25);
+  --destructive: #ef4444;
   --destructive-foreground: oklch(0.98 0.01 25);
+  --leh-on-destructive-tint: oklch(0.38 0.14 25);
   --information: oklch(0.55 0.12 240);
   --information-foreground: oklch(0.98 0.01 240);
-  --sidebar: oklch(0.97 0.006 95);
-  --sidebar-foreground: oklch(0.28 0.02 255);
-  --sidebar-border: oklch(0.9 0.01 95);
-  --sidebar-accent: oklch(0.93 0.015 250);
-  --chart-1: oklch(0.55 0.12 250);
-  --chart-2: oklch(0.6 0.14 180);
-  --chart-3: oklch(0.65 0.12 145);
-  --chart-4: oklch(0.7 0.14 75);
-  --chart-5: oklch(0.6 0.16 25);
+  --sidebar: oklch(0.975 0.004 260);
+  --sidebar-foreground: oklch(0.28 0.018 260);
+  --sidebar-border: #e2e8f0;
+  --sidebar-accent: oklch(0.94 0.01 250);
+  --copilot-surface: #eef2ff;
+  --chart-1: #465fff;
+  --chart-2: #10b981;
+  --chart-3: #f59e0b;
+  --chart-4: #6366f1;
+  --chart-5: #ef4444;
   --maturity-1: oklch(0.65 0.16 25);
   --maturity-2: oklch(0.7 0.14 75);
   --maturity-3: oklch(0.72 0.1 145);
   --maturity-4: oklch(0.6 0.12 200);
   --maturity-5: oklch(0.5 0.14 250);
-  --ring: oklch(0.55 0.12 250);
+  --ring: #465fff;
   --radius: 0.5rem;
   color-scheme: light;
 }
 
 .dark {
-  --background: oklch(0.16 0.014 255);
-  --foreground: oklch(0.94 0.006 95);
+  --background: #090e17;
+  --foreground: oklch(0.94 0.006 260);
   --surface: oklch(0.19 0.015 255);
   --elevated: oklch(0.23 0.016 255);
-  --card: oklch(0.21 0.016 255);
-  --card-foreground: oklch(0.94 0.006 95);
+  --card: #121b2a;
+  --card-foreground: oklch(0.94 0.006 260);
   --muted: oklch(0.26 0.017 255);
   --muted-foreground: oklch(0.68 0.018 255);
-  --border: oklch(0.32 0.018 255);
-  --primary: oklch(0.68 0.12 245);
-  --primary-foreground: oklch(0.16 0.014 255);
+  --border: #1e2d42;
+  --primary: #465fff;
+  --primary-foreground: #ffffff;
+  /* ~indigo-300: ≥4.5:1 vs #090E17 and #121B2A for normal text / inline links */
+  --primary-text: #a5b4fc;
   --accent: oklch(0.28 0.03 250);
   --accent-foreground: oklch(0.92 0.02 250);
-  --success: oklch(0.65 0.14 145);
+  --success: #10b981;
   --success-foreground: oklch(0.16 0.02 145);
-  --warning: oklch(0.78 0.12 75);
+  --success-text: #34d399;
+  --warning: #f59e0b;
   --warning-foreground: oklch(0.2 0.04 75);
-  --destructive: oklch(0.62 0.18 25);
+  --destructive: #ef4444;
   --destructive-foreground: oklch(0.98 0.01 25);
+  --leh-on-destructive-tint: oklch(0.78 0.1 25);
   --information: oklch(0.68 0.1 240);
   --information-foreground: oklch(0.16 0.02 240);
   --sidebar: oklch(0.14 0.014 255);
   --sidebar-foreground: oklch(0.88 0.01 95);
   --sidebar-border: oklch(0.28 0.018 255);
   --sidebar-accent: oklch(0.22 0.02 255);
-  --chart-1: oklch(0.68 0.12 245);
-  --chart-2: oklch(0.7 0.12 180);
-  --chart-3: oklch(0.72 0.1 145);
-  --chart-4: oklch(0.78 0.12 75);
-  --chart-5: oklch(0.68 0.14 25);
+  --copilot-surface: #151d33;
+  --chart-1: #465fff;
+  --chart-2: #10b981;
+  --chart-3: #f59e0b;
+  --chart-4: #818cf8;
+  --chart-5: #ef4444;
   --maturity-1: oklch(0.68 0.14 25);
   --maturity-2: oklch(0.76 0.12 75);
   --maturity-3: oklch(0.74 0.09 145);
   --maturity-4: oklch(0.68 0.1 200);
   --maturity-5: oklch(0.62 0.12 250);
-  --ring: oklch(0.68 0.12 245);
+  --ring: #465fff;
   color-scheme: dark;
+}
+
+.font-mono-data {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.leh-shadow-soft {
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.04),
+    0 4px 12px rgb(15 23 42 / 0.06);
+}
+
+.dark .leh-shadow-soft {
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.24),
+    0 8px 24px rgb(0 0 0 / 0.32);
+}
+
+/* TailAdmin-adapted shadows & menu utilities (MIT — see third-party/TAILADMIN-MIT.txt) */
+:root {
+  --shadow-theme-xs: 0 1px 2px 0 rgb(16 24 40 / 0.05);
+  --shadow-theme-sm:
+    0 1px 3px 0 rgb(16 24 40 / 0.1), 0 1px 2px 0 rgb(16 24 40 / 0.06);
+  --shadow-theme-md:
+    0 4px 8px -2px rgb(16 24 40 / 0.1), 0 2px 4px -2px rgb(16 24 40 / 0.06);
+}
+
+@utility leh-menu-item {
+  @apply relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150;
+}
+
+@utility leh-menu-item-active {
+  @apply bg-primary/10 text-primary dark:bg-primary/12 dark:text-primary;
+}
+
+@utility leh-menu-item-inactive {
+  @apply text-muted-foreground hover:bg-accent hover:text-accent-foreground;
 }
 
 /* Dark mode is class-driven via next-themes (.dark). Avoid prefers-color-scheme on :root
@@ -98,20 +148,24 @@
   --color-border: var(--border);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-text: var(--primary-text);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-success-text: var(--success-text);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-emphasis: var(--leh-on-destructive-tint);
   --color-information: var(--information);
   --color-information-foreground: var(--information-foreground);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent: var(--sidebar-accent);
+  --color-copilot-surface: var(--copilot-surface);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -146,6 +200,15 @@ body {
   line-height: 1.5;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Inline / body links: raw #465FFF on dark canvas fails WCAG AA for normal text (PIXEL). */
+.dark .text-primary {
+  color: var(--primary-text);
+}
+.dark .marketing .text-primary,
+.dark .marketing-appearance-menu .text-primary {
+  color: var(--primary);
 }
 
 *:focus-visible {
@@ -275,6 +338,12 @@ body {
     transparent;
 }
 
+@media (max-width: 1023px) {
+  .platform-main-viewport {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 .platform-scroll::-webkit-scrollbar {
   width: 6px;
 }
@@ -292,87 +361,180 @@ body {
   background: transparent;
 }
 
+/* LEH Recharts analytics — theme-aware tooltip copy and hover band */
+.leh-recharts .recharts-tooltip-cursor {
+  fill: color-mix(in oklch, var(--foreground) 8%, transparent);
+}
+
+.leh-recharts-tooltip .recharts-default-tooltip,
+.leh-recharts-tooltip .recharts-tooltip-label,
+.leh-recharts-tooltip .recharts-tooltip-item-value {
+  color: var(--card-foreground);
+}
+
+@media (min-width: 1024px) {
+  html:has([data-testid="platform-shell"]),
+  body:has([data-testid="platform-shell"]) {
+    overflow: hidden;
+    height: 100%;
+  }
+}
+
+/* Problem-solving workspace: nested stage canvas scrolls on mobile and desktop. */
+.platform-scroll:has(.pps-flagship-workspace) {
+  overflow-x: clip;
+  overflow-y: hidden;
+  min-height: 0;
+}
+
+.platform-main-viewport:has(.pps-flagship-workspace) {
+  overflow-x: clip;
+  overflow-y: hidden;
+  min-height: 0;
+  flex: 1 1 0%;
+}
+
+.platform-main-viewport:has(.pps-flagship-workspace) .platform-main-inner {
+  display: flex;
+  max-width: none;
+  min-height: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+/* Module route shell (e.g. billing entitlement wrapper) must participate in the PPS height chain. */
+.platform-main-viewport:has(.pps-flagship-workspace) .platform-main-inner > * {
+  display: flex;
+  flex: 1 1 0%;
+  flex-direction: column;
+  height: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.platform-main-viewport:has(.pps-flagship-workspace)
+  [data-module="problem_solving"] {
+  gap: 0;
+}
+
 /* Marketing homepage primitives — scoped so the authenticated platform is unchanged. */
 
-/* LEH marketing palette: industrial cobalt anchor, restrained teal for connected /
-   improvement states, warm neutrals in light mode and graphite in dark mode.
-   Amber, red and green stay semantic (warning, destructive, success) only.
-   The appearance menu is portalled outside `.marketing`, so it shares the tokens. */
+/* Official LEH brand tokens (TOKENS.md). Cool neutrals, accent from tokens,
+   semantic success / warning / critical only. The appearance menu is portalled
+   outside `.marketing`, so it shares these tokens. */
 .marketing,
 .marketing-appearance-menu {
-  --leh-ink: oklch(0.22 0.016 258);
-  --leh-ink-muted: oklch(0.43 0.018 258);
-  --leh-paper: oklch(0.975 0.005 85);
-  --leh-paper-band: oklch(0.956 0.007 85);
-  --leh-paper-raised: oklch(0.995 0.002 85);
-  --leh-paper-muted: oklch(0.938 0.008 85);
-  --leh-line: oklch(0.875 0.01 85);
-  --leh-line-strong: oklch(0.79 0.012 85);
-  --leh-cobalt: oklch(0.47 0.13 258);
-  --leh-cobalt-strong: oklch(0.41 0.12 258);
-  --leh-cobalt-ink: oklch(0.39 0.11 258);
-  --leh-cobalt-soft: oklch(0.948 0.022 256);
-  --leh-cobalt-line: oklch(0.79 0.06 257);
-  --leh-teal: oklch(0.56 0.085 192);
-  --leh-teal-ink: oklch(0.41 0.07 194);
-  --leh-teal-soft: oklch(0.952 0.022 190);
-  --leh-teal-line: oklch(0.8 0.05 190);
-  --leh-highlight: inset 0 1px 0 oklch(1 0 0 / 0.75);
-  --leh-shadow-header: 0 10px 24px -20px oklch(0.25 0.02 258 / 0.5);
-  --leh-shadow-press: 0 1px 2px oklch(0.25 0.02 258 / 0.18);
-  --leh-shadow-hover: 0 6px 14px -8px oklch(0.25 0.02 258 / 0.35);
+  /* Canonical TOKENS.md sRGB anchors — marketing aliases these exactly. */
+  --leh-canvas-light: #f8fafc;
+  --leh-card-light: #ffffff;
+  --leh-border-light: #e2e8f0;
+  --leh-canvas-dark: #090e17;
+  --leh-card-dark: #121b2a;
+  --leh-border-dark: #1e2d42;
+  --leh-accent: #465fff;
+  --leh-accent-hover: #3b51e6;
+  --leh-success: #10b981;
+  --leh-warning: #f59e0b;
+  --leh-critical: #ef4444;
+  --leh-on-canvas-dark: #f1f5f9;
+  --leh-on-canvas-dark-muted: #94a3b8;
 
-  --background: var(--leh-paper);
+  --leh-ink: oklch(0.207681 0.039824 265.755);
+  --leh-ink-muted: oklch(0.554391 0.040718 257.417);
+  --leh-surface: oklch(0.964765 0.006635 250.535);
+  --leh-muted: oklch(0.950858 0.009516 251.683);
+  --leh-line: var(--leh-border-light);
+  --leh-line-strong: oklch(0.784545 0.01806 257.557);
+  --leh-accent-soft: oklch(0.959182 0.017425 249.186);
+  --leh-accent-ink: oklch(0.416657 0.154156 268.218);
+  --leh-accent-line: oklch(0.818553 0.099518 270);
+  /* “Connected” highlights use accent family (retired decorative teal). */
+  --leh-connected-bg: oklch(0.963343 0.015089 249.965);
+  --leh-connected-ink: oklch(0.455 0.145 268.5);
+
+  --leh-highlight: inset 0 1px 0 oklch(1 0 0 / 0.75);
+  --leh-shadow-header: 0 10px 24px -20px oklch(0.22 0.025 260 / 0.45);
+  --leh-shadow-press: 0 1px 2px oklch(0.22 0.025 260 / 0.16);
+  --leh-shadow-hover: 0 6px 14px -8px oklch(0.22 0.025 260 / 0.32);
+
+  --background: var(--leh-canvas-light);
   --foreground: var(--leh-ink);
-  --surface: var(--leh-paper-band);
-  --elevated: var(--leh-paper-raised);
-  --card: var(--leh-paper-raised);
+  --surface: var(--leh-surface);
+  --elevated: var(--leh-card-light);
+  --card: var(--leh-card-light);
   --card-foreground: var(--leh-ink);
-  --muted: var(--leh-paper-muted);
+  --muted: var(--leh-muted);
   --muted-foreground: var(--leh-ink-muted);
   --border: var(--leh-line);
-  --primary: var(--leh-cobalt);
-  --primary-foreground: oklch(0.985 0.004 85);
-  --accent: var(--leh-cobalt-soft);
-  --accent-foreground: var(--leh-cobalt-ink);
-  --ring: var(--leh-cobalt);
+  --primary: var(--leh-accent);
+  /* WCAG AA: white on primary fill */
+  --primary-foreground: oklch(1 0 none);
+  --accent: var(--leh-accent-soft);
+  --accent-foreground: var(--leh-accent-ink);
+  --ring: var(--leh-accent);
+  --success: var(--leh-success);
+  --success-foreground: oklch(0.98 0.01 162);
+  --warning: var(--leh-warning);
+  --warning-foreground: oklch(0.28 0.06 70);
+  --destructive: var(--leh-critical);
+  --destructive-foreground: oklch(0.98 0.01 25);
+  /* Dark ink on light semantic tints (success/warning fills fail as body text on white). */
+  --leh-on-success-tint: oklch(0.32 0.07 160);
+  --leh-on-warning-tint: oklch(0.35 0.08 55);
+  --leh-on-destructive-tint: oklch(0.38 0.14 25);
 
   --marketing-shadow:
-    0 1px 2px oklch(0.25 0.02 258 / 0.05),
-    0 8px 20px -10px oklch(0.25 0.02 258 / 0.14);
+    0 1px 2px oklch(0.22 0.02 260 / 0.05),
+    0 8px 20px -10px oklch(0.22 0.02 260 / 0.12);
   --marketing-shadow-lift:
-    0 1px 2px oklch(0.25 0.02 258 / 0.06),
-    0 22px 44px -22px oklch(0.25 0.02 258 / 0.28);
+    0 1px 2px oklch(0.22 0.02 260 / 0.06),
+    0 22px 44px -22px oklch(0.22 0.02 260 / 0.22);
 }
 
 .dark .marketing,
 .dark .marketing-appearance-menu {
-  --leh-ink: oklch(0.95 0.005 85);
-  --leh-ink-muted: oklch(0.74 0.012 258);
-  --leh-paper: oklch(0.165 0.009 258);
-  --leh-paper-band: oklch(0.188 0.01 258);
-  --leh-paper-raised: oklch(0.222 0.011 258);
-  --leh-paper-muted: oklch(0.255 0.012 258);
-  --leh-line: oklch(0.31 0.012 258);
-  --leh-line-strong: oklch(0.4 0.014 258);
-  --leh-cobalt: oklch(0.72 0.12 254);
-  --leh-cobalt-strong: oklch(0.79 0.1 254);
-  --leh-cobalt-ink: oklch(0.85 0.07 254);
-  --leh-cobalt-soft: oklch(0.26 0.04 258);
-  --leh-cobalt-line: oklch(0.45 0.08 258);
-  --leh-teal: oklch(0.76 0.09 190);
-  --leh-teal-ink: oklch(0.85 0.07 190);
-  --leh-teal-soft: oklch(0.255 0.03 200);
-  --leh-teal-line: oklch(0.45 0.06 195);
+  --leh-ink: oklch(0.95 0.008 260);
+  --leh-ink-muted: oklch(0.710672 0.035114 256.788);
+  --leh-surface: oklch(0.19 0.024 260);
+  --leh-muted: oklch(0.26 0.026 260);
+  --leh-line: var(--leh-border-dark);
+  --leh-line-strong: oklch(0.42 0.036 257);
+  --leh-accent-soft: oklch(0.26 0.042 262);
+  /* Tinted indigo for accent-as-text on dark card and soft fills (≥4.5:1 vs card) */
+  --leh-accent-ink: oklch(0.785 0.104 274.7);
+  --leh-accent-line: oklch(0.48 0.12 268);
+  --leh-connected-bg: oklch(0.24 0.036 262);
+  --leh-connected-ink: var(--leh-accent-ink);
   --leh-highlight: inset 0 1px 0 oklch(1 0 0 / 0.055);
   --leh-shadow-header: 0 10px 24px -18px oklch(0 0 0 / 0.8);
   --leh-shadow-press: 0 1px 2px oklch(0 0 0 / 0.4);
   --leh-shadow-hover: 0 6px 14px -8px oklch(0 0 0 / 0.6);
-  --primary-foreground: oklch(0.17 0.012 258);
-  --success: oklch(0.72 0.13 145);
-  --warning: oklch(0.84 0.12 80);
-  --warning-foreground: oklch(0.88 0.08 80);
-  --destructive: oklch(0.76 0.16 25);
+
+  --background: var(--leh-canvas-dark);
+  --foreground: var(--leh-ink);
+  --surface: var(--leh-surface);
+  --elevated: var(--leh-card-dark);
+  --card: var(--leh-card-dark);
+  --card-foreground: var(--leh-ink);
+  --muted: var(--leh-muted);
+  --muted-foreground: var(--leh-ink-muted);
+  --border: var(--leh-line);
+  --primary: var(--leh-accent);
+  --primary-foreground: oklch(1 0 none);
+  --accent: var(--leh-accent-soft);
+  --accent-foreground: var(--leh-accent-ink);
+  --ring: var(--leh-accent);
+  --success: var(--leh-success);
+  --success-foreground: oklch(0.16 0.02 145);
+  --warning: var(--leh-warning);
+  --warning-foreground: oklch(0.2 0.04 70);
+  --destructive: var(--leh-critical);
+  --destructive-foreground: oklch(0.98 0.01 25);
+  --leh-on-success-tint: oklch(0.82 0.06 162);
+  --leh-on-warning-tint: oklch(0.88 0.08 75);
+  --leh-on-destructive-tint: oklch(0.88 0.06 25);
   --maturity-1: oklch(0.8 0.13 28);
   --maturity-2: oklch(0.84 0.12 78);
   --maturity-3: oklch(0.82 0.1 145);
@@ -407,6 +569,344 @@ body {
   .marketing {
     --marketing-gutter: 2rem;
     --marketing-section-y: 6.25rem;
+  }
+}
+
+.marketing-landing {
+  /* Light: panel one step below raised card (slate-50 / white) — oklch only in this block */
+  --marketing-vignette-panel: oklch(0.985 0.002 248);
+  --marketing-vignette-raised: oklch(1 0 none);
+  --marketing-vignette-border: color-mix(
+    in oklab,
+    oklch(0.929 0.008 255) 62%,
+    var(--primary) 38%
+  );
+  --marketing-vignette-inner: oklch(0.968 0.007 248);
+  --marketing-vignette-chrome: color-mix(
+    in oklab,
+    oklch(0.985 0.002 248) 45%,
+    oklch(1 0 none) 55%
+  );
+  --marketing-ambient: color-mix(
+    in oklab,
+    var(--primary) 4%,
+    var(--background)
+  );
+  background:
+    radial-gradient(
+      120% 55% at 50% -15%,
+      color-mix(in oklab, var(--primary) 14%, transparent) 0%,
+      transparent 58%
+    ),
+    linear-gradient(
+      180deg,
+      var(--marketing-ambient) 0%,
+      var(--background) 42%,
+      var(--background) 100%
+    );
+}
+
+.dark .marketing-landing {
+  /* Dark: canvas panel, card-level preview — reuse LEH marketing tokens (TOKENS.md anchors) */
+  --marketing-vignette-panel: var(--background);
+  --marketing-vignette-raised: var(--card);
+  --marketing-vignette-border: color-mix(
+    in oklab,
+    var(--border) 68%,
+    var(--primary) 32%
+  );
+  --marketing-vignette-inner: color-mix(
+    in oklab,
+    var(--background) 58%,
+    var(--card) 42%
+  );
+  --marketing-vignette-chrome: color-mix(
+    in oklab,
+    var(--card) 52%,
+    var(--muted) 48%
+  );
+  background:
+    radial-gradient(
+      110% 50% at 50% -12%,
+      color-mix(in oklab, var(--primary) 18%, transparent) 0%,
+      transparent 55%
+    ),
+    linear-gradient(
+      180deg,
+      var(--marketing-ambient) 0%,
+      var(--background) 38%,
+      var(--background) 100%
+    );
+}
+
+.marketing-landing .marketing-header-bar {
+  border-bottom-color: color-mix(in oklab, var(--border) 82%, transparent);
+  background: color-mix(in oklab, var(--background) 78%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.marketing-landing .marketing-footer-sleek {
+  padding-block: 1.35rem 1rem;
+  border-top-color: color-mix(in oklab, var(--border) 88%, transparent);
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    color-mix(in oklab, var(--surface) 42%, var(--background)) 100%
+  );
+}
+
+.marketing-footer-sleek .marketing-footer-sleek-grid {
+  display: grid;
+  gap: 1.25rem 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .marketing-footer-sleek .marketing-footer-sleek-grid {
+    grid-template-columns: minmax(10rem, 1.15fr) repeat(3, minmax(0, 1fr));
+    gap: 1rem 1.75rem;
+    align-items: start;
+  }
+}
+
+.marketing-footer-sleek .marketing-footer-brand .leh-brand {
+  --leh-brand-lockup: 13.5rem;
+}
+
+.marketing-footer-sleek .marketing-footer-heading {
+  margin: 0;
+  letter-spacing: 0.12em;
+}
+
+.marketing-footer-sleek .marketing-footer-list {
+  gap: 0.05rem;
+  margin-top: 0.45rem;
+}
+
+.marketing-footer-sleek .marketing-footer-list a {
+  min-height: 1.75rem;
+  font-size: 0.8125rem;
+}
+
+.marketing-footer-sleek .marketing-footer-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-top: 1.15rem;
+  border-top: 1px solid color-mix(in oklab, var(--border) 82%, transparent);
+  padding-top: 0.65rem;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+.marketing-footer-sleek .marketing-footer-copyright {
+  margin: 0;
+}
+
+.marketing-preview-aux-note {
+  margin: 0.45rem 0 0;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+
+.marketing-field-label {
+  margin: 0;
+  font-size: 0.65rem;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.marketing-field-value {
+  margin: 0.2rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.marketing-landing .marketing-preview.marketing-preview-product {
+  border-color: var(--marketing-vignette-border);
+  background: var(--marketing-vignette-raised);
+  box-shadow:
+    var(--leh-highlight),
+    var(--marketing-shadow-lift),
+    0 0 0 1px color-mix(in oklab, var(--primary) 9%, transparent);
+}
+
+.marketing-landing .marketing-preview-chrome-product {
+  border-bottom-color: var(--marketing-vignette-border);
+  background: var(--marketing-vignette-chrome);
+}
+
+.marketing-landing .marketing-preview-body {
+  background: color-mix(
+    in oklab,
+    var(--marketing-vignette-inner) 88%,
+    var(--marketing-vignette-raised) 12%
+  );
+}
+
+.marketing-landing .marketing-preview-record,
+.marketing-landing .marketing-adherence li,
+.marketing-landing .marketing-action-list li {
+  border-color: color-mix(in oklab, var(--border) 72%, var(--primary) 28%);
+  background: var(--marketing-vignette-inner);
+}
+
+.marketing-landing .marketing-matrix th,
+.marketing-landing .marketing-matrix td {
+  border-bottom-color: color-mix(in oklab, var(--border) 78%, transparent);
+}
+
+.marketing-landing .editorial-modules-premium .editorial-module {
+  background: var(--marketing-vignette-panel);
+  border-color: var(--marketing-vignette-border);
+}
+
+.marketing-landing .editorial-story-shell {
+  background: var(--marketing-vignette-raised);
+  border-color: var(--marketing-vignette-border);
+}
+
+.marketing-landing .editorial-record {
+  background: var(--marketing-vignette-inner);
+  border-color: var(--marketing-vignette-border);
+}
+
+.marketing-landing .editorial-hero-os-surface {
+  border-color: var(--marketing-vignette-border);
+  background: var(--marketing-vignette-raised);
+}
+
+.marketing-landing .editorial-hero-os-topbar {
+  border-bottom-color: var(--marketing-vignette-border);
+  background: var(--marketing-vignette-chrome);
+}
+
+.marketing-landing .editorial-hero-os-rail {
+  border-color: var(--marketing-vignette-border);
+  background: color-mix(
+    in oklab,
+    var(--marketing-vignette-inner) 55%,
+    var(--marketing-vignette-raised) 45%
+  );
+}
+
+.marketing-landing .editorial-hero-os-detail {
+  background: color-mix(
+    in oklab,
+    var(--marketing-vignette-inner) 88%,
+    var(--marketing-vignette-raised) 12%
+  );
+}
+
+.marketing-landing .editorial-hero-kpi-cell {
+  border-color: color-mix(in oklab, var(--border) 68%, var(--primary) 32%);
+  background: var(--marketing-vignette-inner);
+}
+
+.marketing-landing .editorial-fields > div {
+  border-radius: 0.5rem;
+  border: 1px solid
+    color-mix(in oklab, var(--marketing-vignette-border) 88%, transparent);
+  background: color-mix(
+    in oklab,
+    var(--marketing-vignette-inner) 72%,
+    var(--marketing-vignette-raised) 28%
+  );
+  padding: 0.55rem 0.65rem 0.6rem;
+}
+
+.marketing-landing .editorial-fields dt {
+  color: var(--muted-foreground);
+}
+
+.marketing-landing .editorial-fields dd {
+  font-weight: 650;
+  color: var(--foreground);
+}
+
+.marketing-product-vignette .marketing-preview-caption {
+  margin-top: 0.35rem;
+}
+
+.marketing-product-vignette-dots {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 0.3rem;
+}
+
+.marketing-product-vignette-dots i {
+  display: block;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 999px;
+  background: var(--leh-line-strong);
+}
+
+.marketing-preview-chrome-product {
+  gap: 0.65rem;
+}
+
+.marketing-preview-chrome-product-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.marketing-product-vignette-route {
+  margin: 0;
+  font-family: var(--font-geist-mono, ui-monospace, monospace);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--muted-foreground);
+}
+
+.marketing-preview-product {
+  border-color: color-mix(in oklab, var(--border) 92%, var(--primary) 8%);
+  box-shadow:
+    var(--leh-highlight),
+    var(--marketing-shadow-lift),
+    0 0 0 1px color-mix(in oklab, var(--primary) 6%, transparent);
+}
+
+.marketing-landing .marketing-preview-product {
+  border-radius: calc(var(--marketing-radius) + 0.1rem);
+}
+
+.marketing-preview-body-touch .marketing-adherence li {
+  min-height: 2.75rem;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.875rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .marketing-preview-product {
+    transition:
+      border-color 200ms ease,
+      box-shadow 200ms ease;
+  }
+
+  .marketing-landing .marketing-preview-product:hover {
+    border-color: color-mix(in oklab, var(--border) 72%, var(--primary) 28%);
+    box-shadow:
+      var(--leh-highlight),
+      var(--marketing-shadow-lift),
+      0 0 0 1px color-mix(in oklab, var(--primary) 14%, transparent);
+  }
+
+  .marketing:not(.marketing-landing) .marketing-preview-product:hover {
+    border-color: color-mix(in oklab, var(--border) 78%, var(--primary) 22%);
+    box-shadow:
+      var(--leh-highlight),
+      var(--marketing-shadow-lift),
+      0 0 0 1px color-mix(in oklab, var(--primary) 12%, transparent);
   }
 }
 
@@ -526,7 +1026,7 @@ html:has(> body > .marketing) {
 }
 
 .marketing-cta:hover {
-  background: var(--leh-cobalt-strong);
+  background: var(--leh-accent-hover);
   box-shadow:
     inset 0 1px 0 oklch(1 0 0 / 0.16),
     var(--leh-shadow-hover);
@@ -627,7 +1127,7 @@ html:has(> body > .marketing) {
 }
 
 .marketing-icon-button:hover {
-  border-color: var(--leh-cobalt-line);
+  border-color: var(--leh-accent-line);
   background: var(--muted);
 }
 
@@ -644,12 +1144,6 @@ html:has(> body > .marketing) {
   background: var(--elevated);
   color: var(--foreground);
   box-shadow: var(--leh-highlight), var(--marketing-shadow-lift);
-}
-
-.marketing-mark {
-  width: 1.35rem;
-  height: 1.35rem;
-  flex-shrink: 0;
 }
 
 .marketing {
@@ -777,7 +1271,7 @@ html:has(> body > .marketing) {
   bottom: 0;
   left: 0.34rem;
   width: 1px;
-  background: var(--leh-cobalt-line);
+  background: var(--leh-accent-line);
 }
 
 .marketing-system-flow li:last-child::after {
@@ -819,7 +1313,7 @@ html:has(> body > .marketing) {
   flex-direction: column;
   justify-content: space-between;
   gap: 1rem;
-  border: 1px solid var(--leh-cobalt-line);
+  border: 1px solid var(--leh-accent-line);
   border-radius: 0.5rem;
   background: color-mix(in oklab, var(--accent) 75%, var(--card));
   padding: 0.9rem;
@@ -961,7 +1455,7 @@ html:has(> body > .marketing) {
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 0 0.6rem;
-  border: 1px solid var(--leh-cobalt-line);
+  border: 1px solid var(--leh-accent-line);
   border-radius: 0.5rem;
   background: var(--fragments-strip-bg);
   padding: var(--resolve-pad-top) 0.75rem 0.6rem 1.9rem;
@@ -1019,10 +1513,6 @@ html:has(> body > .marketing) {
   color: var(--muted-foreground);
 }
 
-.marketing-fragments-caption .marketing-mark {
-  margin-top: 0.1rem;
-}
-
 @media (min-width: 1024px) {
   .marketing-fragments {
     --fragments-head: 10.5rem;
@@ -1040,7 +1530,7 @@ html:has(> body > .marketing) {
     grid-column: 1 / -1;
     grid-row: 3;
     margin-top: 0.75rem;
-    border: 1px solid var(--leh-cobalt-line);
+    border: 1px solid var(--leh-accent-line);
     border-radius: var(--marketing-radius);
     background: var(--fragments-strip-bg);
     box-shadow: var(--leh-highlight), var(--marketing-shadow);
@@ -1125,7 +1615,7 @@ html:has(> body > .marketing) {
     left: var(--resolve-node);
     right: calc(var(--fragments-col-gap) * -1);
     height: 1px;
-    background: var(--leh-cobalt-line);
+    background: var(--leh-accent-line);
   }
 
   .marketing-fragments-stage:last-child .marketing-fragments-resolve::after {
@@ -1175,37 +1665,33 @@ html:has(> body > .marketing) {
 }
 
 .marketing-chip-accent {
-  border-color: var(--leh-cobalt-line);
+  border-color: var(--leh-accent-line);
   background: color-mix(in oklab, var(--accent) 75%, var(--card));
   color: var(--accent-foreground);
 }
 
 .marketing-chip-connected {
-  border-color: var(--leh-teal-line);
-  background: color-mix(in oklab, var(--leh-teal-soft) 80%, var(--card));
-  color: var(--leh-teal-ink);
+  border-color: var(--leh-accent-line);
+  background: color-mix(in oklab, var(--leh-connected-bg) 85%, var(--card));
+  color: var(--leh-connected-ink);
 }
 
 .marketing-chip-warning {
   border-color: color-mix(in oklab, var(--warning) 45%, var(--border));
   background: color-mix(in oklab, var(--warning) 16%, var(--card));
-  color: var(--warning-foreground);
-}
-
-.dark .marketing-chip-warning {
-  color: var(--warning);
+  color: var(--leh-on-warning-tint);
 }
 
 .marketing-chip-success {
   border-color: color-mix(in oklab, var(--success) 40%, var(--border));
   background: color-mix(in oklab, var(--success) 12%, var(--card));
-  color: var(--success);
+  color: var(--leh-on-success-tint);
 }
 
 .marketing-chip-danger {
   border-color: color-mix(in oklab, var(--destructive) 45%, var(--border));
   background: color-mix(in oklab, var(--destructive) 12%, var(--card));
-  color: var(--destructive);
+  color: var(--leh-on-destructive-tint);
 }
 
 /* Product previews */
@@ -1219,7 +1705,7 @@ html:has(> body > .marketing) {
 }
 
 .marketing-preview-featured {
-  border-color: var(--leh-cobalt-line);
+  border-color: var(--leh-accent-line);
 }
 
 .marketing-preview-chrome {
@@ -1375,7 +1861,7 @@ html:has(> body > .marketing) {
 .marketing-workflow li[data-current="true"],
 .marketing-stages li[data-current="true"],
 .marketing-lifecycle li[data-current="true"] {
-  border-color: var(--leh-cobalt-line);
+  border-color: var(--leh-accent-line);
   background: color-mix(in oklab, var(--accent) 75%, var(--card));
   color: var(--accent-foreground);
 }
@@ -1443,14 +1929,14 @@ html:has(> body > .marketing) {
 .marketing-matrix td[data-state="meets"] {
   border-radius: 0.25rem;
   background: color-mix(in oklab, var(--success) 12%, var(--card));
-  color: var(--success);
+  color: var(--leh-on-success-tint);
   font-weight: 650;
 }
 
 .marketing-matrix td[data-state="gap"] {
   border-radius: 0.25rem;
   background: color-mix(in oklab, var(--destructive) 12%, var(--card));
-  color: var(--destructive);
+  color: var(--leh-on-destructive-tint);
   font-weight: 650;
 }
 
@@ -1611,7 +2097,7 @@ html:has(> body > .marketing) {
   left: var(--process-rail-x);
   height: 100%;
   width: 1px;
-  background: var(--leh-cobalt-line);
+  background: var(--leh-accent-line);
 }
 
 .marketing-process-index {
@@ -1695,7 +2181,7 @@ html:has(> body > .marketing) {
   align-items: center;
   gap: 0.55rem;
   border-top: 1px solid var(--border);
-  background: color-mix(in oklab, var(--leh-teal-soft) 55%, var(--elevated));
+  background: color-mix(in oklab, var(--leh-connected-bg) 55%, var(--elevated));
   padding: 0.75rem var(--process-pad) 0.8rem;
   font-size: 0.8125rem;
   line-height: 1.45;
@@ -1705,7 +2191,7 @@ html:has(> body > .marketing) {
 .marketing-process-loop svg {
   flex-shrink: 0;
   margin-top: 0.1rem;
-  color: var(--leh-teal);
+  color: var(--leh-accent);
 }
 
 .marketing-process-loop-bracket {
@@ -1820,7 +2306,7 @@ html:has(> body > .marketing) {
     display: block;
     height: 100%;
     transform-origin: left center;
-    background: var(--leh-cobalt-line);
+    background: var(--leh-accent-line);
   }
 
   .marketing-process-loop {
@@ -1837,7 +2323,7 @@ html:has(> body > .marketing) {
     height: 1.35rem;
     margin-left: calc(var(--process-pad) + var(--process-node) / 2);
     margin-right: calc(20% - var(--process-pad) - var(--process-node) / 2);
-    border: 1px solid var(--leh-teal-line);
+    border: 1px solid var(--leh-accent-line);
     border-top: 0;
     border-radius: 0 0 0.6rem 0.6rem;
   }
@@ -1848,7 +2334,7 @@ html:has(> body > .marketing) {
     top: -0.1rem;
     left: -0.27rem;
     border-right: 0.25rem solid transparent;
-    border-bottom: 0.35rem solid var(--leh-teal);
+    border-bottom: 0.35rem solid var(--leh-accent);
     border-left: 0.25rem solid transparent;
   }
 
@@ -2035,7 +2521,7 @@ html:has(> body > .marketing) {
 }
 
 .marketing-perspective-tab[data-state="active"] {
-  border-color: var(--leh-cobalt-line);
+  border-color: var(--leh-accent-line);
   background: var(--elevated);
   box-shadow: var(--leh-highlight), var(--marketing-shadow);
 }
@@ -2067,7 +2553,7 @@ html:has(> body > .marketing) {
   z-index: 2;
   width: var(--rail-node);
   height: var(--rail-node);
-  border: 2px solid var(--leh-cobalt-line);
+  border: 2px solid var(--leh-accent-line);
   border-radius: 999px;
   background: var(--surface);
 }
@@ -2086,7 +2572,7 @@ html:has(> body > .marketing) {
   z-index: 1;
   width: 1px;
   height: 100%;
-  background: var(--leh-cobalt-line);
+  background: var(--leh-accent-line);
 }
 
 .marketing-perspective-role {
@@ -2256,7 +2742,7 @@ html:has(> body > .marketing) {
 .marketing-perspective-footer svg {
   flex-shrink: 0;
   margin-top: 0.1rem;
-  color: var(--leh-teal);
+  color: var(--leh-accent);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -2306,7 +2792,7 @@ html:has(> body > .marketing) {
     left: 100%;
     width: 2.5rem;
     height: 1px;
-    background: var(--leh-cobalt-line);
+    background: var(--leh-accent-line);
   }
 
   .marketing-perspective-focus {
@@ -2909,23 +3395,19 @@ html:has(> body > .marketing) {
 .leh-demo-status-success {
   border-color: color-mix(in oklab, var(--success) 40%, var(--border));
   background: color-mix(in oklab, var(--success) 12%, var(--card));
-  color: var(--success);
+  color: var(--leh-on-success-tint);
 }
 
 .leh-demo-status-warning {
   border-color: color-mix(in oklab, var(--warning) 45%, var(--border));
   background: color-mix(in oklab, var(--warning) 16%, var(--card));
-  color: var(--warning-foreground);
-}
-
-.dark .leh-demo-status-warning {
-  color: var(--warning);
+  color: var(--leh-on-warning-tint);
 }
 
 .leh-demo-status-danger {
   border-color: color-mix(in oklab, var(--destructive) 45%, var(--border));
   background: color-mix(in oklab, var(--destructive) 12%, var(--card));
-  color: var(--destructive);
+  color: var(--leh-on-destructive-tint);
 }
 
 .leh-demo-ref {
@@ -2934,7 +3416,7 @@ html:has(> body > .marketing) {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--primary);
+  color: var(--accent-foreground);
 }
 
 .leh-demo-meta {

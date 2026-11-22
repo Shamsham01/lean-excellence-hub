@@ -1,16 +1,36 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { labelForMembershipId } from "@/lib/identity/membership-display-label";
+import {
+  caseAuditEventLabel,
+  type ProblemSolvingCaseAuditEvent,
+} from "@/lib/problem-solving/case-audit-activity";
 import { problemSolvingStatusLabel } from "@/lib/problem-solving/status";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
 
 type HistoryPanelProps = {
   detail: ProblemSolvingCaseDetail;
   membershipNameById: Record<string, string>;
+  auditActivity: ProblemSolvingCaseAuditEvent[];
 };
+
+function auditDetail(event: ProblemSolvingCaseAuditEvent): string | null {
+  const excerpt =
+    typeof event.metadata.excerpt === "string"
+      ? event.metadata.excerpt
+      : typeof event.metadata.label === "string"
+        ? event.metadata.label
+        : typeof event.metadata.note === "string"
+          ? event.metadata.note
+          : typeof event.metadata.rationale === "string"
+            ? event.metadata.rationale
+            : null;
+  return excerpt?.trim() || null;
+}
 
 export function HistoryPanel({
   detail,
   membershipNameById,
+  auditActivity,
 }: HistoryPanelProps) {
   return (
     <div
@@ -41,6 +61,42 @@ export function HistoryPanel({
                   {labelForMembershipId(
                     membershipNameById,
                     entry.changed_by_membership_id,
+                  )}
+                </span>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Edits & audit</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-2 text-sm">
+          {auditActivity.length === 0 ? (
+            <p className="text-muted-foreground">No recorded edits yet.</p>
+          ) : (
+            auditActivity.map((entry) => (
+              <div
+                key={entry.id}
+                className="flex flex-col gap-1 rounded-md border border-border px-3 py-2"
+                data-testid={`case-audit-${entry.id}`}
+              >
+                <span className="font-medium">
+                  {caseAuditEventLabel(entry.event_action)}
+                </span>
+                {auditDetail(entry) ? (
+                  <span className="text-muted-foreground">
+                    {auditDetail(entry)}
+                  </span>
+                ) : null}
+                <span className="text-xs text-muted-foreground">
+                  {new Date(entry.created_at).toLocaleString("en-GB")}
+                  {" · "}
+                  {labelForMembershipId(
+                    membershipNameById,
+                    entry.actor_membership_id,
                   )}
                 </span>
               </div>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+
+import { InlineAlert } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
 
 import {
@@ -271,11 +273,7 @@ export function AddSiteCapacityDialog({
           </p>
         ) : null}
 
-        {error ? (
-          <p className="text-sm text-destructive" role="alert">
-            {error}
-          </p>
-        ) : null}
+        {error ? <InlineAlert tone="error">{error}</InlineAlert> : null}
 
         <DialogFooter>
           {step === "choose" ? (

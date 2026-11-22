@@ -20,14 +20,21 @@ import {
 import { invitationTokenDigest } from "./invitations";
 
 export type InvitationPreviewState =
-  "invalid" | "valid" | "expired" | "revoked" | "accepted";
+  "invalid" | "valid" | "expired" | "revoked" | "accepted" | "binding_expired";
 
 export type InvitationSessionState =
   | "unauthenticated"
   | "wrong_account"
   | "email_unconfirmed"
   | "already_member"
-  | "ready_to_accept";
+  | "ready_to_accept"
+  | "redirect_binding"
+  | "binding_expired";
+
+export type InvitationGrantPreview = {
+  roleDisplayName: string;
+  scopeLabel: string;
+};
 
 export type InvitationLifecycleView = {
   state: InvitationPreviewState;
@@ -37,9 +44,42 @@ export type InvitationLifecycleView = {
   recipientEmailMasked?: string | undefined;
   roleDisplayName?: string | undefined;
   scopeLabel?: string | undefined;
+  grants?: InvitationGrantPreview[] | undefined;
+  intendedDisplayName?: string | undefined;
+  confirmedDisplayName?: string | undefined;
   expiresAt?: string | undefined;
   organisationId?: string | undefined;
+  continuationBindingId?: string | undefined;
 };
+
+function mapInvitationGrants(
+  value: unknown,
+): InvitationGrantPreview[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const grants = value.flatMap((entry) => {
+    if (!entry || typeof entry !== "object") {
+      return [];
+    }
+    const record = entry as Record<string, unknown>;
+    if (typeof record.role_display_name !== "string") {
+      return [];
+    }
+    return [
+      {
+        roleDisplayName: record.role_display_name,
+        scopeLabel:
+          typeof record.scope_label === "string"
+            ? record.scope_label
+            : "Scoped access",
+      },
+    ];
+  });
+
+  return grants.length > 0 ? grants : undefined;
+}
 
 function hashRateLimitKey(dimension: string, value: string) {
   const pepper = getServerEnvironment().AUTH_RATE_LIMIT_PEPPER;
@@ -218,12 +258,23 @@ function mapPreviewPayload(
         : undefined,
     scopeLabel:
       typeof payload.scope_label === "string" ? payload.scope_label : undefined,
+    grants: mapInvitationGrants(payload.grants),
+    intendedDisplayName:
+      typeof payload.intended_display_name === "string"
+        ? payload.intended_display_name
+        : undefined,
+    confirmedDisplayName:
+      typeof payload.confirmed_display_name === "string"
+        ? payload.confirmed_display_name
+        : undefined,
     expiresAt:
       typeof payload.expires_at === "string" ? payload.expires_at : undefined,
     organisationId:
       typeof payload.organisation_id === "string"
         ? payload.organisation_id
         : undefined,
+    continuationBindingId:
+      typeof payload.binding_id === "string" ? payload.binding_id : undefined,
   };
 }
 
@@ -261,6 +312,11 @@ export async function loadInvitationSignupBinding(
   bindingId: string,
 ): Promise<InvitationLifecycleView> {
   const supabase = await createServerSupabaseClient();
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    return { state: "valid", sessionState: "unauthenticated" };
+  }
+
   const { data, error } = await supabase.rpc(
     "resolve_organisation_invitation_signup_binding",
     {

@@ -8,6 +8,7 @@ import {
   SUGGESTION_IMPLEMENTED_KIND,
   SUGGESTION_MORE_INFORMATION_REQUIRED_KIND,
   SUGGESTION_PARKED_KIND,
+  SUGGESTION_AWAITING_REVIEW_KIND,
   SUGGESTION_REVIEWER_ASSIGNED_KIND,
   SUGGESTION_REVIEWER_REASSIGNED_KIND,
   TRAINING_COMPLETED_KIND,
@@ -15,6 +16,7 @@ import {
   renderRecognitionAwardedEmail,
   renderScheduleOccurrenceReminderEmail,
   renderSkillProficiencyValidatedEmail,
+  renderSuggestionAwaitingReviewEmail,
   renderSuggestionApprovedEmail,
   renderSuggestionDeclinedEmail,
   renderSuggestionImplementedEmail,
@@ -39,6 +41,7 @@ const RENDERERS: Record<string, NotificationRenderer> = {
   [TRAINING_COMPLETED_KIND]: renderTrainingCompletedEmail,
   [SKILL_PROFICIENCY_VALIDATED_KIND]: renderSkillProficiencyValidatedEmail,
   [RECOGNITION_AWARDED_KIND]: renderRecognitionAwardedEmail,
+  [SUGGESTION_AWAITING_REVIEW_KIND]: renderSuggestionAwaitingReviewEmail,
   [SUGGESTION_REVIEWER_ASSIGNED_KIND]: renderSuggestionReviewerAssignedEmail,
   [SUGGESTION_REVIEWER_REASSIGNED_KIND]:
     renderSuggestionReviewerReassignedEmail,

@@ -1,6 +1,6 @@
 import type { LeanAiModuleKey } from "@/modules/leanai-context/types";
 
-export const COACH_PRODUCT_KNOWLEDGE_VERSION = "leh-product-knowledge-v4";
+export const COACH_PRODUCT_KNOWLEDGE_VERSION = "leh-product-knowledge-v6";
 
 export type CoachProductKnowledge = {
   version: string;
@@ -43,7 +43,14 @@ const KNOWLEDGE: Partial<
       "Training and Skills use job functions to describe what people do.",
       "An organisation owner plus at least one active job function is the minimum people setup.",
       "Organisation-wide access is an explicit grant. Site-scoped access does not include sibling sites.",
+      "An invitation can include more than one role. Each role keeps its own scope, so editing at one site does not edit another site.",
+      "Suggestions Contributor submits suggestions. It does not review or manage the suggestions portfolio.",
       "Job titles and founder status do not grant organisation-wide authority by themselves.",
+      "Workplace Viewer is a separate role for published and shared records at a site or the organisation. It is not Team Member and it does not include every read permission.",
+      "Operator access is an invitation preset of Workplace Viewer and Suggestions Contributor at one site. An administrator can change either role before sending the invitation.",
+      "Your access on the personal profile lists each active role and its scope. A job function is not one of those grants.",
+      "A personal profile name belongs to the account. Each organisation keeps its own membership name.",
+      "An invited name can be confirmed while joining. A name already saved on the personal profile stays in place.",
       "Transferring organisation ownership does not assign site administration. Assign remaining access through People.",
     ],
     recommendedPath: "/platform/settings/job-functions",
@@ -94,16 +101,35 @@ const KNOWLEDGE: Partial<
     facts: [
       "A catalogue listing alone is not enough.",
       "Curriculum requirements tell Lean Excellence Hub who needs which course.",
+      "Setup supports manual, LEH Quick Start, and Build with LeanAI at /platform/training/setup.",
+      "Field-level product knowledge for courses and curriculum ships in the versioned bundle.",
     ],
     recommendedPath: "/platform/training/curriculum",
   },
   skills: {
     summary:
-      "Skills is ready only with a published scale, an active skill, and a published capability requirement.",
+      "A job function is the role someone performs. A skill is an observable ability. A requirement says which job function must demonstrate which skill, at what level, and where. Training completion is not competence.",
     facts: [
-      "Partial catalogues stay incomplete so people are not assessed against unfinished definitions.",
+      "Set up Skills from /platform/skills/setup with guided setup, LEH Quick Start, or LeanAI. Each path creates a draft until a person publishes it.",
+      "Line Operator, Area Leader, and Department Manager are job functions, not skills.",
+      "The catalogue and scale belong to the organisation. A selected site does not limit them.",
+      "Not assessed is not a low score. A starter pack does not mark anyone competent.",
+      "Quick Start stays available when LeanAI is off or unavailable.",
+      "Detailed field knowledge in this release covers Skills and Problem Solving. Do not treat that as coverage of every module.",
     ],
-    recommendedPath: "/platform/skills",
+    recommendedPath: "/platform/skills/setup",
+  },
+  problem_solving: {
+    summary:
+      "Problem Solving keeps a measurable gap, the evidence, and a human decision to close on one case.",
+    facts: [
+      "Create a draft at /platform/problem-solving/new with a title, unit, and owner. Choose a published method when you activate it.",
+      "Seeded methods are A3 / 8-step, Rapid root cause analysis, and 5 Why. DMAIC and 8D are not methods in this release.",
+      "Containment is not a countermeasure. A similar closed case is not proof of this cause.",
+      "LeanAI cannot verify a cause, close a case, record an effectiveness pass, or grant access.",
+      "Manual case entry and historical search stay available when the model is off. Search uses only closed cases you can read.",
+    ],
+    recommendedPath: "/platform/problem-solving/new",
   },
   recognition: {
     summary:

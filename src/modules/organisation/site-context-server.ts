@@ -13,6 +13,10 @@ import {
   type SelectablePerson,
 } from "@/modules/organisation/site-context";
 import type { FlatOrganisationUnit } from "@/modules/organisation/unit-hierarchy";
+import {
+  clearSessionAndRedirectToLogin,
+  isRecoverableAuthSessionFailure,
+} from "@/modules/identity/auth-session-redirect";
 import { throwPlatformBoundaryError } from "@/platform/observability/platform-boundary";
 import { readRequestPathname } from "@/platform/http/request-path";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -70,6 +74,10 @@ export const loadAccessibleOrganisationUnits = cache(
       .order("name");
 
     if (error) {
+      if (isRecoverableAuthSessionFailure(error)) {
+        await clearSessionAndRedirectToLogin();
+      }
+
       throwPlatformBoundaryError({
         category: "active_site",
         operation: "organisation_units",

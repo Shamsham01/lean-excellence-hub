@@ -1,96 +1,209 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 import {
   activateProblemSolvingCase,
   cancelProblemSolvingCase,
   closeProblemSolvingCase,
-  moveProblemSolvingStage,
 } from "@/app/(platform)/platform/problem-solving/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { isTerminalCaseStatus } from "@/lib/problem-solving/case-lifecycle";
+import {
   CLOSURE_OUTCOMES,
+  RESOLVED_CLOSURE_EFFECTIVENESS_BLOCK_REASON,
   closureOutcomeLabel,
+  isResolvedClosureOutcome,
+  resolvedClosureBlockedByEffectiveness,
 } from "@/lib/problem-solving/closure";
+import type { PinnedMethodVersionContext } from "@/lib/problem-solving/load-case-workspace-data";
+import { resolveDraftMethodActivationView } from "@/lib/problem-solving/method-activation";
 import {
   problemSolvingStatusBadgeVariant,
   problemSolvingStatusLabel,
   priorityLabel,
   severityLabel,
 } from "@/lib/problem-solving/status";
-import {
-  sortMethodStages,
-  type MethodStage,
-} from "@/lib/problem-solving/stages";
-import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
+import type {
+  ProblemSolvingCaseDetail,
+  ProblemSolvingMethod,
+} from "@/lib/problem-solving/types";
 import { cn } from "@/lib/utils";
+
+type CloseCaseDialogFieldsProps = {
+  closureOutcome: string;
+  onClosureOutcomeChange: (value: string) => void;
+  closureRationale: string;
+  onClosureRationaleChange: (value: string) => void;
+  resolvedClosureBlocked: boolean;
+};
+
+function CloseCaseDialogFields({
+  closureOutcome,
+  onClosureOutcomeChange,
+  closureRationale,
+  onClosureRationaleChange,
+  resolvedClosureBlocked,
+}: CloseCaseDialogFieldsProps) {
+  return (
+    <div className="flex flex-col gap-3">
+      <label className="flex flex-col gap-1 text-sm">
+        <span>Closure outcome</span>
+        <select
+          className="border-input min-h-11 rounded-md border bg-elevated px-3 py-2 text-sm shadow-xs focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          value={closureOutcome}
+          onChange={(e) => onClosureOutcomeChange(e.target.value)}
+          data-testid="closure-outcome-select"
+        >
+          {CLOSURE_OUTCOMES.map((outcome) => {
+            const disabled =
+              resolvedClosureBlocked && isResolvedClosureOutcome(outcome);
+            return (
+              <option
+                key={outcome}
+                value={outcome}
+                disabled={disabled}
+                title={
+                  disabled
+                    ? RESOLVED_CLOSURE_EFFECTIVENESS_BLOCK_REASON
+                    : undefined
+                }
+              >
+                {closureOutcomeLabel(outcome)}
+                {disabled ? " — blocked" : ""}
+              </option>
+            );
+          })}
+        </select>
+      </label>
+      {resolvedClosureBlocked ? (
+        <p
+          className="text-sm text-destructive"
+          role="alert"
+          data-testid="closure-resolved-blocked-reason"
+        >
+          {RESOLVED_CLOSURE_EFFECTIVENESS_BLOCK_REASON} Resolved outcomes are
+          disabled until every check passes.
+        </p>
+      ) : null}
+      <label className="flex flex-col gap-1 text-sm">
+        <span>Rationale</span>
+        <textarea
+          className="border-input min-h-20 rounded-md border bg-background px-3 py-2"
+          value={closureRationale}
+          onChange={(e) => onClosureRationaleChange(e.target.value)}
+          data-testid="closure-rationale"
+        />
+      </label>
+    </div>
+  );
+}
 
 type CaseHeaderProps = {
   detail: ProblemSolvingCaseDetail;
-  methodStages: MethodStage[];
   ownerName?: string | null;
   facilitatorName?: string | null;
   targetDueDateLabel?: string | null;
+  methodLabel?: string | null;
   canManage: boolean;
-  canFacilitate: boolean;
   canClose: boolean;
-  methods: Array<{ id: string; name: string }>;
-  message?: string | null;
-  onMessage?: (message: string) => void;
+  methods: ProblemSolvingMethod[];
+  pinnedMethodVersion: PinnedMethodVersionContext | null;
+  onMessage?: (message: string, tone?: "success" | "error") => void;
+  displayedCurrentStageTitle?: string | null;
+  stageProgressNotice?: string | null;
+  onCaseStatusChanged?: () => void;
+  historySlot?: ReactNode;
+  activitySlot?: ReactNode;
 };
 
 export function CaseHeader({
   detail,
-  methodStages,
   ownerName,
   facilitatorName,
   targetDueDateLabel,
+  methodLabel,
   canManage,
-  canFacilitate,
   canClose,
   methods,
-  message,
+  pinnedMethodVersion,
   onMessage,
+  displayedCurrentStageTitle,
+  stageProgressNotice,
+  onCaseStatusChanged,
+  historySlot,
+  activitySlot,
 }: CaseHeaderProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [selectedMethodId, setSelectedMethodId] = useState(
-    methods[0]?.id ?? "",
+  const pinnedMethodView = useMemo(
+    () =>
+      resolveDraftMethodActivationView({
+        methodVersionId: detail.method_version_id,
+        methods,
+        pinnedVersion: pinnedMethodVersion,
+      }),
+    [detail.method_version_id, methods, pinnedMethodVersion],
   );
+  const [selectedMethodId, setSelectedMethodId] = useState(
+    pinnedMethodView?.methodId ?? methods[0]?.id ?? "",
+  );
+  const [activateFeedback, setActivateFeedback] = useState<{
+    tone: "success" | "error";
+    text: string;
+  } | null>(null);
   const [showCloseDialog, setShowCloseDialog] = useState(false);
   const [closureOutcome, setClosureOutcome] = useState<string>(
     "resolved_verified_cause",
   );
   const [closureRationale, setClosureRationale] = useState("");
-  const sortedStages = sortMethodStages(methodStages);
-  const currentStageId = detail.current_method_stage_id;
-
   const showActivate =
     canManage && detail.status === "draft" && methods.length > 0;
   const showClose = canClose && detail.status === "active";
   const showCancel = canManage && ["draft", "active"].includes(detail.status);
-  const canMoveStage =
-    (canManage || canFacilitate) &&
-    detail.status === "active" &&
-    sortedStages.length > 0;
+  const resolvedClosureBlocked = useMemo(
+    () => resolvedClosureBlockedByEffectiveness(detail.effectiveness_checks),
+    [detail.effectiveness_checks],
+  );
+  const closeConfirmDisabled =
+    loading ||
+    (resolvedClosureBlocked && isResolvedClosureOutcome(closureOutcome));
 
-  async function handleActivate() {
-    const methodId = selectedMethodId || methods[0]?.id;
-    if (!methodId) return;
-    setLoading(true);
-    const result = await activateProblemSolvingCase(detail.id, methodId);
-    onMessage?.(result.error ?? "Case activated");
-    setLoading(false);
-    router.refresh();
+  function openCloseDialog() {
+    setClosureRationale("");
+    setClosureOutcome(
+      resolvedClosureBlocked ? "transferred" : "resolved_verified_cause",
+    );
+    setShowCloseDialog(true);
   }
 
-  async function handleMoveStage(stageId: string) {
+  async function handleActivate() {
+    const methodId =
+      pinnedMethodView?.methodId || selectedMethodId || methods[0]?.id;
+    if (!methodId) return;
     setLoading(true);
-    const result = await moveProblemSolvingStage(detail.id, stageId);
-    onMessage?.(result.error ?? "Stage updated");
+    setActivateFeedback(null);
+    const result = await activateProblemSolvingCase(detail.id, methodId);
+    if (result.error) {
+      setActivateFeedback({ tone: "error", text: result.error });
+      onMessage?.(result.error, "error");
+      setLoading(false);
+      return;
+    }
+    setActivateFeedback({
+      tone: "success",
+      text: "Case activated. Method and first stage are now locked for this investigation.",
+    });
+    onMessage?.("Case activated", "success");
     setLoading(false);
     router.refresh();
   }
@@ -102,11 +215,54 @@ export function CaseHeader({
       closureOutcome,
       closureRationale.trim() || undefined,
     );
-    onMessage?.(result.error ?? "Case closed");
+    if (result.error) {
+      onMessage?.(result.error, "error");
+      setLoading(false);
+      return;
+    }
+    onMessage?.("Case closed", "success");
     setShowCloseDialog(false);
+    onCaseStatusChanged?.();
+    await router.refresh();
     setLoading(false);
-    router.refresh();
   }
+
+  const closeCaseDialog = (
+    <Dialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
+      <DialogContent
+        className="max-w-lg"
+        data-testid="problem-solving-close-dialog"
+      >
+        <DialogHeader>
+          <DialogTitle>Close problem solving case</DialogTitle>
+        </DialogHeader>
+        <CloseCaseDialogFields
+          closureOutcome={closureOutcome}
+          onClosureOutcomeChange={setClosureOutcome}
+          closureRationale={closureRationale}
+          onClosureRationaleChange={setClosureRationale}
+          resolvedClosureBlocked={resolvedClosureBlocked}
+        />
+        <DialogFooter className="gap-2 sm:justify-end">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowCloseDialog(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            disabled={closeConfirmDisabled}
+            onClick={() => void handleClose()}
+            data-testid="confirm-close-case"
+          >
+            Confirm close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 
   async function handleCancel() {
     setLoading(true);
@@ -114,22 +270,202 @@ export function CaseHeader({
       detail.id,
       "Cancelled from workspace",
     );
-    onMessage?.(result.error ?? "Case cancelled");
+    onMessage?.(
+      result.error ?? "Case cancelled",
+      result.error ? "error" : "success",
+    );
     setLoading(false);
     router.refresh();
   }
 
+  const useWorkspaceHeader =
+    (detail.status === "active" && !showActivate) ||
+    detail.status === "closed" ||
+    detail.status === "cancelled";
+
+  if (useWorkspaceHeader) {
+    const eyebrowLabel = isTerminalCaseStatus(detail.status)
+      ? problemSolvingStatusLabel(detail.status)
+      : (detail.case_number ??
+        (detail.status === "draft" ? "Draft case" : null));
+    const resolvedEyebrow =
+      eyebrowLabel ?? problemSolvingStatusLabel(detail.status);
+    const metaParts: ReactNode[] = [
+      detail.unit_name ? (
+        <span key="unit">Unit: {detail.unit_name}</span>
+      ) : null,
+      ownerName ? (
+        <span key="owner">
+          Owner:{" "}
+          <span
+            className="font-medium text-foreground"
+            data-testid="problem-solving-owner-name"
+          >
+            {ownerName}
+          </span>
+        </span>
+      ) : null,
+      facilitatorName ? (
+        <span key="facilitator">
+          Facilitator:{" "}
+          <span
+            className="font-medium text-foreground"
+            data-testid="problem-solving-facilitator-name"
+          >
+            {facilitatorName}
+          </span>
+        </span>
+      ) : null,
+      methodLabel ? <span key="method">Method: {methodLabel}</span> : null,
+      detail.status === "closed" && detail.closure_outcome ? (
+        <span key="outcome">
+          Outcome: {closureOutcomeLabel(detail.closure_outcome)}
+        </span>
+      ) : null,
+      detail.status === "closed" && detail.closed_at ? (
+        <span key="closed">
+          Closed {new Date(detail.closed_at).toLocaleDateString("en-GB")}
+        </span>
+      ) : null,
+    ].filter(Boolean);
+
+    return (
+      <div
+        className="flex flex-col gap-3 py-3.5 lg:flex-row lg:items-start lg:justify-between"
+        data-testid="problem-solving-header"
+      >
+        <div className="min-w-0 flex-1">
+          <p
+            className="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+            data-testid="problem-solving-header-eyebrow"
+          >
+            {resolvedEyebrow}
+          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <Badge
+              variant={problemSolvingStatusBadgeVariant(detail.status)}
+              className="font-mono-data text-[10px] uppercase"
+            >
+              {problemSolvingStatusLabel(detail.status)}
+            </Badge>
+            {detail.case_number ? (
+              <span className="font-mono-data text-xs text-muted-foreground">
+                {detail.case_number}
+              </span>
+            ) : null}
+            {detail.closure_outcome ? (
+              <Badge variant="secondary" className="text-[10px]">
+                {closureOutcomeLabel(detail.closure_outcome)}
+              </Badge>
+            ) : null}
+            <h1 className="text-lg font-semibold tracking-tight text-foreground">
+              {detail.title}
+            </h1>
+          </div>
+          {detail.status === "active" && displayedCurrentStageTitle ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Current stage:{" "}
+              <span
+                className="font-medium text-foreground"
+                data-testid="problem-solving-current-stage"
+              >
+                {displayedCurrentStageTitle}
+              </span>
+            </p>
+          ) : null}
+          {stageProgressNotice ? (
+            <p
+              className="mt-1 text-xs text-amber-900 dark:text-amber-200"
+              data-testid="pps-countermeasures-before-verify-notice"
+            >
+              {stageProgressNotice}
+            </p>
+          ) : null}
+          {detail.status === "closed" || detail.status === "cancelled" ? (
+            <div
+              className="mt-2 rounded-md border border-border bg-muted/20 px-3 py-2 text-sm"
+              data-testid="problem-solving-closure-summary"
+            >
+              {detail.status === "closed" ? (
+                <>
+                  <p className="font-medium text-foreground">
+                    Outcome:{" "}
+                    {detail.closure_outcome
+                      ? closureOutcomeLabel(detail.closure_outcome)
+                      : "—"}
+                  </p>
+                  {detail.closure_rationale ? (
+                    <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
+                      {detail.closure_rationale}
+                    </p>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <p className="font-medium text-foreground">Case cancelled</p>
+                  {detail.cancellation_rationale ? (
+                    <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
+                      {detail.cancellation_rationale}
+                    </p>
+                  ) : null}
+                </>
+              )}
+            </div>
+          ) : null}
+          {metaParts.length > 0 ? (
+            <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+              {metaParts.map((part, index) => (
+                <span key={index} className="inline-flex items-center gap-x-2">
+                  {index > 0 ? <span aria-hidden="true">·</span> : null}
+                  {part}
+                </span>
+              ))}
+            </p>
+          ) : null}
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {historySlot}
+          {activitySlot}
+          {showClose ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={openCloseDialog}
+              disabled={loading}
+              data-testid="problem-solving-close-button"
+            >
+              Close case
+            </Button>
+          ) : null}
+          {showCancel ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCancel}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+          ) : null}
+        </div>
+        {closeCaseDialog}
+      </div>
+    );
+  }
+
   return (
     <div
-      className="flex flex-col gap-4 border-b border-border pb-6"
+      className="flex flex-col gap-3 py-3"
       data-testid="problem-solving-header"
     >
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-muted-foreground">
+          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
             {detail.case_number ?? "Draft case"}
           </p>
-          <h1 className="typography-page-title">{detail.title}</h1>
+          <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+            {detail.title}
+          </h1>
           <div className="mt-3 flex flex-wrap gap-2">
             <Badge variant={problemSolvingStatusBadgeVariant(detail.status)}>
               {problemSolvingStatusLabel(detail.status)}
@@ -142,7 +478,7 @@ export function CaseHeader({
               </Badge>
             ) : null}
           </div>
-          <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+          <dl className="mt-2 grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4 lg:text-sm">
             {detail.unit_name ? (
               <div>
                 <dt className="text-muted-foreground">Unit</dt>
@@ -185,35 +521,88 @@ export function CaseHeader({
             ) : null}
           </dl>
         </div>
-        <div className="flex shrink-0 flex-col gap-2">
+        <div className="flex w-full shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:flex-col lg:items-stretch">
+          {historySlot}
+          {activitySlot}
           {showActivate ? (
             <>
-              <select
-                className="border-input min-h-11 rounded-md border bg-background px-3 py-2 text-sm"
-                value={selectedMethodId}
-                onChange={(e) => setSelectedMethodId(e.target.value)}
-                data-testid="activate-method-select"
-              >
-                {methods.map((method) => (
-                  <option key={method.id} value={method.id}>
-                    {method.name}
-                  </option>
-                ))}
-              </select>
+              {pinnedMethodView ? (
+                <div
+                  className="rounded-md border border-border bg-muted/20 px-3 py-2 text-sm"
+                  data-testid="activate-method-locked"
+                >
+                  <p className="font-medium">{pinnedMethodView.label}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Method version chosen at draft creation. Activation uses
+                    this exact version — it cannot be changed here.
+                  </p>
+                  {pinnedMethodView.summary ? (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {pinnedMethodView.summary}
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <>
+                  <label className="flex flex-col gap-1 text-sm">
+                    <span>Method</span>
+                    <select
+                      className="border-input min-h-11 w-full rounded-md border bg-elevated px-3 py-2 text-sm shadow-xs focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                      value={selectedMethodId}
+                      onChange={(e) => setSelectedMethodId(e.target.value)}
+                      data-testid="activate-method-select"
+                    >
+                      {methods.map((method) => (
+                        <option key={method.id} value={method.id}>
+                          {method.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <p className="text-xs text-muted-foreground">
+                    Activation pins the latest published version of the selected
+                    method and opens the first stage.
+                  </p>
+                </>
+              )}
               <Button
-                size="sm"
+                className="min-h-11 w-full lg:w-auto"
                 onClick={handleActivate}
                 disabled={loading}
                 data-testid="problem-solving-activate-button"
               >
                 Activate case
               </Button>
+              {activateFeedback ? (
+                <p
+                  className={cn(
+                    "rounded-md border px-3 py-2 text-sm",
+                    activateFeedback.tone === "error"
+                      ? "border-destructive/40 bg-destructive/5 text-destructive"
+                      : "border-border bg-muted/30 text-muted-foreground",
+                  )}
+                  data-testid="problem-solving-activate-feedback"
+                  role={activateFeedback.tone === "error" ? "alert" : "status"}
+                >
+                  {activateFeedback.text}
+                </p>
+              ) : null}
             </>
+          ) : null}
+          {canManage && detail.status === "draft" && methods.length === 0 ? (
+            <p
+              className="text-sm text-destructive"
+              role="alert"
+              data-testid="problem-solving-no-methods"
+            >
+              No problem-solving methods are available for this organisation.
+              Ask an administrator to configure a method before activating.
+            </p>
           ) : null}
           {showClose ? (
             <Button
               size="sm"
-              onClick={() => setShowCloseDialog(true)}
+              onClick={openCloseDialog}
               disabled={loading}
               data-testid="problem-solving-close-button"
             >
@@ -233,96 +622,7 @@ export function CaseHeader({
         </div>
       </div>
 
-      {showCloseDialog ? (
-        <div
-          className="rounded-md border border-border bg-muted/20 p-4"
-          data-testid="problem-solving-close-dialog"
-        >
-          <p className="mb-3 text-sm font-medium">Close problem solving case</p>
-          <div className="flex flex-col gap-3">
-            <label className="flex flex-col gap-1 text-sm">
-              <span>Closure outcome</span>
-              <select
-                className="border-input min-h-11 rounded-md border bg-background px-3 py-2"
-                value={closureOutcome}
-                onChange={(e) => setClosureOutcome(e.target.value)}
-                data-testid="closure-outcome-select"
-              >
-                {CLOSURE_OUTCOMES.map((outcome) => (
-                  <option key={outcome} value={outcome}>
-                    {closureOutcomeLabel(outcome)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span>Rationale</span>
-              <textarea
-                className="border-input min-h-20 rounded-md border bg-background px-3 py-2"
-                value={closureRationale}
-                onChange={(e) => setClosureRationale(e.target.value)}
-                data-testid="closure-rationale"
-              />
-            </label>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                disabled={loading}
-                onClick={handleClose}
-                data-testid="confirm-close-case"
-              >
-                Confirm close
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowCloseDialog(false)}
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {sortedStages.length > 0 ? (
-        <nav
-          className="flex [scrollbar-width:none] gap-2 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden"
-          data-testid="problem-solving-stage-stepper"
-        >
-          {sortedStages.map((stage, index) => {
-            const isCurrent = stage.id === currentStageId;
-            const isPast =
-              currentStageId &&
-              sortedStages.findIndex((s) => s.id === currentStageId) > index;
-            return (
-              <button
-                key={stage.id}
-                type="button"
-                disabled={!canMoveStage || loading || isCurrent}
-                onClick={() => handleMoveStage(stage.id)}
-                className={cn(
-                  "min-h-9 shrink-0 rounded-md border px-3 py-2 text-xs font-medium",
-                  isCurrent
-                    ? "border-primary bg-primary/10 text-foreground"
-                    : isPast
-                      ? "border-border bg-muted/40 text-muted-foreground"
-                      : "border-border text-muted-foreground",
-                )}
-                data-testid={`problem-solving-stage-${stage.semantic_stage_key}`}
-              >
-                {index + 1}. {stage.title}
-              </button>
-            );
-          })}
-        </nav>
-      ) : null}
-
-      {message ? (
-        <p className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-          {message}
-        </p>
-      ) : null}
+      {closeCaseDialog}
     </div>
   );
 }

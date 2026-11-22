@@ -177,6 +177,7 @@ export function ScheduleForm({
           requiresSiteSelection={requiresSiteSelection}
           {...(unitEmptyMessage ? { emptyMessage: unitEmptyMessage } : {})}
           testId="schedule-unit-select"
+          scrollOnMobile={!isEdit}
         />
         <PersonSelect
           id="ownerMembershipId"

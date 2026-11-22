@@ -5,6 +5,8 @@ import {
   buildGembaWalkPromptSearch,
   gembaWalkPath,
   readGembaWalkPromptIdFromSearch,
+  resolveActiveGembaWalkPromptIndex,
+  resolveGembaWalkPromptId,
   resolveGembaWalkPromptIndex,
 } from "@/modules/operational/gemba-walk-prompt";
 
@@ -50,5 +52,40 @@ describe("Gemba walk prompt restore", () => {
 
   it("builds the canonical walk path without a prompt query", () => {
     expect(gembaWalkPath("walk-1")).toBe("/platform/gemba/walks/walk-1");
+  });
+
+  it("prefers URL identity over stored identity for the active index", () => {
+    expect(
+      resolveActiveGembaWalkPromptIndex({
+        questionIds: QUESTION_IDS,
+        urlPromptId: "q-1",
+        storedPromptId: "q-3",
+      }),
+    ).toBe(0);
+  });
+
+  it("prefers the browser URL when router and window prompt params disagree", () => {
+    expect(
+      resolveGembaWalkPromptId({
+        windowPromptId: "q-1",
+        routerPromptId: "q-2",
+      }),
+    ).toBe("q-1");
+    expect(
+      resolveGembaWalkPromptId({
+        windowPromptId: "q-2",
+        routerPromptId: "q-2",
+      }),
+    ).toBe("q-2");
+  });
+
+  it("uses stored identity only when the URL prompt is absent", () => {
+    expect(
+      resolveActiveGembaWalkPromptIndex({
+        questionIds: QUESTION_IDS,
+        urlPromptId: null,
+        storedPromptId: "q-3",
+      }),
+    ).toBe(2);
   });
 });

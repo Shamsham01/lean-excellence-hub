@@ -1,3 +1,4 @@
+import { InlineAlert } from "@/components/ui/alert";
 import { notFound } from "next/navigation";
 
 import { RolloutGovernancePanel } from "@/components/organisation-rollout/rollout-governance-panel";
@@ -84,10 +85,10 @@ export default async function OrganisationSettingsPage({
             data-testid="multi-site-intent-form"
           >
             {error === "intent" ? (
-              <p className="text-sm text-destructive" role="alert">
+              <InlineAlert tone="error">
                 Organisation context could not be updated. Ask an organisation
                 administrator if this continues.
-              </p>
+              </InlineAlert>
             ) : null}
             <label htmlFor="multiSiteIntent" className="text-sm font-medium">
               Wider multi-site organisation

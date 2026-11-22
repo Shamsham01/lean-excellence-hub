@@ -1,8 +1,10 @@
-import { notFound } from "next/navigation";
-
+import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
 import { CasePortfolio } from "@/components/problem-solving/case-portfolio";
+import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { PageHeader } from "@/components/platform/page-header";
-import { AppLink } from "@/components/ui/app-link";
+import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
+import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
+import { ModulePortfolioNewLink } from "@/components/billing/module-portfolio-actions";
 import { Button } from "@/components/ui/button";
 import { callProblemSolvingRpc } from "@/lib/problem-solving/supabase-untyped";
 import type {
@@ -10,6 +12,7 @@ import type {
   ProblemSolvingOverview,
 } from "@/lib/problem-solving/types";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function ProblemSolvingPortfolioPage({
@@ -19,13 +22,22 @@ export default async function ProblemSolvingPortfolioPage({
     status?: string;
     search?: string;
     severity?: string;
+    range?: string;
   }>;
 }) {
   const params = await searchParams;
-  const canView = await currentMemberHasPermission("problem_solving.view");
-  if (!canView) notFound();
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: "problem_solving.view",
+    module: "problem_solving",
+    title: "Problem solving",
+    baselineOpensModule: true,
+  });
+  if (workplaceView) return workplaceView;
 
   const supabase = await createServerSupabaseClient();
+  const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
+    parseAnalyticsRangeDays(params.range),
+  );
   const canCreate = await currentMemberHasPermission("problem_solving.create");
   const { data: overviewData } =
     await callProblemSolvingRpc<ProblemSolvingOverview>(
@@ -60,17 +72,14 @@ export default async function ProblemSolvingPortfolioPage({
     >
       <PageHeader
         title="Problem solving"
-        description="Structured root cause analysis and countermeasure tracking across the portfolio."
         actions={
           canCreate ? (
-            <Button size="sm" asChild>
-              <AppLink
-                href="/platform/problem-solving/new"
-                data-testid="problem-solving-new-link"
-              >
-                New case
-              </AppLink>
-            </Button>
+            <ModulePortfolioNewLink
+              href="/platform/problem-solving/new"
+              testId="problem-solving-new-link"
+            >
+              New case
+            </ModulePortfolioNewLink>
           ) : null
         }
       />
@@ -83,6 +92,12 @@ export default async function ProblemSolvingPortfolioPage({
         severityFilter={params.severity ?? null}
         canCreate={canCreate}
       />
+      <ModulePageInsightsDeferred
+        module="problem-solving"
+        rangeDays={analyticsRange.days}
+        testId="pps-analytics"
+      />
+      <WorkplaceSharedRecords module="problem_solving" />
     </div>
   );
 }

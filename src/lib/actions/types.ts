@@ -1,4 +1,5 @@
 import type { ActionPriority, ActionStatus } from "@/lib/actions/status";
+import type { ProjectLinkSummary } from "@/lib/projects/types";
 
 export type ActionSourceSummary = {
   id: string;
@@ -33,11 +34,33 @@ export type ActionPermissions = {
   can_cancel: boolean;
 };
 
+export type ActionLabel = {
+  id: string;
+  name: string;
+  color: string;
+};
+
+export type ActionChecklistItem = {
+  id: string;
+  title: string;
+  is_done: boolean;
+  sort_order: number;
+  completed_at: string | null;
+};
+
+export type ActionCardCoverAttachment = {
+  id: string;
+  filename: string;
+  mime_type: string;
+  storage_object_path: string;
+};
+
 export type ActionDetail = {
   id: string;
   action_number: string;
   title: string;
   description: string | null;
+  expected_result?: string | null;
   status: ActionStatus | string;
   priority: ActionPriority | string;
   due_at: string | null;
@@ -56,6 +79,11 @@ export type ActionDetail = {
   assignees: ActionAssignee[];
   status_history: ActionStatusHistoryEntry[];
   permissions: ActionPermissions;
+  labels?: ActionLabel[];
+  checklist_items?: ActionChecklistItem[];
+  comment_count?: number;
+  card_cover_attachment?: ActionCardCoverAttachment | null;
+  linked_project?: ProjectLinkSummary | null;
 };
 
 export type LinkedSuggestionAction = {
@@ -70,4 +98,5 @@ export type LinkedSuggestionAction = {
 export type AssignablePerson = {
   membership_id: string;
   display_name: string;
+  avatar_url?: string | null;
 };

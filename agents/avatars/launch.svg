@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="LAUNCH agent mark">
+  <rect width="512" height="512" fill="#0a0a0a"/>
+
+  <polygon points="256,80 320,360 256,320 192,360" fill="#EAB308"/>
+  <rect x="232" y="320" width="48" height="120" rx="8" fill="#CA8A04"/>
+  <path d="M180 400 Q256 440 332 400" fill="none" stroke="#FDE047" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="256" cy="200" r="24" fill="#FDE047" opacity="0.9"/>
+
+</svg>

@@ -142,6 +142,129 @@ export type Database = {
           },
         ]
       }
+      action_checklist_items: {
+        Row: {
+          action_id: string
+          completed_at: string | null
+          completed_by_membership_id: string | null
+          created_at: string
+          id: string
+          is_done: boolean
+          organisation_id: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action_id: string
+          completed_at?: string | null
+          completed_by_membership_id?: string | null
+          created_at?: string
+          id?: string
+          is_done?: boolean
+          organisation_id: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          action_id?: string
+          completed_at?: string | null
+          completed_by_membership_id?: string | null
+          created_at?: string
+          id?: string
+          is_done?: boolean
+          organisation_id?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_checklist_items_action_fkey"
+            columns: ["organisation_id", "action_id"]
+            isOneToOne: false
+            referencedRelation: "actions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "action_checklist_items_completer_fkey"
+            columns: ["organisation_id", "completed_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      action_label_assignments: {
+        Row: {
+          action_id: string
+          assigned_at: string
+          id: string
+          label_id: string
+          organisation_id: string
+        }
+        Insert: {
+          action_id: string
+          assigned_at?: string
+          id?: string
+          label_id: string
+          organisation_id: string
+        }
+        Update: {
+          action_id?: string
+          assigned_at?: string
+          id?: string
+          label_id?: string
+          organisation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_label_assignments_action_fkey"
+            columns: ["organisation_id", "action_id"]
+            isOneToOne: false
+            referencedRelation: "actions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "action_label_assignments_label_fkey"
+            columns: ["organisation_id", "label_id"]
+            isOneToOne: false
+            referencedRelation: "action_labels"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      action_labels: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          organisation_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          organisation_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          organisation_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       action_status_transitions: {
         Row: {
           action_id: string
@@ -193,11 +316,13 @@ export type Database = {
       actions: {
         Row: {
           action_number: string
+          card_cover_attachment_id: string | null
           completed_at: string | null
           created_at: string
           created_by_membership_id: string
           description: string | null
           due_at: string | null
+          expected_result: string | null
           id: string
           idempotency_key: string | null
           organisation_id: string
@@ -213,11 +338,13 @@ export type Database = {
         }
         Insert: {
           action_number: string
+          card_cover_attachment_id?: string | null
           completed_at?: string | null
           created_at?: string
           created_by_membership_id: string
           description?: string | null
           due_at?: string | null
+          expected_result?: string | null
           id: string
           idempotency_key?: string | null
           organisation_id: string
@@ -233,11 +360,13 @@ export type Database = {
         }
         Update: {
           action_number?: string
+          card_cover_attachment_id?: string | null
           completed_at?: string | null
           created_at?: string
           created_by_membership_id?: string
           description?: string | null
           due_at?: string | null
+          expected_result?: string | null
           id?: string
           idempotency_key?: string | null
           organisation_id?: string
@@ -252,6 +381,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "actions_card_cover_attachment_fkey"
+            columns: ["organisation_id", "card_cover_attachment_id"]
+            isOneToOne: false
+            referencedRelation: "attachments"
+            referencedColumns: ["organisation_id", "id"]
+          },
           {
             foreignKeyName: "actions_creator_fkey"
             columns: ["organisation_id", "created_by_membership_id"]
@@ -305,6 +441,7 @@ export type Database = {
           id: string
           lesson_learned_id: string | null
           organisation_id: string
+          problem_solving_case_id: string | null
           problem_solving_session_id: string | null
           session_entry_id: string | null
           sustainment_item_id: string | null
@@ -324,6 +461,7 @@ export type Database = {
           id?: string
           lesson_learned_id?: string | null
           organisation_id: string
+          problem_solving_case_id?: string | null
           problem_solving_session_id?: string | null
           session_entry_id?: string | null
           sustainment_item_id?: string | null
@@ -343,6 +481,7 @@ export type Database = {
           id?: string
           lesson_learned_id?: string | null
           organisation_id?: string
+          problem_solving_case_id?: string | null
           problem_solving_session_id?: string | null
           session_entry_id?: string | null
           sustainment_item_id?: string | null
@@ -409,6 +548,13 @@ export type Database = {
             columns: ["organisation_id", "lesson_learned_id"]
             isOneToOne: false
             referencedRelation: "problem_solving_lessons_learned"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "ai_acceptance_provenance_problem_solving_case_id_fkey"
+            columns: ["organisation_id", "problem_solving_case_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_cases"
             referencedColumns: ["organisation_id", "id"]
           },
           {
@@ -512,6 +658,7 @@ export type Database = {
           rejection_reason: string | null
           resolved_at: string | null
           resolved_by_membership_id: string | null
+          semantic_stage_key: string | null
           status: string
         }
         Insert: {
@@ -529,6 +676,7 @@ export type Database = {
           rejection_reason?: string | null
           resolved_at?: string | null
           resolved_by_membership_id?: string | null
+          semantic_stage_key?: string | null
           status?: string
         }
         Update: {
@@ -546,6 +694,7 @@ export type Database = {
           rejection_reason?: string | null
           resolved_at?: string | null
           resolved_by_membership_id?: string | null
+          semantic_stage_key?: string | null
           status?: string
         }
         Relationships: [
@@ -626,7 +775,9 @@ export type Database = {
           ai_session_id: string
           cached_input_token_count: number
           completed_at: string | null
+          credit_accounting_status: string
           error_category: string | null
+          execution_claimed_at: string | null
           final_output: string | null
           id: string
           idempotency_key: string | null
@@ -638,6 +789,7 @@ export type Database = {
           prompt_key: string
           prompt_version: string
           provider: string
+          provider_dispatched_at: string | null
           provider_request_id: string | null
           reasoning_token_count: number
           requested_by_membership_id: string
@@ -649,7 +801,9 @@ export type Database = {
           ai_session_id: string
           cached_input_token_count?: number
           completed_at?: string | null
+          credit_accounting_status?: string
           error_category?: string | null
+          execution_claimed_at?: string | null
           final_output?: string | null
           id?: string
           idempotency_key?: string | null
@@ -661,6 +815,7 @@ export type Database = {
           prompt_key: string
           prompt_version: string
           provider: string
+          provider_dispatched_at?: string | null
           provider_request_id?: string | null
           reasoning_token_count?: number
           requested_by_membership_id: string
@@ -672,7 +827,9 @@ export type Database = {
           ai_session_id?: string
           cached_input_token_count?: number
           completed_at?: string | null
+          credit_accounting_status?: string
           error_category?: string | null
+          execution_claimed_at?: string | null
           final_output?: string | null
           id?: string
           idempotency_key?: string | null
@@ -684,6 +841,7 @@ export type Database = {
           prompt_key?: string
           prompt_version?: string
           provider?: string
+          provider_dispatched_at?: string | null
           provider_request_id?: string | null
           reasoning_token_count?: number
           requested_by_membership_id?: string
@@ -2700,6 +2858,7 @@ export type Database = {
           created_at: string
           created_by_membership_id: string
           id: string
+          link_kind: string
           organisation_id: string
           project_id: string
           source_resource_id: string
@@ -2708,6 +2867,7 @@ export type Database = {
           created_at?: string
           created_by_membership_id: string
           id?: string
+          link_kind?: string
           organisation_id: string
           project_id: string
           source_resource_id: string
@@ -2716,6 +2876,7 @@ export type Database = {
           created_at?: string
           created_by_membership_id?: string
           id?: string
+          link_kind?: string
           organisation_id?: string
           project_id?: string
           source_resource_id?: string
@@ -3121,6 +3282,7 @@ export type Database = {
           created_at: string
           created_by_membership_id: string
           id: string
+          linked_project_id: string | null
           observation: string
           organisation_id: string
           priority: string | null
@@ -3134,6 +3296,7 @@ export type Database = {
           created_at?: string
           created_by_membership_id: string
           id?: string
+          linked_project_id?: string | null
           observation: string
           organisation_id: string
           priority?: string | null
@@ -3147,6 +3310,7 @@ export type Database = {
           created_at?: string
           created_by_membership_id?: string
           id?: string
+          linked_project_id?: string | null
           observation?: string
           organisation_id?: string
           priority?: string | null
@@ -3167,6 +3331,13 @@ export type Database = {
             columns: ["organisation_id", "created_by_membership_id"]
             isOneToOne: false
             referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "five_s_audit_findings_linked_project_fkey"
+            columns: ["organisation_id", "linked_project_id"]
+            isOneToOne: false
+            referencedRelation: "ci_projects"
             referencedColumns: ["organisation_id", "id"]
           },
           {
@@ -4092,6 +4263,7 @@ export type Database = {
           created_at: string
           created_by_membership_id: string
           id: string
+          linked_project_id: string | null
           observation_text: string
           observation_type: string
           organisation_id: string
@@ -4106,6 +4278,7 @@ export type Database = {
           created_at?: string
           created_by_membership_id: string
           id?: string
+          linked_project_id?: string | null
           observation_text: string
           observation_type: string
           organisation_id: string
@@ -4120,6 +4293,7 @@ export type Database = {
           created_at?: string
           created_by_membership_id?: string
           id?: string
+          linked_project_id?: string | null
           observation_text?: string
           observation_type?: string
           organisation_id?: string
@@ -4135,6 +4309,13 @@ export type Database = {
             columns: ["organisation_id", "created_by_membership_id"]
             isOneToOne: false
             referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_walk_observations_linked_project_fkey"
+            columns: ["organisation_id", "linked_project_id"]
+            isOneToOne: false
+            referencedRelation: "ci_projects"
             referencedColumns: ["organisation_id", "id"]
           },
           {
@@ -4653,6 +4834,60 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "template_submissions"
             referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      in_app_notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          dedupe_key: string
+          href: string | null
+          id: string
+          membership_id: string
+          notification_type: string
+          organisation_id: string
+          read_at: string | null
+          title: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          dedupe_key: string
+          href?: string | null
+          id?: string
+          membership_id: string
+          notification_type: string
+          organisation_id: string
+          read_at?: string | null
+          title: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          dedupe_key?: string
+          href?: string | null
+          id?: string
+          membership_id?: string
+          notification_type?: string
+          organisation_id?: string
+          read_at?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "in_app_notifications_membership_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "in_app_notifications_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -6170,9 +6405,124 @@ export type Database = {
           },
         ]
       }
+      organisation_ai_credit_periods: {
+        Row: {
+          allowance_credits: number
+          consumed_credits: number
+          created_at: string
+          id: string
+          organisation_id: string
+          period_end: string
+          period_start: string
+          reserved_credits: number
+        }
+        Insert: {
+          allowance_credits: number
+          consumed_credits?: number
+          created_at?: string
+          id?: string
+          organisation_id: string
+          period_end: string
+          period_start: string
+          reserved_credits?: number
+        }
+        Update: {
+          allowance_credits?: number
+          consumed_credits?: number
+          created_at?: string
+          id?: string
+          organisation_id?: string
+          period_end?: string
+          period_start?: string
+          reserved_credits?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organisation_ai_credit_periods_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organisation_ai_credit_reservations: {
+        Row: {
+          actual_provider_credits: number | null
+          ai_run_id: string
+          created_at: string
+          customer_settled_credits: number | null
+          id: string
+          idempotency_key: string
+          organisation_id: string
+          overrun_credits: number
+          period_id: string
+          rate_card_version: string | null
+          rate_snapshot: Json | null
+          reserved_credits: number
+          settle_cost_unknown: boolean
+          settled_at: string | null
+          settled_credits: number | null
+          status: string
+        }
+        Insert: {
+          actual_provider_credits?: number | null
+          ai_run_id: string
+          created_at?: string
+          customer_settled_credits?: number | null
+          id?: string
+          idempotency_key: string
+          organisation_id: string
+          overrun_credits?: number
+          period_id: string
+          rate_card_version?: string | null
+          rate_snapshot?: Json | null
+          reserved_credits: number
+          settle_cost_unknown?: boolean
+          settled_at?: string | null
+          settled_credits?: number | null
+          status?: string
+        }
+        Update: {
+          actual_provider_credits?: number | null
+          ai_run_id?: string
+          created_at?: string
+          customer_settled_credits?: number | null
+          id?: string
+          idempotency_key?: string
+          organisation_id?: string
+          overrun_credits?: number
+          period_id?: string
+          rate_card_version?: string | null
+          rate_snapshot?: Json | null
+          reserved_credits?: number
+          settle_cost_unknown?: boolean
+          settled_at?: string | null
+          settled_credits?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organisation_ai_credit_reservations_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organisation_ai_credit_reservations_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_ai_credit_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organisation_ai_settings: {
         Row: {
           ai_enabled: boolean
+          credit_period_anchor_day: number
+          credit_policy_enforced: boolean
           journey_event_retention_days: number
           monthly_token_ceiling: number | null
           organisation_id: string
@@ -6183,6 +6533,8 @@ export type Database = {
         }
         Insert: {
           ai_enabled?: boolean
+          credit_period_anchor_day?: number
+          credit_policy_enforced?: boolean
           journey_event_retention_days?: number
           monthly_token_ceiling?: number | null
           organisation_id: string
@@ -6193,6 +6545,8 @@ export type Database = {
         }
         Update: {
           ai_enabled?: boolean
+          credit_period_anchor_day?: number
+          credit_policy_enforced?: boolean
           journey_event_retention_days?: number
           monthly_token_ceiling?: number | null
           organisation_id?: string
@@ -6346,6 +6700,7 @@ export type Database = {
           intended_job_function_id: string | null
           intended_organisational_unit_id: string | null
           invitation_id: string
+          invitee_confirmed_display_name: string | null
           organisation_id: string
         }
         Insert: {
@@ -6354,6 +6709,7 @@ export type Database = {
           intended_job_function_id?: string | null
           intended_organisational_unit_id?: string | null
           invitation_id: string
+          invitee_confirmed_display_name?: string | null
           organisation_id: string
         }
         Update: {
@@ -6362,6 +6718,7 @@ export type Database = {
           intended_job_function_id?: string | null
           intended_organisational_unit_id?: string | null
           invitation_id?: string
+          invitee_confirmed_display_name?: string | null
           organisation_id?: string
         }
         Relationships: [
@@ -6399,6 +6756,7 @@ export type Database = {
         Row: {
           auth_user_id: string | null
           canonical_recipient: string
+          confirmed_display_name: string | null
           consumed_at: string | null
           created_at: string
           expires_at: string
@@ -6410,6 +6768,7 @@ export type Database = {
         Insert: {
           auth_user_id?: string | null
           canonical_recipient: string
+          confirmed_display_name?: string | null
           consumed_at?: string | null
           created_at?: string
           expires_at: string
@@ -6421,6 +6780,7 @@ export type Database = {
         Update: {
           auth_user_id?: string | null
           canonical_recipient?: string
+          confirmed_display_name?: string | null
           consumed_at?: string | null
           created_at?: string
           expires_at?: string
@@ -6854,6 +7214,180 @@ export type Database = {
         }
         Relationships: []
       }
+      people_invitation_import_jobs: {
+        Row: {
+          completed_at: string | null
+          content_fingerprint: string | null
+          created_at: string
+          created_by_membership_id: string
+          created_invitation_rows: number
+          created_unit_rows: number
+          error_rows: number
+          failed_rows: number
+          id: string
+          organisation_id: string
+          original_filename: string
+          skipped_rows: number
+          started_at: string | null
+          status: string
+          total_rows: number
+          updated_at: string
+          valid_rows: number
+          validation_completed_at: string | null
+          warning_rows: number
+        }
+        Insert: {
+          completed_at?: string | null
+          content_fingerprint?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          created_invitation_rows?: number
+          created_unit_rows?: number
+          error_rows?: number
+          failed_rows?: number
+          id?: string
+          organisation_id: string
+          original_filename: string
+          skipped_rows?: number
+          started_at?: string | null
+          status?: string
+          total_rows?: number
+          updated_at?: string
+          valid_rows?: number
+          validation_completed_at?: string | null
+          warning_rows?: number
+        }
+        Update: {
+          completed_at?: string | null
+          content_fingerprint?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          created_invitation_rows?: number
+          created_unit_rows?: number
+          error_rows?: number
+          failed_rows?: number
+          id?: string
+          organisation_id?: string
+          original_filename?: string
+          skipped_rows?: number
+          started_at?: string | null
+          status?: string
+          total_rows?: number
+          updated_at?: string
+          valid_rows?: number
+          validation_completed_at?: string | null
+          warning_rows?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "people_invitation_import_jobs_actor_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "people_invitation_import_jobs_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      people_invitation_import_rows: {
+        Row: {
+          created_at: string
+          created_invitation_id: string | null
+          created_unit_id: string | null
+          error_code: string | null
+          error_message: string | null
+          field_errors: Json | null
+          id: string
+          import_job_id: string
+          input_payload: Json
+          organisation_id: string
+          recipient_key: string | null
+          record_type: string
+          resolved_payload: Json | null
+          row_number: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_invitation_id?: string | null
+          created_unit_id?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          field_errors?: Json | null
+          id?: string
+          import_job_id: string
+          input_payload: Json
+          organisation_id: string
+          recipient_key?: string | null
+          record_type?: string
+          resolved_payload?: Json | null
+          row_number: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_invitation_id?: string | null
+          created_unit_id?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          field_errors?: Json | null
+          id?: string
+          import_job_id?: string
+          input_payload?: Json
+          organisation_id?: string
+          recipient_key?: string | null
+          record_type?: string
+          resolved_payload?: Json | null
+          row_number?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "people_invitation_import_rows_created_invitation_id_fkey"
+            columns: ["created_invitation_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_invitations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "people_invitation_import_rows_import_job_id_fkey"
+            columns: ["import_job_id"]
+            isOneToOne: false
+            referencedRelation: "people_invitation_import_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "people_invitation_import_rows_invitation_fkey"
+            columns: ["organisation_id", "created_invitation_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_invitations"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "people_invitation_import_rows_job_fkey"
+            columns: ["import_job_id"]
+            isOneToOne: false
+            referencedRelation: "people_invitation_import_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "people_invitation_import_rows_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       permission_definitions: {
         Row: {
           created_at: string
@@ -7109,6 +7643,10 @@ export type Database = {
           severity: string | null
           site_unit_id: string | null
           status: string
+          sustain_plan_monitoring: string | null
+          sustain_plan_owner_membership_id: string | null
+          sustain_plan_review_date: string | null
+          sustain_plan_standardised: string | null
           target_condition: string | null
           target_due_at: string | null
           title: string
@@ -7144,6 +7682,10 @@ export type Database = {
           severity?: string | null
           site_unit_id?: string | null
           status?: string
+          sustain_plan_monitoring?: string | null
+          sustain_plan_owner_membership_id?: string | null
+          sustain_plan_review_date?: string | null
+          sustain_plan_standardised?: string | null
           target_condition?: string | null
           target_due_at?: string | null
           title: string
@@ -7179,6 +7721,10 @@ export type Database = {
           severity?: string | null
           site_unit_id?: string | null
           status?: string
+          sustain_plan_monitoring?: string | null
+          sustain_plan_owner_membership_id?: string | null
+          sustain_plan_review_date?: string | null
+          sustain_plan_standardised?: string | null
           target_condition?: string | null
           target_due_at?: string | null
           title?: string
@@ -7250,10 +7796,68 @@ export type Database = {
             referencedColumns: ["organisation_id", "id"]
           },
           {
+            foreignKeyName: "problem_solving_cases_sustain_plan_owner_fkey"
+            columns: ["organisation_id", "sustain_plan_owner_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
             foreignKeyName: "problem_solving_cases_unit_fkey"
             columns: ["organisation_id", "organisation_unit_id"]
             isOneToOne: false
             referencedRelation: "organisation_units"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      problem_solving_client_mutations: {
+        Row: {
+          case_id: string
+          created_at: string
+          id: string
+          membership_id: string
+          mutation_key: string
+          organisation_id: string
+          parent_id: string
+          resource_id: string
+          resource_type: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          id?: string
+          membership_id: string
+          mutation_key: string
+          organisation_id: string
+          parent_id: string
+          resource_id: string
+          resource_type: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          id?: string
+          membership_id?: string
+          mutation_key?: string
+          organisation_id?: string
+          parent_id?: string
+          resource_id?: string
+          resource_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_solving_client_mutations_case_fkey"
+            columns: ["organisation_id", "case_id"]
+            isOneToOne: false
+            referencedRelation: "problem_solving_cases"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "problem_solving_client_mutations_membership_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
             referencedColumns: ["organisation_id", "id"]
           },
         ]
@@ -7548,6 +8152,7 @@ export type Database = {
           observation_window_start: string | null
           organisation_id: string
           result: string | null
+          result_rationale: string | null
           target_description: string | null
           target_numeric: number | null
           unit: string | null
@@ -7569,6 +8174,7 @@ export type Database = {
           observation_window_start?: string | null
           organisation_id: string
           result?: string | null
+          result_rationale?: string | null
           target_description?: string | null
           target_numeric?: number | null
           unit?: string | null
@@ -7590,6 +8196,7 @@ export type Database = {
           observation_window_start?: string | null
           organisation_id?: string
           result?: string | null
+          result_rationale?: string | null
           target_description?: string | null
           target_numeric?: number | null
           unit?: string | null
@@ -7966,7 +8573,7 @@ export type Database = {
           conclusion: string | null
           created_at: string
           created_by_membership_id: string
-          expected_result: string
+          expected_result: string | null
           hypothesis_id: string
           id: string
           method: string | null
@@ -7983,7 +8590,7 @@ export type Database = {
           conclusion?: string | null
           created_at?: string
           created_by_membership_id: string
-          expected_result: string
+          expected_result?: string | null
           hypothesis_id: string
           id?: string
           method?: string | null
@@ -8000,7 +8607,7 @@ export type Database = {
           conclusion?: string | null
           created_at?: string
           created_by_membership_id?: string
-          expected_result?: string
+          expected_result?: string | null
           hypothesis_id?: string
           id?: string
           method?: string | null
@@ -9913,6 +10520,210 @@ export type Database = {
           },
         ]
       }
+      skill_setup_bundle_items: {
+        Row: {
+          bundle_id: string
+          created_at: string
+          id: string
+          label: string
+          organisation_id: string
+          ownership: string
+          record_id: string
+          record_kind: string
+        }
+        Insert: {
+          bundle_id: string
+          created_at?: string
+          id?: string
+          label: string
+          organisation_id: string
+          ownership: string
+          record_id: string
+          record_kind: string
+        }
+        Update: {
+          bundle_id?: string
+          created_at?: string
+          id?: string
+          label?: string
+          organisation_id?: string
+          ownership?: string
+          record_id?: string
+          record_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_setup_bundle_items_bundle_fkey"
+            columns: ["organisation_id", "bundle_id"]
+            isOneToOne: false
+            referencedRelation: "skill_setup_bundles"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      skill_setup_bundles: {
+        Row: {
+          applicability: string
+          capability_set_id: string | null
+          capability_set_version_id: string | null
+          created_at: string
+          created_by_membership_id: string
+          discarded_at: string | null
+          id: string
+          idempotency_key: string
+          organisation_id: string
+          published_at: string | null
+          request_definition: Json
+          sample: boolean
+          scale_id: string | null
+          scale_version_id: string | null
+          source: string
+          status: string
+          template_key: string | null
+          template_version: string | null
+          title: string
+          unresolved: Json
+          updated_at: string
+        }
+        Insert: {
+          applicability?: string
+          capability_set_id?: string | null
+          capability_set_version_id?: string | null
+          created_at?: string
+          created_by_membership_id: string
+          discarded_at?: string | null
+          id?: string
+          idempotency_key: string
+          organisation_id: string
+          published_at?: string | null
+          request_definition: Json
+          sample?: boolean
+          scale_id?: string | null
+          scale_version_id?: string | null
+          source: string
+          status?: string
+          template_key?: string | null
+          template_version?: string | null
+          title: string
+          unresolved?: Json
+          updated_at?: string
+        }
+        Update: {
+          applicability?: string
+          capability_set_id?: string | null
+          capability_set_version_id?: string | null
+          created_at?: string
+          created_by_membership_id?: string
+          discarded_at?: string | null
+          id?: string
+          idempotency_key?: string
+          organisation_id?: string
+          published_at?: string | null
+          request_definition?: Json
+          sample?: boolean
+          scale_id?: string | null
+          scale_version_id?: string | null
+          source?: string
+          status?: string
+          template_key?: string | null
+          template_version?: string | null
+          title?: string
+          unresolved?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_setup_bundles_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "skill_setup_bundles_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_setup_bundles_scale_fkey"
+            columns: ["organisation_id", "scale_id"]
+            isOneToOne: false
+            referencedRelation: "skill_proficiency_scales"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "skill_setup_bundles_scale_version_fkey"
+            columns: ["organisation_id", "scale_version_id"]
+            isOneToOne: false
+            referencedRelation: "skill_proficiency_scale_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "skill_setup_bundles_set_fkey"
+            columns: ["organisation_id", "capability_set_id"]
+            isOneToOne: false
+            referencedRelation: "skill_capability_sets"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "skill_setup_bundles_set_version_fkey"
+            columns: ["organisation_id", "capability_set_version_id"]
+            isOneToOne: false
+            referencedRelation: "skill_capability_set_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      skill_setup_preparations: {
+        Row: {
+          created_at: string
+          id: string
+          membership_id: string
+          organisation_id: string
+          source: string
+          state: Json
+          template_key: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          membership_id: string
+          organisation_id: string
+          source: string
+          state: Json
+          template_key?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          membership_id?: string
+          organisation_id?: string
+          source?: string
+          state?: Json
+          template_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_setup_preparations_membership_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "skill_setup_preparations_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       skills: {
         Row: {
           category: string | null
@@ -10021,6 +10832,153 @@ export type Database = {
             columns: ["organisation_id", "suggestion_id"]
             isOneToOne: false
             referencedRelation: "improvement_suggestions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      suggestion_approval_delegations: {
+        Row: {
+          created_at: string
+          delegated_by_membership_id: string
+          from_membership_id: string
+          id: string
+          idempotency_key: string | null
+          notification_generation: number | null
+          organisation_id: string
+          reason: string | null
+          suggestion_id: string
+          to_membership_id: string
+        }
+        Insert: {
+          created_at?: string
+          delegated_by_membership_id: string
+          from_membership_id: string
+          id?: string
+          idempotency_key?: string | null
+          notification_generation?: number | null
+          organisation_id: string
+          reason?: string | null
+          suggestion_id: string
+          to_membership_id: string
+        }
+        Update: {
+          created_at?: string
+          delegated_by_membership_id?: string
+          from_membership_id?: string
+          id?: string
+          idempotency_key?: string | null
+          notification_generation?: number | null
+          organisation_id?: string
+          reason?: string | null
+          suggestion_id?: string
+          to_membership_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggestion_approval_delegations_by_fkey"
+            columns: ["organisation_id", "delegated_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_approval_delegations_from_fkey"
+            columns: ["organisation_id", "from_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_approval_delegations_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suggestion_approval_delegations_suggestion_fkey"
+            columns: ["organisation_id", "suggestion_id"]
+            isOneToOne: false
+            referencedRelation: "improvement_suggestions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_approval_delegations_to_fkey"
+            columns: ["organisation_id", "to_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      suggestion_approval_routing: {
+        Row: {
+          email_recipient_membership_id: string | null
+          notification_generation: number
+          organisation_id: string
+          primary_approver_membership_id: string | null
+          recipient_count: number
+          routing_basis: string
+          suggestion_id: string
+          task_owner_membership_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          email_recipient_membership_id?: string | null
+          notification_generation?: number
+          organisation_id: string
+          primary_approver_membership_id?: string | null
+          recipient_count?: number
+          routing_basis?: string
+          suggestion_id: string
+          task_owner_membership_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          email_recipient_membership_id?: string | null
+          notification_generation?: number
+          organisation_id?: string
+          primary_approver_membership_id?: string | null
+          recipient_count?: number
+          routing_basis?: string
+          suggestion_id?: string
+          task_owner_membership_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggestion_approval_routing_email_recipient_fkey"
+            columns: ["organisation_id", "email_recipient_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_approval_routing_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suggestion_approval_routing_primary_approver_fkey"
+            columns: ["organisation_id", "primary_approver_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_approval_routing_suggestion_fkey"
+            columns: ["organisation_id", "suggestion_id"]
+            isOneToOne: true
+            referencedRelation: "improvement_suggestions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "suggestion_approval_routing_task_owner_fkey"
+            columns: ["organisation_id", "task_owner_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
             referencedColumns: ["organisation_id", "id"]
           },
         ]
@@ -11492,6 +12450,187 @@ export type Database = {
           },
         ]
       }
+      training_setup_bundle_items: {
+        Row: {
+          bundle_id: string
+          created_at: string
+          id: string
+          label: string
+          organisation_id: string
+          ownership: string
+          record_id: string
+          record_kind: string
+        }
+        Insert: {
+          bundle_id: string
+          created_at?: string
+          id?: string
+          label: string
+          organisation_id: string
+          ownership: string
+          record_id: string
+          record_kind: string
+        }
+        Update: {
+          bundle_id?: string
+          created_at?: string
+          id?: string
+          label?: string
+          organisation_id?: string
+          ownership?: string
+          record_id?: string
+          record_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_setup_bundle_items_bundle_fkey"
+            columns: ["organisation_id", "bundle_id"]
+            isOneToOne: false
+            referencedRelation: "training_setup_bundles"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      training_setup_bundles: {
+        Row: {
+          created_at: string
+          created_by_membership_id: string
+          curriculum_id: string | null
+          curriculum_version_id: string | null
+          discarded_at: string | null
+          id: string
+          idempotency_key: string
+          organisation_id: string
+          published_at: string | null
+          request_definition: Json
+          sample: boolean
+          source: string
+          status: string
+          template_key: string | null
+          template_version: string | null
+          title: string
+          unresolved: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_membership_id: string
+          curriculum_id?: string | null
+          curriculum_version_id?: string | null
+          discarded_at?: string | null
+          id?: string
+          idempotency_key: string
+          organisation_id: string
+          published_at?: string | null
+          request_definition: Json
+          sample?: boolean
+          source: string
+          status?: string
+          template_key?: string | null
+          template_version?: string | null
+          title: string
+          unresolved?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_membership_id?: string
+          curriculum_id?: string | null
+          curriculum_version_id?: string | null
+          discarded_at?: string | null
+          id?: string
+          idempotency_key?: string
+          organisation_id?: string
+          published_at?: string | null
+          request_definition?: Json
+          sample?: boolean
+          source?: string
+          status?: string
+          template_key?: string | null
+          template_version?: string | null
+          title?: string
+          unresolved?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_setup_bundles_creator_fkey"
+            columns: ["organisation_id", "created_by_membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_setup_bundles_curriculum_fkey"
+            columns: ["organisation_id", "curriculum_id"]
+            isOneToOne: false
+            referencedRelation: "training_curricula"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_setup_bundles_curriculum_version_fkey"
+            columns: ["organisation_id", "curriculum_version_id"]
+            isOneToOne: false
+            referencedRelation: "training_curriculum_versions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_setup_bundles_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_setup_preparations: {
+        Row: {
+          created_at: string
+          id: string
+          membership_id: string
+          organisation_id: string
+          source: string
+          state: Json
+          template_key: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          membership_id: string
+          organisation_id: string
+          source: string
+          state: Json
+          template_key?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          membership_id?: string
+          organisation_id?: string
+          source?: string
+          state?: Json
+          template_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_setup_preparations_membership_fkey"
+            columns: ["organisation_id", "membership_id"]
+            isOneToOne: false
+            referencedRelation: "organisation_memberships"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "training_setup_preparations_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workforce_import_jobs: {
         Row: {
           archived_from_recent_at: string | null
@@ -11878,12 +13017,21 @@ export type Database = {
         Args: { target_case_id: string; target_method_id: string }
         Returns: boolean
       }
+      add_action_checklist_item: {
+        Args: {
+          target_action_id: string
+          target_sort_order?: number
+          target_title: string
+        }
+        Returns: string
+      }
       add_analysis_node: {
         Args: {
           target_analysis_id: string
           target_category?: string
           target_display_metadata?: Json
           target_label: string
+          target_mutation_key?: string
           target_parent_node_id?: string
           target_sort_order?: number
         }
@@ -12170,6 +13318,18 @@ export type Database = {
         Args: { target_import_job_id: string }
         Returns: boolean
       }
+      assert_invitation_inbox_ready_for_signup: {
+        Args: {
+          invitation_token_digest: string
+          target_binding_id: string
+          target_inbox_proof_digest: string
+        }
+        Returns: boolean
+      }
+      assert_invitation_inbox_verified_for_binding: {
+        Args: { target_binding_id: string }
+        Returns: boolean
+      }
       assert_workforce_import_credential_export_access: {
         Args: { target_export_session_id: string; target_import_job_id: string }
         Returns: undefined
@@ -12201,6 +13361,13 @@ export type Database = {
         }
         Returns: string
       }
+      attest_organisation_invitation_inbox: {
+        Args: {
+          invitation_token_digest: string
+          target_inbox_proof_digest: string
+        }
+        Returns: boolean
+      }
       authentication_rate_limit_allows: {
         Args: {
           limiter_dimension: string
@@ -12208,6 +13375,15 @@ export type Database = {
           limiter_purpose: string
           maximum_attempts: number
           window_seconds: number
+        }
+        Returns: boolean
+      }
+      authorize_invitation_identity_signup: {
+        Args: {
+          invitation_token_digest: string
+          target_binding_id: string
+          target_inbox_proof_digest: string
+          target_user_email: string
         }
         Returns: boolean
       }
@@ -12227,6 +13403,20 @@ export type Database = {
       begin_assessor_review: {
         Args: { target_assessment_id: string }
         Returns: boolean
+      }
+      begin_organisation_invitation_delivery_send: {
+        Args: { target_delivery_id: string }
+        Returns: {
+          delivery_id: string
+          delivery_key: string
+          inbox_proof_digest: string
+          intended_display_name: string
+          invitation_token_digest: string
+          lease_token: string
+          organisation_name: string
+          provider_idempotency_key: string
+          recipient_email: string
+        }[]
       }
       begin_suggestion_implementation: {
         Args: { target_suggestion_id: string }
@@ -12278,6 +13468,10 @@ export type Database = {
         Args: { target_project_id: string; target_reason?: string }
         Returns: boolean
       }
+      claim_ai_run_execution: {
+        Args: { target_ai_run_id: string }
+        Returns: string
+      }
       claim_billing_webhook_event: {
         Args: {
           target_diagnostic?: Json
@@ -12317,6 +13511,25 @@ export type Database = {
           source_domain_event_id: string
         }[]
       }
+      claim_people_invitation_import_batch: {
+        Args: { target_batch_size?: number; target_import_job_id: string }
+        Returns: {
+          import_row_id: string
+        }[]
+      }
+      claim_platform_notifications_for_worker: {
+        Args: { batch_size?: number; lease_seconds?: number }
+        Returns: {
+          attempt_count: number
+          event_id: string
+          event_kind: string
+          idempotency_key: string
+          lease_token: string
+          organisation_id: string
+          payload: Json
+          recipient_email: string
+        }[]
+      }
       claim_site_quantity_increase: {
         Args: { target_desired_site_quantity: number }
         Returns: Json
@@ -12331,6 +13544,18 @@ export type Database = {
           import_row_id: string
           provisioning_intent_id: string
         }[]
+      }
+      clear_five_s_audit_finding_linked_project: {
+        Args: { target_finding_id: string }
+        Returns: boolean
+      }
+      clear_gemba_observation_linked_project: {
+        Args: { target_observation_id: string }
+        Returns: boolean
+      }
+      clear_invitation_signup_binding_auth_user: {
+        Args: { target_binding_id: string }
+        Returns: boolean
       }
       close_problem_solving_case: {
         Args: {
@@ -12381,22 +13606,36 @@ export type Database = {
         }
         Returns: boolean
       }
+      complete_organisation_invitation_delivery_for_worker: {
+        Args: {
+          target_delivery_id: string
+          target_lease_token: string
+          target_provider_message_id?: string
+        }
+        Returns: boolean
+      }
       complete_organisation_onboarding: { Args: never; Returns: boolean }
+      complete_platform_notification_for_worker: {
+        Args: {
+          expected_lease_token: string
+          target_event_id: string
+          target_provider_message_id: string
+        }
+        Returns: boolean
+      }
       complete_problem_solving_session: {
         Args: { target_session_id: string; target_summary?: string }
         Returns: boolean
       }
-      complete_project:
-        | { Args: { target_project_id: string }; Returns: boolean }
-        | {
-            Args: {
-              target_lessons_learned?: string
-              target_outcome_summary: string
-              target_project_id: string
-              target_sustainment_summary?: string
-            }
-            Returns: boolean
-          }
+      complete_project: {
+        Args: {
+          target_lessons_learned?: string
+          target_outcome_summary: string
+          target_project_id: string
+          target_sustainment_summary?: string
+        }
+        Returns: boolean
+      }
       complete_project_phase: {
         Args: {
           target_mark_skipped?: boolean
@@ -12417,12 +13656,29 @@ export type Database = {
         Args: { target_attachment_id: string }
         Returns: boolean
       }
+      confirm_invitation_binding_display_name: {
+        Args: { target_binding_id: string; target_display_name: string }
+        Returns: undefined
+      }
+      confirm_invited_display_name: {
+        Args: { invitation_token_digest: string; target_display_name: string }
+        Returns: undefined
+      }
       consume_authentication_rate_limit: {
         Args: {
           block_seconds: number
           limiter_dimension: string
           limiter_key_hash: string
           limiter_purpose: string
+          maximum_attempts: number
+          window_seconds: number
+        }
+        Returns: boolean
+      }
+      consume_platform_admin_rate_limit: {
+        Args: {
+          block_seconds: number
+          limiter_key: string
           maximum_attempts: number
           window_seconds: number
         }
@@ -12655,10 +13911,12 @@ export type Database = {
       }
       create_five_s_action: {
         Args: {
+          target_assignee_membership_id: string
           target_audit_id: string
           target_description?: string
-          target_due_at?: string
+          target_due_at: string
           target_finding_id?: string
+          target_idempotency_key: string
           target_priority?: string
           target_question_id?: string
           target_section_id?: string
@@ -12715,8 +13973,10 @@ export type Database = {
       }
       create_gemba_action: {
         Args: {
+          target_assignee_membership_id: string
           target_description?: string
-          target_due_at?: string
+          target_due_at: string
+          target_idempotency_key: string
           target_observation_id?: string
           target_priority?: string
           target_question_id?: string
@@ -12772,9 +14032,10 @@ export type Database = {
       }
       create_hypothesis_test: {
         Args: {
-          target_expected_result: string
+          target_expected_result?: string
           target_hypothesis_id: string
           target_method?: string
+          target_mutation_key?: string
           target_owner_membership_id?: string
           target_planned_date?: string
           target_test_question: string
@@ -12849,13 +14110,22 @@ export type Database = {
         }
         Returns: string
       }
+      create_people_invitation_import_job: {
+        Args: {
+          target_content_fingerprint?: string
+          target_original_filename: string
+        }
+        Returns: string
+      }
       create_problem_solving_action: {
         Args: {
+          target_assignee_membership_id?: string
           target_containment_id?: string
           target_context_role: string
           target_countermeasure_id?: string
           target_description?: string
           target_due_at?: string
+          target_expected_result?: string
           target_priority?: string
           target_problem_solving_case_id: string
           target_sustainment_item_id?: string
@@ -12969,6 +14239,10 @@ export type Database = {
         Args: { target_description?: string; target_name: string }
         Returns: string
       }
+      create_skill_setup_draft: {
+        Args: { target_definition: Json; target_idempotency_key: string }
+        Returns: string
+      }
       create_suggestion_action: {
         Args: {
           target_description?: string
@@ -13078,12 +14352,17 @@ export type Database = {
         }
         Returns: string
       }
+      create_training_setup_draft: {
+        Args: { target_definition: Json; target_idempotency_key: string }
+        Returns: string
+      }
       create_workforce_import_job: {
         Args: { target_original_filename: string }
         Returns: string
       }
       current_can_found_organisation: { Args: never; Returns: boolean }
       current_can_manage_billing: { Args: never; Returns: boolean }
+      current_founding_organisation_domain_hint: { Args: never; Returns: Json }
       current_identity_state: {
         Args: never
         Returns: {
@@ -13093,6 +14372,10 @@ export type Database = {
         }[]
       }
       current_organisation_id: { Args: never; Returns: string }
+      current_organisation_plan_module_entitled: {
+        Args: { target_module: string }
+        Returns: boolean
+      }
       current_workforce_login_identifier: { Args: never; Returns: string }
       deactivate_job_function: {
         Args: { target_job_function_id: string }
@@ -13124,6 +14407,22 @@ export type Database = {
         }
         Returns: string
       }
+      delegate_suggestion_approval: {
+        Args: {
+          target_delegate_membership_id: string
+          target_reason?: string
+          target_suggestion_id: string
+        }
+        Returns: string
+      }
+      delete_action_checklist_item: {
+        Args: { target_item_id: string }
+        Returns: undefined
+      }
+      delete_analysis_node: {
+        Args: { target_node_id: string }
+        Returns: boolean
+      }
       delete_gemba_observation: {
         Args: { target_observation_id: string; target_walk_id: string }
         Returns: boolean
@@ -13131,6 +14430,10 @@ export type Database = {
       delete_gemba_observations: {
         Args: { target_observation_ids: string[]; target_walk_id: string }
         Returns: number
+      }
+      delete_hypothesis_test: {
+        Args: { target_test_id: string }
+        Returns: boolean
       }
       delete_maturity_criterion: {
         Args: { target_criterion_id: string }
@@ -13181,6 +14484,18 @@ export type Database = {
       disable_workforce_identity: {
         Args: { change_reason: string; target_user_id: string }
         Returns: number
+      }
+      discard_five_s_standard_draft: {
+        Args: { target_standard_version_id: string }
+        Returns: boolean
+      }
+      discard_skill_setup_bundle: {
+        Args: { target_bundle_id: string }
+        Returns: Json
+      }
+      discard_training_setup_bundle: {
+        Args: { target_bundle_id: string }
+        Returns: Json
       }
       edit_comment: {
         Args: { target_body: string; target_comment_id: string }
@@ -13266,6 +14581,32 @@ export type Database = {
         }
         Returns: boolean
       }
+      fail_organisation_invitation_delivery_for_worker: {
+        Args: {
+          target_delivery_id: string
+          target_error_code: string
+          target_error_detail: string
+          target_lease_token: string
+          target_retryable?: boolean
+        }
+        Returns: boolean
+      }
+      fail_platform_notification_retryable_for_worker: {
+        Args: {
+          error_code: string
+          expected_lease_token: string
+          target_event_id: string
+        }
+        Returns: boolean
+      }
+      fail_platform_notification_terminal_for_worker: {
+        Args: {
+          error_code: string
+          expected_lease_token: string
+          target_event_id: string
+        }
+        Returns: boolean
+      }
       fail_workforce_provision: {
         Args: { target_failure_reason: string; target_intent_id: string }
         Returns: boolean
@@ -13277,6 +14618,19 @@ export type Database = {
       finalise_identity_enrolment: {
         Args: { target_user_id: string }
         Returns: boolean
+      }
+      finalise_invitation_identity_signup: {
+        Args: {
+          invitation_token_digest: string
+          target_binding_id: string
+          target_inbox_proof_digest: string
+          target_user_id: string
+        }
+        Returns: boolean
+      }
+      finalize_people_invitation_import_job: {
+        Args: { target_import_job_id: string }
+        Returns: undefined
       }
       finalize_workforce_credential_reset: {
         Args: { target_auth_user_id: string; target_intent_id: string }
@@ -13327,6 +14681,10 @@ export type Database = {
         Returns: Json
       }
       get_ai_usage_summary: { Args: never; Returns: Json }
+      get_authorised_operational_record_context: {
+        Args: { target_record_id: string; target_record_type: string }
+        Returns: Json
+      }
       get_available_suggestion_submission_configuration: {
         Args: never
         Returns: Json
@@ -13368,6 +14726,7 @@ export type Database = {
       }
       get_ci_projects_portfolio: {
         Args: {
+          target_linkable_only?: boolean
           target_page?: number
           target_page_size?: number
           target_priority?: string
@@ -13497,16 +14856,62 @@ export type Database = {
           text_body: string
         }[]
       }
+      get_organisation_ai_credit_period_summary: {
+        Args: never
+        Returns: {
+          allowance_credits: number
+          consumed_credits: number
+          enforcement_enabled: boolean
+          period_end: string
+          period_start: string
+          remaining_credits: number
+          reserved_credits: number
+        }[]
+      }
+      get_organisation_invitation_delivery_status: {
+        Args: { target_invitation_id: string }
+        Returns: Json
+      }
       get_organisation_ownership: { Args: never; Returns: Json }
       get_organisation_setup_readiness: { Args: never; Returns: Json }
+      get_own_membership_profile: { Args: never; Returns: Json }
       get_people_directory: {
         Args: {
           target_include_inactive?: boolean
           target_page?: number
           target_page_size?: number
           target_search?: string
+          target_status?: string
+          target_unit_id?: string
         }
         Returns: Json
+      }
+      get_people_invitation_import_preview_rows: {
+        Args: { target_import_job_id: string }
+        Returns: {
+          access_scope_site: string
+          application_role: string
+          department: string
+          display_name: string
+          email: string
+          record_type: string
+          row_number: number
+          site: string
+        }[]
+      }
+      get_people_invitation_import_progress: {
+        Args: { target_import_job_id: string }
+        Returns: Json
+      }
+      get_people_invitation_import_validation_rows: {
+        Args: { target_import_job_id: string }
+        Returns: {
+          field_errors: Json
+          label: string
+          record_type: string
+          row_number: number
+          status: string
+        }[]
       }
       get_potential_benefit_overlaps: {
         Args: { target_benefit_id: string }
@@ -13517,6 +14922,14 @@ export type Database = {
           signal_detail: string
           signal_type: string
         }[]
+      }
+      get_problem_solving_case_audit_activity: {
+        Args: {
+          target_before?: string
+          target_case_id: string
+          target_limit?: number
+        }
+        Returns: Json
       }
       get_problem_solving_detail: {
         Args: { target_case_id: string }
@@ -13543,6 +14956,14 @@ export type Database = {
       }
       get_recognition_feed: {
         Args: { target_page?: number; target_page_size?: number }
+        Returns: Json
+      }
+      get_skills_matrix: {
+        Args: {
+          target_page?: number
+          target_page_size?: number
+          target_unit_id?: string
+        }
         Returns: Json
       }
       get_suggestion_benefits: {
@@ -13584,6 +15005,14 @@ export type Database = {
       get_suggestions_overview: { Args: never; Returns: Json }
       get_training_compliance_summary: {
         Args: { target_unit_id?: string }
+        Returns: Json
+      }
+      get_training_matrix: {
+        Args: {
+          target_page?: number
+          target_page_size?: number
+          target_unit_id?: string
+        }
         Returns: Json
       }
       get_workforce_import_credential_export_rows: {
@@ -13659,6 +15088,14 @@ export type Database = {
           target_membership_id: string
         }[]
       }
+      get_workplace_feed: {
+        Args: { target_module: string; target_page?: number }
+        Returns: Json
+      }
+      get_workplace_record: {
+        Args: { target_module: string; target_record_id: string }
+        Returns: Json
+      }
       grant_role_version: {
         Args: {
           target_grantee_membership_id: string
@@ -13726,6 +15163,23 @@ export type Database = {
         }
         Returns: string
       }
+      issue_organisation_member_invitation_grants: {
+        Args: {
+          intended_display_name?: string
+          intended_job_function_id?: string
+          intended_organisational_unit_id?: string
+          invitation_canonical_recipient: string
+          invitation_expires_at: string
+          invitation_recipient_type: string
+          invitation_token_digest: string
+          offered_grants: Json
+        }
+        Returns: string
+      }
+      link_action_to_ci_project: {
+        Args: { target_action_id: string; target_project_id: string }
+        Returns: boolean
+      }
       link_benefit_evidence: {
         Args: { target_attachment_id: string; target_benefit_id: string }
         Returns: string
@@ -13787,6 +15241,10 @@ export type Database = {
         Args: { target_hypothesis_id: string; target_node_id: string }
         Returns: boolean
       }
+      link_problem_solving_case_to_ci_project: {
+        Args: { target_case_id: string; target_project_id: string }
+        Returns: boolean
+      }
       link_problem_solving_evidence: {
         Args: {
           target_attachment_id: string
@@ -13805,6 +15263,9 @@ export type Database = {
         }
         Returns: string
       }
+      list_action_labels: { Args: never; Returns: Json }
+      list_authorable_five_s_standard_ids: { Args: never; Returns: string[] }
+      list_authorable_gemba_definition_ids: { Args: never; Returns: string[] }
       list_maturity_assessment_scope_entities: {
         Args: { target_model_version_id: string; target_scope_type: string }
         Returns: {
@@ -13840,12 +15301,33 @@ export type Database = {
           site_quantity: number
         }[]
       }
+      lookup_suggestion_approval_notification_recipients_for_worker: {
+        Args: { target_organisation_id: string; target_suggestion_id: string }
+        Returns: string[]
+      }
       lookup_suggestion_author_membership_id_for_worker: {
         Args: { target_organisation_id: string; target_suggestion_id: string }
         Returns: string
       }
+      mark_all_in_app_notifications_read: { Args: never; Returns: boolean }
+      mark_all_platform_admin_in_app_notifications_read: {
+        Args: { actor_user_id: string; authenticator_assurance_level: string }
+        Returns: boolean
+      }
       mark_benefit_realised: {
         Args: { target_benefit_id: string; target_reason?: string }
+        Returns: boolean
+      }
+      mark_in_app_notification_read: {
+        Args: { target_notification_id: string }
+        Returns: boolean
+      }
+      mark_platform_admin_in_app_notification_read: {
+        Args: {
+          actor_user_id: string
+          authenticator_assurance_level: string
+          target_notification_id: string
+        }
         Returns: boolean
       }
       mark_suggestion_implemented: {
@@ -13866,6 +15348,22 @@ export type Database = {
         Args: { target_failure_reason: string; target_intent_id: string }
         Returns: boolean
       }
+      member_can_author_five_s_standard: {
+        Args: { target_standard_id: string }
+        Returns: boolean
+      }
+      member_can_author_gemba_definition: {
+        Args: { target_definition_id: string }
+        Returns: boolean
+      }
+      member_has_grant_permission: {
+        Args: { target_permission_key: string }
+        Returns: boolean
+      }
+      member_has_grant_permissions: {
+        Args: { target_permission_keys: string[] }
+        Returns: Json
+      }
       member_has_permission: {
         Args: { target_permission_key: string }
         Returns: boolean
@@ -13873,6 +15371,10 @@ export type Database = {
       member_has_permissions: {
         Args: { target_permission_keys: string[] }
         Returns: Json
+      }
+      move_action_checklist_item: {
+        Args: { target_item_id: string; target_sort_order: number }
+        Returns: undefined
       }
       move_maturity_criterion: {
         Args: {
@@ -13912,6 +15414,69 @@ export type Database = {
         }
         Returns: string
       }
+      platform_admin_identity_active: {
+        Args: { target_user_id: string }
+        Returns: boolean
+      }
+      platform_admin_in_app_notifications: {
+        Args: {
+          actor_user_id: string
+          authenticator_assurance_level: string
+          request_path: string
+          result_limit: number
+        }
+        Returns: Json
+      }
+      platform_admin_leanai_cost_governance: {
+        Args: {
+          actor_user_id: string
+          authenticator_assurance_level: string
+          period_end?: string
+          period_start?: string
+          request_path: string
+          target_organisation_id?: string
+        }
+        Returns: Json
+      }
+      platform_admin_notification_history: {
+        Args: {
+          actor_user_id: string
+          authenticator_assurance_level: string
+          request_path: string
+          result_limit: number
+          result_offset: number
+        }
+        Returns: Json
+      }
+      platform_admin_organisation_detail: {
+        Args: {
+          actor_user_id: string
+          authenticator_assurance_level: string
+          request_path: string
+          target_organisation_id: string
+        }
+        Returns: Json
+      }
+      platform_admin_organisation_directory: {
+        Args: {
+          actor_user_id: string
+          authenticator_assurance_level: string
+          request_path: string
+          result_limit: number
+          result_offset: number
+          search: string
+          status_filter: string
+        }
+        Returns: Json
+      }
+      platform_admin_overview: {
+        Args: {
+          actor_user_id: string
+          authenticator_assurance_level: string
+          request_path: string
+        }
+        Returns: Json
+      }
       preauthorize_workforce_credential_reset: {
         Args: { target_membership_id: string }
         Returns: string
@@ -13943,6 +15508,23 @@ export type Database = {
       preview_organisation_invitation: {
         Args: { invitation_token_digest: string }
         Returns: Json
+      }
+      preview_skill_setup_bundle_discard: {
+        Args: { target_bundle_id: string }
+        Returns: Json
+      }
+      preview_training_setup_bundle_discard: {
+        Args: { target_bundle_id: string }
+        Returns: Json
+      }
+      promote_analysis_node_to_hypothesis: {
+        Args: {
+          target_category?: string
+          target_node_id: string
+          target_problem_solving_case_id?: string
+          target_statement?: string
+        }
+        Returns: string
       }
       provision_organisation: {
         Args: {
@@ -14006,6 +15588,10 @@ export type Database = {
         Args: { target_scale_version_id: string }
         Returns: boolean
       }
+      publish_skill_setup_bundle: {
+        Args: { target_bundle_id: string }
+        Returns: boolean
+      }
       publish_suggestion_programme_version: {
         Args: { target_programme_version_id: string }
         Returns: boolean
@@ -14020,6 +15606,10 @@ export type Database = {
       }
       publish_training_curriculum_version: {
         Args: { target_curriculum_version_id: string }
+        Returns: boolean
+      }
+      publish_training_setup_bundle: {
+        Args: { target_bundle_id: string }
         Returns: boolean
       }
       reactivate_schedule_definition: {
@@ -14045,10 +15635,15 @@ export type Database = {
           target_hypothesis_id?: string
           target_hypothesis_test_id?: string
           target_lesson_learned_id?: string
+          target_problem_solving_case_id?: string
           target_problem_solving_session_id?: string
           target_session_entry_id?: string
           target_sustainment_item_id?: string
         }
+        Returns: undefined
+      }
+      record_ai_run_provider_dispatch: {
+        Args: { target_ai_run_id: string }
         Returns: undefined
       }
       record_authentication_rate_limit_failure: {
@@ -14088,6 +15683,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      record_invitation_signup_display_name: {
+        Args: { target_binding_id: string; target_display_name: string }
+        Returns: undefined
+      }
       record_leanai_semantic_event: {
         Args: {
           target_event_key: string
@@ -14108,6 +15707,25 @@ export type Database = {
           target_note?: string
         }
         Returns: string
+      }
+      record_platform_admin_access: {
+        Args: {
+          actor_user_id: string
+          event_action: string
+          event_detail: Json
+          event_outcome: string
+          request_path: string
+          resource_id: string
+        }
+        Returns: undefined
+      }
+      record_platform_stripe_mode: {
+        Args: {
+          livemode: boolean
+          provider_event_id: string
+          target_organisation_id: string
+        }
+        Returns: undefined
       }
       record_skill_self_assessment: {
         Args: {
@@ -14187,6 +15805,25 @@ export type Database = {
         Args: { target_import_row_id: string; target_membership_id: string }
         Returns: undefined
       }
+      recover_stale_ai_runs_for_problem_solving_case: {
+        Args: { target_problem_solving_case_id: string }
+        Returns: number
+      }
+      redeem_organisation_invitation_inbox_proof: {
+        Args: {
+          invitation_token_digest: string
+          target_binding_id: string
+          target_inbox_proof_digest: string
+        }
+        Returns: boolean
+      }
+      register_organisation_invitation_delivery: {
+        Args: {
+          target_inbox_proof_digest: string
+          target_invitation_id: string
+        }
+        Returns: string
+      }
       reissue_organisation_member_invitation: {
         Args: {
           replacement_expires_at: string
@@ -14234,6 +15871,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      release_organisation_invitation_inbox_proof_redemption: {
+        Args: {
+          invitation_token_digest: string
+          target_binding_id: string
+          target_inbox_proof_digest: string
+        }
+        Returns: boolean
+      }
       remove_benefit_from_overlap_group: {
         Args: {
           target_benefit_id: string
@@ -14244,6 +15889,14 @@ export type Database = {
       }
       remove_benefit_source_link: {
         Args: { target_benefit_id: string; target_source_resource_id: string }
+        Returns: boolean
+      }
+      remove_five_s_question: {
+        Args: { target_question_id: string }
+        Returns: boolean
+      }
+      remove_five_s_section: {
+        Args: { target_section_id: string }
         Returns: boolean
       }
       remove_problem_solving_source_link: {
@@ -14282,10 +15935,22 @@ export type Database = {
         Args: { target_forecast_version_id: string; target_periods: Json }
         Returns: boolean
       }
+      replace_expired_invitation_signup_binding: {
+        Args: { target_binding_id: string }
+        Returns: string
+      }
+      resend_organisation_invitation_email: {
+        Args: {
+          target_inbox_proof_digest: string
+          target_invitation_id: string
+        }
+        Returns: string
+      }
       resolve_benefit_submit_validators: {
         Args: { target_benefit_id: string }
         Returns: Json
       }
+      resolve_my_invitation_continuation: { Args: never; Returns: Json }
       resolve_organisation_invitation_session: {
         Args: { invitation_token_digest: string }
         Returns: Json
@@ -14354,6 +16019,42 @@ export type Database = {
         Args: { target_completion_id: string; target_notes?: string }
         Returns: boolean
       }
+      save_skill_setup_preparation: {
+        Args: {
+          target_source: string
+          target_state: Json
+          target_template_key: string
+        }
+        Returns: string
+      }
+      save_training_setup_preparation: {
+        Args: {
+          target_source: string
+          target_state: Json
+          target_template_key: string
+        }
+        Returns: string
+      }
+      search_authorised_actions: {
+        Args: { target_limit?: number; target_query: string }
+        Returns: Json
+      }
+      search_authorised_improvement_suggestions: {
+        Args: { target_limit?: number; target_query: string }
+        Returns: Json
+      }
+      search_authorised_operational_knowledge: {
+        Args: {
+          target_domains?: string[]
+          target_limit?: number
+          target_query: string
+        }
+        Returns: Json
+      }
+      search_authorised_problem_solving_history: {
+        Args: { target_limit?: number; target_query: string }
+        Returns: Json
+      }
       search_similar_problem_solving_cases: {
         Args: { target_case_id: string; target_limit?: number }
         Returns: Json
@@ -14364,6 +16065,30 @@ export type Database = {
       }
       set_action_assignee: {
         Args: { target_action_id: string; target_membership_id?: string }
+        Returns: boolean
+      }
+      set_action_card_cover_attachment: {
+        Args: { target_action_id: string; target_attachment_id?: string }
+        Returns: undefined
+      }
+      set_action_checklist_item_done: {
+        Args: { target_done: boolean; target_item_id: string }
+        Returns: undefined
+      }
+      set_action_labels: {
+        Args: { target_action_id: string; target_label_ids: string[] }
+        Returns: undefined
+      }
+      set_five_s_audit_finding_linked_project: {
+        Args: { target_finding_id: string; target_project_id: string }
+        Returns: boolean
+      }
+      set_five_s_section_weight: {
+        Args: {
+          target_section_id: string
+          target_standard_version_id: string
+          target_weight: number
+        }
         Returns: boolean
       }
       set_five_s_standard_applicable_units: {
@@ -14381,6 +16106,10 @@ export type Database = {
       }
       set_gemba_definition_applicable_units: {
         Args: { target_definition_id: string; target_unit_ids: string[] }
+        Returns: boolean
+      }
+      set_gemba_observation_linked_project: {
+        Args: { target_observation_id: string; target_project_id: string }
         Returns: boolean
       }
       set_maturity_model_version_assessment_scopes: {
@@ -14471,6 +16200,10 @@ export type Database = {
             }
             Returns: string
           }
+      start_people_invitation_import: {
+        Args: { target_import_job_id: string }
+        Returns: undefined
+      }
       start_problem_solving_session: {
         Args: {
           target_case_id: string
@@ -14542,6 +16275,10 @@ export type Database = {
         Args: { target_assessment_id: string }
         Returns: boolean
       }
+      submit_people_invitation_import_rows: {
+        Args: { target_import_job_id: string; target_rows: Json }
+        Returns: undefined
+      }
       submit_project: { Args: { target_project_id: string }; Returns: boolean }
       submit_suggestion: {
         Args: { target_suggestion_id: string }
@@ -14563,6 +16300,11 @@ export type Database = {
         Args: { target_organisation_id: string }
         Returns: boolean
       }
+      sync_leanai_operational_chase_notifications: {
+        Args: never
+        Returns: number
+      }
+      sync_overdue_action_chase_notifications: { Args: never; Returns: number }
       transfer_organisation_ownership: {
         Args: { target_membership_id: string }
         Returns: Json
@@ -14576,6 +16318,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      unlink_action_from_ci_project: {
+        Args: { target_action_id: string }
+        Returns: boolean
+      }
+      unlink_problem_solving_case_from_ci_project: {
+        Args: { target_case_id: string }
+        Returns: boolean
+      }
       update_action: {
         Args: {
           target_action_id: string
@@ -14586,6 +16336,10 @@ export type Database = {
           target_priority?: string
           target_title?: string
         }
+        Returns: boolean
+      }
+      update_analysis_node: {
+        Args: { target_label: string; target_node_id: string }
         Returns: boolean
       }
       update_benefit_category: {
@@ -14790,6 +16544,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_problem_solving_problem_statement: {
+        Args: { target_case_id: string; target_problem_statement: string }
+        Returns: boolean
+      }
+      update_problem_solving_target_condition: {
+        Args: { target_case_id: string; target_target_condition: string }
+        Returns: boolean
+      }
       update_schedule_definition: {
         Args: {
           target_description?: string
@@ -14871,6 +16633,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      upsert_action_label: {
+        Args: {
+          target_color?: string
+          target_label_id?: string
+          target_name?: string
+          target_sort_order?: number
+        }
+        Returns: string
+      }
       upsert_benefit_reporting_settings: {
         Args: { target_fiscal_year_start_month: number }
         Returns: boolean
@@ -14927,6 +16698,16 @@ export type Database = {
         }
         Returns: string
       }
+      upsert_problem_solving_sustain_plan: {
+        Args: {
+          target_case_id: string
+          target_sustain_plan_monitoring?: string
+          target_sustain_plan_owner_membership_id?: string
+          target_sustain_plan_review_date?: string
+          target_sustain_plan_standardised?: string
+        }
+        Returns: boolean
+      }
       upsert_template_answer: {
         Args: {
           target_date_value?: string
@@ -14942,6 +16723,17 @@ export type Database = {
       validate_benefit_realisation_entry: {
         Args: { target_entry_id: string }
         Returns: boolean
+      }
+      validate_organisation_invitation_inbox_proof_staging: {
+        Args: {
+          invitation_token_digest: string
+          target_inbox_proof_digest: string
+        }
+        Returns: boolean
+      }
+      validate_people_invitation_import_job: {
+        Args: { target_import_job_id: string }
+        Returns: Json
       }
       validate_workforce_import_job: {
         Args: { target_import_job_id: string }

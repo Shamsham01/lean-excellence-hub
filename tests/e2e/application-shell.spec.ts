@@ -15,7 +15,7 @@ test("renders the commercial landing page", async ({ page }) => {
     page.getByRole("link", { name: "Sign in" }).first(),
   ).toHaveAttribute("href", "/login");
   await expect(
-    page.getByRole("link", { name: "Book a live demo" }).first(),
+    page.getByRole("link", { name: "Book a demo" }).first(),
   ).toHaveAttribute("href", "/demo");
   await expect(
     page.getByRole("link", { name: "Explore the platform" }).first(),

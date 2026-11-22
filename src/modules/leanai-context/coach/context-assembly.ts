@@ -12,6 +12,7 @@ import type {
 } from "@/modules/leanai-context/types";
 import { coachProductKnowledgeFor } from "@/modules/leanai-context/coach/product-knowledge";
 
+import type { SkillsRuntimeField } from "@/modules/leanai-context/product-knowledge/skills";
 import type {
   AssistantRelevantState,
   AssistantTerminologyEntry,
@@ -42,6 +43,8 @@ export type CoachPageContext = {
   relevantState: AssistantRelevantState;
   allowedActions: string[];
   starterPrompts: string[];
+  fieldGuidance: SkillsRuntimeField[];
+  guidanceFacts: string[];
 };
 
 export type CoachExplainContext = {

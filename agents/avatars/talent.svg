@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="TALENT agent mark">
+  <rect width="512" height="512" fill="#0a0a0a"/>
+
+  <circle cx="256" cy="200" r="48" fill="#14B8A6"/>
+  <circle cx="160" cy="320" r="40" fill="#0F766E"/>
+  <circle cx="352" cy="320" r="40" fill="#0F766E"/>
+  <circle cx="256" cy="360" r="36" fill="#5EEAD4"/>
+  <line x1="256" y1="248" x2="256" y2="324" stroke="#14B8A6" stroke-width="6"/>
+  <line x1="220" y1="230" x2="176" y2="290" stroke="#14B8A6" stroke-width="5"/>
+  <line x1="292" y1="230" x2="336" y2="290" stroke="#14B8A6" stroke-width="5"/>
+  <line x1="190" y1="340" x2="230" y2="340" stroke="#0F766E" stroke-width="4"/>
+  <line x1="282" y1="340" x2="322" y2="340" stroke="#0F766E" stroke-width="4"/>
+
+</svg>

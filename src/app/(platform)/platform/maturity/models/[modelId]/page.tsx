@@ -14,6 +14,10 @@ import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import {
+  loadWorkplaceRecordFallback,
+  loadWorkplaceRecordView,
+} from "@/modules/workplace/access";
 import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
 import {
   scopeTypeLabel,
@@ -41,6 +45,15 @@ export default async function MaturityModelPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { modelId } = await params;
+  const workplaceView = await loadWorkplaceRecordView({
+    readPermission: MATURITY_PERMISSIONS.read,
+    module: "maturity",
+    recordId: modelId,
+    title: "Maturity framework",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const query = await searchParams;
   const initialAuthoringStep = parseAuthoringStep(
     Array.isArray(query.step) ? query.step[0] : query.step,
@@ -59,6 +72,12 @@ export default async function MaturityModelPage({
     .maybeSingle();
 
   if (!model) {
+    const workplaceRecord = await loadWorkplaceRecordFallback({
+      module: "maturity",
+      recordId: modelId,
+      title: "Maturity framework",
+    });
+    if (workplaceRecord) return workplaceRecord;
     notFound();
   }
 

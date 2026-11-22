@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="ATLAS agent mark">
+  <rect width="512" height="512" fill="#0a0a0a"/>
+
+  <circle cx="256" cy="256" r="200" fill="none" stroke="#C9A227" stroke-width="3" opacity="0.35"/>
+  <circle cx="256" cy="256" r="140" fill="none" stroke="#C9A227" stroke-width="2" opacity="0.55"/>
+  <path d="M256 56 L256 456 M56 256 L456 256" stroke="#0B1F3A" stroke-width="48" stroke-linecap="round"/>
+  <path d="M256 96 L376 256 L256 416 L136 256 Z" fill="#0B1F3A" stroke="#C9A227" stroke-width="4"/>
+  <circle cx="256" cy="256" r="28" fill="#C9A227"/>
+
+</svg>

@@ -13,15 +13,18 @@ export function ActionEvidenceBlock({
   actionId,
   evidence,
   canEdit,
+  onUploadSuccess,
 }: {
   actionId: string;
   evidence: EvidenceItem[];
   canEdit: boolean;
+  onUploadSuccess?: (item: EvidenceItem) => void;
 }) {
   return (
     <EvidenceUploader
       existingEvidence={evidence}
       canEdit={canEdit}
+      {...(onUploadSuccess ? { onUploadSuccess } : {})}
       onInitiate={(filename, mimeType, byteSize) =>
         initiateActionEvidenceUpload(actionId, filename, mimeType, byteSize)
       }

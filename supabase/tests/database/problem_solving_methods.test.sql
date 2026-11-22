@@ -56,8 +56,8 @@ select is(
     where method_row.organisation_id = (select id from ps_method_ids where key = 'organisation')
       and method_row.is_builtin = true
   ),
-  3,
-  'provision_organisation seeds three built-in methods'
+  4,
+  'provision_organisation seeds four built-in methods'
 );
 
 select ok(
@@ -72,7 +72,7 @@ select is(
     where method_row.organisation_id = (select id from ps_method_ids where key = 'organisation')
       and method_row.is_builtin = true
   ),
-  3,
+  4,
   'built-in method provisioning is idempotent'
 );
 

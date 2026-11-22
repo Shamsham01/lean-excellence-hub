@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { isPlanCode } from "@/modules/billing/billing-state";
+import { LEANAI_PLAN_ALLOWANCE_ENFORCED } from "@/modules/billing/leanai-inclusion";
 import { resolveOrganisationEntitlements } from "@/modules/billing/entitlements";
 import type { BillingState } from "@/modules/billing/types";
 import { isApplicationAiProviderAvailable } from "@/platform/ai/config";
@@ -74,7 +75,11 @@ export async function assessCoachAiEligibility(
     hasLegacyUnmeteredAccess: planCode === null && status === "active",
   });
 
-  if (entitlements.leanAiMonthlyTokenAllowance === 0 && planCode !== null) {
+  if (
+    LEANAI_PLAN_ALLOWANCE_ENFORCED &&
+    entitlements.leanAiMonthlyTokenAllowance === 0 &&
+    planCode !== null
+  ) {
     return {
       ok: false,
       reason: "entitlement_denied",

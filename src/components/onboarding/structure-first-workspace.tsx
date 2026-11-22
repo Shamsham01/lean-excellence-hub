@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 
+import { LehBrand } from "@/components/brand/leh-brand";
 import { JobFunctionsSetupStep } from "@/components/onboarding/job-functions-setup-step";
 import { OrganisationContextStep } from "@/components/onboarding/organisation-context-step";
 import { PeopleSetupStep } from "@/components/onboarding/people-setup-step";
@@ -42,12 +43,10 @@ export function StructureFirstWorkspace({
   return (
     <div className="structure-first-shell" data-testid="onboarding-setup">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 lg:grid lg:grid-cols-[16.5rem_minmax(0,1fr)] lg:items-start lg:gap-10 lg:py-10">
-        <header className="flex flex-col gap-4 lg:sticky lg:top-8">
-          <div>
-            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              Lean Excellence Hub
-            </p>
-            <h1 className="mt-1 text-lg font-semibold tracking-tight text-foreground">
+        <header className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-8">
+          <div className="leh-brand-auth-shell min-w-0">
+            <LehBrand className="max-w-full" lockupRasterOnly variant="full" />
+            <h1 className="mt-3 text-lg font-semibold tracking-tight text-foreground">
               Organisation setup
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -99,6 +98,9 @@ export function StructureFirstWorkspace({
               owners={snapshot.owners}
               members={snapshot.members}
               pendingInvitations={snapshot.pendingInvitations}
+              pendingInvitationNamesUnavailable={
+                snapshot.pendingInvitationNamesUnavailable ?? false
+              }
               offers={snapshot.offers as DelegatableAccessOffer[]}
               units={snapshot.units
                 .filter((unit) => unit.status !== "retired")

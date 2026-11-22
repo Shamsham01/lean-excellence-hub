@@ -1,14 +1,20 @@
 import { PLAN_CATALOGUE } from "./catalogue";
+import { buildPlanModuleEntitlements } from "./module-entitlements";
 import type { BillingState, OrganisationEntitlements, PlanCode } from "./types";
 
 const NO_ACCESS_ENTITLEMENTS: OrganisationEntitlements = {
   coreModules: false,
+  modules: buildPlanModuleEntitlements({
+    planCode: null,
+    legacyGrandfather: false,
+  }),
   advancedBenefitsGovernance: false,
   advancedAnalytics: false,
   apiAccess: false,
   integrations: false,
   leanAiTier: "standard",
   leanAiMonthlyTokenAllowance: 0,
+  leanAiMonthlyCreditAllowancePerSite: 0,
   enterpriseSso: false,
   enterpriseGovernance: false,
   crossSiteBenchmarking: false,
@@ -33,7 +39,13 @@ export function resolveOrganisationEntitlements(input: {
   hasLegacyUnmeteredAccess?: boolean;
 }): OrganisationEntitlements {
   if (input.hasLegacyUnmeteredAccess && input.planCode === null) {
-    return PLAN_CATALOGUE.professional.entitlements;
+    return {
+      ...PLAN_CATALOGUE.professional.entitlements,
+      modules: buildPlanModuleEntitlements({
+        planCode: null,
+        legacyGrandfather: true,
+      }),
+    };
   }
 
   if (

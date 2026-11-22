@@ -33,6 +33,7 @@ const hypothesisTransportItemSchema = {
     category: nullableString,
     rationale: nullableString,
     parent_hypothesis_id: nullableString,
+    analysis_node_id: nullableString,
     explanation: explanationField,
   },
   required: [
@@ -40,6 +41,7 @@ const hypothesisTransportItemSchema = {
     "category",
     "rationale",
     "parent_hypothesis_id",
+    "analysis_node_id",
     "explanation",
   ],
   additionalProperties: false,
@@ -50,8 +52,8 @@ const hypothesisTestTransportItemSchema = {
   properties: {
     hypothesis_id: { type: "string" },
     test_question: { type: "string" },
-    expected_result: { type: "string" },
-    method: nullableString,
+    expected_result: nullableString,
+    method: { type: "string" },
     explanation: explanationField,
   },
   required: [

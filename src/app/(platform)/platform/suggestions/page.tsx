@@ -1,8 +1,14 @@
 import { notFound } from "next/navigation";
 
-import { MetricCard } from "@/components/platform/metric-card";
+import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
 import { PageHeader } from "@/components/platform/page-header";
+import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
+import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
+import { SuggestionContributorAccess } from "@/components/suggestions/suggestion-contributor-access";
+import { SuggestionPipelineStatusChips } from "@/components/suggestions/suggestion-pipeline-status-chips";
 import { SuggestionPortfolio } from "@/components/suggestions/suggestion-portfolio";
+import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
+import { NewSuggestionDialog } from "@/components/suggestions/new-suggestion-dialog";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,33 +17,55 @@ import {
   loadSuggestionPortfolioFilterOptions,
 } from "@/lib/suggestions/fetch-suggestion-portfolio";
 import { parseSuggestionPortfolioSearchParams } from "@/lib/suggestions/suggestion-portfolio-query";
+import { suggestionAccessMode } from "@/lib/suggestions/suggestion-access-mode";
 import { suggestionsOverviewPermissionKeys } from "@/lib/suggestions/suggestion-page-permission-keys";
 import {
-  pipelineStatuses,
-  suggestionStatusLabel,
-} from "@/lib/suggestions/status";
-import {
+  currentMemberHasGrantPermission,
   currentMemberHasPermission,
+  prefetchMemberGrantPermissions,
   prefetchMemberPermissions,
 } from "@/modules/platform-shell/permissions";
+import { WORKPLACE_VIEW_PERMISSION } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function SuggestionsOverviewPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await prefetchMemberPermissions([...suggestionsOverviewPermissionKeys]);
-  const canView = await currentMemberHasPermission("suggestions.read");
-  if (!canView) {
-    notFound();
+  await Promise.all([
+    prefetchMemberPermissions([
+      ...suggestionsOverviewPermissionKeys,
+      WORKPLACE_VIEW_PERMISSION,
+    ]),
+    prefetchMemberGrantPermissions(["suggestions.read"]),
+  ]);
+  const [canReadPortfolio, canSubmit, canViewWorkplace] = await Promise.all([
+    currentMemberHasGrantPermission("suggestions.read"),
+    currentMemberHasPermission("suggestions.submit"),
+    currentMemberHasPermission(WORKPLACE_VIEW_PERMISSION),
+  ]);
+  const accessMode = suggestionAccessMode({
+    canReadPortfolio,
+    canSubmit,
+    canViewWorkplace,
+  });
+  if (accessMode === "denied") notFound();
+  if (accessMode === "contributor") {
+    return (
+      <SuggestionContributorAccess
+        canSubmit={canSubmit}
+        canViewWorkplace={canViewWorkplace}
+      />
+    );
   }
 
   const params = await searchParams;
   const filters = parseSuggestionPortfolioSearchParams(params);
   const supabase = await createServerSupabaseClient();
-  const canSubmit = await currentMemberHasPermission("suggestions.submit");
+  const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
+    parseAnalyticsRangeDays(params.range),
+  );
   const canReview = await currentMemberHasPermission("suggestions.review");
   const canManageProgrammes = await currentMemberHasPermission(
     "suggestions.programmes.manage",
@@ -56,23 +84,35 @@ export default async function SuggestionsOverviewPage({
   ]);
 
   const pipeline = overview.pipeline;
+  const reviewQueueCount = overview.awaiting_review ?? 0;
+  const canManageJobFunctions = await currentMemberHasPermission(
+    "job_functions.manage",
+  );
+  const newDialogRequested =
+    (Array.isArray(params.new) ? params.new[0] : params.new) === "1";
 
   return (
     <div className="flex flex-col gap-8" data-testid="suggestions-overview">
       <PageHeader
         title="Suggestions"
-        description="Improvement ideas from your people — capture, review, and implement."
         actions={
-          <div className="flex gap-2">
-            {canSubmit ? (
-              <Button size="sm" asChild>
+          <div className="flex flex-wrap gap-2">
+            {canReview || canManageReview ? (
+              <Button size="sm" variant="outline" asChild>
                 <AppLink
-                  href="/platform/suggestions/new"
-                  data-testid="suggestions-new-link"
+                  href="/platform/suggestions/review?queue=mine"
+                  data-testid="suggestions-open-queue-link"
                 >
-                  New suggestion
+                  Review queue ({reviewQueueCount})
                 </AppLink>
               </Button>
+            ) : null}
+            {canSubmit ? (
+              <NewSuggestionDialog
+                canManageProgrammes={canManageProgrammes}
+                canManageJobFunctions={canManageJobFunctions}
+                defaultOpen={newDialogRequested}
+              />
             ) : null}
             {canManageProgrammes ? (
               <Button size="sm" variant="outline" asChild>
@@ -88,52 +128,10 @@ export default async function SuggestionsOverviewPage({
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          label="Submitted this month"
-          value={overview.submitted_this_month}
-        />
-        <MetricCard label="Awaiting review" value={overview.awaiting_review} />
-        <MetricCard label="Implementing" value={overview.implementing} />
-        <MetricCard label="Implemented" value={overview.implemented} />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Idea pipeline</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
-          {pipelineStatuses().map((status) => (
-            <div
-              key={status}
-              className="rounded-lg border border-border bg-surface p-3"
-            >
-              <p className="text-xs text-muted-foreground">
-                {suggestionStatusLabel(status)}
-              </p>
-              <p className="text-2xl font-semibold tabular-nums">
-                {pipeline[status] ?? 0}
-              </p>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      {canReview || canManageReview ? (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Review queue</CardTitle>
-            <Button variant="outline" size="sm" asChild>
-              <AppLink
-                href="/platform/suggestions/review?queue=mine"
-                data-testid="suggestions-open-queue-link"
-              >
-                Open queue
-              </AppLink>
-            </Button>
-          </CardHeader>
-        </Card>
-      ) : null}
+      <SuggestionPipelineStatusChips
+        pipeline={pipeline}
+        activeStatus={filters.status}
+      />
 
       <SuggestionPortfolio
         items={portfolio.items}
@@ -144,6 +142,15 @@ export default async function SuggestionsOverviewPage({
         filterOptions={filterOptions}
         showReviewerWorkflow={canReview || canManageReview}
       />
+
+      <ModulePageInsightsDeferred
+        module="suggestions"
+        rangeDays={analyticsRange.days}
+        testId="suggestions-analytics"
+      />
+      {canViewWorkplace ? (
+        <WorkplaceSharedRecords module="suggestions" />
+      ) : null}
     </div>
   );
 }

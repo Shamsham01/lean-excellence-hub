@@ -217,7 +217,7 @@ export function MemberAdministrationPanel({
 
   return (
     <div
-      className="flex flex-col gap-8"
+      className="flex w-full max-w-full min-w-0 flex-col gap-8"
       data-testid="member-administration-panel"
     >
       <section className="flex flex-col gap-3">
@@ -370,39 +370,57 @@ export function MemberAdministrationPanel({
         </section>
       ) : null}
 
-      <section className="flex flex-col gap-3">
+      <section
+        className="flex w-full max-w-full min-w-0 flex-col gap-3"
+        data-testid="organisation-assignment-section"
+      >
         <h2 className="text-base font-semibold">Organisation</h2>
-        <dl className="grid gap-2 text-sm sm:grid-cols-2">
-          <div>
+        <dl
+          className="grid w-full max-w-full min-w-0 grid-cols-[minmax(0,1fr)] gap-2 text-sm sm:grid-cols-2"
+          data-testid="organisation-assignment-summary"
+        >
+          <div className="max-w-full min-w-0">
             <dt className="text-muted-foreground">
               <ContextualHelpLabel topic="primary-organisational-unit">
                 Primary organisation unit
               </ContextualHelpLabel>
             </dt>
-            <dd>
+            <dd
+              className="[overflow-wrap:anywhere]"
+              data-testid="saved-primary-unit"
+            >
               {profile.primary_organisational_unit?.name ?? "Not assigned"}
             </dd>
           </div>
-          <div>
+          <div className="max-w-full min-w-0">
             <dt className="text-muted-foreground">
               <ContextualHelpLabel topic="job-function">
                 Job function
               </ContextualHelpLabel>
             </dt>
-            <dd>{profile.job_function?.name ?? "Not assigned"}</dd>
+            <dd
+              className="[overflow-wrap:anywhere]"
+              data-testid="saved-job-function"
+            >
+              {profile.job_function?.name ?? "Not assigned"}
+            </dd>
           </div>
         </dl>
         {canAssignJobFunction && profile.status === "active" ? (
           <form
             onSubmit={handleAssignJobFunction}
-            className="flex flex-col gap-3"
+            className="flex w-full max-w-full min-w-0 flex-col gap-3"
+            data-testid="organisation-assignment-form"
           >
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="flex flex-col gap-2">
+            <div
+              className="grid w-full max-w-full min-w-0 grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2"
+              data-testid="organisation-assignment-grid"
+            >
+              <div className="flex w-full max-w-full min-w-0 flex-col gap-2">
                 <Label htmlFor="member-job-function">Job function</Label>
                 <select
                   id="member-job-function"
-                  className="border-input min-h-11 rounded-md border bg-background px-3 text-sm"
+                  className="border-input min-h-11 w-full max-w-full min-w-0 rounded-md border bg-background px-3 text-sm"
                   value={jobFunctionId}
                   onChange={(event) => setJobFunctionId(event.target.value)}
                 >
@@ -414,13 +432,13 @@ export function MemberAdministrationPanel({
                   ))}
                 </select>
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex w-full max-w-full min-w-0 flex-col gap-2">
                 <Label htmlFor="member-primary-unit">
                   Primary organisation unit
                 </Label>
                 <select
                   id="member-primary-unit"
-                  className="border-input min-h-11 rounded-md border bg-background px-3 text-sm"
+                  className="border-input min-h-11 w-full max-w-full min-w-0 rounded-md border bg-background px-3 text-sm"
                   value={organisationalUnitId}
                   onChange={(event) =>
                     setOrganisationalUnitId(event.target.value)
@@ -439,7 +457,8 @@ export function MemberAdministrationPanel({
               type="submit"
               disabled={loading}
               size="sm"
-              className="self-start"
+              className="max-w-full self-start text-left whitespace-normal"
+              data-testid="save-organisation-assignment"
             >
               Save organisation assignment
             </Button>

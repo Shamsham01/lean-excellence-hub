@@ -8,13 +8,15 @@ import {
 import { MarketingShell } from "@/components/marketing/shell";
 import {
   type DemoBookingState,
+  GET_FREE_ACCESS_CTA,
+  GET_FREE_ACCESS_HREF,
   readDemoBooking,
 } from "@/lib/marketing/demo-booking";
 
 import "./demo.css";
 
 const FACTS = [
-  ["Duration", "45-minute personalised walkthrough"],
+  ["Duration", "30-minute personalised walkthrough"],
   ["Format", "Live online meeting"],
   ["Journey", "Connected improvement workflow"],
   ["Standards", "Configurable Lean frameworks and standards"],
@@ -35,7 +37,7 @@ export function MarketingDemoPage({
         <MarketingContainer>
           <div className="demo-layout">
             <div className="demo-copy">
-              <MarketingKicker>Book a live demo</MarketingKicker>
+              <MarketingKicker>Book a demo</MarketingKicker>
               <h1>See operational excellence connected.</h1>
               <p className="demo-lede">
                 Discover how Lean Excellence Hub connects everyday improvement,
@@ -67,10 +69,9 @@ export function MarketingDemoPage({
                 <li>
                   <p>One connected finding</p>
                   <p>
-                    A fictional manufacturing example, from the observation
-                    through action, problem solving, the improvement project, a
-                    benefit awaiting validation, and what the organisation
-                    learns.
+                    From the observation through action, problem solving, the
+                    improvement project, a benefit awaiting validation, and what
+                    the organisation learns.
                   </p>
                 </li>
                 <li>
@@ -100,6 +101,12 @@ export function MarketingDemoPage({
               </p>
               <p>
                 <a href="https://cal.com/privacy">Cal.com privacy notice</a>.
+              </p>
+              <p>
+                Want to start without a call?{" "}
+                <Link href={GET_FREE_ACCESS_HREF}>{GET_FREE_ACCESS_CTA}</Link>{" "}
+                and tell us about your site; we will set up early access with
+                you.
               </p>
               <p className="demo-secondary">
                 <Link href="/login">Sign in</Link>

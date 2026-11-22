@@ -2,6 +2,7 @@ import {
   formatUsageCount,
   isEmptyAiUsageSummary,
   parseAiUsageSummary,
+  pauseMeterTokens,
   totalAiUsageTokens,
   type AiUsageSummary,
 } from "@/lib/ai/usage-summary";
@@ -9,6 +10,7 @@ import {
 type AiUsageSummaryPanelProps = {
   usageSummary: Record<string, unknown> | null;
   usageLoadError?: string | null;
+  governanceCeiling?: number | null;
 };
 
 function UsageMetric({
@@ -51,7 +53,7 @@ function ProviderDistributionTable({
             <tr>
               <th className="px-3 py-2 font-medium">Provider</th>
               <th className="px-3 py-2 font-medium">Model</th>
-              <th className="px-3 py-2 font-medium">Runs</th>
+              <th className="px-3 py-2 font-medium">Interactions</th>
             </tr>
           </thead>
           <tbody>
@@ -74,9 +76,33 @@ function ProviderDistributionTable({
   );
 }
 
+function PauseMeterNote({
+  summary,
+  governanceCeiling,
+}: {
+  summary: AiUsageSummary;
+  governanceCeiling: number | null;
+}) {
+  if (governanceCeiling === null || governanceCeiling <= 0) return null;
+
+  return (
+    <p
+      className="text-sm text-muted-foreground"
+      data-testid="ai-usage-pause-meter"
+    >
+      An interaction pause is set at {formatUsageCount(governanceCeiling)}{" "}
+      tokens. The pause adds input, cached input, output, and reasoning tokens (
+      {formatUsageCount(pauseMeterTokens(summary))}). Cached input is already
+      part of input, and reasoning is already part of output, so this pause
+      count is higher than the input and output total.
+    </p>
+  );
+}
+
 export function AiUsageSummaryPanel({
   usageSummary,
   usageLoadError = null,
+  governanceCeiling = null,
 }: AiUsageSummaryPanelProps) {
   if (usageLoadError) {
     return (
@@ -102,9 +128,18 @@ export function AiUsageSummaryPanel({
 
   if (isEmptyAiUsageSummary(summary)) {
     return (
-      <p className="text-sm text-muted-foreground" data-testid="ai-usage-empty">
-        No Lean AI usage recorded this month yet.
-      </p>
+      <div className="flex flex-col gap-3">
+        <p
+          className="text-sm text-muted-foreground"
+          data-testid="ai-usage-empty"
+        >
+          No LeanAI interactions recorded this month yet.
+        </p>
+        <PauseMeterNote
+          summary={summary}
+          governanceCeiling={governanceCeiling}
+        />
+      </div>
     );
   }
 
@@ -112,12 +147,12 @@ export function AiUsageSummaryPanel({
     <div className="flex flex-col gap-4" data-testid="ai-usage-summary">
       <dl className="grid gap-3 sm:grid-cols-2">
         <UsageMetric
-          label="Runs this month"
+          label="Interactions this month"
           value={formatUsageCount(summary.runs_this_month)}
           testId="ai-usage-runs"
         />
         <UsageMetric
-          label="Total tokens"
+          label="Input and output tokens"
           value={formatUsageCount(totalAiUsageTokens(summary))}
           testId="ai-usage-total-tokens"
         />
@@ -147,7 +182,13 @@ export function AiUsageSummaryPanel({
           testId="ai-usage-tool-calls"
         />
       </dl>
+      <p className="text-sm text-muted-foreground">
+        The headline total is input plus output. Cached input sits inside input,
+        and reasoning sits inside output. They are listed separately so those
+        figures stay distinct.
+      </p>
       <ProviderDistributionTable rows={summary.provider_distribution} />
+      <PauseMeterNote summary={summary} governanceCeiling={governanceCeiling} />
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { isAssistantUuid } from "@/modules/leanai-context/assistant/constants";
 import { loadAssessmentWorkspace } from "@/modules/maturity/load-assessment-workspace";
 import { currentMemberHasScopedPermission } from "@/modules/platform-shell/permissions";
 import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
+import { loadWorkplaceRecordView } from "@/modules/workplace/access";
 import { ScoreBadge } from "@/modules/maturity/status-badges";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
@@ -21,6 +22,15 @@ export default async function AssessmentDetailPage({
   searchParams: Promise<{ criterion?: string | string[] }>;
 }) {
   const { id } = await params;
+  const workplaceView = await loadWorkplaceRecordView({
+    readPermission: MATURITY_PERMISSIONS.read,
+    module: "maturity",
+    recordId: id,
+    title: "Maturity",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const query = await searchParams;
   const criterionParam = Array.isArray(query.criterion)
     ? query.criterion[0]

@@ -9,11 +9,11 @@ import type { SetupQueryResult } from "./types";
 
 export { loadSetupPermissions } from "./permissions";
 
-function isPermissionDenied(error: { code?: string } | null) {
+export function isPermissionDenied(error: { code?: string } | null) {
   return error?.code === "42501";
 }
 
-async function countActiveUnits(
+export async function countActiveUnits(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
 ) {
   const { data, error } = await supabase
@@ -44,7 +44,7 @@ async function hasChildUnits(
   return { hasChild: (data?.length ?? 0) > 0, unavailable: false as const };
 }
 
-async function checkOrganisationOwner(
+export async function checkOrganisationOwner(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
 ) {
   const { data: grants, error } = await supabase
@@ -257,7 +257,7 @@ async function countLeanConfigSignals(
   return { signalCount, unavailable: false as const };
 }
 
-async function checkCurrentAdminPrimaryAssignment(
+export async function checkCurrentAdminPrimaryAssignment(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
 ) {
   const { data, error } = await supabase.rpc(
@@ -294,6 +294,46 @@ async function countMaturityAssessments(
 ) {
   const { count, error } = await supabase
     .from("maturity_assessments")
+    .select("id", { count: "exact", head: true });
+
+  if (isPermissionDenied(error)) {
+    return { unavailable: true as const };
+  }
+  return { count: count ?? 0, unavailable: false as const };
+}
+
+async function countActiveSkills(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+) {
+  const { count, error } = await supabase
+    .from("skills")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "active");
+
+  if (isPermissionDenied(error)) {
+    return { unavailable: true as const };
+  }
+  return { count: count ?? 0, unavailable: false as const };
+}
+
+async function countRecognitionTypes(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+) {
+  const { count, error } = await supabase
+    .from("recognition_types")
+    .select("id", { count: "exact", head: true });
+
+  if (isPermissionDenied(error)) {
+    return { unavailable: true as const };
+  }
+  return { count: count ?? 0, unavailable: false as const };
+}
+
+async function countScheduleDefinitions(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+) {
+  const { count, error } = await supabase
+    .from("schedule_definitions")
     .select("id", { count: "exact", head: true });
 
   if (isPermissionDenied(error)) {
@@ -354,6 +394,9 @@ export async function loadSetupQueryResult(): Promise<SetupQueryResult> {
     training,
     publishedMaturity,
     assessments,
+    activeSkills,
+    recognitionTypes,
+    scheduleDefinitions,
   ] = await Promise.all([
     countActiveUnits(supabase),
     hasChildUnits(supabase),
@@ -369,6 +412,9 @@ export async function loadSetupQueryResult(): Promise<SetupQueryResult> {
     countTrainingCatalog(supabase),
     countPublishedMaturity(supabase),
     countMaturityAssessments(supabase),
+    countActiveSkills(supabase),
+    countRecognitionTypes(supabase),
+    countScheduleDefinitions(supabase),
   ]);
 
   const activeUnits = units.unavailable ? [] : units.units;
@@ -426,6 +472,16 @@ export async function loadSetupQueryResult(): Promise<SetupQueryResult> {
     maturityAssessmentUnavailable: assessments.unavailable,
     trainingCatalogCount: training.unavailable ? null : training.count,
     trainingCatalogUnavailable: training.unavailable,
+    activeSkillCount: activeSkills.unavailable ? null : activeSkills.count,
+    activeSkillCountUnavailable: activeSkills.unavailable,
+    recognitionTypeCount: recognitionTypes.unavailable
+      ? null
+      : recognitionTypes.count,
+    recognitionTypeCountUnavailable: recognitionTypes.unavailable,
+    scheduleDefinitionCount: scheduleDefinitions.unavailable
+      ? null
+      : scheduleDefinitions.count,
+    scheduleDefinitionCountUnavailable: scheduleDefinitions.unavailable,
     hasChildUnits: childUnits.unavailable ? null : childUnits.hasChild,
     childUnitsUnavailable: childUnits.unavailable,
   };

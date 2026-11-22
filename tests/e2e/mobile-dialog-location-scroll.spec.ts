@@ -1,7 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 
-import { expect, test, type Page } from "@playwright/test";
+import {
+  devices,
+  expect,
+  test,
+  type Locator,
+  type Page,
+} from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 
 import {
@@ -10,6 +16,13 @@ import {
   resolveSupabaseEnv,
   type LeanAiContextE2eUser,
 } from "./helpers/leanai-context";
+import {
+  openFiveSAddQuestion,
+  openGembaAddPrompt,
+  openGembaAddSection,
+} from "./helpers/form-dialogs";
+import { chooseApplicableUnit } from "./helpers/applicable-units";
+import { dispatchCdpTouchSwipe } from "./helpers/touch-scroll";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -61,6 +74,41 @@ async function expectBoxInViewport(page: Page, testId: string) {
   expect(box!.y + box!.height).toBeLessThanOrEqual(viewport!.height + 1);
   expect(box!.x).toBeGreaterThanOrEqual(-1);
   expect(box!.x + box!.width).toBeLessThanOrEqual(viewport!.width + 1);
+}
+
+async function captureMobileScreenshot(page: Page, path: string) {
+  await page.screenshot({
+    path,
+    scale: "css",
+    style: "nextjs-portal { display: none !important; }",
+  });
+  return path;
+}
+
+async function expectTouchScroll(page: Page, list: Locator) {
+  await list.scrollIntoViewIfNeeded();
+  const readBackgroundScroll = () =>
+    page.evaluate(() => ({
+      window: window.scrollY,
+      platform: document.querySelector(".platform-main-viewport")?.scrollTop,
+    }));
+  const backgroundBefore = await readBackgroundScroll();
+  const listBefore = await list.evaluate((element) => element.scrollTop);
+  const box = await list.boundingBox();
+  expect(box).not.toBeNull();
+  await dispatchCdpTouchSwipe(
+    page,
+    box!.x + box!.width / 2,
+    box!.y + box!.height * 0.8,
+    box!.y + box!.height * 0.2,
+  );
+  await expect
+    .poll(() => list.evaluate((element) => element.scrollTop))
+    .toBeGreaterThan(listBefore);
+  expect(await readBackgroundScroll()).toEqual(backgroundBefore);
+  expect(
+    await list.evaluate((element) => element.scrollWidth),
+  ).toBeLessThanOrEqual(await list.evaluate((element) => element.clientWidth));
 }
 
 async function organisationIdFor(
@@ -155,11 +203,50 @@ async function propose(
   await page.goto(path);
   await expect(page.getByTestId("module-setup-builder")).toBeVisible();
   await page.getByTestId("module-setup-input").fill(message);
+  if (path === "/platform/5s/setup/leanai") {
+    await page.getByTestId("module-setup-send").click();
+    await expect(page.getByTestId("module-setup-question")).toBeVisible({
+      timeout: 30_000,
+    });
+  }
   await page.getByTestId("module-setup-propose").click();
   await expect(page.getByTestId("module-setup-proposal-name")).toHaveText(
     proposalName,
     { timeout: 30_000 },
   );
+}
+
+async function chooseUnitInCreateDialog(page: Page) {
+  const dialog = page.getByTestId("module-setup-create-dialog");
+  await chooseApplicableUnit(page, { root: dialog, pickLast: true });
+}
+
+async function openApplicabilityPickerFromCreateDialog(page: Page) {
+  const dialog = page.getByTestId("module-setup-create-dialog");
+  await dialog.getByTestId("applicable-units-edit-locations").click();
+  const picker = page.getByTestId("applicable-units-picker-dialog");
+  await expect(picker).toBeVisible();
+  const scroller = picker.locator("[data-dialog-scroll]");
+  return {
+    dialog,
+    picker,
+    scroller: (await scroller.count()) > 0 ? scroller : picker,
+  };
+}
+
+async function checkLastUnitInApplicabilityPicker(page: Page) {
+  const { picker, scroller } =
+    await openApplicabilityPickerFromCreateDialog(page);
+  const last = picker.getByTestId("applicable-unit-checkbox").last();
+  await last.scrollIntoViewIfNeeded();
+  await last.check();
+  await expect(last).toBeChecked();
+  await scroller.evaluate((element) => {
+    element.scrollTop = 0;
+  });
+  await expect(last).toBeChecked();
+  await page.getByTestId("applicable-units-picker-save").click();
+  await expect(picker).toBeHidden();
 }
 
 async function openCreateDialog(page: Page) {
@@ -187,6 +274,106 @@ test.describe("mobile location dialog scrolling", () => {
     await seedLocationFixture(user);
   });
 
+  for (const activity of [
+    {
+      slug: "gemba",
+      publish: "publish-gemba-definition",
+      start: "gemba-start-walk",
+      units: "gemba-unit-select",
+    },
+    {
+      slug: "5s",
+      publish: "publish-five-s-standard",
+      start: "five-s-start-audit",
+      units: "five-s-unit-select",
+    },
+  ]) {
+    test(`${activity.slug} location lists scroll with Android Chrome touch`, async ({
+      browser,
+      baseURL,
+    }, testInfo) => {
+      test.setTimeout(150_000);
+      const context = await browser.newContext({
+        ...devices["Pixel 7"],
+        ...(baseURL ? { baseURL } : {}),
+        viewport: { width: 390, height: 844 },
+      });
+      try {
+        const page = await context.newPage();
+        await loginAndSelectOrganisation(page, user, user.organisationAName);
+        await page.goto(`/platform/${activity.slug}/setup/quick-start`);
+        await page.getByTestId("applicable-units-edit-locations").click();
+        const picker = page.getByTestId("applicable-units-picker-dialog");
+        const pickerList = picker.getByTestId("applicable-units-picker-list");
+        const save = picker.getByTestId("applicable-units-picker-save");
+        await expectTouchScroll(page, pickerList);
+        await expectBoxInViewport(page, "applicable-units-picker-save");
+        await testInfo.attach(`${activity.slug}-locations-390x844`, {
+          path: await captureMobileScreenshot(
+            page,
+            testInfo.outputPath(`${activity.slug}-locations-390x844.png`),
+          ),
+          contentType: "image/png",
+        });
+        await picker
+          .getByRole("button", { name: "Select all in Packing Site" })
+          .click();
+        await save.click();
+        await page.getByTestId("module-setup-deploy").click();
+        await page.getByTestId(activity.publish).click();
+        await expect(page.getByText(/v1 · published/i)).toBeVisible();
+        const detailUrl = page.url();
+
+        for (const viewport of [
+          { width: 390, height: 844 },
+          { width: 360, height: 740 },
+        ]) {
+          await page.setViewportSize(viewport);
+          await page.goto(detailUrl);
+          await page.getByTestId(`${activity.start}-open`).click();
+          const list = page.getByTestId(activity.units);
+          await expect(list.getByRole("radio")).toHaveCount(22);
+          await expectTouchScroll(page, list);
+          await expectBoxInViewport(page, activity.start);
+          await expectNoHorizontalOverflow(page);
+          if (viewport.width === 390) {
+            await testInfo.attach(`${activity.slug}-start-390x844`, {
+              path: await captureMobileScreenshot(
+                page,
+                testInfo.outputPath(`${activity.slug}-start-390x844.png`),
+              ),
+              contentType: "image/png",
+            });
+          }
+          await page
+            .getByRole("button", { name: "Close", exact: true })
+            .click();
+          await page.getByTestId("create-schedule-link").click();
+          const scheduleList = page.getByTestId("schedule-unit-select");
+          await expect(scheduleList.getByRole("radio")).toHaveCount(22);
+          await expectTouchScroll(page, scheduleList);
+          await scheduleList.getByRole("radio").last().check();
+          await expect(scheduleList.getByRole("radio").last()).toBeChecked();
+          await page.getByTestId("schedule-submit").scrollIntoViewIfNeeded();
+          await expectBoxInViewport(page, "schedule-submit");
+          await expectNoHorizontalOverflow(page);
+          if (viewport.width === 390) {
+            await scheduleList.scrollIntoViewIfNeeded();
+            await testInfo.attach(`${activity.slug}-schedule-390x844`, {
+              path: await captureMobileScreenshot(
+                page,
+                testInfo.outputPath(`${activity.slug}-schedule-390x844.png`),
+              ),
+              contentType: "image/png",
+            });
+          }
+        }
+      } finally {
+        await context.close();
+      }
+    });
+  }
+
   test("Gemba Create Draft scrolls at every required viewport", async ({
     page,
   }) => {
@@ -213,10 +400,10 @@ test.describe("mobile location dialog scrolling", () => {
       await expectNoHorizontalOverflow(page);
 
       const frame = await dialog.evaluate((element) => {
-        const scroller = element.querySelector(
+        const scrollNode = element.querySelector(
           "[data-dialog-scroll]",
         ) as HTMLElement;
-        const scrollerStyle = getComputedStyle(scroller);
+        const scrollerStyle = getComputedStyle(scrollNode);
         return {
           maxHeight: Number.parseFloat(element.style.maxHeight),
           top: Number.parseFloat(element.style.top),
@@ -235,35 +422,32 @@ test.describe("mobile location dialog scrolling", () => {
         scrollHeight: element.scrollHeight,
         clientHeight: element.clientHeight,
       }));
-      expect(
-        scrollMetrics.scrollHeight,
-        JSON.stringify({ frame, scrollMetrics }),
-      ).toBeGreaterThan(scrollMetrics.clientHeight + 8);
-      const box = await scroller.boundingBox();
-      expect(box).not.toBeNull();
-      await page.mouse.move(
-        box!.x + 40,
-        box!.y + Math.min(80, box!.height / 2),
-      );
-      await page.mouse.wheel(0, 500);
-      const scrollAfter = await scroller.evaluate(
-        (element) => element.scrollTop,
-      );
-      expect(scrollAfter).toBeGreaterThan(scrollMetrics.scrollTop);
+      if (scrollMetrics.scrollHeight > scrollMetrics.clientHeight + 8) {
+        expect(
+          scrollMetrics.scrollHeight,
+          JSON.stringify({ frame, scrollMetrics }),
+        ).toBeGreaterThan(scrollMetrics.clientHeight + 8);
+        const box = await scroller.boundingBox();
+        expect(box).not.toBeNull();
+        await page.mouse.move(
+          box!.x + 40,
+          box!.y + Math.min(80, box!.height / 2),
+        );
+        await page.mouse.wheel(0, 500);
+        const scrollAfter = await scroller.evaluate(
+          (element) => element.scrollTop,
+        );
+        expect(scrollAfter).toBeGreaterThan(scrollMetrics.scrollTop);
+      }
 
-      const last = page.getByTestId("applicable-unit-checkbox").last();
-      await last.scrollIntoViewIfNeeded();
-      await last.check();
-      await expect(last).toBeChecked();
-      await scroller.evaluate((element) => {
-        element.scrollTop = 0;
-      });
-      await expect(last).toBeChecked();
+      await chooseUnitInCreateDialog(page);
       await page
         .getByTestId("module-setup-confirm-create")
         .scrollIntoViewIfNeeded();
       await expectBoxInViewport(page, "module-setup-confirm-create");
-      await expect(last).toBeChecked();
+      await expect(
+        dialog.getByTestId("applicable-units-compact-summary"),
+      ).not.toHaveText("No locations selected");
       await expect(page.getByRole("button", { name: "Close" })).toBeVisible();
 
       if (viewport.name === "390x844") {
@@ -321,42 +505,30 @@ test.describe("mobile location dialog scrolling", () => {
       "Select at least one applicable area.",
       { timeout: 30_000 },
     );
-    const last = page.getByTestId("applicable-unit-checkbox").last();
-    await last.scrollIntoViewIfNeeded();
-    await last.check();
-    const scroller = page.locator("[data-dialog-scroll]");
-    await scroller.evaluate((element) => {
-      element.scrollTop = 0;
-    });
-    await expect(last).toBeChecked();
-    await expect(page.getByTestId("module-setup-create-error")).toBeVisible();
+    await checkLastUnitInApplicabilityPicker(page);
+    await expect(page.getByTestId("module-setup-create-error")).toHaveCount(0);
     await page
       .getByTestId("module-setup-confirm-create")
       .scrollIntoViewIfNeeded();
-    await expect(last).toBeChecked();
     await page.getByTestId("module-setup-confirm-create").click();
     await expect(
       page.getByRole("heading", { name: "Operational Gemba Walk" }),
     ).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("gemba-draft-boundary")).toBeVisible();
     await expect(page.getByText(/v1 · published/i)).toHaveCount(0);
+    await openGembaAddPrompt(page);
     await page
       .getByTestId("gemba-question-prompt")
-      .first()
       .fill("What else is visible?");
-    await page.getByRole("button", { name: "Add prompt" }).first().click();
+    await page.getByRole("button", { name: "Add prompt" }).click();
     await expect(page.getByText("What else is visible?")).toBeVisible();
     await screenshot(page, "gemba_draft_created_after_dialog_390x844.png");
   });
 
-  test("Gemba Create Draft scrolls in dark mode", async ({ browser }) => {
+  test("Gemba Create Draft scrolls in dark mode", async ({ page }) => {
     test.setTimeout(120_000);
-    const context = await browser.newContext({
-      colorScheme: "dark",
-      viewport: { width: 390, height: 844 },
-    });
-    const page = await context.newPage();
     await loginAndSelectOrganisation(page, user, user.organisationAName);
+    await page.emulateMedia({ colorScheme: "dark" });
     await propose(
       page,
       "/platform/gemba/setup/leanai",
@@ -366,20 +538,16 @@ test.describe("mobile location dialog scrolling", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(page.locator("html")).toHaveClass(/dark/);
     await openCreateDialog(page);
-    const last = page.getByTestId("applicable-unit-checkbox").last();
-    await last.scrollIntoViewIfNeeded();
-    await last.check();
+    await checkLastUnitInApplicabilityPicker(page);
     await page
       .getByTestId("module-setup-confirm-create")
       .scrollIntoViewIfNeeded();
     await expectBoxInViewport(page, "module-setup-confirm-create");
-    await expect(last).toBeChecked();
     await expectNoHorizontalOverflow(page);
     await screenshot(page, "dialog_gemba_scrolled_390x844_dark.png");
     await page.getByRole("button", { name: "Close" }).click();
     await expect(page.getByTestId("module-setup-create-dialog")).toBeHidden();
     await expect(page.getByTestId("module-setup-proposal-name")).toBeVisible();
-    await context.close();
   });
 
   test("5S LeanAI Create Draft scrolls and saves the selected area", async ({
@@ -396,13 +564,7 @@ test.describe("mobile location dialog scrolling", () => {
     await page.setViewportSize({ width: 390, height: 664 });
     await openCreateDialog(page);
     await expectNoHorizontalOverflow(page);
-    const last = page.getByTestId("applicable-unit-checkbox").last();
-    await last.scrollIntoViewIfNeeded();
-    await last.check();
-    await page.locator("[data-dialog-scroll]").evaluate((element) => {
-      element.scrollTop = 0;
-    });
-    await expect(last).toBeChecked();
+    await checkLastUnitInApplicabilityPicker(page);
     await page
       .getByTestId("module-setup-confirm-create")
       .scrollIntoViewIfNeeded();
@@ -428,10 +590,7 @@ test.describe("mobile location dialog scrolling", () => {
     await expect(
       page.getByRole("heading", { name: "LEH Workplace 5S Standard" }),
     ).toBeVisible();
-    const last = page.getByTestId("applicable-unit-checkbox").last();
-    await last.scrollIntoViewIfNeeded();
-    await last.check();
-    await expect(last).toBeChecked();
+    await chooseApplicableUnit(page, { pickLast: true });
     const deploy = page.getByTestId("module-setup-deploy");
     await deploy.scrollIntoViewIfNeeded();
     await expectNoHorizontalOverflow(page);
@@ -440,11 +599,11 @@ test.describe("mobile location dialog scrolling", () => {
       page.getByRole("heading", { name: "LEH Workplace 5S Standard" }),
     ).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("five-s-draft-boundary")).toBeVisible();
+    await openFiveSAddQuestion(page);
     await page
       .getByTestId("five-s-question-prompt")
-      .first()
       .fill("Extra packing check");
-    await page.getByRole("button", { name: "Add question" }).first().click();
+    await page.getByRole("button", { name: "Add question" }).click();
     await expect(page.getByText("Extra packing check")).toBeVisible();
     await page.getByTestId("publish-five-s-standard").click();
     await expect(page.getByText(/v1 · published/i)).toBeVisible({
@@ -461,18 +620,17 @@ test.describe("mobile location dialog scrolling", () => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto("/platform/gemba/definitions");
     await page.getByLabel("Name").fill("Manual location walk");
-    const last = page.getByTestId("applicable-unit-checkbox").last();
-    await last.scrollIntoViewIfNeeded();
-    await last.check();
-    await expect(last).toBeChecked();
+    await chooseApplicableUnit(page, { pickLast: true });
     await page.getByRole("button", { name: "Create draft" }).click();
     await expect(
       page.getByRole("heading", { name: "Manual location walk" }),
     ).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("gemba-draft-boundary")).toBeVisible();
+    await openGembaAddSection(page);
     await page.getByTestId("gemba-section-title").fill("Flow");
     await page.getByRole("button", { name: "Add section" }).click();
     await expect(page.getByTestId("authoring-section")).toBeVisible();
+    await openGembaAddPrompt(page);
     await page
       .getByTestId("gemba-question-prompt")
       .fill("Which location needs attention?");

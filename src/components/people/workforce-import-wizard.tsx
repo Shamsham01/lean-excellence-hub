@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { unstable_rethrow, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { navigateTo } from "@/lib/navigation/navigate";
@@ -53,6 +53,17 @@ type WorkforceImportWizardProps = {
     jobId: string,
   ) => Promise<
     { ok: true; data: WorkforceImportValidationSummary } | { error: string }
+  >;
+  onCompleteValidationStep: (jobId: string) => Promise<
+    | {
+        ok: true;
+        data: {
+          summary: WorkforceImportValidationSummary;
+          validationRows: ValidationRow[];
+          previewRows: ImportPreviewRow[] | null;
+        };
+      }
+    | { error: string }
   >;
   onLoadValidationRows: (
     jobId: string,
@@ -129,6 +140,7 @@ export function WorkforceImportWizard({
   onCreateJob,
   onSubmitRows,
   onValidate,
+  onCompleteValidationStep,
   onLoadValidationRows,
   onLoadPreviewRows,
   onStartProvisioning,
@@ -165,13 +177,6 @@ export function WorkforceImportWizard({
     }
     return Math.round((progress.provisionedRows / progress.totalRows) * 100);
   }, [progress]);
-
-  useEffect(() => {
-    if (!jobId) {
-      return;
-    }
-    router.refresh();
-  }, [jobId, router]);
 
   useEffect(() => {
     if (progress?.remainingRows === 0 && (progress?.provisionedRows ?? 0) > 0) {
@@ -272,32 +277,32 @@ export function WorkforceImportWizard({
     }
 
     setLoading(true);
-    const parsed = await parseWorkforceImportFile(file);
-    if ("error" in parsed) {
-      setMessage(parsed.error);
-      setLoading(false);
-      return;
-    }
+    try {
+      const parsed = await parseWorkforceImportFile(file);
+      if ("error" in parsed) {
+        setMessage(parsed.error);
+        return;
+      }
 
-    const created = await onCreateJob(file.name);
-    if ("error" in created) {
-      setMessage(created.error);
-      setLoading(false);
-      return;
-    }
+      const created = await onCreateJob(file.name);
+      if ("error" in created) {
+        setMessage(created.error);
+        return;
+      }
 
-    const submitted = await onSubmitRows(created.data.jobId, parsed.rows);
-    if ("error" in submitted) {
-      setMessage(submitted.error);
-      setLoading(false);
-      return;
-    }
+      const submitted = await onSubmitRows(created.data.jobId, parsed.rows);
+      if ("error" in submitted) {
+        setMessage(submitted.error);
+        return;
+      }
 
-    setJobId(created.data.jobId);
-    setFilename(file.name);
-    setRowCount(parsed.rows.length);
-    setStep(1);
-    setLoading(false);
+      setJobId(created.data.jobId);
+      setFilename(file.name);
+      setRowCount(parsed.rows.length);
+      setStep(1);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleValidate() {
@@ -305,30 +310,31 @@ export function WorkforceImportWizard({
     setLoading(true);
     setMessage(null);
 
-    const validated = await onValidate(jobId);
-    if ("error" in validated) {
-      setMessage(validated.error);
-      setLoading(false);
-      return;
-    }
-
-    const rows = await onLoadValidationRows(jobId);
-    if ("error" in rows) {
-      setMessage(rows.error);
-      setLoading(false);
-      return;
-    }
-
-    setSummary(validated.data);
-    setValidationRows(rows.data);
-    setLoading(false);
-
-    if (validated.data.canProvision) {
-      const preview = await onLoadPreviewRows(jobId);
-      if ("ok" in preview) {
-        setPreviewRows(preview.data);
+    try {
+      const result = await onCompleteValidationStep(jobId);
+      if ("error" in result) {
+        setMessage(result.error);
+        return;
       }
-      setStep(2);
+
+      setSummary(result.data.summary);
+      setValidationRows(result.data.validationRows);
+
+      if (result.data.summary.canProvision) {
+        if (result.data.previewRows) {
+          setPreviewRows(result.data.previewRows);
+        }
+        setStep(2);
+      }
+    } catch (error) {
+      unstable_rethrow(error);
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to validate import file.",
+      );
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -501,7 +507,12 @@ export function WorkforceImportWizard({
   }
 
   return (
-    <div className="flex flex-col gap-6" data-testid="workforce-import-wizard">
+    <div
+      className="flex flex-col gap-6"
+      data-testid="workforce-import-wizard"
+      data-wizard-step={String(step)}
+      data-wizard-ready={step >= 1 && !loading ? "true" : "false"}
+    >
       {jobId ? (
         <span className="sr-only" data-testid="workforce-import-job-id">
           {jobId}
@@ -608,7 +619,10 @@ export function WorkforceImportWizard({
                 >
                   Download error report
                 </Button>
-                <div className="overflow-x-auto">
+                <div
+                  className="overflow-x-auto"
+                  data-testid="workforce-import-validation-errors"
+                >
                   <table className="w-full text-left text-sm">
                     <thead>
                       <tr>

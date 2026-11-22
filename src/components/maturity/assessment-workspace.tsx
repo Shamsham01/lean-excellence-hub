@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { saveCriterionNote } from "@/app/(platform)/platform/maturity/actions";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
-import { AssessmentActionForm } from "@/components/maturity/assessment-action-form";
+import { AssessmentGuidanceMenu } from "@/components/maturity/assessment-guidance-menu";
+import { MaturityAssessmentActionDialog } from "@/components/maturity/maturity-assessment-action-dialog";
 import { AssessmentLifecycleActions } from "@/components/maturity/assessment-lifecycle-actions";
 import { QuestionCard } from "@/components/maturity/assessment-question-card";
 import { FormalLifecycleIndicator } from "@/components/maturity/formal-lifecycle-indicator";
@@ -16,6 +17,7 @@ import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { SectionProgressNav } from "@/components/ui/section-progress-nav";
 import {
   Sheet,
   SheetContent,
@@ -115,7 +117,6 @@ export function AssessmentWorkspace({
   const [localQuestionNotes, setLocalQuestionNotes] = useState<
     Record<string, string>
   >({});
-  const [actionFormOpen, setActionFormOpen] = useState(false);
   const [criteriaOpen, setCriteriaOpen] = useState(false);
   const [highlightQuestionId, setHighlightQuestionId] = useState<string | null>(
     null,
@@ -228,7 +229,7 @@ export function AssessmentWorkspace({
 
   return (
     <div
-      className="flex flex-col gap-6 lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-8"
+      className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(220px,240px)_minmax(0,1fr)] lg:gap-8"
       data-testid="assessment-workspace"
     >
       <aside
@@ -376,7 +377,7 @@ export function AssessmentWorkspace({
           ) : null}
         </div>
 
-        <ContextualGuidance criterion={criterion} levels={levels} />
+        <AssessmentGuidanceMenu criterion={criterion} levels={levels} />
 
         <div className="flex flex-col gap-4">
           {criterion.questions.map((question) => (
@@ -419,37 +420,15 @@ export function AssessmentWorkspace({
         />
 
         {canEdit ? (
-          actionFormOpen ? (
-            <div className="max-w-lg rounded-lg border border-border bg-card p-4">
-              <AssessmentActionForm
-                assessmentId={assessmentId}
-                pillarId={pillar.id}
-                criterionId={criterion.id}
-                questions={criterion.questions.map((question) => ({
-                  id: question.id,
-                  prompt: question.prompt,
-                }))}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="mt-2"
-                onClick={() => setActionFormOpen(false)}
-              >
-                Close
-              </Button>
-            </div>
-          ) : (
-            <Button
-              type="button"
-              variant="outline"
-              data-testid="create-improvement-action"
-              onClick={() => setActionFormOpen(true)}
-            >
-              + Create improvement action
-            </Button>
-          )
+          <MaturityAssessmentActionDialog
+            assessmentId={assessmentId}
+            pillarId={pillar.id}
+            criterionId={criterion.id}
+            questions={criterion.questions.map((question) => ({
+              id: question.id,
+              prompt: question.prompt,
+            }))}
+          />
         ) : null}
 
         <LinkedActionsList
@@ -534,9 +513,8 @@ export function AssessmentWorkspace({
         >
           <SheetHeader>
             <SheetTitle>Criteria</SheetTitle>
-            <SheetDescription>
-              Choose a criterion. Completion is required responses, not
-              navigation position.
+            <SheetDescription className="sr-only">
+              Choose a criterion.
             </SheetDescription>
           </SheetHeader>
           <CriterionNavigator
@@ -544,6 +522,7 @@ export function AssessmentWorkspace({
             readiness={readiness}
             activeId={criterion.id}
             testIdPrefix="criteria-drawer-item"
+            navLayout="stack"
             onSelect={(id) => void selectCriterion(id)}
           />
         </SheetContent>
@@ -558,115 +537,68 @@ function CriterionNavigator({
   activeId,
   onSelect,
   testIdPrefix,
+  navLayout = "workspace",
 }: {
   pillars: AssessmentPillar[];
   readiness: ReturnType<typeof buildAssessmentReadiness>;
   activeId: string;
   onSelect: (criterionId: string) => void;
   testIdPrefix: string;
+  navLayout?: "workspace" | "stack";
 }) {
-  return (
-    <nav className="flex flex-col gap-3" data-testid={`${testIdPrefix}-list`}>
-      {pillars.map((pillar) => (
-        <div key={pillar.id}>
-          <p className="px-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            {pillar.name}
-          </p>
-          {pillar.criteria.map((criterion) => {
-            const completion = readiness.criterionCompletions[criterion.id];
-            const state = completion?.state ?? "not_started";
-            const marker =
-              state === "complete" ? "✓" : state === "partial" ? "●" : "○";
-            return (
-              <button
-                key={criterion.id}
-                type="button"
-                onClick={() => onSelect(criterion.id)}
-                data-testid={`${testIdPrefix}-${criterion.id}`}
-                data-completion-state={state}
-                data-active={criterion.id === activeId ? "true" : "false"}
-                aria-current={criterion.id === activeId ? "true" : undefined}
-                className={cn(
-                  "mt-1 flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-sm",
-                  criterion.id === activeId
-                    ? "bg-accent font-medium text-accent-foreground"
-                    : "hover:bg-muted",
-                )}
-              >
-                <span aria-hidden className="mt-0.5 text-xs">
-                  {marker}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block leading-snug">{criterion.name}</span>
-                  {completion && completion.totalRequired > 0 ? (
-                    <span className="text-xs text-muted-foreground">
-                      {completion.answeredRequired}/{completion.totalRequired}
-                    </span>
-                  ) : null}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      ))}
-    </nav>
+  const items = pillars.flatMap((pillar) =>
+    pillar.criteria.map((criterion) => {
+      const completion = readiness.criterionCompletions[criterion.id];
+      const state = completion?.state ?? "not_started";
+      return {
+        id: criterion.id,
+        label: criterion.name,
+        completion: state,
+        ...(completion && completion.totalRequired > 0
+          ? {
+              detail: `${completion.answeredRequired}/${completion.totalRequired}`,
+            }
+          : {}),
+      };
+    }),
   );
-}
 
-function ContextualGuidance({
-  criterion,
-  levels,
-}: {
-  criterion: AssessmentPillar["criteria"][number];
-  levels: AssessmentLevel[];
-}) {
+  const groups = pillars.map((pillar) => {
+    const criterionStates = pillar.criteria.map(
+      (criterion) =>
+        readiness.criterionCompletions[criterion.id]?.state ?? "not_started",
+    );
+    const completeCount = criterionStates.filter(
+      (state) => state === "complete",
+    ).length;
+    const pillarCompletion =
+      pillar.criteria.length === 0
+        ? ("complete" as const)
+        : completeCount === 0
+          ? ("not_started" as const)
+          : completeCount === pillar.criteria.length
+            ? ("complete" as const)
+            : ("partial" as const);
+
+    return {
+      id: pillar.id,
+      label: pillar.name,
+      completion: pillarCompletion,
+      itemIds: pillar.criteria.map((criterion) => criterion.id),
+    };
+  });
+
   return (
-    <div className="flex flex-col gap-2" data-testid="contextual-guidance">
-      <details className="rounded-md border border-border bg-surface px-3 py-2">
-        <summary className="cursor-pointer text-sm font-medium">
-          Scoring guidance
-        </summary>
-        <ul className="mt-2 flex flex-col gap-2 text-sm text-muted-foreground">
-          {levels.length === 0 ? (
-            <li>No maturity levels are configured on this framework.</li>
-          ) : (
-            levels.map((level) => (
-              <li key={level.level_number}>
-                <span className="font-medium text-foreground">
-                  {level.level_number} {level.name}
-                </span>
-                {level.guidance ? ` — ${level.guidance}` : ""}
-              </li>
-            ))
-          )}
-        </ul>
-      </details>
-      <details className="rounded-md border border-border bg-surface px-3 py-2">
-        <summary className="cursor-pointer text-sm font-medium">
-          Criterion guidance
-        </summary>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {criterion.guidance ??
-            criterion.description ??
-            "Review the criterion and capture evidence against each question."}
-        </p>
-      </details>
-      <details className="rounded-md border border-border bg-surface px-3 py-2">
-        <summary className="cursor-pointer text-sm font-medium">
-          Level descriptors
-        </summary>
-        <ul className="mt-2 flex flex-col gap-2 text-sm text-muted-foreground">
-          {levels.map((level) => (
-            <li key={level.level_number}>
-              <span className="font-medium text-foreground">{level.name}</span>
-              {level.guidance
-                ? ` — ${level.guidance}`
-                : " — No descriptor configured."}
-            </li>
-          ))}
-        </ul>
-      </details>
-    </div>
+    <SectionProgressNav
+      ariaLabel="Assessment criteria"
+      items={items}
+      groups={groups}
+      activeId={activeId}
+      onSelect={onSelect}
+      layout={navLayout}
+      testId={`${testIdPrefix}-list`}
+      testIdPrefix={testIdPrefix}
+    />
   );
 }
 
@@ -770,10 +702,6 @@ function CriterionSummaryField({
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <Label htmlFor={`criterion-note-${criterionId}`}>Criterion summary</Label>
-      <p className="typography-helper mt-1">
-        Overall observation for this criterion. Use question comments for
-        detailed evidence narrative.
-      </p>
       <Textarea
         id={`criterion-note-${criterionId}`}
         className="mt-2"

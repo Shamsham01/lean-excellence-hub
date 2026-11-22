@@ -43,6 +43,7 @@ async function readLayoutMetrics(page: Page) {
     const feed = document.querySelector(
       '[data-testid="leanai-assistant-feed"]',
     );
+    const mainViewport = document.querySelector(".platform-main-viewport");
     const main = document.querySelector('[data-testid="platform-main"]');
     return {
       windowScrollY: window.scrollY,
@@ -55,14 +56,21 @@ async function readLayoutMetrics(page: Page) {
       documentClientWidth: document.documentElement.clientWidth,
       shell: rect('[data-testid="platform-shell"]'),
       sidebar: rect('[data-testid="platform-desktop-sidebar"]'),
-      main: main
+      main: mainViewport
         ? {
-            ...rect('[data-testid="platform-main"]'),
-            scrollTop: (main as HTMLElement).scrollTop,
-            scrollHeight: (main as HTMLElement).scrollHeight,
-            clientHeight: (main as HTMLElement).clientHeight,
+            ...rect(".platform-main-viewport"),
+            scrollTop: (mainViewport as HTMLElement).scrollTop,
+            scrollHeight: (mainViewport as HTMLElement).scrollHeight,
+            clientHeight: (mainViewport as HTMLElement).clientHeight,
           }
-        : null,
+        : main
+          ? {
+              ...rect('[data-testid="platform-main"]'),
+              scrollTop: (main as HTMLElement).scrollTop,
+              scrollHeight: (main as HTMLElement).scrollHeight,
+              clientHeight: (main as HTMLElement).clientHeight,
+            }
+          : null,
       assistant: rect('[data-testid="leanai-assistant-desktop"]'),
       rail: rect('[data-testid="leanai-assistant-rail"]'),
       pane: rect('[data-testid="leanai-assistant-pane"]'),
@@ -232,7 +240,9 @@ test.describe("LeanAI persistent workspace assistant", () => {
     await screenshotIfPossible(page, "leanai-assistant-suggestions-config.png");
 
     await page.goto("/platform/maturity/models");
-    await expect(page.getByTestId("maturity-models-page")).toBeVisible();
+    await expect(
+      page.getByTestId("platform-main").getByTestId("maturity-models-page"),
+    ).toBeVisible();
     await page.getByLabel("Name").fill("Assistant Framework");
     await page.getByRole("button", { name: "Create draft framework" }).click();
     await expect(page).toHaveURL(/\/platform\/maturity\/models\/[0-9a-f-]+/i, {
@@ -267,7 +277,7 @@ test.describe("LeanAI persistent workspace assistant", () => {
     await page.keyboard.press("Enter");
     const pane = page.getByTestId("leanai-assistant-pane");
     await expect(pane).toBeVisible();
-    await expect(page.getByLabel("Ask LeanAI")).toBeVisible();
+    await expect(page.getByTestId("leanai-assistant-input")).toBeVisible();
     await expect(
       page.getByTestId("leanai-assistant-context-label"),
     ).not.toHaveText(/Loading context/i, { timeout: 15_000 });
@@ -290,7 +300,7 @@ test.describe("LeanAI persistent workspace assistant", () => {
     await waitForAssistantContext(page);
 
     await makeElementOverflow(page, '[data-testid="leanai-assistant-feed"]');
-    await makeElementOverflow(page, '[data-testid="platform-main"]', 1200);
+    await makeElementOverflow(page, ".platform-main-inner", 1200);
 
     const initial = await readLayoutMetrics(page);
     expectViewportLocked(initial);
@@ -338,7 +348,7 @@ test.describe("LeanAI persistent workspace assistant", () => {
     expect(afterExtra.sidebar?.top).toBeLessThanOrEqual(2);
     expect(afterExtra.assistant?.top).toBeLessThanOrEqual(2);
 
-    await wheelOver(page, '[data-testid="platform-main"]', 10);
+    await wheelOver(page, ".platform-main-viewport", 10);
     const afterMain = await readLayoutMetrics(page);
     expectViewportLocked(afterMain);
     expect(afterMain.main?.scrollTop ?? 0).toBeGreaterThan(0);
@@ -417,15 +427,17 @@ test.describe("LeanAI persistent workspace assistant", () => {
       "data-web-search-enabled",
       "false",
     );
-    await expect(page.getByLabel("Ask LeanAI")).toBeEnabled();
-    await page.getByLabel("Ask LeanAI").fill("What is our organisation name?");
+    await expect(page.getByTestId("leanai-assistant-input")).toBeEnabled();
+    await page
+      .getByTestId("leanai-assistant-input")
+      .fill("What is our organisation name?");
     await page.getByTestId("leanai-assistant-send").click();
     await expect(
       page.getByTestId("leanai-assistant-assistant-message"),
     ).toContainText(user.organisationAName, { timeout: 30_000 });
 
     await page
-      .getByLabel("Ask LeanAI")
+      .getByTestId("leanai-assistant-input")
       .fill("Research HODL Token Club on the web.");
     await page.getByTestId("leanai-assistant-send").click();
     await expect(
@@ -453,7 +465,7 @@ test.describe("LeanAI persistent workspace assistant", () => {
     await expect(page.getByText("Settings saved.")).toBeVisible();
 
     await page
-      .getByLabel("Ask LeanAI")
+      .getByTestId("leanai-assistant-input")
       .fill("Research HODL Token Club on the web.");
     await page.getByTestId("leanai-assistant-send").click();
     await expect(page.getByTestId("leanai-assistant-sources")).toBeVisible({
@@ -464,5 +476,109 @@ test.describe("LeanAI persistent workspace assistant", () => {
     await expect(sourceLink).toHaveAttribute("target", "_blank");
     await expect(sourceLink).toHaveAttribute("rel", "noopener noreferrer");
     await screenshotIfPossible(page, "leanai-assistant-web-sources.png");
+  });
+
+  test("multiline composer sends and renders a formatted answer", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const client = await asOrganisationClient(user, user.organisationAName);
+    const enabled = await client.rpc("update_organisation_ai_settings", {
+      target_ai_enabled: true,
+      target_monthly_token_ceiling: 100000,
+      target_web_search_enabled: false,
+    });
+    if (enabled.error) {
+      throw enabled.error;
+    }
+
+    await loginAndSelectOrganisation(page, user, user.organisationAName);
+    await waitForAssistantContext(page);
+    const input = page.getByRole("textbox", { name: "Ask LeanAI" });
+    const send = page.getByRole("button", { name: "Send", exact: true });
+    await expect(input).toBeEnabled();
+    await expect(send).toBeVisible();
+    await input.fill("First line");
+    const singleLineHeight = await input.evaluate(
+      (element) => element.clientHeight,
+    );
+    await input.press("Control+Enter");
+    await expect(input).toHaveValue("First line\n");
+    await input.press("Shift+Enter");
+    await expect(input).toHaveValue("First line\n\n");
+    await input.press("Meta+Enter");
+    await expect(input).toHaveValue("First line\n\n\n");
+    expect(
+      await input.evaluate((element) => element.clientHeight),
+    ).toBeGreaterThan(singleLineHeight);
+    await input.fill("Line of text\n".repeat(30));
+    expect(
+      await input.evaluate(
+        (element) => element.scrollHeight - element.clientHeight,
+      ),
+    ).toBeGreaterThan(0);
+    await expect(send).toBeVisible();
+
+    const draft = "**First line**\nSecond line\nformat sample";
+    await input.fill(draft);
+    await input.press("Enter");
+
+    const userMessage = page.getByTestId("leanai-assistant-user-message");
+    const userText = userMessage.locator("p").last();
+    await expect(userText).toHaveJSProperty("textContent", draft);
+    await expect(userText).toHaveCSS("white-space", "pre-wrap");
+    await expect(userMessage.locator("strong")).toHaveCount(0);
+
+    const answer = page.getByTestId("leanai-assistant-assistant-message");
+    await expect(
+      answer.getByRole("heading", { name: "Next step" }),
+    ).toBeVisible({
+      timeout: 30_000,
+    });
+    await expect(answer.locator("strong")).toHaveText("shared");
+    await expect(answer.getByRole("listitem").first()).toContainText(
+      "Confirm the owner",
+    );
+    const note = answer.getByRole("link", { name: "the public note" });
+    await expect(note).toHaveAttribute("href", "https://example.com/setup");
+    await expect(note).toHaveAttribute("rel", "noopener noreferrer");
+    await expect(answer.locator("script")).toHaveCount(0);
+    const overflow = await page
+      .getByTestId("leanai-assistant-pane")
+      .evaluate((element) => element.scrollWidth - element.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+    await screenshotIfPossible(page, "leanai-assistant-markdown-desktop.png");
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.reload();
+    await page.getByTestId("leanai-assistant-open").click();
+    await expect(page.getByTestId("leanai-assistant-pane")).toBeVisible();
+    await expect(input).toBeVisible();
+    await expect(send).toBeVisible();
+    await expect(userText).toHaveJSProperty("textContent", draft);
+    await expect(page.getByRole("heading", { name: "Next step" })).toBeVisible({
+      timeout: 15_000,
+    });
+    const mobileOverflow = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
+    );
+    expect(mobileOverflow).toBeLessThanOrEqual(1);
+    await screenshotIfPossible(page, "leanai-assistant-markdown-mobile.png");
+    await input.fill("Mobile first line");
+    await input.press("Shift+Enter");
+    await expect(input).toHaveValue("Mobile first line\n");
+    await input.press("End");
+    await page.keyboard.insertText("format sample");
+    await send.click();
+    await expect(userMessage.last().locator("p").last()).toHaveJSProperty(
+      "textContent",
+      "Mobile first line\nformat sample",
+    );
+    await expect(
+      answer.last().getByRole("heading", { name: "Next step" }),
+    ).toBeVisible({ timeout: 30_000 });
   });
 });

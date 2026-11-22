@@ -66,10 +66,11 @@ export function ExecutionUnitStartForm({
           label={label}
           options={units}
           required={canSubmit}
+          scrollOnMobile
           requiresSiteSelection={requiresSiteSelection}
           emptyMessage={resolvedEmptyMessage}
           testId={unitSelectTestId}
-          className="min-w-[12rem] flex-1"
+          className="min-w-0 flex-1 max-sm:basis-full sm:min-w-[12rem]"
         />
       )}
       <Button

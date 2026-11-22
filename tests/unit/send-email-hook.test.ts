@@ -98,6 +98,8 @@ describe("auth email delivery content", () => {
       "Confirm your Lean Excellence Hub account",
     );
     expect(result.delivery.html).toContain("Confirm account");
+    expect(result.delivery.html).toContain(`${APP_ORIGIN}/email/leh-logo.png`);
+    expect(result.delivery.html).toContain('alt="Lean Excellence Hub"');
     expect(result.delivery.html).toContain(
       "token_hash=abc123tokenhash&amp;type=signup",
     );

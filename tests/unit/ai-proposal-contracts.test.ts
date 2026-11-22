@@ -82,6 +82,7 @@ describe("proposal contracts for all 11 types", () => {
         category: "technical",
         rationale: "Defect rate rises after sustained hot runs.",
         parent_hypothesis_id: null,
+        analysis_node_id: null,
         explanation: "Testable technical hypothesis.",
       },
       validPayload: {
@@ -97,13 +98,14 @@ describe("proposal contracts for all 11 types", () => {
         hypothesis_id: HYPOTHESIS_ID,
         test_question: "Does ppm increase under hot runs?",
         expected_result: "Higher ppm during hot runs.",
-        method: null,
+        method: "Measurement / data",
         explanation: "Controlled hot-running comparison.",
       },
       validPayload: {
         hypothesis_id: HYPOTHESIS_ID,
         test_question: "Does ppm increase under hot runs?",
         expected_result: "Higher ppm during hot runs.",
+        method: "Measurement / data",
       },
     },
     {
@@ -391,6 +393,22 @@ describe("proposal transport regression cases", () => {
 
     expect(hypothesis.statement).toContain("Thermal expansion");
     expect(containment.description).toContain("Quarantine");
+  });
+});
+
+describe("tool-only proposal types", () => {
+  it("validates problem_statement and target_condition payloads", () => {
+    const problem = validateProposalPayload("problem_statement", {
+      statement: "Film wanders after splices on line 1.",
+    });
+    const target = validateProposalPayload("target_condition", {
+      statement: "Film stays within ±2 mm for five shifts.",
+    });
+    expect(problem.statement).toContain("Film wanders");
+    expect(target.statement).toContain("±2 mm");
+    expect(safeValidateProposalPayload("target_condition", {}).success).toBe(
+      false,
+    );
   });
 });
 

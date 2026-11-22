@@ -1,16 +1,25 @@
 import { Layers, Plus } from "lucide-react";
+import { Suspense } from "react";
 
 import { EmptyState } from "@/components/platform/empty-state";
-import { MetricCard } from "@/components/platform/metric-card";
+import { MaturityOverviewAnalytics } from "@/components/platform/maturity-overview-analytics";
 import { PageHeader } from "@/components/platform/page-header";
+import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
+import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
+import { ModuleReadError } from "@/components/workplace/module-read-error";
+import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import {
   MaturityRadarChart,
   PillarScoreList,
 } from "@/components/maturity/maturity-charts";
+import { StartAssessmentDialog } from "@/components/maturity/start-assessment-dialog";
+import { loadStartAssessmentDialogProps } from "@/lib/maturity/load-start-assessment-props";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { presentCatalogRead } from "@/modules/workplace/access-decision";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
 import {
   AssessmentStatusBadge,
@@ -18,16 +27,52 @@ import {
 } from "@/modules/maturity/status-badges";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-export default async function MaturityOverviewPage() {
-  const supabase = await createServerSupabaseClient();
-  const canManage = await currentMemberHasPermission(
-    MATURITY_PERMISSIONS.modelsManage,
-  );
+export default async function MaturityOverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: MATURITY_PERMISSIONS.read,
+    module: "maturity",
+    title: "Maturity",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
 
-  const { data: models } = await supabase
-    .from("maturity_models")
-    .select("id, display_name")
-    .limit(1);
+  const supabase = await createServerSupabaseClient();
+  const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
+    parseAnalyticsRangeDays(params.range),
+  );
+  const [canManage, canAssessFormal, canAssessSelf] = await Promise.all([
+    currentMemberHasPermission(MATURITY_PERMISSIONS.modelsManage),
+    currentMemberHasPermission(MATURITY_PERMISSIONS.assessFormal),
+    currentMemberHasPermission(MATURITY_PERMISSIONS.assessSelf),
+  ]);
+  const canStartAssessment = canAssessFormal || canAssessSelf;
+
+  const [{ data: models, error: modelsError }, startAssessmentProps] =
+    await Promise.all([
+      supabase.from("maturity_models").select("id, display_name").limit(1),
+      canStartAssessment
+        ? loadStartAssessmentDialogProps()
+        : Promise.resolve(null),
+    ]);
+  const catalog = presentCatalogRead({
+    failed: Boolean(modelsError),
+    visibleCount: models?.length ?? 0,
+  });
+  if (catalog === "failed") {
+    return (
+      <ModuleReadError
+        title="Lean maturity"
+        description="Measure and improve operational excellence across your organisation."
+        message="Maturity frameworks could not be loaded. Refresh the page and try again."
+        module="maturity"
+      />
+    );
+  }
 
   const { data: latestResult } = await supabase
     .from("maturity_official_results")
@@ -47,27 +92,27 @@ export default async function MaturityOverviewPage() {
     }
   }
 
-  const { count: openActions } = await supabase
-    .from("actions")
-    .select("id", { count: "exact", head: true })
-    .in("status", ["open", "in_progress"]);
-
   const { data: assessments } = await supabase
     .from("maturity_assessments")
     .select("id, status, assessment_type, updated_at")
     .order("updated_at", { ascending: false })
     .limit(5);
 
-  if (!models?.length) {
+  if (catalog === "empty") {
     return (
       <div className="flex flex-col gap-8" data-testid="maturity-overview-page">
-        <PageHeader
-          title="Lean maturity"
-          description="Measure and improve operational excellence across your organisation."
-        />
+        <PageHeader title="Lean maturity" />
         <EmptyState
-          title="No Lean maturity framework yet"
-          description="Start with an LEH Quick Start template or create a framework to begin measuring maturity across sites and teams."
+          title={
+            canManage
+              ? "No Lean maturity framework yet"
+              : "No maturity frameworks are available with your access"
+          }
+          description={
+            canManage
+              ? "Start with an LEH Quick Start template or create a framework to begin measuring maturity across sites and teams."
+              : "Published frameworks you are allowed to open will appear here. Creating a framework needs a separate role."
+          }
           {...(canManage
             ? {
                 actionLabel: "Create framework",
@@ -76,6 +121,7 @@ export default async function MaturityOverviewPage() {
             : {})}
           icon={<Layers className="size-5" />}
         />
+        <WorkplaceSharedRecords module="maturity" />
       </div>
     );
   }
@@ -84,7 +130,6 @@ export default async function MaturityOverviewPage() {
     <div className="flex flex-col gap-8" data-testid="maturity-overview-page">
       <PageHeader
         title="Lean maturity"
-        description="Current maturity position, trends, and improvement focus."
         actions={
           <div className="flex gap-2">
             <Button variant="outline" asChild>
@@ -95,6 +140,12 @@ export default async function MaturityOverviewPage() {
                 Assessments
               </AppLink>
             </Button>
+            {startAssessmentProps ? (
+              <StartAssessmentDialog
+                {...startAssessmentProps}
+                triggerTestId="maturity-overview-start-assessment"
+              />
+            ) : null}
             {latestResult ? (
               <Button variant="outline" asChild>
                 <AppLink
@@ -120,61 +171,32 @@ export default async function MaturityOverviewPage() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          label="Current maturity"
-          value={
-            latestResult ? (
-              <ScoreBadge score={Number(latestResult.overall_score)} />
-            ) : (
-              "—"
-            )
-          }
-          hint={
-            latestResult?.published_at
-              ? `Last formal: ${new Date(latestResult.published_at).toLocaleDateString("en-GB")}`
-              : "No official result yet"
-          }
-        />
-        <MetricCard label="Open actions" value={openActions ?? 0} />
-        <MetricCard
-          label="Draft assessments"
-          value={
-            assessments?.filter(
-              (a) => a.status === "draft" || a.status === "in_progress",
-            ).length ?? 0
-          }
-        />
-        <MetricCard
-          label="In review"
-          value={
-            assessments?.filter(
-              (a) => a.status === "submitted" || a.status === "assessor_review",
-            ).length ?? 0
-          }
-        />
-      </div>
+      <Suspense fallback={null}>
+        <MaturityOverviewAnalytics range={analyticsRange} />
+      </Suspense>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Pillar maturity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {pillarScores.length > 0 ? (
-              <>
-                <MaturityRadarChart data={pillarScores} />
-                <div className="mt-4 hidden sm:block">
-                  <PillarScoreList data={pillarScores} />
-                </div>
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Complete a formal assessment to see pillar scores.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+        <div className="flex flex-col gap-4">
+          {pillarScores.length > 0 ? (
+            <>
+              <MaturityRadarChart data={pillarScores} />
+              <div className="hidden sm:block">
+                <PillarScoreList data={pillarScores} />
+              </div>
+            </>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Pillar maturity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Complete a formal assessment to see pillar scores.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
         <Card>
           <CardHeader>
@@ -203,6 +225,7 @@ export default async function MaturityOverviewPage() {
           </CardContent>
         </Card>
       </div>
+      <WorkplaceSharedRecords module="maturity" title="Maturity" />
     </div>
   );
 }

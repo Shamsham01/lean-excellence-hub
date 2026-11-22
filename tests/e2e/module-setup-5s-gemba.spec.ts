@@ -7,6 +7,11 @@ import {
   resolveSupabaseEnv,
   type LeanAiContextE2eUser,
 } from "./helpers/leanai-context";
+import {
+  openFiveSAddQuestion,
+  openGembaAddPrompt,
+} from "./helpers/form-dialogs";
+import { chooseFirstApplicableUnit } from "./helpers/applicable-units";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -124,7 +129,7 @@ async function expectNoHorizontalOverflow(page: Page) {
 }
 
 async function chooseFirstUnit(page: Page) {
-  await page.getByTestId("applicable-unit-checkbox").first().check();
+  await chooseFirstApplicableUnit(page);
 }
 
 test.describe("5S and Gemba guided setup", () => {
@@ -168,7 +173,9 @@ test.describe("5S and Gemba guided setup", () => {
       page.getByRole("heading", { name: "LEH Workplace 5S Standard" }),
     ).toBeVisible();
     await expect(
-      page.getByText("Are unused items removed from the work area?"),
+      page.getByText(
+        /How consistently are unused tools and materials removed from the line-side area\?/,
+      ),
     ).toBeVisible();
     await screenshot(page, "5s-quick-start-preview.png");
     await page.setViewportSize({ width: 390, height: 844 });
@@ -183,11 +190,11 @@ test.describe("5S and Gemba guided setup", () => {
     await expect(page.getByTestId("five-s-draft-boundary")).toBeVisible();
     await expect(page.getByTestId("authoring-section")).toHaveCount(5);
     await expect(page.getByText(/v1 · published/i)).toHaveCount(0);
+    await openFiveSAddQuestion(page);
     await page
       .getByTestId("five-s-question-prompt")
-      .first()
       .fill("Extra packing check");
-    await page.getByRole("button", { name: "Add question" }).first().click();
+    await page.getByRole("button", { name: "Add question" }).click();
     await expect(page.getByText("Extra packing check")).toBeVisible();
     await page.reload();
     await expect(page.getByText("Extra packing check")).toBeVisible();
@@ -323,11 +330,11 @@ test.describe("5S and Gemba guided setup", () => {
     await expect(page.getByTestId("gemba-draft-boundary")).toBeVisible();
     await expect(page.getByTestId("authoring-section")).toHaveCount(6);
     await expect(page.getByText(/v1 · published/i)).toHaveCount(0);
+    await openGembaAddPrompt(page);
     await page
       .getByTestId("gemba-question-prompt")
-      .first()
       .fill("What else is visible?");
-    await page.getByRole("button", { name: "Add prompt" }).first().click();
+    await page.getByRole("button", { name: "Add prompt" }).click();
     await expect(page.getByText("What else is visible?")).toBeVisible();
     await screenshot(page, "gemba-created-draft.png");
     await page.getByTestId("publish-gemba-definition").click();

@@ -1,79 +1,77 @@
 import Link from "next/link";
 
-import { DEMO_BOOKING_CTA } from "@/lib/marketing/demo-booking";
+import {
+  DEMO_BOOKING_CTA,
+  GET_FREE_ACCESS_CTA,
+  GET_FREE_ACCESS_HREF,
+} from "@/lib/marketing/demo-booking";
 
 import { MarketingAppearanceMenu } from "./appearance-menu";
-import { MarketingContainer, MarketingWordmark } from "./primitives";
+import { MarketingWordmark } from "./primitives";
 
 const PLATFORM_LINKS = [
   { href: "/#platform", label: "Platform" },
   { href: "/#why", label: "Why LEH" },
   { href: "/#leanai", label: "LeanAI" },
-  { href: "/#maturity", label: "Maturity" },
-  { href: "/#problem-solving", label: "Problem Solving" },
-] as const;
-
-const SYSTEM_LINKS = [
-  { href: "/#gemba", label: "Gemba" },
-  { href: "/#five-s", label: "5S" },
-  { href: "/#suggestions", label: "Suggestions" },
-  { href: "/#actions", label: "Actions" },
-  { href: "/#projects-benefits", label: "Projects & Benefits" },
-  { href: "/#training-skills", label: "Training & Skills" },
+  { href: "/#faq", label: "FAQ" },
 ] as const;
 
 export function MarketingFooter() {
   return (
-    <footer className="marketing-footer">
-      <MarketingContainer>
-        <div className="marketing-footer-grid">
-          <div className="marketing-footer-brand">
-            <MarketingWordmark />
-            <p className="mt-4 max-w-xs text-sm leading-6 text-muted-foreground">
-              One connected system for Continuous Improvement.
-            </p>
+    <footer className="marketing-footer v6-footer">
+      <div className="v6-container">
+        <div className="v6-footer-grid">
+          <div className="v6-footer-brand">
+            <MarketingWordmark compact decorative />
+            <p>One connected system for Continuous Improvement.</p>
           </div>
 
-          <nav aria-label="Platform">
-            <p className="marketing-footer-heading">Platform</p>
-            <ul className="marketing-footer-list" role="list">
+          <div className="v6-footer-col">
+            <h2>Platform</h2>
+            <ul role="list">
               {PLATFORM_LINKS.map((item) => (
                 <li key={item.href}>
                   <a href={item.href}>{item.label}</a>
                 </li>
               ))}
             </ul>
-          </nav>
+          </div>
 
-          <nav aria-label="Improvement system">
-            <p className="marketing-footer-heading">Improvement system</p>
-            <ul className="marketing-footer-list" role="list">
-              {SYSTEM_LINKS.map((item) => (
-                <li key={item.href}>
-                  <a href={item.href}>{item.label}</a>
-                </li>
-              ))}
-            </ul>
-          </nav>
-
-          <nav aria-label="Access">
-            <p className="marketing-footer-heading">Access</p>
-            <ul className="marketing-footer-list" role="list">
+          <div className="v6-footer-col">
+            <h2>Access</h2>
+            <ul role="list">
               <li>
                 <Link href="/demo">{DEMO_BOOKING_CTA}</Link>
+              </li>
+              <li>
+                <Link href={GET_FREE_ACCESS_HREF}>{GET_FREE_ACCESS_CTA}</Link>
               </li>
               <li>
                 <Link href="/login">Sign in</Link>
               </li>
             </ul>
-          </nav>
+          </div>
+
+          <div className="v6-footer-col">
+            <h2>Company</h2>
+            <ul role="list">
+              <li>
+                <Link href="/privacy">Privacy</Link>
+              </li>
+              <li>
+                <Link href="/terms">Terms</Link>
+              </li>
+            </ul>
+          </div>
         </div>
 
-        <div className="marketing-footer-meta">
-          <p>© {new Date().getFullYear()} Lean Excellence Hub</p>
+        <div className="v6-footer-bottom">
+          <p className="m-0">
+            © {new Date().getFullYear()} Lean Excellence Hub
+          </p>
           <MarketingAppearanceMenu />
         </div>
-      </MarketingContainer>
+      </div>
     </footer>
   );
 }

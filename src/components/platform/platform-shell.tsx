@@ -1,12 +1,15 @@
 import type { ReactNode } from "react";
 
 import { LeanAiAssistantShell } from "@/components/leanai/leanai-assistant-shell";
+import { MobilePlatformNavigation } from "@/components/platform/mobile-platform-navigation";
 import { PlatformSidebar } from "@/components/platform/platform-sidebar";
-import { loadPlatformShellMember } from "@/modules/platform-shell/member-context";
+import { PlatformTopbar } from "@/components/platform/platform-topbar";
 import { settingsNavigationItem } from "@/modules/platform-shell/navigation";
 import { buildVisibleNavigation } from "@/modules/platform-shell/visible-navigation";
+import type { PlatformInAppNotification } from "@/modules/platform-shell/notifications";
 import type { EligibleOrganisation } from "@/modules/organisations/context";
 import type { ActiveSiteContext } from "@/modules/organisation/site-context";
+import type { PlatformShellMember } from "@/modules/platform-shell/member-context";
 
 type PlatformShellProps = {
   children: ReactNode;
@@ -14,7 +17,11 @@ type PlatformShellProps = {
   organisationId: string;
   organisations: EligibleOrganisation[];
   siteContext: ActiveSiteContext;
-  membershipId: string;
+  member: PlatformShellMember;
+  notifications: {
+    unreadCount: number;
+    items: PlatformInAppNotification[];
+  } | null;
 };
 
 export async function PlatformShell({
@@ -23,12 +30,10 @@ export async function PlatformShell({
   organisationId,
   organisations,
   siteContext,
-  membershipId,
+  member,
+  notifications,
 }: PlatformShellProps) {
-  const [navWithSetup, member] = await Promise.all([
-    buildVisibleNavigation(),
-    loadPlatformShellMember(membershipId),
-  ]);
+  const navWithSetup = await buildVisibleNavigation();
 
   const showSettings =
     settingsNavigationItem.universalAccess === true &&
@@ -37,7 +42,7 @@ export async function PlatformShell({
   return (
     <div
       data-testid="platform-shell"
-      className="flex min-h-dvh min-w-0 flex-col bg-background lg:h-dvh lg:max-h-dvh lg:flex-row lg:overflow-hidden"
+      className="flex h-dvh max-h-dvh min-w-0 flex-col overflow-hidden bg-background lg:flex-row"
     >
       <PlatformSidebar
         items={navWithSetup}
@@ -48,14 +53,33 @@ export async function PlatformShell({
         showSettings={showSettings}
       />
       <LeanAiAssistantShell organisationId={organisationId}>
-        <main
-          data-testid="platform-main"
-          className="platform-scroll flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain"
-        >
-          <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
-            {children}
-          </div>
-        </main>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background lg:ml-[290px]">
+          <MobilePlatformNavigation
+            items={navWithSetup}
+            organisationName={organisationName}
+            organisations={organisations}
+            siteContext={siteContext}
+            member={member}
+            showSettings={showSettings}
+            notifications={notifications}
+          />
+          <PlatformTopbar
+            member={member}
+            organisationName={organisationName}
+            showSettings={showSettings}
+            notifications={notifications}
+          />
+          <main
+            data-testid="platform-main"
+            className="platform-scroll flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-hidden"
+          >
+            <div className="platform-main-viewport flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain">
+              <div className="platform-main-inner mx-auto w-full max-w-[1600px] flex-1 px-4 py-5 sm:px-6 lg:px-8">
+                {children}
+              </div>
+            </div>
+          </main>
+        </div>
       </LeanAiAssistantShell>
     </div>
   );

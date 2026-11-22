@@ -8,38 +8,49 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-type PillarScore = {
-  name: string;
-  score: number;
-};
+import { ChartCard } from "@/components/charts/chart-card";
+import {
+  LEH_CHART_COLORS,
+  chartTickStyle,
+} from "@/components/charts/chart-theme";
+import {
+  dedupePillarScores,
+  type PillarScoreRow,
+} from "@/components/maturity/pillar-scores-dedupe";
+
+type PillarScore = PillarScoreRow;
 
 export function MaturityRadarChart({ data }: { data: PillarScore[] }) {
-  if (data.length === 0) {
+  const chartData = dedupePillarScores(data);
+  if (chartData.length === 0) {
     return null;
   }
 
   return (
-    <div
-      className="h-64 w-full"
-      role="img"
-      aria-label="Pillar maturity radar chart"
-    >
-      <ResponsiveContainer width="100%" height="100%">
-        <RadarChart data={data} cx="50%" cy="50%" outerRadius="70%">
-          <PolarGrid stroke="var(--border)" />
-          <PolarAngleAxis
-            dataKey="name"
-            tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
-          />
-          <Radar
-            name="Score"
-            dataKey="score"
-            stroke="var(--chart-1)"
-            fill="var(--chart-1)"
-            fillOpacity={0.25}
-          />
-        </RadarChart>
-      </ResponsiveContainer>
+    <ChartCard title="Pillar maturity" testId="kpi-radar-chart">
+      <div
+        className="h-64 w-full min-w-0"
+        role="img"
+        aria-label="Pillar maturity radar chart"
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          <RadarChart data={chartData} cx="50%" cy="50%" outerRadius="70%">
+            <PolarGrid stroke="var(--border)" />
+            <PolarAngleAxis
+              dataKey="name"
+              tick={{ ...chartTickStyle, fontSize: 10 }}
+            />
+            <Radar
+              name="Score"
+              dataKey="score"
+              stroke={LEH_CHART_COLORS.accent}
+              fill={LEH_CHART_COLORS.accent}
+              fillOpacity={0.22}
+              isAnimationActive={false}
+            />
+          </RadarChart>
+        </ResponsiveContainer>
+      </div>
       <table className="sr-only mt-4 w-full text-sm">
         <caption>Pillar scores</caption>
         <thead>
@@ -49,7 +60,7 @@ export function MaturityRadarChart({ data }: { data: PillarScore[] }) {
           </tr>
         </thead>
         <tbody>
-          {data.map((row) => (
+          {chartData.map((row) => (
             <tr key={row.name}>
               <td>{row.name}</td>
               <td>{row.score}</td>
@@ -57,14 +68,15 @@ export function MaturityRadarChart({ data }: { data: PillarScore[] }) {
           ))}
         </tbody>
       </table>
-    </div>
+    </ChartCard>
   );
 }
 
 export function PillarScoreList({ data }: { data: PillarScore[] }) {
+  const rows = dedupePillarScores(data);
   return (
     <ul className="flex flex-col gap-2">
-      {data.map((pillar) => (
+      {rows.map((pillar) => (
         <li
           key={pillar.name}
           className="flex items-center justify-between gap-4 rounded-md border border-border bg-surface px-3 py-2"

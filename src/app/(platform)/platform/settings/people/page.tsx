@@ -1,20 +1,22 @@
 import { notFound } from "next/navigation";
 
-import { InviteColleagueForm } from "@/components/people/invite-colleague-form";
-import { PendingInvitationsList } from "@/components/people/pending-invitations-list";
+import { PeopleSettingsShell } from "@/components/people/people-settings-shell";
 import { PageHeader } from "@/components/platform/page-header";
+import type { DelegatableAccessOffer } from "@/components/people/invite-colleague-form";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { DelegatableAccessOffer } from "@/components/people/invite-colleague-form";
+import { fetchPeopleDirectory } from "@/lib/people/fetch-people-directory";
+import { parsePeopleDirectorySearchParams } from "@/lib/people/directory-query";
 import { filterDelegatableOffersForActiveSite } from "@/modules/organisation/delegatable-offers";
-import { loadPendingInvitationGrants } from "@/modules/organisation/pending-invitation-grants";
+import {
+  groupPendingInvitationAccess,
+  loadPendingInvitationGrants,
+} from "@/modules/organisation/pending-invitation-grants";
 import { buildSiteScopedUnitOptions } from "@/modules/organisation/site-context";
 import {
   loadAccessibleOrganisationUnits,
   loadActiveSiteContext,
 } from "@/modules/organisation/site-context-server";
-import { formatUnitPath } from "@/modules/organisation/unit-hierarchy";
 import { formatLongDate } from "@/lib/dates/format-long-date";
 import {
   currentMemberCanDelegateRoles,
@@ -23,13 +25,18 @@ import {
 } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
+import { createWorkforceUser } from "./create/actions";
 import {
   inviteColleague,
   reissueInvitation,
   revokeInvitation,
 } from "./actions";
 
-export default async function PeopleSettingsPage() {
+export default async function PeopleSettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const canManageInvitations =
     await currentMemberHasPermission("invitations.manage");
   const canProvisionWorkforce = await currentMemberHasPermission(
@@ -41,7 +48,6 @@ export default async function PeopleSettingsPage() {
   const canManageJobFunctions = await currentMemberHasPermission(
     "job_functions.manage",
   );
-
   if (
     !canManageInvitations &&
     !canProvisionWorkforce &&
@@ -52,6 +58,8 @@ export default async function PeopleSettingsPage() {
   }
 
   const supabase = await createServerSupabaseClient();
+  const params = await searchParams;
+  const directoryFilters = parsePeopleDirectorySearchParams(params);
   const [allUnits, { context }] = await Promise.all([
     loadAccessibleOrganisationUnits(),
     loadActiveSiteContext(),
@@ -67,6 +75,10 @@ export default async function PeopleSettingsPage() {
     { data: jobFunctions },
     { data: roles },
     { data: roleVersions },
+    canManageMemberships,
+    canIncludeInactive,
+    canInvite,
+    canDelegate,
   ] = await Promise.all([
     canDelegateRoles ? loadDelegatableAccessOffers() : Promise.resolve(null),
     canManageInvitations
@@ -89,11 +101,20 @@ export default async function PeopleSettingsPage() {
                 .in("invitation_id", [...invitationIds]),
             pendingInvitationIds,
           );
+          const namesResult =
+            pendingInvitationIds.length > 0
+              ? await supabase
+                  .from("organisation_invitation_provisioning")
+                  .select("invitation_id, intended_display_name")
+                  .in("invitation_id", pendingInvitationIds)
+              : { data: [], error: null };
           return {
             pendingInvitations: pendingResult.data,
             invitationsError: pendingResult.error,
             invitationGrants: grantsResult.data,
             grantsError: grantsResult.error,
+            invitationNames: namesResult.data,
+            namesError: namesResult.error,
           };
         })()
       : Promise.resolve({
@@ -101,6 +122,8 @@ export default async function PeopleSettingsPage() {
           invitationsError: null,
           invitationGrants: [],
           grantsError: null,
+          invitationNames: [],
+          namesError: null,
         }),
     Promise.resolve({ data: visibleUnits }),
     canManageInvitations
@@ -119,12 +142,34 @@ export default async function PeopleSettingsPage() {
           .select("id, role_id")
           .eq("status", "published")
       : Promise.resolve({ data: [] }),
+    currentMemberHasPermission("memberships.read"),
+    currentMemberHasPermission("memberships.manage"),
+    currentMemberHasPermission("invitations.manage"),
+    currentMemberCanDelegateRoles(),
   ]);
 
+  const directoryLoad = canManageMemberships
+    ? await fetchPeopleDirectory(supabase, directoryFilters, {
+        canIncludeInactive,
+      })
+    : {
+        error: null,
+        people: [],
+        totalCount: 0,
+        page: 1,
+        pageSize: 25,
+      };
+
   const pendingInvitations = invitationBundle.pendingInvitations;
-  const invitationsError = invitationBundle.invitationsError;
-  const invitationGrants = invitationBundle.invitationGrants;
   const grantsError = invitationBundle.grantsError;
+  const invitationNames = invitationBundle.invitationNames;
+  const namesError = invitationBundle.namesError;
+  const nameByInvitation = new Map(
+    (invitationNames ?? []).map((row) => [
+      row.invitation_id,
+      row.intended_display_name,
+    ]),
+  );
 
   const offers = filterDelegatableOffersForActiveSite(
     (offersData?.offers ?? []) as DelegatableAccessOffer[],
@@ -143,29 +188,39 @@ export default async function PeopleSettingsPage() {
     }
   }
 
-  const grantsByInvitation = new Map<
-    string,
-    { roleName: string; scopeLabel: string }
-  >();
-  for (const grant of invitationGrants ?? []) {
-    const scopeUnitId = grant.scope_unit_id ?? "";
-    grantsByInvitation.set(grant.invitation_id, {
-      roleName:
-        roleNameByVersionId.get(grant.role_version_id) ?? "Application access",
-      scopeLabel:
-        grant.scope_type === "organisation"
-          ? "Entire organisation"
-          : scopeUnitId
-            ? `Specific site: ${formatUnitPath(scopeUnitId, allUnits)}`
-            : "Specific site",
-    });
-  }
+  const grantsByInvitation = groupPendingInvitationAccess(
+    invitationBundle.invitationGrants ?? [],
+    roleNameByVersionId,
+    allUnits,
+  );
+
+  const mappedUnits = (units ?? []).map((unit) => ({
+    id: unit.id,
+    name: unit.name,
+    code: unit.code,
+    parent_unit_id: unit.parent_unit_id ?? null,
+  })) as Array<{
+    id: string;
+    name: string;
+    code: string;
+    parent_unit_id: string | null;
+  }>;
+
+  const directoryUnits = canManageMemberships
+    ? allUnits.map((unit) => ({
+        id: unit.id,
+        name: unit.name,
+        code: unit.code,
+      }))
+    : [];
 
   return (
-    <div className="flex flex-col gap-8" data-testid="people-settings-page">
+    <div
+      className="flex w-full max-w-full min-w-0 flex-col gap-8"
+      data-testid="people-settings-page"
+    >
       <PageHeader
         title="People and invitations"
-        description="Bring colleagues into your organisation with the right access and work assignments."
         actions={
           <Button variant="outline" size="sm" asChild>
             <AppLink href="/platform/settings" data-testid="settings-back-link">
@@ -175,137 +230,79 @@ export default async function PeopleSettingsPage() {
         }
       />
 
-      {canProvisionWorkforce && canDelegateRoles ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Create workforce user</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3 text-sm">
-            <p className="text-muted-foreground">
-              Add an employee with a username and system-generated temporary
-              password for workforce sign-in. This is the primary onboarding
-              path for frontline teams.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Button asChild className="w-fit">
-                <AppLink
-                  href="/platform/settings/people/create"
-                  data-testid="people-settings-create-link"
-                >
-                  Add employee
-                </AppLink>
-              </Button>
-              {canImportWorkforce ? (
-                <Button variant="outline" asChild className="w-fit">
-                  <AppLink
-                    href="/platform/settings/people/import"
-                    data-testid="import-workforce-link"
-                  >
-                    Import workforce
-                  </AppLink>
-                </Button>
-              ) : null}
-            </div>
-          </CardContent>
-        </Card>
+      {!canDelegateRoles && canManageInvitations ? (
+        <p className="text-sm text-muted-foreground">
+          Ask an Organisation Administrator to invite colleagues and assign
+          access for this organisation.
+        </p>
       ) : null}
 
-      {canManageInvitations && canDelegateRoles ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Invite a colleague</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4 text-sm text-muted-foreground">
-              Create a secure invitation link to copy and share. Email delivery
-              is not sent from this screen. Choose an application role and scope
-              you are authorised to delegate.
-              {context.mode === "site" && context.activeSiteId
-                ? " Scope options are filtered to your active site."
-                : null}
-            </p>
-            <InviteColleagueForm
-              offers={offers}
-              units={(units ?? []).map((unit) => ({
-                id: unit.id,
-                name: unit.name,
-                code: unit.code,
-                parent_unit_id: unit.parent_unit_id ?? null,
-              }))}
-              jobFunctions={jobFunctions ?? []}
-              onInvite={inviteColleague}
-            />
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Team invitations</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            <p>
-              Ask an Organisation Administrator to invite colleagues and assign
-              access for this organisation.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {canManageInvitations ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Pending invitations</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {invitationsError ? (
-              <p
-                className="text-sm text-muted-foreground"
-                data-testid="pending-invitations-error"
-              >
-                Unable to load pending invitations.
-              </p>
-            ) : grantsError ? (
-              <p
-                className="text-sm text-muted-foreground"
-                data-testid="pending-invitation-grants-error"
-              >
-                Unable to load pending invitation access.
-              </p>
-            ) : (
-              <PendingInvitationsList
-                invitations={(pendingInvitations ?? []).map((invitation) => {
-                  const grant = grantsByInvitation.get(invitation.id);
-                  return {
-                    id: invitation.id,
-                    email: invitation.canonical_recipient,
-                    expiresAtLabel: formatLongDate(invitation.expires_at),
-                    roleName: grant?.roleName ?? "Application access",
-                    scopeLabel: grant?.scopeLabel ?? "Scoped access",
-                  };
-                })}
-                onRevoke={revokeInvitation}
-                onReissue={reissueInvitation}
-              />
-            )}
-          </CardContent>
-        </Card>
+      {grantsError ? (
+        <p
+          className="text-sm text-muted-foreground"
+          data-testid="pending-invitation-grants-error"
+        >
+          Unable to load pending invitation access.
+        </p>
       ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">People directory</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Button variant="outline" size="sm" asChild>
-            <AppLink
-              href="/platform/people"
-              data-testid="people-settings-directory-link"
-            >
-              Open people directory
-            </AppLink>
-          </Button>
-        </CardContent>
-      </Card>
+      {canDelegateRoles &&
+      (canManageInvitations || canProvisionWorkforce || canImportWorkforce) ? (
+        <PeopleSettingsShell
+          canManageInvitations={canManageInvitations && canDelegateRoles}
+          canProvisionWorkforce={canProvisionWorkforce && canDelegateRoles}
+          canImportWorkforce={canImportWorkforce}
+          offers={offers}
+          units={mappedUnits}
+          jobFunctions={jobFunctions ?? []}
+          onInvite={inviteColleague}
+          onCreateWorkforce={createWorkforceUser}
+          namesUnavailable={Boolean(namesError)}
+          pendingInvitations={(pendingInvitations ?? []).map((invitation) => {
+            const accessGrants = grantsByInvitation.get(invitation.id) ?? [];
+            return {
+              id: invitation.id,
+              email: invitation.canonical_recipient,
+              displayName: namesError
+                ? null
+                : (nameByInvitation.get(invitation.id) ?? null),
+              expiresAtLabel: formatLongDate(invitation.expires_at),
+              accessGrants:
+                accessGrants.length > 0
+                  ? accessGrants
+                  : [
+                      {
+                        roleName: "Application access",
+                        scopeLabel: "Scoped access",
+                      },
+                    ],
+            };
+          })}
+          onRevoke={revokeInvitation}
+          onReissue={reissueInvitation}
+          directory={
+            canManageMemberships && !directoryLoad.error
+              ? {
+                  people: directoryLoad.people,
+                  totalCount: directoryLoad.totalCount,
+                  page: directoryLoad.page,
+                  pageSize: directoryLoad.pageSize,
+                  filters: directoryFilters,
+                  units: directoryUnits,
+                  canManageMemberships,
+                  canIncludeInactive,
+                  canImportColleagues: canInvite && canDelegate,
+                }
+              : null
+          }
+        />
+      ) : null}
+
+      {!canProvisionWorkforce && !canManageInvitations ? (
+        <p className="text-sm text-muted-foreground">
+          People administration is not available with your current access.
+        </p>
+      ) : null}
     </div>
   );
 }

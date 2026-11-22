@@ -55,7 +55,7 @@ async function runEmptyOrganisationJourney(
   await expectNoDocumentOverflow(page);
   await capture(page, `skills-empty-${viewport.label}`);
 
-  await page.getByTestId("skills-setup-primary").click();
+  await page.getByTestId("skills-advanced-scale").click();
   await expect(page).toHaveURL(/\/platform\/skills\/scales\/new/);
   await expect(page.getByTestId("scale-create-form")).toBeVisible();
 
@@ -181,6 +181,9 @@ async function runEmptyOrganisationJourney(
   await page.getByTestId("skill-assessment-level").selectOption({
     label: "Competent (3)",
   });
+  await page
+    .getByTestId("skill-assessment-method")
+    .selectOption({ label: "Manager assessment" });
   await capture(page, `skills-assessment-${viewport.label}`);
   await page.getByTestId("skill-assessment-save").click();
   await expect(page.getByRole("button", { name: "Done" })).toBeVisible();

@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,9 +39,9 @@ export function FoundingOrganisationForm({
       data-testid="create-organisation-form"
     >
       {error ? (
-        <p className="text-sm text-destructive" role="alert">
+        <InlineAlert tone="error">
           Check the organisation details and try again.
-        </p>
+        </InlineAlert>
       ) : null}
 
       <fieldset className="flex flex-col gap-3">
@@ -181,7 +183,12 @@ export function FoundingOrganisationForm({
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="timeZone">Time zone</Label>
-            <Input id="timeZone" name="timeZone" defaultValue="UTC" required />
+            <Input
+              id="timeZone"
+              name="timeZone"
+              defaultValue="Europe/London"
+              required
+            />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="reportingCurrency">Reporting currency</Label>

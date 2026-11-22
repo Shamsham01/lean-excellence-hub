@@ -5,6 +5,7 @@ import { useEffect, useId, useState, useTransition } from "react";
 
 import { explainLeanAiCoachIntervention } from "@/app/(platform)/platform/leanai/coach/actions";
 import { recordLeanAiSemanticEventAction } from "@/app/(platform)/platform/leanai/context/actions";
+import { LeanAiMarkdown } from "@/components/leanai/leanai-markdown";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -214,9 +215,9 @@ export function LeanAiCoachCard({
                 <p className="text-xs font-medium tracking-wide text-primary uppercase">
                   AI-generated guidance
                 </p>
-                <p data-testid="leanai-coach-explain-ai">
-                  {shownEnvelope.message}
-                </p>
+                <div data-testid="leanai-coach-explain-ai">
+                  <LeanAiMarkdown text={shownEnvelope.message} />
+                </div>
                 {shownEnvelope.permission_note ? (
                   <p
                     className="text-sm text-muted-foreground"

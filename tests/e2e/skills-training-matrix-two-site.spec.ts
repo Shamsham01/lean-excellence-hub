@@ -1,0 +1,595 @@
+// VERIFY draft for PR #392 (Spec B e2e): two-site CookieWorks tenant with
+// >12 required skills and >50 people. Proves: no 12-column cap, people
+// pagination (page size 50), site-scoped skill/training requirements with a
+// Bodmin tighten override, wrong job function => Not Required, latest
+// curriculum version only, and Bodmin manager cannot see Exeter.
+//
+// Does NOT use tests/e2e/helpers/skills-setup-records.ts (no skill
+// validations are recorded), so it is independent of the
+// record_skill_validation method fix tracked for #391.
+import { execSync } from "node:child_process";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { expect, test, type Page } from "@playwright/test";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+import {
+  QA_ORGANISATION_CODE,
+  QA_USERS,
+} from "../../scripts/qa-tenant/constants";
+import { loginAsCookieWorksPersona } from "./helpers/cookieworks-auth";
+import {
+  createPublishableClient,
+  createServiceRoleClient,
+  queryDatabase,
+} from "./helpers/workforce-provisioning";
+
+const run = Date.now().toString(36);
+const SKILL_COUNT = 14;
+const BODMIN_PEOPLE = 30;
+const EXETER_PEOPLE = 25;
+const skillName = (n: number) =>
+  `Matrix skill ${String(n).padStart(2, "0")} ${run}`;
+const bodminSkill = `Bodmin-only matrix skill ${run}`;
+const exeterSkill = `Exeter-only matrix skill ${run}`;
+const bodminPerson = (n: number) =>
+  `Matrix Bodmin ${String(n).padStart(2, "0")} ${run}`;
+const exeterPerson = (n: number) =>
+  `Matrix Exeter ${String(n).padStart(2, "0")} ${run}`;
+const course = {
+  all: `Matrix induction ${run}`,
+  bodmin: `Bodmin packing hygiene ${run}`,
+  wrongJob: `Supervisor briefing ${run}`,
+  old: `Superseded course ${run}`,
+  latest: `Latest curriculum course ${run}`,
+};
+
+type Ids = {
+  organisationId: string;
+  units: Record<string, string>;
+  operatorJf: string;
+  supervisorJf: string;
+  skills: Record<string, string>;
+};
+const ids = {} as Ids;
+let cookieWorksOrganisationId: string | undefined;
+
+async function resetCookieWorksFoundation() {
+  execSync("npm run qa:cookie:reset", {
+    cwd: join(fileURLToPath(new URL(".", import.meta.url)), "../.."),
+    env: {
+      ...process.env,
+      LEANHUB_ALLOW_QA_TENANT: "1",
+      E2E_WITH_SUPABASE: process.env.E2E_WITH_SUPABASE ?? "1",
+    },
+    stdio: "inherit",
+  });
+  const client = createPublishableClient();
+  const { error: signInError } = await client.auth.signInWithPassword({
+    email: QA_USERS.admin.email,
+    password: QA_USERS.admin.password,
+  });
+  if (signInError) {
+    throw signInError;
+  }
+  const { data, error } = await client.rpc("list_my_eligible_organisations");
+  if (error) {
+    throw error;
+  }
+  const organisation = (
+    (data ?? []) as Array<{
+      organisation_id: string;
+      organisation_code: string;
+    }>
+  ).find((row) => row.organisation_code === QA_ORGANISATION_CODE);
+  if (!organisation?.organisation_id) {
+    throw new Error(
+      `qa:cookie:reset did not provision ${QA_ORGANISATION_CODE} (eligible org lookup)`,
+    );
+  }
+  cookieWorksOrganisationId = organisation.organisation_id;
+}
+
+async function signIn(persona: keyof typeof QA_USERS): Promise<SupabaseClient> {
+  const client = createPublishableClient();
+  const { error } = await client.auth.signInWithPassword({
+    email: QA_USERS[persona].email,
+    password: QA_USERS[persona].password,
+  });
+  if (error) throw error;
+  const { error: switchError } = await client.rpc("switch_organisation", {
+    target_organisation_id: ids.organisationId,
+  });
+  if (switchError) throw switchError;
+  return client;
+}
+
+async function rpc<T>(
+  client: SupabaseClient,
+  fn: string,
+  args: Record<string, unknown>,
+): Promise<T> {
+  const { data, error } = await client.rpc(fn, args);
+  if (error) throw new Error(`${fn}: ${error.code} ${error.message}`);
+  return data as T;
+}
+
+function sqlString(value: string) {
+  return `'${value.replace(/'/g, "''")}'`;
+}
+
+/** Auth via service role; membership via postgres insert + admin select (RETURNING is RLS-filtered). */
+async function seedMembers(
+  admin: SupabaseClient,
+  names: string[],
+): Promise<string[]> {
+  const service = createServiceRoleClient();
+  const membershipIds: string[] = [];
+  for (const displayName of names) {
+    const userId = crypto.randomUUID();
+    const email = `matrix-${userId}@example.test`;
+    const created = await service.auth.admin.createUser({
+      id: userId,
+      email,
+      email_confirm: true,
+      password: "MatrixSeedE2ePassword123!",
+    });
+    if (created.error) {
+      throw created.error;
+    }
+    const { error: enrolmentError } = await service.rpc(
+      "finalise_identity_enrolment",
+      { target_user_id: userId },
+    );
+    if (enrolmentError) {
+      throw enrolmentError;
+    }
+    queryDatabase(`
+      insert into public.organisation_memberships (
+        organisation_id, user_id, display_name, status, activated_at
+      ) values (
+        ${sqlString(ids.organisationId)}::uuid,
+        ${sqlString(userId)}::uuid,
+        ${sqlString(displayName)},
+        'active',
+        now()
+      );
+    `);
+    const { data, error } = await admin
+      .from("organisation_memberships")
+      .select("id")
+      .eq("organisation_id", ids.organisationId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (error) {
+      throw new Error(
+        `seedMembers membership lookup for ${displayName}: ${error.message}`,
+      );
+    }
+    if (!data?.id) {
+      throw new Error(`seedMembers expected membership for ${displayName}`);
+    }
+    membershipIds.push(data.id);
+  }
+  return membershipIds;
+}
+
+async function seed() {
+  if (!cookieWorksOrganisationId) {
+    throw new Error(
+      `CookieWorks organisation id missing; run qa:cookie:reset before seed`,
+    );
+  }
+  ids.organisationId = cookieWorksOrganisationId;
+
+  const admin = await signIn("admin");
+  const { data: units, error: unitsError } = await admin
+    .from("organisation_units")
+    .select("id, code")
+    .eq("organisation_id", ids.organisationId);
+  if (unitsError) {
+    throw unitsError;
+  }
+  ids.units = Object.fromEntries(
+    (units ?? []).map((unit) => [unit.code, unit.id]),
+  );
+  const bodminSite = ids.units["bodmin-cookie-factory"];
+  const bodminPacking = ids.units["packing"];
+  const exeterSite = ids.units["exeter-cookie-factory"];
+  const exeterPacking = ids.units["exeter-packing"];
+  expect([bodminSite, bodminPacking, exeterSite, exeterPacking]).not.toContain(
+    undefined,
+  );
+
+  ids.operatorJf = await rpc<string>(admin, "create_job_function", {
+    target_name: `Matrix Operator ${run}`,
+    target_code: `matrix-operator-${run}`,
+  });
+  ids.supervisorJf = await rpc<string>(admin, "create_job_function", {
+    target_name: `Matrix Supervisor ${run}`,
+    target_code: `matrix-supervisor-${run}`,
+  });
+
+  // Skills: scale 1..3, 14 org-wide + Bodmin-only + Exeter-only.
+  const scaleId = await rpc<string>(
+    admin,
+    "create_skill_proficiency_scale_draft",
+    {
+      target_name: `Matrix scale ${run}`,
+    },
+  );
+  const { data: scaleVersion, error: scaleVersionError } = await admin
+    .from("skill_proficiency_scale_versions")
+    .select("id")
+    .eq("scale_id", scaleId)
+    .eq("version_number", 1)
+    .maybeSingle();
+  if (scaleVersionError) {
+    throw scaleVersionError;
+  }
+  if (!scaleVersion?.id) {
+    throw new Error("Expected draft scale version");
+  }
+  const scale = scaleVersion.id;
+  const levels: string[] = [];
+  for (const [order, label] of [
+    [1, "Aware"],
+    [2, "Capable"],
+    [3, "Expert"],
+  ] as const) {
+    levels.push(
+      await rpc<string>(admin, "add_skill_proficiency_level", {
+        target_scale_version_id: scale,
+        target_order_value: order,
+        target_label: label,
+      }),
+    );
+  }
+  await rpc(admin, "publish_skill_proficiency_scale_version", {
+    target_scale_version_id: scale,
+  });
+  ids.skills = {};
+  const names = [
+    ...Array.from({ length: SKILL_COUNT }, (_, i) => skillName(i + 1)),
+    bodminSkill,
+    exeterSkill,
+  ];
+  for (const [index, name] of names.entries()) {
+    ids.skills[name] = await rpc<string>(admin, "create_skill", {
+      target_name: name,
+      target_code: `matrix-skill-${index + 1}-${run}`,
+    });
+  }
+  const setId = await rpc<string>(admin, "create_skill_capability_set_draft", {
+    target_name: `Matrix capability set ${run}`,
+    target_code: `matrix-set-${run}`,
+  });
+  const { data: setVersion, error: setVersionError } = await admin
+    .from("skill_capability_set_versions")
+    .select("id")
+    .eq("capability_set_id", setId)
+    .eq("version_number", 1)
+    .maybeSingle();
+  if (setVersionError) {
+    throw setVersionError;
+  }
+  if (!setVersion?.id) {
+    throw new Error("Expected draft capability set version");
+  }
+  const set = setVersion.id;
+  const addSkill = (name: string, level: number, unit?: string) =>
+    rpc(admin, "add_skill_requirement", {
+      target_capability_set_version_id: set,
+      target_skill_id: ids.skills[name],
+      target_job_function_id: ids.operatorJf,
+      target_proficiency_scale_version_id: scale,
+      target_target_proficiency_level_id: levels[level - 1],
+      ...(unit ? { target_organisational_unit_id: unit } : {}),
+    });
+  for (let n = 1; n <= SKILL_COUNT; n += 1) await addSkill(skillName(n), 2);
+  await addSkill(skillName(1), 3, bodminSite); // tighten at Bodmin
+  await addSkill(bodminSkill, 1, bodminSite);
+  await addSkill(exeterSkill, 1, exeterSite);
+  await rpc(admin, "publish_skill_capability_set_version", {
+    target_capability_set_version_id: set,
+  });
+
+  // Training: v1 includes the old course; v2 (latest) drops it, adds latest.
+  const courses: Record<string, string> = {};
+  for (const [key, name] of Object.entries(course)) {
+    // create_training_course_draft returns the course id. ASSUMPTION (as in
+    // the pgTAP draft): an unpublished draft course can be required by a
+    // curriculum; publish its version here if add_training_requirement rejects.
+    courses[key] = await rpc<string>(admin, "create_training_course_draft", {
+      target_name: name,
+      target_code: `matrix-${key}-${run}`,
+    });
+  }
+  const curriculumId = await rpc<string>(
+    admin,
+    "create_training_curriculum_draft",
+    {
+      target_name: `Matrix curriculum ${run}`,
+      target_code: `matrix-curriculum-${run}`,
+    },
+  );
+  const { data: curriculumVersion, error: curriculumVersionError } = await admin
+    .from("training_curriculum_versions")
+    .select("id")
+    .eq("curriculum_id", curriculumId)
+    .eq("version_number", 1)
+    .maybeSingle();
+  if (curriculumVersionError) {
+    throw curriculumVersionError;
+  }
+  if (!curriculumVersion?.id) {
+    throw new Error("Expected draft curriculum version");
+  }
+  const curriculum = curriculumVersion.id;
+  const addTraining = (
+    version: string,
+    key: keyof typeof course,
+    options: { jf?: string; unit?: string; all?: boolean },
+  ) =>
+    rpc(admin, "add_training_requirement", {
+      target_curriculum_version_id: version,
+      target_course_id: courses[key],
+      target_job_function_id: options.jf ?? null,
+      target_organisational_unit_id: options.unit ?? null,
+      target_applies_to_all_members: options.all ?? false,
+      target_mandatory: true,
+    });
+  await addTraining(curriculum, "all", { all: true });
+  await addTraining(curriculum, "bodmin", {
+    jf: ids.operatorJf,
+    unit: bodminSite!,
+  });
+  await addTraining(curriculum, "wrongJob", { jf: ids.supervisorJf });
+  await addTraining(curriculum, "old", { all: true });
+  await rpc(admin, "publish_training_curriculum_version", {
+    target_curriculum_version_id: curriculum,
+  });
+  const successor = await rpc<string>(
+    admin,
+    "create_training_curriculum_successor_version",
+    {
+      target_curriculum_id: curriculumId,
+    },
+  );
+  const { data: oldRequirement, error: oldRequirementError } = await admin
+    .from("training_requirements")
+    .select("id")
+    .eq("curriculum_version_id", successor)
+    .eq("course_id", courses.old!)
+    .maybeSingle();
+  if (oldRequirementError) {
+    throw oldRequirementError;
+  }
+  if (!oldRequirement?.id) {
+    throw new Error("Expected training requirement row for superseded course");
+  }
+  await rpc(admin, "remove_training_requirement", {
+    target_requirement_id: oldRequirement.id,
+  });
+  await addTraining(successor, "latest", { all: true });
+  await rpc(admin, "publish_training_curriculum_version", {
+    target_curriculum_version_id: successor,
+  });
+
+  // People: 30 Bodmin operators, 25 Exeter operators (=> >50 in org).
+  // RISK: seat / site-capacity enforcement may reject 55 extra members.
+  const bodmin = await seedMembers(
+    admin,
+    Array.from({ length: BODMIN_PEOPLE }, (_, i) => bodminPerson(i + 1)),
+  );
+  const exeter = await seedMembers(
+    admin,
+    Array.from({ length: EXETER_PEOPLE }, (_, i) => exeterPerson(i + 1)),
+  );
+  for (const [list, unit] of [
+    [bodmin, bodminPacking],
+    [exeter, exeterPacking],
+  ] as const) {
+    for (const membershipId of list) {
+      await rpc(admin, "assign_membership_job_function", {
+        target_membership_id: membershipId,
+        target_job_function_id: ids.operatorJf,
+        target_primary: true,
+        target_organisational_unit_id: unit,
+      });
+    }
+  }
+  await admin.auth.signOut();
+}
+
+async function namesOnPage(page: Page, prefix: string): Promise<string[]> {
+  const texts = await page
+    .getByText(new RegExp(`^${prefix}`))
+    .allTextContents();
+  return [...new Set(texts.map((text) => text.trim()))];
+}
+
+test.describe("Spec B: two-site skills/training matrix", () => {
+  test.describe.configure({ mode: "serial" });
+  test.setTimeout(300_000);
+
+  test.beforeAll(async () => {
+    test.setTimeout(300_000);
+    await resetCookieWorksFoundation();
+    await seed();
+  });
+
+  test("admin skills matrix: >12 skill columns and people pagination", async ({
+    page,
+  }) => {
+    const admin = await signIn("admin");
+    const first = await rpc<{ total_people: number; skills: unknown[] }>(
+      admin,
+      "get_skills_matrix",
+      { target_page: 1, target_page_size: 50 },
+    );
+    expect(first.total_people).toBeGreaterThan(50);
+
+    await loginAsCookieWorksPersona(page, "admin");
+    await page.goto("/platform/skills/matrix");
+    await expect(page.getByTestId("skills-matrix-summary")).toContainText(
+      `Showing 50 of ${first.total_people}`,
+    );
+    for (let n = 1; n <= SKILL_COUNT; n += 1) {
+      await expect(
+        page.getByRole("link", { name: skillName(n) }).first(),
+      ).toBeVisible();
+    }
+    const pagination = page.getByTestId("skills-matrix-pagination");
+    await expect(pagination).toContainText(
+      `Page 1 of ${Math.ceil(first.total_people / 50)}`,
+    );
+    const pageOne = await namesOnPage(page, "Matrix (Bodmin|Exeter)");
+    await pagination.getByRole("link", { name: /next/i }).click();
+    await expect(page).toHaveURL(/[?&]page=2/);
+    await expect(pagination).toContainText("Page 2 of");
+    const pageTwo = await namesOnPage(page, "Matrix (Bodmin|Exeter)");
+    expect(pageTwo.length).toBeGreaterThan(0);
+    expect(pageOne.filter((name) => pageTwo.includes(name))).toEqual([]);
+    await admin.auth.signOut();
+  });
+
+  test("site override: Bodmin person targets level 3, Exeter person level 2", async () => {
+    const admin = await signIn("admin");
+    const target = ids.skills[skillName(1)];
+    const seen: Record<string, number> = {};
+    for (let p = 1; p <= 3; p += 1) {
+      const data = await rpc<{
+        people: { membership_id: string; display_name: string }[];
+        gaps: {
+          membership_id: string;
+          skill_id: string;
+          gap: { target_order: number; effective_below_org: boolean };
+        }[];
+      }>(admin, "get_skills_matrix", { target_page: p, target_page_size: 50 });
+      for (const gap of data.gaps.filter((g) => g.skill_id === target)) {
+        const person = data.people.find(
+          (x) => x.membership_id === gap.membership_id,
+        );
+        if (person) seen[person.display_name] = gap.gap?.target_order;
+      }
+    }
+    expect(seen[bodminPerson(1)]).toBe(3);
+    expect(seen[exeterPerson(1)]).toBe(2);
+    await admin.auth.signOut();
+  });
+
+  test("Bodmin production manager never sees Exeter people or Exeter-only skill", async ({
+    page,
+  }) => {
+    await loginAsCookieWorksPersona(page, "productionManager");
+    await page.goto("/platform/skills/matrix");
+    await expect(page.getByTestId("skills-matrix-summary")).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: bodminPerson(1) }).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: /^Matrix Exeter/ }),
+    ).toHaveCount(0);
+    await expect(page.getByRole("link", { name: bodminSkill })).toBeVisible();
+    await expect(page.getByRole("link", { name: exeterSkill })).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { name: skillName(SKILL_COUNT) }),
+    ).toBeVisible();
+
+    const manager = await signIn("productionManager");
+    const { error } = await manager.rpc("get_skills_matrix", {
+      target_page: 1,
+      target_page_size: 50,
+      target_unit_id: ids.units["exeter-cookie-factory"],
+    });
+    expect(error?.code).toBe("42501");
+    const { error: trainingError } = await manager.rpc("get_training_matrix", {
+      target_page: 1,
+      target_page_size: 50,
+      target_unit_id: ids.units["exeter-cookie-factory"],
+    });
+    expect(trainingError?.code).toBe("42501");
+    await manager.auth.signOut();
+  });
+
+  test("training matrix: latest curriculum, site scope, wrong job function", async ({
+    page,
+  }) => {
+    await loginAsCookieWorksPersona(page, "productionManager");
+    await page.goto("/platform/training/matrix");
+    await expect(page.getByTestId("training-matrix-summary")).toBeVisible();
+    await expect(page.getByText(course.latest).first()).toBeVisible();
+    await expect(page.getByText(course.old)).toHaveCount(0);
+    await expect(
+      page.getByLabel(`${bodminPerson(1)} — ${course.bodmin}: Required`),
+    ).toBeVisible();
+    await expect(
+      page.getByLabel(`${bodminPerson(1)} — ${course.all}: Required`),
+    ).toBeVisible();
+    // wrongJob applies to supervisors only; nobody on this page qualifies.
+    await expect(page.getByText(course.wrongJob)).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { name: /^Matrix Exeter/ }),
+    ).toHaveCount(0);
+
+    // Admin: Exeter operator must not have a mandatory requirement for the Bodmin unit course.
+    const admin = await signIn("admin");
+    type TrainingMatrixPayload = {
+      people?: { membership_id: string; display_name: string | null }[];
+      courses?: { id: string; name: string }[];
+      requirements?: {
+        membership_id: string;
+        course_id: string;
+        mandatory: boolean;
+      }[];
+    };
+    let exeterMembershipId: string | undefined;
+    let bodminCourseId: string | undefined;
+    for (let p = 1; p <= 10 && !exeterMembershipId; p += 1) {
+      const data = await rpc<TrainingMatrixPayload>(
+        admin,
+        "get_training_matrix",
+        {
+          target_page: p,
+          target_page_size: 50,
+        },
+      );
+      bodminCourseId ??= data.courses?.find(
+        (c) => c.name === course.bodmin,
+      )?.id;
+      exeterMembershipId = data.people?.find(
+        (person) => person.display_name === exeterPerson(1),
+      )?.membership_id;
+    }
+    expect(exeterMembershipId).toBeTruthy();
+    expect(bodminCourseId).toBeTruthy();
+    const mandatoryForExeter = await (async () => {
+      for (let p = 1; p <= 10; p += 1) {
+        const data = await rpc<TrainingMatrixPayload>(
+          admin,
+          "get_training_matrix",
+          { target_page: p, target_page_size: 50 },
+        );
+        if (
+          data.requirements?.some(
+            (row) =>
+              row.membership_id === exeterMembershipId &&
+              row.course_id === bodminCourseId &&
+              row.mandatory,
+          )
+        ) {
+          return true;
+        }
+      }
+      return false;
+    })();
+    expect(mandatoryForExeter).toBe(false);
+    await admin.auth.signOut();
+
+    await loginAsCookieWorksPersona(page, "admin");
+    await page.goto("/platform/training/matrix");
+    await expect(page.getByTestId("training-matrix-pagination")).toBeVisible();
+  });
+});

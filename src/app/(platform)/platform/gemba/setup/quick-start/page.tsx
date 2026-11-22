@@ -7,7 +7,10 @@ import {
   LEH_OPERATIONAL_GEMBA_WALK_KEY,
 } from "@/modules/gemba/templates";
 import { GEMBA_PERMISSIONS } from "@/modules/operational/permissions";
-import { buildSiteScopedUnitOptions } from "@/modules/organisation/site-context";
+import {
+  buildSiteScopedUnitOptions,
+  filterUnitsForActiveSite,
+} from "@/modules/organisation/site-context";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { notFound } from "next/navigation";
@@ -26,6 +29,9 @@ export default async function GembaQuickStartPage() {
   );
   const { units, context } = await loadActiveSiteContext();
   const creationUnits = buildSiteScopedUnitOptions(units, context, {
+    requireConcreteSite: true,
+  });
+  const hierarchyUnits = filterUnitsForActiveSite(units, context, {
     requireConcreteSite: true,
   });
   const counts = gembaTemplateCounts(template);
@@ -66,6 +72,7 @@ export default async function GembaQuickStartPage() {
             <DeployQuickStartForm
               action={deployGembaQuickStart}
               templateKey={template.key}
+              hierarchyUnits={hierarchyUnits}
               units={creationUnits.units}
               requiresSiteSelection={creationUnits.requiresSiteSelection}
               showThreshold={false}

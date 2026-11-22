@@ -1,63 +1,859 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Plus, X } from "lucide-react";
 
-import { createAction } from "@/app/(platform)/platform/actions/actions";
+import {
+  confirmActionEvidenceUpload,
+  createFiveSPlannerAction,
+  createGembaPlannerAction,
+  createPlannerAction,
+  initiateActionEvidenceUpload,
+  loadActionCreateContext,
+} from "@/app/(platform)/platform/actions/actions";
+import { createMaturityAction } from "@/app/(platform)/platform/maturity/actions";
+import { linkActionToCiProject } from "@/app/(platform)/platform/projects/linking-actions";
+import {
+  ActionCreateEvidencePicker,
+  type ActionCreateEvidenceDraft,
+} from "@/components/actions/action-create-evidence-picker";
+import { ActionProjectPicker } from "@/components/actions/action-project-picker";
+import { labelChipTextClass } from "@/lib/actions/label-contrast";
+import type { ActionLabel, AssignablePerson } from "@/lib/actions/types";
+import { RelatedRecordsPanel } from "@/components/improvement/related-records-panel";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { EphemeralToast } from "@/components/ui/ephemeral-toast";
 import { Textarea } from "@/components/ui/textarea";
-import { navigateTo } from "@/lib/navigation/navigate";
+import { uploadEvidenceFileClient } from "@/lib/attachments/upload-evidence-client";
+import type { ProjectPickerOptions } from "@/lib/projects/load-project-picker-options";
+import { cn } from "@/lib/utils";
 
-export function ActionCreateForm() {
+type MaturityActionContext = {
+  assessmentId: string;
+  pillarId: string;
+  criterionId: string;
+  questions: Array<{ id: string; prompt: string }>;
+};
+
+export type FiveSActionLinkContext = {
+  auditId: string;
+  sectionId: string;
+  questionId: string;
+  defaultTitle: string;
+  siteUnitId?: string | null;
+};
+
+export type GembaActionLinkContext = {
+  walkId: string;
+  sectionId?: string | null;
+  questionId?: string | null;
+  observationId?: string | null;
+  defaultTitle: string;
+  siteUnitId?: string | null;
+};
+
+type ActionCreateDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** Fires when the action record exists; uploads may still be in flight. */
+  onActionPersisted?: (actionId: string) => void;
+  /** Fires when create and all pending uploads succeeded, before the dialog closes. */
+  onCreated?: (actionId: string) => void;
+  maturityContext?: MaturityActionContext;
+  fiveSLinkContext?: FiveSActionLinkContext;
+  gembaLinkContext?: GembaActionLinkContext;
+};
+
+function readDraftFromForm(form: HTMLFormElement | null) {
+  if (!form) return { title: "", description: "" };
+  const formData = new FormData(form);
+  return {
+    title: String(formData.get("title") ?? "").trim(),
+    description: String(formData.get("description") ?? "").trim(),
+  };
+}
+
+export function ActionCreateDialog({
+  open,
+  onOpenChange,
+  onActionPersisted,
+  onCreated,
+  maturityContext,
+  fiveSLinkContext,
+  gembaLinkContext,
+}: ActionCreateDialogProps) {
+  const formRef = useRef<HTMLFormElement>(null);
+  const wasOpenRef = useRef(false);
+  const idempotencyKeyRef = useRef<string | null>(null);
+  const createWarningRef = useRef<string | undefined>(undefined);
+  const [queryText, setQueryText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
 
-  async function handleSubmit(formData: FormData) {
-    setPending(true);
+  const [catalogLabels, setCatalogLabels] = useState<ActionLabel[]>([]);
+  const [assignablePeople, setAssignablePeople] = useState<AssignablePerson[]>(
+    [],
+  );
+  const [assigneeId, setAssigneeId] = useState("");
+  const [dueAt, setDueAt] = useState("");
+  const [projectPicker, setProjectPicker] = useState<ProjectPickerOptions>();
+  const [projectId, setProjectId] = useState<string | null>(null);
+  const [projectLinked, setProjectLinked] = useState(false);
+  const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([]);
+  const [checklistDraft, setChecklistDraft] = useState("");
+  const [checklistTitles, setChecklistTitles] = useState<string[]>([]);
+  const [createContextLoaded, setCreateContextLoaded] = useState(false);
+  const [canAssignOthers, setCanAssignOthers] = useState(true);
+  const [evidenceDrafts, setEvidenceDrafts] = useState<
+    ActionCreateEvidenceDraft[]
+  >([]);
+  const [evidenceError, setEvidenceError] = useState<string | null>(null);
+  const [createdActionId, setCreatedActionId] = useState<string | null>(null);
+
+  const plannerMode = !maturityContext;
+  const raisedFromAudit = Boolean(fiveSLinkContext ?? gembaLinkContext);
+  const siteUnitId = (fiveSLinkContext ?? gembaLinkContext)?.siteUnitId ?? null;
+  const labelsLoading = plannerMode && open && !createContextLoaded;
+
+  useEffect(() => {
+    if (open && !wasOpenRef.current) {
+      resetForm();
+      idempotencyKeyRef.current = crypto.randomUUID();
+    } else if (!open && wasOpenRef.current) {
+      resetForm();
+    }
+    wasOpenRef.current = open;
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !plannerMode) return;
+    let cancelled = false;
+    void loadActionCreateContext({ siteUnitId }).then((ctx) => {
+      if (cancelled) return;
+      setProjectPicker(ctx.projectPicker);
+      setCatalogLabels(ctx.labels);
+      setCanAssignOthers(ctx.canAssign);
+      const people =
+        raisedFromAudit && !ctx.canAssign && ctx.currentMembershipId
+          ? [
+              {
+                membership_id: ctx.currentMembershipId,
+                display_name: "You",
+                avatar_url: null,
+              },
+            ]
+          : ctx.assignablePeople;
+      setAssignablePeople(people);
+      if (
+        raisedFromAudit &&
+        ctx.currentMembershipId &&
+        people.some(
+          (person) => person.membership_id === ctx.currentMembershipId,
+        )
+      ) {
+        setAssigneeId(ctx.currentMembershipId);
+      }
+      setCreateContextLoaded(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, plannerMode, raisedFromAudit, siteUnitId]);
+
+  useEffect(() => {
+    const linkContext = fiveSLinkContext ?? gembaLinkContext;
+    if (!open || !linkContext || !formRef.current) return;
+    const titleInput = formRef.current.elements.namedItem(
+      "title",
+    ) as HTMLInputElement | null;
+    if (titleInput && !titleInput.value.trim()) {
+      titleInput.value = linkContext.defaultTitle;
+      syncQueryFromForm();
+    }
+  }, [open, fiveSLinkContext, gembaLinkContext]);
+
+  function syncQueryFromForm() {
+    if (!formRef.current) return;
+    const { title, description } = readDraftFromForm(formRef.current);
+    setQueryText(`${title} ${description}`.trim());
+  }
+
+  function resetPlannerFields() {
+    setAssigneeId("");
+    setDueAt("");
+    setProjectId(null);
+    setProjectLinked(false);
+    setProjectPicker(undefined);
+    setSelectedLabelIds([]);
+    setChecklistDraft("");
+    setChecklistTitles([]);
+    for (const draft of evidenceDrafts) {
+      if (draft.previewUrl) URL.revokeObjectURL(draft.previewUrl);
+    }
+    setEvidenceDrafts([]);
+    setEvidenceError(null);
+    setCreatedActionId(null);
+    createWarningRef.current = undefined;
+  }
+
+  function resetForm() {
+    formRef.current?.reset();
+    setQueryText("");
     setError(null);
-    const result = await createAction(formData);
     setPending(false);
-    if (result.error) {
-      setError(result.error);
+    setDiscardConfirmOpen(false);
+    resetPlannerFields();
+    setCreateContextLoaded(false);
+    setCanAssignOthers(true);
+    idempotencyKeyRef.current = null;
+  }
+
+  function closeAndReset() {
+    onOpenChange(false);
+    resetForm();
+  }
+
+  function hasDraft() {
+    if (createdActionId) return true;
+    const { title, description } = readDraftFromForm(formRef.current);
+    if (title || description) return true;
+    if (!plannerMode) return false;
+    return Boolean(
+      assigneeId ||
+      dueAt ||
+      projectId ||
+      selectedLabelIds.length > 0 ||
+      checklistTitles.length > 0 ||
+      checklistDraft.trim() ||
+      evidenceDrafts.length > 0,
+    );
+  }
+
+  function requestDismiss() {
+    if (pending) return;
+    if (!hasDraft()) {
+      closeAndReset();
       return;
     }
-    if (result.id) {
-      navigateTo(`/platform/actions/${result.id}`);
+    setDiscardConfirmOpen(true);
+  }
+
+  function confirmDiscard() {
+    setDiscardConfirmOpen(false);
+    closeAndReset();
+  }
+
+  function guardDismiss(event: Event) {
+    if (pending) {
+      event.preventDefault();
+      return;
+    }
+    if (hasDraft()) {
+      event.preventDefault();
+      setDiscardConfirmOpen(true);
+    }
+  }
+
+  function toggleCreateLabel(labelId: string) {
+    setSelectedLabelIds((prev) =>
+      prev.includes(labelId)
+        ? prev.filter((id) => id !== labelId)
+        : [...prev, labelId],
+    );
+  }
+
+  function addChecklistLine() {
+    const title = checklistDraft.trim();
+    if (!title) return;
+    setChecklistTitles((prev) => [...prev, title]);
+    setChecklistDraft("");
+  }
+
+  function removeChecklistLine(index: number) {
+    setChecklistTitles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (pending) return;
+    setPending(true);
+    setError(null);
+    const formData = new FormData(event.currentTarget);
+
+    if (maturityContext) {
+      const result = await createMaturityAction(formData);
+      setPending(false);
+      if ("error" in result && result.error) {
+        setError(result.error);
+        return;
+      }
+      const createdId =
+        "actionId" in result && typeof result.actionId === "string"
+          ? result.actionId
+          : "id" in result && typeof result.id === "string"
+            ? result.id
+            : null;
+      if (createdId) {
+        onOpenChange(false);
+        resetForm();
+        onCreated?.(createdId);
+      }
+      return;
+    }
+
+    const { title, description } = readDraftFromForm(formRef.current);
+    if (raisedFromAudit) {
+      if (!assigneeId) {
+        setError("Assignee is required.");
+        setPending(false);
+        return;
+      }
+      if (!dueAt) {
+        setError("Due date is required.");
+        setPending(false);
+        return;
+      }
+    }
+    const extraChecklist = checklistDraft.trim();
+    const allChecklist = extraChecklist
+      ? [...checklistTitles, extraChecklist]
+      : checklistTitles;
+
+    async function uploadCreateEvidence(
+      actionId: string,
+      drafts: ActionCreateEvidenceDraft[],
+    ) {
+      const failures: string[] = [];
+      const uploadedDraftIds: string[] = [];
+      for (const draft of drafts) {
+        const uploaded = await uploadEvidenceFileClient(draft.file, {
+          onInitiate: (filename, mimeType, byteSize) =>
+            initiateActionEvidenceUpload(
+              actionId,
+              filename,
+              mimeType,
+              byteSize,
+            ),
+          onConfirm: (attachmentId) =>
+            confirmActionEvidenceUpload(actionId, attachmentId),
+          onLink: async () => ({}),
+        });
+        if (!uploaded.ok) {
+          failures.push(`${draft.file.name}: ${uploaded.error}`);
+          continue;
+        }
+        uploadedDraftIds.push(draft.id);
+        if (draft.previewUrl) {
+          URL.revokeObjectURL(draft.previewUrl);
+        }
+      }
+      if (uploadedDraftIds.length > 0) {
+        setEvidenceDrafts((current) =>
+          current.filter((draft) => !uploadedDraftIds.includes(draft.id)),
+        );
+      }
+      return failures;
+    }
+
+    let actionId = createdActionId;
+
+    const idempotencyKey =
+      idempotencyKeyRef.current ??
+      (idempotencyKeyRef.current = crypto.randomUUID());
+
+    try {
+      if (!actionId) {
+        const result = fiveSLinkContext
+          ? await createFiveSPlannerAction({
+              auditId: fiveSLinkContext.auditId,
+              sectionId: fiveSLinkContext.sectionId,
+              questionId: fiveSLinkContext.questionId,
+              title,
+              description,
+              dueAt: dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null,
+              assigneeMembershipId: assigneeId || null,
+              idempotencyKey,
+              labelIds: selectedLabelIds,
+              checklistTitles: allChecklist,
+            })
+          : gembaLinkContext
+            ? await createGembaPlannerAction({
+                walkId: gembaLinkContext.walkId,
+                sectionId: gembaLinkContext.sectionId ?? null,
+                questionId: gembaLinkContext.questionId ?? null,
+                observationId: gembaLinkContext.observationId ?? null,
+                title,
+                description,
+                dueAt: dueAt
+                  ? new Date(`${dueAt}T12:00:00`).toISOString()
+                  : null,
+                assigneeMembershipId: assigneeId || null,
+                idempotencyKey,
+                labelIds: selectedLabelIds,
+                checklistTitles: allChecklist,
+              })
+            : await createPlannerAction({
+                title,
+                description,
+                dueAt: dueAt
+                  ? new Date(`${dueAt}T12:00:00`).toISOString()
+                  : null,
+                assigneeMembershipId: assigneeId || null,
+                labelIds: selectedLabelIds,
+                checklistTitles: allChecklist,
+              });
+        if (result.error && !result.id) {
+          setError(result.error);
+          return;
+        }
+        if (!result.id) {
+          return;
+        }
+        actionId = result.id;
+        setCreatedActionId(result.id);
+        onActionPersisted?.(result.id);
+        createWarningRef.current = result.warning;
+      }
+
+      if (projectId && !projectLinked) {
+        const link = await linkActionToCiProject(actionId, projectId);
+        if (link.error) {
+          setError(
+            `Action created. ${link.error} Choose a project or clear the selection, then submit again.`,
+          );
+          return;
+        }
+        setProjectLinked(true);
+      }
+
+      const uploadFailures =
+        evidenceDrafts.length > 0
+          ? await uploadCreateEvidence(actionId, evidenceDrafts)
+          : [];
+      if (uploadFailures.length > 0) {
+        setEvidenceError(uploadFailures.join(" "));
+        setError(
+          "One or more attachments could not be uploaded. Fix the issue and use Retry upload — a new action will not be created.",
+        );
+        return;
+      }
+
+      onCreated?.(actionId);
+      idempotencyKeyRef.current = null;
+      onOpenChange(false);
+      if (createWarningRef.current) {
+        setToastMessage(createWarningRef.current);
+      }
+    } catch {
+      setError(
+        actionId
+          ? "The action was created, but setup could not finish. Try again."
+          : "Something went wrong while creating the action. Try again.",
+      );
+    } finally {
+      setPending(false);
     }
   }
 
   return (
-    <Card data-testid="actions-create-form">
-      <CardHeader>
-        <CardTitle>Create action</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form action={handleSubmit} className="flex max-w-lg flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              name="title"
-              required
-              placeholder="Action title"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea id="description" name="description" rows={3} />
-          </div>
-          {error ? (
-            <p className="text-sm text-destructive" role="alert">
-              {error}
-            </p>
-          ) : null}
-          <Button type="submit" disabled={pending}>
-            {pending ? "Creating…" : "Create action"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+    <>
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          if (next) {
+            setCreateContextLoaded(false);
+            onOpenChange(true);
+            return;
+          }
+          requestDismiss();
+        }}
+      >
+        <DialogContent
+          data-testid="actions-create-dialog"
+          className={cn(
+            "max-w-lg",
+            pending &&
+              "[&_button[aria-label='Close']]:pointer-events-none [&_button[aria-label='Close']]:opacity-40",
+          )}
+          onPointerDownOutside={guardDismiss}
+          onEscapeKeyDown={guardDismiss}
+        >
+          <DialogHeader>
+            <DialogTitle>Create action</DialogTitle>
+            <DialogDescription>
+              {plannerMode
+                ? raisedFromAudit
+                  ? "Assign an owner and due date before raising this corrective action."
+                  : "Add title, assignee, due date, labels, and checklist items."
+                : "Add a title and description. Save when you are ready."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form
+            ref={formRef}
+            id="actions-create-form"
+            data-testid="actions-create-form"
+            onSubmit={handleSubmit}
+            onInput={syncQueryFromForm}
+            className="flex min-w-0 flex-col gap-4"
+          >
+            {maturityContext ? (
+              <>
+                <input
+                  type="hidden"
+                  name="assessmentId"
+                  value={maturityContext.assessmentId}
+                />
+                <input
+                  type="hidden"
+                  name="pillarId"
+                  value={maturityContext.pillarId}
+                />
+                <input
+                  type="hidden"
+                  name="criterionId"
+                  value={maturityContext.criterionId}
+                />
+              </>
+            ) : null}
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="action-create-title">Title</Label>
+              <Input
+                id="action-create-title"
+                name="title"
+                required
+                placeholder="Action title"
+                disabled={pending || Boolean(createdActionId)}
+                defaultValue={
+                  fiveSLinkContext?.defaultTitle ??
+                  gembaLinkContext?.defaultTitle ??
+                  undefined
+                }
+                key={
+                  fiveSLinkContext
+                    ? `five-s-title-${fiveSLinkContext.questionId}-${open ? "open" : "closed"}`
+                    : gembaLinkContext
+                      ? `gemba-title-${gembaLinkContext.observationId ?? "walk"}-${open ? "open" : "closed"}`
+                      : "planner-title"
+                }
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="action-create-description">Description</Label>
+              <Textarea
+                id="action-create-description"
+                name="description"
+                rows={3}
+                disabled={pending || Boolean(createdActionId)}
+              />
+            </div>
+
+            {plannerMode ? (
+              <>
+                {projectPicker ? (
+                  <ActionProjectPicker
+                    picker={projectPicker}
+                    value={projectId}
+                    onChange={setProjectId}
+                    disabled={pending || projectLinked}
+                  />
+                ) : null}
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="action-create-assignee">
+                    Assignee{raisedFromAudit ? " *" : ""}
+                  </Label>
+                  <select
+                    id="action-create-assignee"
+                    className="min-h-9 rounded-md border border-border bg-background px-3 text-sm"
+                    value={assigneeId}
+                    required={raisedFromAudit}
+                    disabled={
+                      pending ||
+                      assignablePeople.length === 0 ||
+                      (raisedFromAudit && !canAssignOthers)
+                    }
+                    data-testid="action-create-assignee"
+                    onChange={(event) => setAssigneeId(event.target.value)}
+                  >
+                    <option value="">
+                      {raisedFromAudit ? "Select assignee…" : "Unassigned"}
+                    </option>
+                    {assignablePeople.map((person) => (
+                      <option
+                        key={person.membership_id}
+                        value={person.membership_id}
+                      >
+                        {person.display_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="action-create-due">
+                    Due date{raisedFromAudit ? " *" : ""}
+                  </Label>
+                  <Input
+                    id="action-create-due"
+                    type="date"
+                    value={dueAt}
+                    required={raisedFromAudit}
+                    disabled={pending}
+                    data-testid="action-create-due"
+                    onChange={(event) => setDueAt(event.target.value)}
+                  />
+                </div>
+                <div
+                  role="group"
+                  aria-labelledby="action-create-labels-heading"
+                  className="flex flex-col gap-2"
+                  data-testid="action-create-labels"
+                  data-labels-ready={labelsLoading ? "loading" : "ready"}
+                >
+                  <Label id="action-create-labels-heading">Labels</Label>
+                  {labelsLoading ? (
+                    <p className="text-xs text-muted-foreground">
+                      Loading labels…
+                    </p>
+                  ) : catalogLabels.length === 0 ? (
+                    <p
+                      className="text-xs text-muted-foreground"
+                      data-testid="action-create-labels-empty"
+                    >
+                      No labels in the catalogue yet.
+                    </p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {catalogLabels.map((label) => {
+                        const active = selectedLabelIds.includes(label.id);
+                        return (
+                          <Button
+                            key={label.id}
+                            type="button"
+                            size="sm"
+                            variant={active ? "default" : "outline"}
+                            disabled={pending}
+                            aria-pressed={active}
+                            data-testid={`action-create-label-${label.id}`}
+                            className={cn(
+                              "h-7 text-xs",
+                              active && labelChipTextClass(label.color),
+                            )}
+                            style={
+                              active
+                                ? {
+                                    backgroundColor: label.color,
+                                    borderColor: label.color,
+                                  }
+                                : undefined
+                            }
+                            onClick={() => toggleCreateLabel(label.id)}
+                          >
+                            {label.name}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                <ActionCreateEvidencePicker
+                  drafts={evidenceDrafts}
+                  disabled={pending}
+                  error={evidenceError}
+                  onPickError={(message) => setEvidenceError(message)}
+                  onChange={(next) => {
+                    setEvidenceDrafts(next);
+                    setEvidenceError(null);
+                  }}
+                />
+                <div
+                  className="flex flex-col gap-2"
+                  data-testid="action-create-checklist"
+                >
+                  <Label htmlFor="action-create-checklist-input">
+                    Checklist
+                  </Label>
+                  <ul className="flex flex-col gap-1">
+                    {checklistTitles.map((title, index) => (
+                      <li
+                        key={`${title}-${index}`}
+                        className="flex items-center gap-2"
+                      >
+                        <span className="min-w-0 flex-1 truncate text-sm">
+                          {title}
+                        </span>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="size-7"
+                          aria-label={`Remove ${title}`}
+                          disabled={pending}
+                          onClick={() => removeChecklistLine(index)}
+                        >
+                          <X className="size-4" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="flex gap-2">
+                    <Input
+                      id="action-create-checklist-input"
+                      value={checklistDraft}
+                      onChange={(event) =>
+                        setChecklistDraft(event.target.value)
+                      }
+                      placeholder="Add checklist item"
+                      disabled={pending}
+                      data-testid="action-create-checklist-add"
+                      aria-label="New checklist item"
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          addChecklistLine();
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={pending || !checklistDraft.trim()}
+                      onClick={addChecklistLine}
+                      aria-label="Add checklist item"
+                    >
+                      <Plus className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+              </>
+            ) : null}
+
+            {maturityContext && maturityContext.questions.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                <Label
+                  htmlFor={`action-question-${maturityContext.criterionId}`}
+                >
+                  Related question
+                </Label>
+                <select
+                  id={`action-question-${maturityContext.criterionId}`}
+                  name="questionId"
+                  className="min-h-9 rounded-md border border-border bg-background px-3 text-sm"
+                  defaultValue=""
+                  disabled={pending}
+                >
+                  <option value="">This criterion</option>
+                  {maturityContext.questions.map((question) => (
+                    <option key={question.id} value={question.id}>
+                      {question.prompt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+            {error ? (
+              <p className="text-sm text-destructive" role="alert">
+                {error}
+              </p>
+            ) : null}
+
+            {maturityContext ? null : (
+              <RelatedRecordsPanel
+                recordType="action"
+                compactHelp
+                queryText={queryText}
+                resolveQuery={() => {
+                  const { title, description } = readDraftFromForm(
+                    formRef.current,
+                  );
+                  if (title || description) {
+                    return `${title} ${description}`.trim();
+                  }
+                  return queryText;
+                }}
+                disabled={pending}
+              />
+            )}
+
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={requestDismiss}
+                disabled={pending}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={pending}
+                data-testid={
+                  maturityContext
+                    ? "assessment-action-submit"
+                    : "actions-create-submit"
+                }
+              >
+                {pending
+                  ? createdActionId
+                    ? "Saving…"
+                    : "Creating…"
+                  : createdActionId
+                    ? evidenceError
+                      ? "Retry upload"
+                      : "Finish setup"
+                    : "Create action"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={discardConfirmOpen} onOpenChange={setDiscardConfirmOpen}>
+        <DialogContent
+          data-testid="actions-create-discard-dialog"
+          className="max-w-md"
+        >
+          <DialogHeader>
+            <DialogTitle>Discard draft?</DialogTitle>
+            <DialogDescription>
+              Your changes will be cleared. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDiscardConfirmOpen(false)}
+            >
+              Keep editing
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={confirmDiscard}
+              data-testid="actions-create-discard-confirm"
+            >
+              Discard draft
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <EphemeralToast
+        message={toastMessage}
+        tone="warning"
+        onDismiss={() => setToastMessage(null)}
+      />
+    </>
   );
 }

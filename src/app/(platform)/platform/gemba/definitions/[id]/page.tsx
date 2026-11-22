@@ -11,7 +11,11 @@ import {
 import { AuthoringSaveFeedback } from "@/components/authoring/authoring-save-feedback";
 import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
 import { parseAuthoringSavedKey } from "@/lib/authoring/authoring-query";
-import { ExecutionUnitStartForm } from "@/components/organisation/execution-unit-start-form";
+import {
+  GembaApplicabilityEditor,
+  GembaDraftAuthoringPanels,
+} from "@/components/gemba/gemba-definition-authoring-client";
+import { ExecutionUnitStartDialog } from "@/components/organisation/execution-unit-start-dialog";
 import { PublishedExecutionHeader } from "@/components/organisation/published-execution-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
@@ -41,9 +45,14 @@ import {
 import {
   buildApplicableSiteScopedUnitOptions,
   buildSiteScopedUnitOptions,
+  filterUnitsForActiveSite,
 } from "@/modules/organisation/site-context";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import {
+  loadWorkplaceRecordFallback,
+  loadWorkplaceRecordView,
+} from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 const APPLICABILITY_DESCRIPTION =
@@ -57,6 +66,15 @@ export default async function GembaDefinitionPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
+  const workplaceView = await loadWorkplaceRecordView({
+    readPermission: GEMBA_PERMISSIONS.read,
+    module: "gemba",
+    recordId: id,
+    title: "Gemba definition",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const query = await searchParams;
   const savedKey = parseAuthoringSavedKey(
     Array.isArray(query.saved) ? query.saved[0] : query.saved,
@@ -80,7 +98,15 @@ export default async function GembaDefinitionPage({
     definition,
     "Failed to load Gemba definition",
   );
-  if (!definition) notFound();
+  if (!definition) {
+    const workplaceRecord = await loadWorkplaceRecordFallback({
+      module: "gemba",
+      recordId: id,
+      title: "Gemba definition",
+    });
+    if (workplaceRecord) return workplaceRecord;
+    notFound();
+  }
 
   const { data: versions, error: versionsError } = await supabase
     .from("gemba_definition_versions")
@@ -124,9 +150,14 @@ export default async function GembaDefinitionPage({
     ),
   );
   const { units, context } = await loadActiveSiteContext();
-  const configurationUnits = buildSiteScopedUnitOptions(units, context, {
-    requireConcreteSite: true,
-  });
+  const configurationUnits = {
+    ...buildSiteScopedUnitOptions(units, context, {
+      requireConcreteSite: true,
+    }),
+    hierarchyUnits: filterUnitsForActiveSite(units, context, {
+      requireConcreteSite: true,
+    }),
+  };
   const applicabilitySelection = splitApplicabilitySelection(
     applicableIds,
     configurationUnits.units,
@@ -195,7 +226,10 @@ export default async function GembaDefinitionPage({
         {...(publishedVersion
           ? {
               executionActions: (
-                <ExecutionUnitStartForm
+                <ExecutionUnitStartDialog
+                  dialogTitle="Start walk"
+                  triggerLabel="Start walk"
+                  openTestId="gemba-start-walk-open"
                   action={startGembaWalkFromForm}
                   hiddenFields={
                     <input type="hidden" name="definitionId" value={id} />
@@ -273,33 +307,12 @@ export default async function GembaDefinitionPage({
             )}
           </p>
           {canManage ? (
-            <form
-              action={setGembaDefinitionApplicableUnitsFromForm}
-              className="flex max-w-lg flex-col gap-4"
-            >
-              <input type="hidden" name="definitionId" value={id} />
-              <ApplicableUnitsField
-                options={configurationUnits.units}
-                selectedIds={applicabilitySelection.selectedIds}
-                preservedIds={applicabilitySelection.preservedIds}
-                staleWarning={staleWarning}
-                staleWarningTestId="gemba-stale-applicability-warning"
-                requiresSiteSelection={configurationUnits.requiresSiteSelection}
-                description={APPLICABILITY_DESCRIPTION}
-              />
-              <Button
-                type="submit"
-                variant="outline"
-                className="min-h-11"
-                disabled={
-                  configurationUnits.units.length === 0 &&
-                  applicabilitySelection.preservedIds.length === 0
-                }
-                data-testid="save-gemba-applicability"
-              >
-                Save applicable areas
-              </Button>
-            </form>
+            <GembaApplicabilityEditor
+              definitionId={id}
+              configurationUnits={configurationUnits}
+              applicabilitySelection={applicabilitySelection}
+              staleWarning={staleWarning}
+            />
           ) : null}
         </CardContent>
       </Card>
@@ -310,78 +323,47 @@ export default async function GembaDefinitionPage({
             <CardTitle>Draft v{draftVersion.version_number}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
-            <form
-              action={addGembaSectionFromForm}
-              className="flex flex-wrap items-end gap-3"
-            >
-              <input type="hidden" name="versionId" value={draftVersion.id} />
-              <input type="hidden" name="definitionId" value={id} />
-              <div>
-                <Label htmlFor="sectionTitle">Section title</Label>
-                <Input
-                  id="sectionTitle"
-                  name="sectionTitle"
-                  required
-                  className="mt-2 min-h-11"
-                  data-testid="gemba-section-title"
-                />
-              </div>
-              <Button type="submit" className="min-h-11">
-                Add section
-              </Button>
-            </form>
-
-            {authoring.sections.map((section) => (
-              <div
-                key={section.id}
-                className="rounded-lg border border-border p-4"
-                data-testid="authoring-section"
-              >
-                <p className="font-medium">{section.title}</p>
-                {section.questions.length > 0 ? (
-                  <ul className="mt-3 flex flex-col gap-2">
-                    {section.questions.map((question) => (
-                      <li
-                        key={question.id}
-                        className="rounded-md border border-border bg-surface px-3 py-2"
-                        data-testid="authoring-question"
-                      >
-                        <p className="font-medium">{question.prompt}</p>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    No walk prompts in this section yet.
-                  </p>
-                )}
-                <form
-                  action={addGembaQuestionFromForm}
-                  className="mt-3 flex flex-wrap items-end gap-3"
+            {canManage ? (
+              <GembaDraftAuthoringPanels
+                definitionId={id}
+                versionId={draftVersion.id}
+                sections={authoring.sections.map((section) => ({
+                  id: section.id,
+                  title: section.title,
+                  questions: section.questions.map((question) => ({
+                    id: question.id,
+                    prompt: question.prompt,
+                  })),
+                }))}
+              />
+            ) : (
+              authoring.sections.map((section) => (
+                <div
+                  key={section.id}
+                  className="rounded-lg border border-border p-4"
+                  data-testid="authoring-section"
                 >
-                  <input
-                    type="hidden"
-                    name="versionId"
-                    value={draftVersion.id}
-                  />
-                  <input type="hidden" name="sectionId" value={section.id} />
-                  <input type="hidden" name="definitionId" value={id} />
-                  <div>
-                    <Label htmlFor={`prompt-${section.id}`}>Walk prompt</Label>
-                    <Input
-                      id={`prompt-${section.id}`}
-                      name="prompt"
-                      required
-                      className="mt-2 min-h-11"
-                      data-testid="gemba-question-prompt"
-                    />
-                  </div>
-                  <Button type="submit" className="min-h-11">
-                    Add prompt
-                  </Button>
-                </form>
-              </div>
-            ))}
+                  <p className="font-medium">{section.title}</p>
+                  {section.questions.length > 0 ? (
+                    <ul className="mt-3 flex flex-col gap-2">
+                      {section.questions.map((question) => (
+                        <li
+                          key={question.id}
+                          className="rounded-md border border-border bg-surface px-3 py-2"
+                          data-testid="authoring-question"
+                        >
+                          <p className="font-medium">{question.prompt}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-3 text-sm text-muted-foreground">
+                      No walk prompts in this section yet.
+                    </p>
+                  )}
+                </div>
+              ))
+            )}
 
             <form action={publishGembaDefinitionFromForm}>
               <input type="hidden" name="versionId" value={draftVersion.id} />

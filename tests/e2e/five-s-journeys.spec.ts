@@ -5,6 +5,11 @@ import { expect, test } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
+  clickFiveSCompleteAudit,
+  expectNoFiveSCompleteAudit,
+} from "./helpers/responsive-complete-control";
+import {
+  clickExecutionStartSubmit,
   expectExecutionHeaderLayout,
   selectFirstExecutionUnit,
 } from "./helpers/execution-unit-select";
@@ -28,7 +33,10 @@ test.describe("Milestone 6 5S journeys", () => {
     await expect(
       page.getByRole("heading", { name: "5S Audits" }),
     ).toBeVisible();
-    await expect(page.getByText("Completed audits")).toBeVisible();
+    await page.getByTestId("five-s-analytics-insights-toggle").click();
+    await expect(
+      page.getByTestId("five-s-analytics-stat-completed"),
+    ).toBeVisible();
 
     await page.getByRole("link", { name: "Standards" }).click();
     await expect(page).toHaveURL(/\/platform\/5s\/standards/);
@@ -46,7 +54,7 @@ test.describe("Milestone 6 5S journeys", () => {
       submitTestId: "five-s-start-audit",
     });
     await selectFirstExecutionUnit(page, "five-s-unit-select");
-    await page.getByRole("button", { name: "Start audit" }).click();
+    await clickExecutionStartSubmit(page, "five-s-start-audit");
     await expect(page).toHaveURL(/\/platform\/5s\/audits\//);
     await expect(page.getByLabel("Audit progress")).toBeVisible();
   });
@@ -68,10 +76,11 @@ test.describe("Milestone 6 5S journeys", () => {
     await page.goto("/platform/5s/standards");
     await page.getByRole("link", { name: DEMO_FIVE_S_STANDARD.name }).click();
     await selectFirstExecutionUnit(page, "five-s-unit-select");
-    await page.getByRole("button", { name: "Start audit" }).click();
+    await clickExecutionStartSubmit(page, "five-s-start-audit");
 
-    const yes = page.getByRole("button", { name: "Yes" });
-    const no = page.getByRole("button", { name: "No" });
+    const workspace = page.getByTestId("five-s-audit-workspace");
+    const yes = workspace.getByRole("button", { name: "Yes", exact: true });
+    const no = workspace.getByRole("button", { name: "No", exact: true });
     await expect(yes).toBeVisible();
     await expect(yes).toHaveAttribute("aria-pressed", "false");
     await expect(no).toHaveAttribute("aria-pressed", "false");
@@ -83,10 +92,9 @@ test.describe("Milestone 6 5S journeys", () => {
     await expect(page.getByTestId("evidence-uploader")).toBeVisible();
 
     await page.reload();
-    await expect(page.getByRole("button", { name: "Yes" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    await expect(
+      workspace.getByRole("button", { name: "Yes", exact: true }),
+    ).toHaveAttribute("aria-pressed", "true");
   });
 
   test("admin: completed audit result shows uploaded image evidence", async ({
@@ -97,7 +105,7 @@ test.describe("Milestone 6 5S journeys", () => {
     await page.goto("/platform/5s/standards");
     await page.getByRole("link", { name: DEMO_FIVE_S_STANDARD.name }).click();
     await selectFirstExecutionUnit(page, "five-s-unit-select");
-    await page.getByRole("button", { name: "Start audit" }).click();
+    await clickExecutionStartSubmit(page, "five-s-start-audit");
     await expect(page.getByLabel("Audit progress")).toBeVisible();
 
     const imagePath = join(
@@ -120,13 +128,13 @@ test.describe("Milestone 6 5S journeys", () => {
     await page.getByRole("button", { name: "Yes" }).click();
     await expect(page.getByTestId("answer-save-status")).toContainText("Saved");
 
-    await page.getByTestId("five-s-complete-audit").click();
+    await clickFiveSCompleteAudit(page);
     await expect(page.getByTestId("five-s-audit-result-page")).toBeVisible();
     await expect(page.getByTestId("five-s-audit-result")).toBeVisible();
     await expect(page.getByText("sample.png")).toBeVisible();
     await expect(page.getByTestId("evidence-gallery")).toBeVisible();
     await expect(page.locator('[data-evidence-kind="image"]')).toBeVisible();
-    await expect(page.getByTestId("five-s-complete-audit")).toHaveCount(0);
+    await expectNoFiveSCompleteAudit(page);
 
     await page.reload();
     await expect(page.getByTestId("five-s-audit-result")).toBeVisible();

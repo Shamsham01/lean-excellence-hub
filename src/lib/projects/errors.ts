@@ -81,3 +81,68 @@ export function mapProjectMutationError(error: unknown): string {
 
   return raw;
 }
+
+export function mapCiProjectLinkError(error: unknown): string {
+  const raw =
+    error && typeof error === "object" && "message" in error
+      ? String((error as SupabaseLikeError).message)
+      : error instanceof Error
+        ? error.message
+        : "";
+
+  const code =
+    error && typeof error === "object" && "code" in error
+      ? String((error as SupabaseLikeError).code)
+      : "";
+
+  if (code === "42501" || /42501/.test(raw)) {
+    return "You do not have permission to change this project link.";
+  }
+
+  if (code === "23505" || /23505/.test(raw)) {
+    return "This record is already linked to that project.";
+  }
+
+  if (code === "22023" || /22023/.test(raw)) {
+    if (/already raised this project/i.test(raw)) {
+      return "This case already raised this project.";
+    }
+  }
+
+  if (code === "55000" || /55000/.test(raw)) {
+    if (/only open projects can accept action links/i.test(raw)) {
+      return "Only open projects can accept action links.";
+    }
+    if (/completed or cancelled and cannot accept new links/i.test(raw)) {
+      return "This project is completed or cancelled and cannot accept new links.";
+    }
+    if (/read-only because the project is completed or cancelled/i.test(raw)) {
+      return "This project link is read-only because the project is completed or cancelled.";
+    }
+    if (/belongs to its project/i.test(raw)) {
+      return "This action belongs to its project and cannot be moved or unlinked.";
+    }
+    if (/closed or cancelled/i.test(raw)) {
+      return "This record is closed or cancelled and cannot change project links.";
+    }
+    if (/walk is completed or cancelled/i.test(raw)) {
+      return "This walk is completed or cancelled and cannot change project links.";
+    }
+  }
+
+  if (/project link is not authorised/i.test(raw)) {
+    return "You do not have permission to change this project link.";
+  }
+
+  if (!raw) {
+    return "The project link could not be saved.";
+  }
+
+  if (
+    /postgres|supabase|rpc|uuid|\{.*\}|42501|22023|55000|23505|P0002/i.test(raw)
+  ) {
+    return "The project link could not be saved.";
+  }
+
+  return raw;
+}

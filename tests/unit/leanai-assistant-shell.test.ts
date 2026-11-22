@@ -12,8 +12,10 @@ describe("LeanAI assistant platform shell integration", () => {
     const shell = read("src/components/platform/platform-shell.tsx");
     expect(shell).toContain("LeanAiAssistantShell");
     expect(shell).toContain("organisationId");
+    expect(shell).toContain("platform-main-viewport");
+    expect(shell).toContain("overflow-y-hidden");
     expect(shell).toContain(
-      "platform-scroll flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain",
+      "platform-scroll flex min-h-0 min-w-0 flex-1 flex-col",
     );
 
     const chrome = read("src/components/leanai/leanai-assistant-chrome.tsx");
@@ -40,7 +42,7 @@ describe("LeanAI assistant platform shell integration", () => {
     );
     expect(assistantShell).toContain("fallback={null}");
     expect(assistantShell).toContain(
-      "lg:h-full lg:max-h-full lg:overflow-hidden",
+      "h-full max-h-full min-h-0 min-w-0 flex-1 overflow-hidden",
     );
     expect(assistantShell).toContain('data-testid="leanai-assistant-shell"');
     expect(assistantShell.indexOf("{children}")).toBe(
@@ -50,10 +52,12 @@ describe("LeanAI assistant platform shell integration", () => {
 
     const panel = read("src/components/leanai/leanai-assistant-panel.tsx");
     expect(panel).toContain('aria-label="LeanAI assistant"');
-    expect(panel).toContain("Ask LeanAI");
+    expect(panel).toContain("LeanAiComposer");
     expect(panel).not.toContain("Message LeanAI");
     expect(panel).toContain("aria-live");
-    expect(panel).toContain("leanai-assistant-input");
+    const composer = read("src/components/leanai/leanai-composer.tsx");
+    expect(composer).toContain("Ask LeanAI");
+    expect(composer).toContain("leanai-assistant-input");
     expect(panel).toContain("overscroll-y-contain");
     expect(panel).toContain("overflow-hidden");
     expect(panel).toContain("platform-scroll");
@@ -114,7 +118,9 @@ describe("LeanAI assistant platform shell integration", () => {
     );
 
     const problemSolving = read("src/platform/ai/orchestrator.ts");
-    expect(problemSolving).toContain("buildOpenAiTools()");
+    expect(problemSolving).toContain(
+      "buildProblemSolvingFacilitatorProviderTools",
+    );
     expect(problemSolving).not.toContain("workspaceAssistantTools");
     expect(problemSolving).not.toContain("web_search");
 

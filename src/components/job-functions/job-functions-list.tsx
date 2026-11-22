@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import { ContextualHelpLabel } from "@/components/help/contextual-help";
 import { Button } from "@/components/ui/button";
 import {
@@ -146,9 +148,7 @@ export function JobFunctionsList({
                     />
                   </div>
                   {message ? (
-                    <p className="text-sm text-destructive" role="alert">
-                      {message}
-                    </p>
+                    <InlineAlert tone="error">{message}</InlineAlert>
                   ) : null}
                 </div>
                 <DialogFooter>

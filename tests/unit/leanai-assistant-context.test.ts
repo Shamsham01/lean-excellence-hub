@@ -395,6 +395,7 @@ describe("Coach history display", () => {
       applicationAiAvailable: true,
       conversationAvailable: true,
       conversationUnavailableReason: null,
+      conversationUnavailableCta: null,
       contextLabel: "LeanAI Settings",
       page: {
         module: "lean_ai",
@@ -411,6 +412,8 @@ describe("Coach history display", () => {
       remainingSetup: [],
       relevantState: {},
       allowedActions: [],
+      fieldGuidance: [],
+      guidanceFacts: [],
       recommendation: null,
     };
     const page = coachPageContextFromView(view);

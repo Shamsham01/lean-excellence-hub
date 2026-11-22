@@ -43,7 +43,7 @@ export function buildAuthEmailDelivery(
 
   switch (emailData.email_action_type) {
     case "signup": {
-      const delivery = renderSignupConfirmationEmail(confirmUrl);
+      const delivery = renderSignupConfirmationEmail(confirmUrl, origin);
       return {
         ok: true,
         delivery: {
@@ -53,7 +53,7 @@ export function buildAuthEmailDelivery(
       };
     }
     case "recovery": {
-      const delivery = renderRecoveryEmail(confirmUrl);
+      const delivery = renderRecoveryEmail(confirmUrl, origin);
       return {
         ok: true,
         delivery: {
@@ -69,6 +69,7 @@ export function buildAuthEmailDelivery(
         "You have been invited to create a Lean Excellence Hub account.",
         "Accept invitation",
         confirmUrl,
+        origin,
       );
       return {
         ok: true,
@@ -85,6 +86,7 @@ export function buildAuthEmailDelivery(
         "Use the secure link below to sign in to Lean Excellence Hub.",
         "Sign in",
         confirmUrl,
+        origin,
       );
       return {
         ok: true,
@@ -102,6 +104,7 @@ export function buildAuthEmailDelivery(
         "Confirm this email address change for your Lean Excellence Hub account.",
         "Confirm email change",
         confirmUrl,
+        origin,
       );
       return {
         ok: true,

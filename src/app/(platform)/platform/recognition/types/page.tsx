@@ -26,7 +26,6 @@ export default async function RecognitionTypesPage() {
     <div className="flex flex-col gap-8" data-testid="recognition-types-page">
       <PageHeader
         title="Recognition types"
-        description="Define the kinds of contribution your organisation celebrates."
         actions={
           <Button variant="outline" size="sm" asChild>
             <AppLink

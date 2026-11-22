@@ -1,5 +1,8 @@
 import { AuthCard } from "@/components/auth/auth-card";
+import { AuthBrandMark } from "@/components/brand/auth-brand-mark";
+import { FoundingOrganisationDomainHint } from "@/components/onboarding/founding-organisation-domain-hint";
 import { FoundingOrganisationForm } from "@/components/onboarding/founding-organisation-form";
+import { loadFoundingOrganisationDomainHint } from "@/modules/onboarding/founding-organisation-hint";
 import { requireClaims } from "@/modules/identity/session";
 import { pathForOrganisationStatus } from "@/modules/organisations/access-path";
 import { listEligibleOrganisations } from "@/modules/organisations/context";
@@ -34,17 +37,26 @@ export default async function CreateOrganisationPage({
   }
 
   const { error } = await searchParams;
+  const domainHint = await loadFoundingOrganisationDomainHint(async () =>
+    supabase.rpc("current_founding_organisation_domain_hint"),
+  );
 
   return (
     <div
       className="flex min-h-dvh flex-col items-center justify-center px-4 py-10"
       data-testid="create-organisation-page"
     >
+      <AuthBrandMark className="mb-8" />
       <div className="w-full max-w-lg">
         <AuthCard
           title="Create your organisation"
           description="Name the company or group first, then the site where you are starting Lean Excellence Hub. Billing confirms the organisation before setup continues."
         >
+          {domainHint === "possible_existing_organisation" ? (
+            <div className="mb-6">
+              <FoundingOrganisationDomainHint />
+            </div>
+          ) : null}
           <FoundingOrganisationForm
             action={createFoundingOrganisation}
             {...(error ? { error } : {})}

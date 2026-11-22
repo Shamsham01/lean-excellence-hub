@@ -1,6 +1,9 @@
 import { fiveSScoringScaleIsValid } from "@/modules/5s/scoring-scale";
 
-import { FIVE_S_TEMPLATE_QUESTION_TYPES } from "./types";
+import {
+  FIVE_S_TEMPLATE_QUESTION_TYPES,
+  LEH_WORKPLACE_5S_STANDARD_KEY,
+} from "./types";
 import type {
   FiveSQuickStartTemplate,
   FiveSTemplateCounts,
@@ -33,6 +36,9 @@ export function fiveSQuestionTypeLabel(
       return "Short text";
     case "long_text":
       return "Long text";
+    case "number":
+    case "percentage":
+      return "Score";
     default:
       return questionType;
   }
@@ -66,8 +72,8 @@ export function validateFiveSQuickStartTemplate(
       issues.push(`Duplicate category “${category.name}”.`);
     }
     names.add(name);
-    if (category.questions.length < 1 || category.questions.length > 6) {
-      issues.push(`${category.name} needs between 1 and 6 questions.`);
+    if (category.questions.length < 4 || category.questions.length > 6) {
+      issues.push(`${category.name} needs between 4 and 6 questions.`);
     }
     for (const question of category.questions) {
       questions += 1;
@@ -85,8 +91,19 @@ export function validateFiveSQuickStartTemplate(
       }
     }
   }
+  if (questions < 20) {
+    issues.push("A Quick Start standard needs at least 20 questions.");
+  }
   if (questions > 30) {
     issues.push("A Quick Start standard can contain at most 30 questions.");
+  }
+  if (
+    template.key === LEH_WORKPLACE_5S_STANDARD_KEY &&
+    template.categories.some((category) =>
+      category.questions.some((question) => question.questionType !== "score"),
+    )
+  ) {
+    issues.push("Workplace Quick Start questions must all use Score type.");
   }
   if (!fiveSScoringScaleIsValid(template.scoringScale)) {
     issues.push(

@@ -43,12 +43,18 @@ test.describe("M1 team member experience closure", () => {
     await signInAsDemoUser(page, "operator");
     await page.goto("/platform/actions");
     await expect(page.getByTestId("actions-page")).toBeVisible();
-    await expect(page.getByTestId("actions-create-form")).not.toBeVisible();
+    await expect(page.getByTestId("actions-create-dialog")).not.toBeVisible();
+    await expect(page.getByTestId("actions-add-new")).not.toBeVisible();
   });
 
-  test("admin actions page still renders create form", async ({ page }) => {
+  test("admin actions page opens create dialog from Add new", async ({
+    page,
+  }) => {
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/actions");
+    await expect(page.getByTestId("actions-create-dialog")).not.toBeVisible();
+    await page.getByTestId("actions-add-new").click();
+    await expect(page.getByTestId("actions-create-dialog")).toBeVisible();
     await expect(page.getByTestId("actions-create-form")).toBeVisible();
   });
 

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { CreateCaseWizard } from "@/components/problem-solving/create-case-wizard";
+import { loadProjectPickerOptions } from "@/lib/projects/load-project-picker-options";
 import { PageHeader } from "@/components/platform/page-header";
 import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
 import { callProblemSolvingRpc } from "@/lib/problem-solving/supabase-untyped";
@@ -13,9 +14,12 @@ export default async function NewProblemSolvingCasePage() {
   if (!canCreate) notFound();
 
   const supabase = await createServerSupabaseClient();
-  const selectorOptions = await loadSiteScopedSelectorOptions({
-    requireConcreteSite: true,
-  });
+  const [selectorOptions, projectPicker] = await Promise.all([
+    loadSiteScopedSelectorOptions({
+      requireConcreteSite: true,
+    }),
+    loadProjectPickerOptions(),
+  ]);
   await callProblemSolvingRpc(
     supabase,
     "ensure_problem_solving_methods_provisioned",
@@ -41,6 +45,7 @@ export default async function NewProblemSolvingCasePage() {
         members={selectorOptions.people}
         requiresSiteSelection={selectorOptions.requiresSiteSelection}
         methods={methodsData?.items ?? []}
+        projects={projectPicker.projects}
       />
     </div>
   );

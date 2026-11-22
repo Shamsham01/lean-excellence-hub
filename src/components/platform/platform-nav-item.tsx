@@ -29,15 +29,23 @@ export function PlatformNavItemLink({
       data-testid={`platform-nav-${item.icon}`}
       {...(onNavigate ? { onClick: onNavigate } : {})}
       className={cn(
-        "flex min-h-11 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar focus-visible:outline-none",
+        "leh-menu-item focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar focus-visible:outline-none",
         active
-          ? "bg-sidebar-accent font-semibold text-sidebar-foreground"
-          : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
+          ? "leh-menu-item-active font-semibold"
+          : "leh-menu-item-inactive",
       )}
       aria-current={active ? "page" : undefined}
     >
-      <PlatformNavIconComponent icon={item.icon} className="size-4 shrink-0" />
-      <span className="truncate">{item.label}</span>
+      <PlatformNavIconComponent
+        icon={item.icon}
+        className="size-[18px] shrink-0"
+      />
+      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+      {item.navBadge ? (
+        <span className="font-mono-data rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-primary uppercase">
+          {item.navBadge}
+        </span>
+      ) : null}
     </AppLink>
   );
 }

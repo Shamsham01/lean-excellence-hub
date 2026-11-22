@@ -114,13 +114,36 @@ export async function loginAndSelectOrganisation(
 }
 
 export async function ensureLeanAiAssistantOpen(page: Page) {
+  for (const testId of [
+    "gemba-add-prompt-dialog",
+    "gemba-add-section-dialog",
+    "five-s-add-category-dialog",
+    "five-s-add-question-dialog",
+    "framework-add-level-dialog",
+    "framework-add-pillar-dialog",
+    "framework-add-criterion-dialog",
+    "framework-add-question-dialog",
+    "people-invite-dialog",
+    "maturity-start-assessment-dialog",
+  ]) {
+    const dialog = page.getByTestId(testId);
+    if (!(await dialog.isVisible().catch(() => false))) {
+      continue;
+    }
+    const close = dialog.getByRole("button", { name: "Close" });
+    if (await close.isVisible().catch(() => false)) {
+      await close.click();
+      await expect(dialog).toBeHidden({ timeout: 10_000 });
+    }
+  }
+
   const pane = page.getByTestId("leanai-assistant-pane");
   const openButton = page.getByTestId("leanai-assistant-open");
   await expect(pane.or(openButton).first()).toBeVisible({ timeout: 15_000 });
   if (await pane.isVisible().catch(() => false)) {
     return pane;
   }
-  await openButton.click();
+  await openButton.click({ timeout: 30_000 });
   await expect(pane).toBeVisible();
   return pane;
 }

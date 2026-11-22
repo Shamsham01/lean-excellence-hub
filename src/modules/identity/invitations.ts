@@ -51,3 +51,23 @@ export async function acceptInvitationSignupBinding(
 
   return data as string;
 }
+
+export async function replaceExpiredInvitationSignupBinding(
+  bindingId: string,
+  supabase: RouteHandlerSupabaseClient | null = null,
+) {
+  const client = supabase ?? (await createServerSupabaseClient());
+  await client.auth.refreshSession();
+  const { data, error } = await client.rpc(
+    "replace_expired_invitation_signup_binding",
+    {
+      target_binding_id: bindingId,
+    },
+  );
+
+  if (error || !data) {
+    throw new Error("Invitation is unavailable.");
+  }
+
+  return data as string;
+}

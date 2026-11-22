@@ -1,5 +1,10 @@
 import { BenefitPortfolio } from "@/components/benefits/benefit-portfolio";
+import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
 import { PageHeader } from "@/components/platform/page-header";
+import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
+import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
+import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
+import { ModulePortfolioNewLink } from "@/components/billing/module-portfolio-actions";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { callBenefitRpc } from "@/lib/benefits/supabase-untyped";
@@ -7,7 +12,9 @@ import type {
   BenefitsListResponse,
   BenefitsOverview,
 } from "@/lib/benefits/types";
+import { BENEFITS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function BenefitsPortfolioPage({
@@ -17,12 +24,24 @@ export default async function BenefitsPortfolioPage({
     status?: string;
     search?: string;
     benefit_class?: string;
+    range?: string;
   }>;
 }) {
   const params = await searchParams;
-  const supabase = await createServerSupabaseClient();
-  const canCreate = await currentMemberHasPermission("benefits.create");
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: BENEFITS_PERMISSIONS.read,
+    module: "benefits",
+    title: "Benefits",
+    denyWithoutAccess: false,
+    baselineOpensModule: true,
+  });
+  if (workplaceView) return workplaceView;
 
+  const supabase = await createServerSupabaseClient();
+  const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
+    parseAnalyticsRangeDays(params.range),
+  );
+  const canCreate = await currentMemberHasPermission("benefits.create");
   const { data: overviewData } = await callBenefitRpc<BenefitsOverview>(
     supabase,
     "get_benefits_overview",
@@ -51,18 +70,15 @@ export default async function BenefitsPortfolioPage({
     <div className="flex flex-col gap-8" data-testid="benefits-portfolio-page">
       <PageHeader
         title="Benefits"
-        description="Forecast, validate, and track improvement benefits across the portfolio."
         actions={
           <div className="flex gap-2">
             {canCreate ? (
-              <Button size="sm" asChild>
-                <AppLink
-                  href="/platform/benefits/new"
-                  data-testid="benefits-new-link"
-                >
-                  New benefit
-                </AppLink>
-              </Button>
+              <ModulePortfolioNewLink
+                href="/platform/benefits/new"
+                testId="benefits-new-link"
+              >
+                New benefit
+              </ModulePortfolioNewLink>
             ) : null}
             <Button size="sm" variant="outline" asChild>
               <AppLink
@@ -92,6 +108,14 @@ export default async function BenefitsPortfolioPage({
         benefitClassFilter={params.benefit_class ?? null}
         canCreate={canCreate}
       />
+      <ModulePageInsightsDeferred
+        module="benefits"
+        rangeDays={analyticsRange.days}
+        testId="benefits-analytics"
+        donutCenterLabel="Benefits"
+        showAgeingTable={false}
+      />
+      <WorkplaceSharedRecords module="benefits" />
     </div>
   );
 }

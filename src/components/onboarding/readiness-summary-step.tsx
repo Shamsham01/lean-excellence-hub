@@ -1,5 +1,7 @@
 "use client";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import { completeStructureFirstOnboarding } from "@/app/onboarding/setup/actions";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
@@ -137,10 +139,10 @@ export function ReadinessSummaryStep({
       </div>
 
       {completeError ? (
-        <p className="text-sm text-destructive" role="alert">
+        <InlineAlert tone="error">
           Guided setup could not be completed. Check organisation access and try
           again.
-        </p>
+        </InlineAlert>
       ) : null}
 
       <div className="flex flex-col gap-3 sm:flex-row">

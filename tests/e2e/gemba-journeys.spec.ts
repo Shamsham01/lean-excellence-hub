@@ -6,10 +6,26 @@ import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
+import { chooseFirstApplicableUnit } from "./helpers/applicable-units";
 import {
+  clickGembaCompleteWalk,
+  expectNoGembaCompleteWalk,
+} from "./helpers/responsive-complete-control";
+import {
+  clickExecutionStartSubmit,
   expectExecutionHeaderLayout,
   selectFirstExecutionUnit,
 } from "./helpers/execution-unit-select";
+import {
+  openGembaAddPrompt,
+  openGembaAddSection,
+} from "./helpers/form-dialogs";
+import {
+  expectGembaBrowserHistoryPrompt,
+  expectGembaPromptHeading,
+  fillGembaWalkNotesExpectSaved,
+  navigateGembaPrompt,
+} from "./helpers/gemba-walk-navigation";
 import { DEMO_GEMBA_DEFINITION } from "../../scripts/demo-seed/constants";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
@@ -33,6 +49,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await expect(
       page.getByRole("heading", { name: "Walks in progress" }),
     ).toBeVisible();
+    await page.getByTestId("gemba-analytics-insights-toggle").click();
     await expect(page.getByText("Completed walks")).toBeVisible();
 
     await page.getByRole("link", { name: "Definitions" }).click();
@@ -50,7 +67,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
       submitTestId: "gemba-start-walk",
     });
     await selectFirstExecutionUnit(page, "gemba-unit-select");
-    await expect(page.getByTestId("gemba-start-walk")).toBeEnabled();
+    await expect(page.getByTestId("gemba-start-walk-open")).toBeEnabled();
   });
 
   test("admin: walk history shows completed demo walk", async ({ page }) => {
@@ -77,32 +94,40 @@ test.describe("Milestone 6 Gemba journeys", () => {
     const filledNotes = `${typedNotes} Pasted follow-up: labels drifting.`;
 
     await page.getByLabel("Name").fill(name);
-    await page.getByTestId("applicable-unit-checkbox").first().check();
+    await chooseFirstApplicableUnit(page);
     await page.getByRole("button", { name: "Create draft" }).click();
     await expect(page.getByRole("heading", { name })).toBeVisible();
 
+    await openGembaAddSection(page);
     await page.getByLabel("Section title").fill("Safety");
     await page.getByRole("button", { name: "Add section" }).click();
     await expect(page.getByTestId("authoring-section")).toContainText("Safety");
 
+    await openGembaAddPrompt(page);
     await page.getByTestId("gemba-question-prompt").fill(firstPrompt);
     await page.getByRole("button", { name: "Add prompt" }).click();
+    await expect(page.getByTestId("gemba-add-prompt-dialog")).toBeHidden({
+      timeout: 15_000,
+    });
     await expect(page.getByTestId("authoring-question")).toHaveCount(1);
 
+    await openGembaAddPrompt(page);
     await page.getByTestId("gemba-question-prompt").fill(secondPrompt);
     await page.getByRole("button", { name: "Add prompt" }).click();
+    await expect(page.getByTestId("gemba-add-prompt-dialog")).toBeHidden({
+      timeout: 15_000,
+    });
     await expect(page.getByTestId("authoring-question")).toHaveCount(2);
 
     await page.getByTestId("publish-gemba-definition").click();
     await expect(page.getByText(/v1 · published/i)).toBeVisible();
 
     await selectFirstExecutionUnit(page, "gemba-unit-select");
-    await page.getByRole("button", { name: "Start walk" }).click();
+    await clickExecutionStartSubmit(page, "gemba-start-walk");
     await expect(page).toHaveURL(/\/platform\/gemba\/walks\//);
     await expect(page.getByTestId("gemba-walk-workspace")).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: firstPrompt }),
-    ).toBeVisible();
+    await expect(page).toHaveURL(/prompt=/, { timeout: 15_000 });
+    await expectGembaPromptHeading(page, firstPrompt);
 
     const notes = page.getByTestId("gemba-walk-notes");
     await expect(notes).toBeVisible();
@@ -111,7 +136,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await expect(notes).toHaveValue(typedNotes);
     await notes.fill(filledNotes);
     await expect(notes).toHaveValue(filledNotes);
-    await expect(page.getByTestId("answer-save-status")).toContainText("Saved");
+    await fillGembaWalkNotesExpectSaved(page, filledNotes);
 
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await expect(
@@ -149,21 +174,17 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await page.goto(walkUrl);
     await expect(page.getByTestId("gemba-walk-notes")).toHaveValue(filledNotes);
 
-    await page.getByTestId("gemba-complete-walk").click();
+    await clickGembaCompleteWalk(page);
     await expect(
       page.getByTestId("gemba-completion-required-unanswered"),
     ).toHaveText("Required prompts unanswered: 1");
     await expect(page.getByTestId("gemba-confirm-complete")).toBeDisabled();
     await page.getByRole("button", { name: "Cancel" }).click();
 
-    await page.getByRole("button", { name: "Next", exact: true }).click();
-    await expect(
-      page.getByRole("heading", { name: secondPrompt }),
-    ).toBeVisible();
-    await page.getByTestId("gemba-walk-notes").fill("Second prompt notes.");
-    await expect(page.getByTestId("answer-save-status")).toContainText("Saved");
+    await navigateGembaPrompt(page, "Next", secondPrompt);
+    await fillGembaWalkNotesExpectSaved(page, "Second prompt notes.");
 
-    await page.getByTestId("gemba-complete-walk").click();
+    await clickGembaCompleteWalk(page);
     await expect(
       page.getByTestId("gemba-completion-required-unanswered"),
     ).toHaveText("Required prompts unanswered: 0");
@@ -204,43 +225,67 @@ test.describe("Milestone 6 Gemba journeys", () => {
     const summaryNotes = "Walk complete. One intentional observation remains.";
 
     await page.getByLabel("Name").fill(name);
-    await page.getByTestId("applicable-unit-checkbox").first().check();
+    await chooseFirstApplicableUnit(page);
     await page.getByRole("button", { name: "Create draft" }).click();
     await expect(page.getByRole("heading", { name })).toBeVisible();
 
+    await openGembaAddSection(page);
     await page.getByLabel("Section title").fill("Safety");
     await page.getByRole("button", { name: "Add section" }).click();
     await expect(page.getByTestId("authoring-section")).toContainText("Safety");
 
-    await page.getByTestId("gemba-question-prompt").fill(firstPrompt);
-    await page.getByRole("button", { name: "Add prompt" }).click();
-    await page.getByTestId("gemba-question-prompt").fill(secondPrompt);
-    await page.getByRole("button", { name: "Add prompt" }).click();
+    await openGembaAddPrompt(page);
+    const promptDialog = page.getByTestId("gemba-add-prompt-dialog");
+    await promptDialog.getByTestId("gemba-question-prompt").fill(firstPrompt);
+    await promptDialog.getByRole("button", { name: "Add prompt" }).click();
+    await expect(promptDialog).toBeHidden({
+      timeout: 15_000,
+    });
+    await expect(page.getByTestId("authoring-question")).toHaveCount(1);
+    await openGembaAddPrompt(page);
+    await promptDialog.getByTestId("gemba-question-prompt").fill(secondPrompt);
+    await promptDialog.getByRole("button", { name: "Add prompt" }).click();
+    await expect(page.getByTestId("gemba-add-prompt-dialog")).toBeHidden({
+      timeout: 15_000,
+    });
     await page.getByTestId("publish-gemba-definition").click();
     await expect(page.getByText(/v1 · published/i)).toBeVisible();
 
     await selectFirstExecutionUnit(page, "gemba-unit-select");
-    await page.getByRole("button", { name: "Start walk" }).click();
+    await clickExecutionStartSubmit(page, "gemba-start-walk");
     await expect(page.getByTestId("gemba-walk-workspace")).toBeVisible();
     await expect(page.getByTestId("gemba-walk-status")).toHaveText(
       "In progress",
     );
+    await expect(page).toHaveURL(/prompt=/, { timeout: 15_000 });
+    await expectGembaPromptHeading(page, firstPrompt);
 
-    await page.getByTestId("gemba-walk-notes").fill(firstNotes);
-    await expect(page.getByTestId("answer-save-status")).toContainText("Saved");
+    await fillGembaWalkNotesExpectSaved(page, firstNotes);
+    const firstPromptUrl = page.url();
 
-    await page.getByRole("button", { name: "Next", exact: true }).click();
-    await expect(
-      page.getByRole("heading", { name: secondPrompt }),
-    ).toBeVisible();
+    await navigateGembaPrompt(page, "Next", secondPrompt);
+    const secondPromptUrl = page.url();
     await expect(
       page.getByRole("button", { name: "Next", exact: true }),
     ).toBeDisabled();
 
+    await expectGembaBrowserHistoryPrompt(
+      page,
+      "back",
+      firstPrompt,
+      firstPromptUrl,
+    );
+    await expectGembaBrowserHistoryPrompt(
+      page,
+      "forward",
+      secondPrompt,
+      secondPromptUrl,
+    );
+
     await page.reload();
-    await expect(
-      page.getByRole("heading", { name: secondPrompt }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: secondPrompt })).toBeVisible(
+      { timeout: 15_000 },
+    );
 
     await page.getByTestId("gemba-capture-observation").click();
     await page
@@ -258,7 +303,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
     );
     await expect(page.getByText("Improvement opportunity")).toBeVisible();
 
-    await page.getByTestId("gemba-complete-walk").click();
+    await clickGembaCompleteWalk(page);
     await expect(
       page.getByTestId("gemba-completion-observation-count"),
     ).toContainText("Observations: 1");
@@ -364,12 +409,12 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await expect(
       page.getByRole("heading", { name: secondPrompt }),
     ).toBeVisible();
-    await page
-      .getByTestId("gemba-walk-notes")
-      .fill("Second prompt notes after observation cleanup.");
-    await expect(page.getByTestId("answer-save-status")).toContainText("Saved");
+    await fillGembaWalkNotesExpectSaved(
+      page,
+      "Second prompt notes after observation cleanup.",
+    );
 
-    await page.getByTestId("gemba-complete-walk").click();
+    await clickGembaCompleteWalk(page);
     await expect(
       page.getByTestId("gemba-completion-observation-count"),
     ).toContainText("Observations: 1");
@@ -422,35 +467,40 @@ test.describe("Milestone 6 Gemba journeys", () => {
     const imagePath = join(fixtureDirectory, "sample.webp");
 
     await page.getByLabel("Name").fill(name);
-    await page.getByTestId("applicable-unit-checkbox").first().check();
+    await chooseFirstApplicableUnit(page);
     await page.getByRole("button", { name: "Create draft" }).click();
     await expect(page.getByRole("heading", { name })).toBeVisible();
 
+    await openGembaAddSection(page);
     await page.getByLabel("Section title").fill("Safety");
     await page.getByRole("button", { name: "Add section" }).click();
     await expect(page.getByTestId("authoring-section")).toContainText("Safety");
 
-    await page.getByTestId("gemba-question-prompt").fill(firstPrompt);
-    await page.getByRole("button", { name: "Add prompt" }).click();
-    await page.getByTestId("gemba-question-prompt").fill(secondPrompt);
-    await page.getByRole("button", { name: "Add prompt" }).click();
+    await openGembaAddPrompt(page);
+    const promptDialog = page.getByTestId("gemba-add-prompt-dialog");
+    await promptDialog.getByTestId("gemba-question-prompt").fill(firstPrompt);
+    await promptDialog.getByRole("button", { name: "Add prompt" }).click();
+    await expect(promptDialog).toBeHidden({
+      timeout: 15_000,
+    });
+    await expect(page.getByTestId("authoring-question")).toHaveCount(1);
+    await openGembaAddPrompt(page);
+    await promptDialog.getByTestId("gemba-question-prompt").fill(secondPrompt);
+    await promptDialog.getByRole("button", { name: "Add prompt" }).click();
+    await expect(page.getByTestId("gemba-add-prompt-dialog")).toBeHidden({
+      timeout: 15_000,
+    });
     await page.getByTestId("publish-gemba-definition").click();
     await expect(page.getByText(/v1 · published/i)).toBeVisible();
 
     await selectFirstExecutionUnit(page, "gemba-unit-select");
-    await page.getByRole("button", { name: "Start walk" }).click();
+    await clickExecutionStartSubmit(page, "gemba-start-walk");
     await expect(page.getByTestId("gemba-walk-workspace")).toBeVisible();
 
-    await page.getByTestId("gemba-walk-notes").fill("First prompt notes.");
-    await expect(page.getByTestId("answer-save-status")).toContainText("Saved");
-    await page.getByRole("button", { name: "Next", exact: true }).click();
-    await expect(
-      page.getByRole("heading", { name: secondPrompt }),
-    ).toBeVisible();
-    await expect(page).toHaveURL(/prompt=/);
+    await fillGembaWalkNotesExpectSaved(page, "First prompt notes.");
+    await navigateGembaPrompt(page, "Next", secondPrompt);
 
-    await page.getByTestId("gemba-walk-notes").fill("Second prompt notes.");
-    await expect(page.getByTestId("answer-save-status")).toContainText("Saved");
+    await fillGembaWalkNotesExpectSaved(page, "Second prompt notes.");
     await page.getByTestId("evidence-file-input").setInputFiles(imagePath);
     await expect(page.getByText("Evidence attached")).toBeVisible();
     await expect(page.getByText("sample.webp")).toBeVisible();
@@ -466,7 +516,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
       observationText,
     );
 
-    await page.getByTestId("gemba-complete-walk").click();
+    await clickGembaCompleteWalk(page);
     await expect(
       page.getByTestId("gemba-completion-required-unanswered"),
     ).toHaveText("Required prompts unanswered: 0");
@@ -488,7 +538,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await expect(page.getByText("sample.webp")).toBeVisible();
     await expect(page.getByTestId("evidence-gallery")).toBeVisible();
     await expect(page.locator('[data-evidence-kind="image"]')).toBeVisible();
-    await expect(page.getByTestId("gemba-complete-walk")).toHaveCount(0);
+    await expectNoGembaCompleteWalk(page);
     await expect(page.getByRole("button", { name: "Edit" })).toHaveCount(0);
 
     await page.reload();
@@ -497,7 +547,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await expect(page.getByTestId("gemba-walk-status")).toHaveText("Completed");
     await expect(page.getByText("sample.webp")).toBeVisible();
     await expect(page.locator('[data-evidence-kind="image"]')).toBeVisible();
-    await expect(page.getByTestId("gemba-complete-walk")).toHaveCount(0);
+    await expectNoGembaCompleteWalk(page);
     expect(new URL(page.url()).searchParams.has("prompt")).toBe(false);
   });
 });

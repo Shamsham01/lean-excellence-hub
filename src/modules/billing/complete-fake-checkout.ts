@@ -3,6 +3,7 @@ import "server-only";
 import { loadCurrentOrganisationBillingManagement } from "./current-billing";
 import { isBillingInterval, isCheckoutPlanCode } from "./billing-state";
 import { isFakeBillingEnabled } from "./env";
+import { isSelfServiceCheckoutEnabled } from "./checkout-control";
 import { getFakeBillingProvider } from "./get-provider";
 import { BillingProviderError } from "./provider";
 import { lookupOpenCheckoutSession } from "./repository";
@@ -65,6 +66,12 @@ async function requireAuthorisedFakeCheckout() {
 }
 
 export async function completeFakeCheckoutSession() {
+  if (!isSelfServiceCheckoutEnabled()) {
+    throw new BillingProviderError(
+      "Sandbox checkout is temporarily unavailable.",
+      "unsupported",
+    );
+  }
   const { organisationId, sessionId } = await requireAuthorisedFakeCheckout();
   const provider = getFakeBillingProvider();
 

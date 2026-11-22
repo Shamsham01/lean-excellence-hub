@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 const getClaims = vi.fn();
+const signOut = vi.fn(async () => ({ error: null }));
 const redirect = vi.fn((path: string) => {
   throw Object.assign(new Error(`REDIRECT:${path}`), {
     digest: `NEXT_REDIRECT;replace;${path}`,
@@ -32,9 +33,17 @@ vi.mock("@/platform/http/request-path", () => ({
   readRequestPathname: async () => "/platform/gemba",
 }));
 
+vi.mock("@/platform/env", () => ({
+  getServerEnvironment: () => ({ APP_ORIGIN: "http://127.0.0.1:3000" }),
+  getPublicEnvironment: () => ({
+    NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "test-key",
+  }),
+}));
+
 vi.mock("@/platform/supabase/server", () => ({
   createServerSupabaseClient: async () => ({
-    auth: { getClaims },
+    auth: { getClaims, signOut },
   }),
 }));
 
@@ -54,18 +63,25 @@ describe("requireClaims", () => {
   it("redirects to login when getClaims succeeds but claims.sub is missing", async () => {
     getClaims.mockResolvedValueOnce({ data: { claims: null }, error: null });
 
-    await expect(requireClaims()).rejects.toThrow("REDIRECT:/login");
-    expect(redirect).toHaveBeenCalledWith("/login");
+    await expect(requireClaims()).rejects.toThrow(
+      "REDIRECT:/login?next=%2Fplatform%2Fgemba",
+    );
+    expect(signOut).toHaveBeenCalledWith({ scope: "local" });
   });
 
-  it("throws PlatformBoundaryError when getClaims returns a Supabase error", async () => {
+  it("redirects to login when getClaims returns a recoverable auth error", async () => {
     getClaims.mockResolvedValueOnce({
       data: null,
-      error: { code: "PGRST301", message: "JWT expired" },
+      error: {
+        code: "refresh_token_not_found",
+        message: "Invalid Refresh Token: Refresh Token Not Found",
+      },
     });
 
-    await expect(requireClaims()).rejects.toBeInstanceOf(PlatformBoundaryError);
-    expect(redirect).not.toHaveBeenCalled();
+    await expect(requireClaims()).rejects.toThrow(
+      "REDIRECT:/login?next=%2Fplatform%2Fgemba",
+    );
+    expect(signOut).toHaveBeenCalledWith({ scope: "local" });
   });
 
   it("throws PlatformBoundaryError when getClaims throws a transport error", async () => {

@@ -7,6 +7,7 @@ import { SkillAssessmentDialog } from "@/components/people/skill-assessment-dial
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { formatSkillAssessmentMethodLabel } from "@/modules/skills/assessment-methods";
 
 type GapRow = {
   skill_id: string;
@@ -67,6 +68,9 @@ type CapabilityProfileProps = {
   canValidateSkills: boolean;
   canSelfAssess: boolean;
   canCreateActions: boolean;
+  isSelf?: boolean;
+  trainingUnavailable?: boolean;
+  skillsUnavailable?: boolean;
 };
 
 function trainingStatusLabel(req: RequirementRow) {
@@ -84,6 +88,9 @@ export function CapabilityProfile({
   canValidateSkills,
   canSelfAssess,
   canCreateActions,
+  isSelf = false,
+  trainingUnavailable = false,
+  skillsUnavailable = false,
 }: CapabilityProfileProps) {
   const [assessmentOpen, setAssessmentOpen] = useState(false);
   const [assessmentMode, setAssessmentMode] = useState<"validation" | "self">(
@@ -144,9 +151,23 @@ export function CapabilityProfile({
               <h3 className="text-sm font-medium text-muted-foreground">
                 Required
               </h3>
-              {requirements.length === 0 ? (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  No requirements configured.
+              {trainingUnavailable ? (
+                <p
+                  className="mt-2 text-sm text-destructive"
+                  role="alert"
+                  data-testid="capability-training-unavailable"
+                >
+                  Training details could not be loaded. This is not the same as
+                  having no training recorded.
+                </p>
+              ) : requirements.length === 0 ? (
+                <p
+                  className="mt-2 text-sm text-muted-foreground"
+                  data-testid="capability-training-empty"
+                >
+                  {isSelf
+                    ? "No training requirements are recorded for you yet."
+                    : "No requirements configured."}
                 </p>
               ) : (
                 <ul className="mt-2 space-y-2">
@@ -205,9 +226,14 @@ export function CapabilityProfile({
               <h3 className="text-sm font-medium text-muted-foreground">
                 History
               </h3>
-              {completions.length === 0 ? (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  No completions recorded.
+              {trainingUnavailable ? null : completions.length === 0 ? (
+                <p
+                  className="mt-2 text-sm text-muted-foreground"
+                  data-testid="capability-training-history-empty"
+                >
+                  {isSelf
+                    ? "No training completions are recorded for you yet."
+                    : "No completions recorded."}
                 </p>
               ) : (
                 <ul className="mt-2 space-y-2">
@@ -235,9 +261,23 @@ export function CapabilityProfile({
               <h3 className="text-sm font-medium text-muted-foreground">
                 Capability gaps
               </h3>
-              {skillGaps.length === 0 ? (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  No skill gaps identified.
+              {skillsUnavailable ? (
+                <p
+                  className="mt-2 text-sm text-destructive"
+                  role="alert"
+                  data-testid="capability-skills-unavailable"
+                >
+                  Skills details could not be loaded. This is not the same as
+                  having no skills recorded.
+                </p>
+              ) : skillGaps.length === 0 ? (
+                <p
+                  className="mt-2 text-sm text-muted-foreground"
+                  data-testid="capability-skills-empty"
+                >
+                  {isSelf
+                    ? "No skill gaps are recorded for you yet."
+                    : "No skill gaps identified."}
                 </p>
               ) : (
                 <ul className="mt-2 space-y-2">
@@ -284,23 +324,35 @@ export function CapabilityProfile({
               <h3 className="text-sm font-medium text-muted-foreground">
                 Assessment history
               </h3>
-              {assessments.length === 0 ? (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  No assessments recorded.
+              {skillsUnavailable ? null : assessments.length === 0 ? (
+                <p
+                  className="mt-2 text-sm text-muted-foreground"
+                  data-testid="capability-skills-history-empty"
+                >
+                  {isSelf
+                    ? "No skill assessments are recorded for you yet."
+                    : "No assessments recorded."}
                 </p>
               ) : (
-                <ul className="mt-2 space-y-2">
-                  {assessments.map((item) => (
-                    <li key={item.assessment_id} className="text-sm">
-                      {new Date(item.assessed_at).toLocaleDateString("en-GB")}
-                      {" — "}
-                      {item.assertion_type}
-                      {item.is_authoritative ? " (validated)" : ""}
-                      {item.assessment_method
-                        ? ` · ${item.assessment_method}`
-                        : ""}
-                    </li>
-                  ))}
+                <ul
+                  className="mt-2 space-y-2"
+                  data-testid="capability-skills-assessment-history"
+                >
+                  {assessments.map((item) => {
+                    const assessmentMethodLabel =
+                      formatSkillAssessmentMethodLabel(item.assessment_method);
+                    return (
+                      <li key={item.assessment_id} className="text-sm">
+                        {new Date(item.assessed_at).toLocaleDateString("en-GB")}
+                        {" — "}
+                        {item.assertion_type}
+                        {item.is_authoritative ? " (validated)" : ""}
+                        {assessmentMethodLabel
+                          ? ` · ${assessmentMethodLabel}`
+                          : ""}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>

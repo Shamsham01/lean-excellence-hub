@@ -5,30 +5,36 @@ import { useRouter } from "next/navigation";
 
 import {
   createCountermeasure,
-  createProblemSolvingAction,
   linkCountermeasureCauses,
   selectCountermeasure,
 } from "@/app/(platform)/platform/problem-solving/actions";
+import { ProblemSolvingActionDialog } from "@/components/problem-solving/problem-solving-action-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { countermeasureStatusLabel } from "@/lib/problem-solving/effectiveness";
+import { AppLink } from "@/components/ui/app-link";
+import { actionStatusLabel } from "@/lib/actions/status";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
 
 type CountermeasuresPanelProps = {
   caseId: string;
+  siteUnitId?: string | null;
   detail: ProblemSolvingCaseDetail;
   canContribute: boolean;
   canManage: boolean;
+  defaultAssigneeMembershipId?: string | null;
 };
 
 export function CountermeasuresPanel({
   caseId,
+  siteUnitId = null,
   detail,
   canContribute,
   canManage,
+  defaultAssigneeMembershipId,
 }: CountermeasuresPanelProps) {
   const router = useRouter();
   const [title, setTitle] = useState("");
@@ -36,7 +42,19 @@ export function CountermeasuresPanel({
   const [selectedCauseIds, setSelectedCauseIds] = useState<
     Record<string, string>
   >({});
-  const [actionTitles, setActionTitles] = useState<Record<string, string>>({});
+  const [actionDialogFor, setActionDialogFor] = useState<string | null>(null);
+  const [actionDefaultTitle, setActionDefaultTitle] = useState("");
+  const [createdActions, setCreatedActions] = useState<
+    Record<
+      string,
+      {
+        id: string;
+        title: string;
+        status: string;
+        expected_result: string | null;
+      }
+    >
+  >({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -46,7 +64,7 @@ export function CountermeasuresPanel({
 
   async function handleCreate(event: React.FormEvent) {
     event.preventDefault();
-    if (!title.trim()) return;
+    if (loading || !title.trim()) return;
     setLoading(true);
     const result = await createCountermeasure({
       caseId,
@@ -72,22 +90,6 @@ export function CountermeasuresPanel({
       "Selected from workspace",
     );
     setMessage(result.error ?? "Countermeasure selected");
-    setLoading(false);
-    router.refresh();
-  }
-
-  async function handleLinkAction(countermeasureId: string) {
-    const actionTitle = actionTitles[countermeasureId]?.trim();
-    if (!actionTitle) return;
-    setLoading(true);
-    const result = await createProblemSolvingAction({
-      caseId,
-      title: actionTitle,
-      contextRole: "countermeasure",
-      countermeasureId,
-      description: "Countermeasure implementation action",
-    });
-    setMessage(result.error ?? "Countermeasure action linked");
     setLoading(false);
     router.refresh();
   }
@@ -138,105 +140,142 @@ export function CountermeasuresPanel({
           {detail.countermeasures.length === 0 ? (
             <p className="text-muted-foreground">No countermeasures yet.</p>
           ) : (
-            detail.countermeasures.map((item) => (
-              <div
-                key={item.id}
-                className="flex flex-col gap-2 rounded-md border border-border px-3 py-2"
-                data-testid={`countermeasure-item-${item.id}`}
-              >
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <Badge variant="outline" className="mb-1">
-                      {countermeasureStatusLabel(item.status)}
-                    </Badge>
-                    <p className="font-medium">{item.title}</p>
-                    {item.description ? (
-                      <p className="text-muted-foreground">
-                        {item.description}
-                      </p>
-                    ) : null}
-                    {item.cause_links.length > 0 ? (
-                      <p
-                        className="mt-1 text-xs text-muted-foreground"
-                        data-testid={`countermeasure-causes-${item.id}`}
-                      >
-                        Linked causes:{" "}
-                        {item.cause_links
-                          .map(
-                            (link) =>
-                              link.hypothesis_statement ??
-                              link.hypothesis_id.slice(0, 8),
-                          )
-                          .join(", ")}
-                      </p>
-                    ) : null}
-                  </div>
-                  {canManage && item.status === "proposed" ? (
-                    <div className="flex flex-col gap-2">
-                      <select
-                        className="border-input min-h-11 rounded-md border bg-background px-3 py-2 text-xs"
-                        value={selectedCauseIds[item.id] ?? ""}
-                        onChange={(e) =>
-                          setSelectedCauseIds((current) => ({
-                            ...current,
-                            [item.id]: e.target.value,
-                          }))
-                        }
-                        data-testid={`countermeasure-cause-select-${item.id}`}
-                      >
-                        <option value="">Select verified cause</option>
-                        {verifiedHypotheses.map((hypothesis) => (
-                          <option key={hypothesis.id} value={hypothesis.id}>
-                            {hypothesis.statement.slice(0, 60)}
-                          </option>
-                        ))}
-                      </select>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={loading}
-                        onClick={() => handleSelect(item.id)}
-                        data-testid={`select-countermeasure-${item.id}`}
-                      >
-                        Select
-                      </Button>
-                    </div>
-                  ) : null}
-                </div>
-                {canManage &&
+            detail.countermeasures.map((item) => {
+              const causeIds = new Set(
+                item.cause_links.map((link) => link.hypothesis_id),
+              );
+              const relatedCountermeasures = detail.countermeasures.filter(
+                (countermeasure) =>
+                  countermeasure.id === item.id ||
+                  countermeasure.cause_links.some((link) =>
+                    causeIds.has(link.hypothesis_id),
+                  ),
+              );
+              const linkedActions = relatedCountermeasures.flatMap(
+                (countermeasure) => {
+                  const saved = detail.actions.filter(
+                    (action) => action.countermeasure_id === countermeasure.id,
+                  );
+                  const created = createdActions[countermeasure.id];
+                  return created &&
+                    !saved.some((action) => action.id === created.id)
+                    ? [...saved, created]
+                    : saved;
+                },
+              );
+              const canRaiseAction =
+                canManage &&
                 [
                   "selected",
                   "implementing",
                   "implemented",
                   "effective",
-                ].includes(item.status) ? (
-                  <div className="flex flex-col gap-2 border-t border-border pt-2 sm:flex-row sm:items-end">
-                    <label className="flex flex-1 flex-col gap-1 text-xs">
-                      <span>Universal action for this countermeasure</span>
-                      <Input
-                        value={actionTitles[item.id] ?? ""}
-                        onChange={(e) =>
-                          setActionTitles((current) => ({
-                            ...current,
-                            [item.id]: e.target.value,
-                          }))
-                        }
-                        data-testid={`countermeasure-action-title-${item.id}`}
-                        placeholder="Action title"
-                      />
-                    </label>
-                    <Button
-                      size="sm"
-                      disabled={loading}
-                      onClick={() => handleLinkAction(item.id)}
-                      data-testid={`link-countermeasure-action-${item.id}`}
-                    >
-                      Link action
-                    </Button>
+                ].includes(item.status);
+              return (
+                <div
+                  key={item.id}
+                  className="flex flex-col gap-2 rounded-md border border-border px-3 py-2"
+                  data-testid={`countermeasure-item-${item.id}`}
+                >
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <Badge variant="outline" className="mb-1">
+                        {countermeasureStatusLabel(item.status)}
+                      </Badge>
+                      <p className="font-medium">{item.title}</p>
+                      {item.description ? (
+                        <p className="text-muted-foreground">
+                          {item.description}
+                        </p>
+                      ) : null}
+                      {item.cause_links.length > 0 ? (
+                        <p
+                          className="mt-1 text-xs text-muted-foreground"
+                          data-testid={`countermeasure-causes-${item.id}`}
+                        >
+                          Linked causes:{" "}
+                          {item.cause_links
+                            .map(
+                              (link) =>
+                                link.hypothesis_statement ??
+                                link.hypothesis_id.slice(0, 8),
+                            )
+                            .join(", ")}
+                        </p>
+                      ) : null}
+                    </div>
+                    {canManage && item.status === "proposed" ? (
+                      <div className="flex flex-col gap-2">
+                        <select
+                          className="border-input min-h-11 rounded-md border bg-background px-3 py-2 text-xs"
+                          value={selectedCauseIds[item.id] ?? ""}
+                          onChange={(e) =>
+                            setSelectedCauseIds((current) => ({
+                              ...current,
+                              [item.id]: e.target.value,
+                            }))
+                          }
+                          data-testid={`countermeasure-cause-select-${item.id}`}
+                        >
+                          <option value="">Select verified cause</option>
+                          {verifiedHypotheses.map((hypothesis) => (
+                            <option key={hypothesis.id} value={hypothesis.id}>
+                              {hypothesis.statement.slice(0, 60)}
+                            </option>
+                          ))}
+                        </select>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={loading}
+                          onClick={() => handleSelect(item.id)}
+                          data-testid={`select-countermeasure-${item.id}`}
+                        >
+                          Select
+                        </Button>
+                      </div>
+                    ) : null}
                   </div>
-                ) : null}
-              </div>
-            ))
+                  {linkedActions.length > 0 || canRaiseAction ? (
+                    <div className="flex flex-col gap-2 border-t border-border pt-2">
+                      {linkedActions.map((action) => (
+                        <div key={action.id}>
+                          <AppLink
+                            href={`/platform/actions/${action.id}`}
+                            className="font-medium hover:underline"
+                            data-testid={`countermeasure-linked-action-${item.id}`}
+                          >
+                            {action.title} · {actionStatusLabel(action.status)}
+                          </AppLink>
+                          {action.expected_result ? (
+                            <p className="text-muted-foreground">
+                              Expected result: {action.expected_result}
+                            </p>
+                          ) : null}
+                        </div>
+                      ))}
+                      {canRaiseAction ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="self-start"
+                          disabled={loading || linkedActions.length > 0}
+                          onClick={() => {
+                            setActionDefaultTitle(`Implement: ${item.title}`);
+                            setActionDialogFor(item.id);
+                          }}
+                          data-testid={`link-countermeasure-action-${item.id}`}
+                        >
+                          {linkedActions.length > 0
+                            ? "Action already linked"
+                            : "Raise action"}
+                        </Button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })
           )}
         </CardContent>
       </Card>
@@ -244,6 +283,29 @@ export function CountermeasuresPanel({
       {message ? (
         <p className="text-sm text-muted-foreground">{message}</p>
       ) : null}
+      <ProblemSolvingActionDialog
+        key={actionDialogFor ?? "closed"}
+        open={actionDialogFor != null}
+        onOpenChange={(next) => {
+          if (!next) setActionDialogFor(null);
+        }}
+        caseId={caseId}
+        siteUnitId={siteUnitId}
+        contextRole="countermeasure"
+        countermeasureId={actionDialogFor}
+        defaultTitle={actionDefaultTitle}
+        defaultMembershipId={defaultAssigneeMembershipId ?? null}
+        onCreated={(action) => {
+          if (actionDialogFor) {
+            setCreatedActions((current) => ({
+              ...current,
+              [actionDialogFor]: { ...action, status: "open" },
+            }));
+          }
+          setMessage("Countermeasure action linked");
+          router.refresh();
+        }}
+      />
     </div>
   );
 }

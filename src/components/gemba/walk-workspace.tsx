@@ -1,6 +1,11 @@
 "use client";
 
-import { unstable_rethrow, useRouter } from "next/navigation";
+import {
+  unstable_rethrow,
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -9,6 +14,8 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+
+import { InlineAlert } from "@/components/ui/alert";
 
 import {
   completeGembaWalk,
@@ -40,7 +47,10 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { SectionProgressNav } from "@/components/ui/section-progress-nav";
 import { Textarea } from "@/components/ui/textarea";
+import { answerProgressPercent } from "@/modules/operational/answer-progress-percent";
+import { deriveSectionCompletionState } from "@/modules/operational/section-visual-state";
 import {
   countGembaObservationsByType,
   formatGembaObservationType,
@@ -50,16 +60,27 @@ import {
   countUnansweredRequiredGembaPrompts,
   hasUsableGembaPromptAnswer,
 } from "@/modules/operational/gemba-walk-completion";
+import type {
+  ProjectLinkSummary,
+  ProjectSelectorOption,
+} from "@/lib/projects/types";
 import {
   buildGembaWalkPromptSearch,
   clearStoredGembaWalkPromptId,
+  GEMBA_WALK_PROMPT_PARAM,
   gembaWalkPath,
   readGembaWalkPromptIdFromSearch,
   readStoredGembaWalkPromptId,
-  resolveGembaWalkPromptIndex,
+  resolveActiveGembaWalkPromptIndex,
+  resolveGembaWalkPromptId,
   subscribeGembaWalkPromptLocation,
   writeStoredGembaWalkPromptId,
 } from "@/modules/operational/gemba-walk-prompt";
+
+function readPromptIdFromWindowLocation() {
+  if (typeof window === "undefined") return null;
+  return readGembaWalkPromptIdFromSearch(window.location.search);
+}
 
 type Section = {
   id: string;
@@ -76,6 +97,7 @@ type Section = {
 
 type GembaWalkWorkspaceProps = {
   walkId: string;
+  siteUnitId?: string | null;
   status: string;
   sections: Section[];
   answers: Record<
@@ -88,6 +110,10 @@ type GembaWalkWorkspaceProps = {
   canComplete?: boolean;
   initialPromptId?: string | null;
   onComplete?: typeof completeGembaWalk;
+  projectOptions?: ProjectSelectorOption[];
+  requiresSiteSelection?: boolean;
+  linkedProjectsByObservationId?: Record<string, ProjectLinkSummary | null>;
+  actionCountsByObservation?: Record<string, number>;
 };
 
 export const DIRTY_OBSERVATION_COMPLETE_MESSAGE =
@@ -121,9 +147,9 @@ function AnswerSaveFeedback({
       ) : null}
       {status === "error" ? (
         <>
-          <p className="text-sm text-destructive" role="alert">
+          <InlineAlert tone="error">
             {error ?? ANSWER_SAVE_ERROR_MESSAGE}
-          </p>
+          </InlineAlert>
           {canRetry ? (
             <Button
               type="button"
@@ -171,6 +197,7 @@ function waitForObservationIdle(
 
 export function GembaWalkWorkspace({
   walkId,
+  siteUnitId = null,
   status,
   sections,
   answers,
@@ -180,8 +207,25 @@ export function GembaWalkWorkspace({
   canComplete = false,
   initialPromptId = null,
   onComplete = completeGembaWalk,
+  projectOptions = [],
+  requiresSiteSelection = false,
+  linkedProjectsByObservationId = {},
+  actionCountsByObservation = {},
 }: GembaWalkWorkspaceProps) {
   const router = useRouter();
+  const pathname = usePathname() ?? "";
+  const searchParams = useSearchParams();
+  const promptFromRouter =
+    searchParams.get(GEMBA_WALK_PROMPT_PARAM)?.trim() ?? null;
+  const promptFromWindow = useSyncExternalStore(
+    subscribeGembaWalkPromptLocation,
+    readPromptIdFromWindowLocation,
+    () => null,
+  );
+  const urlPromptId = resolveGembaWalkPromptId({
+    windowPromptId: promptFromWindow,
+    routerPromptId: promptFromRouter,
+  });
   const flatQuestions = sections.flatMap((s) =>
     s.questions.map((q) => ({ section: s, question: q })),
   );
@@ -189,24 +233,14 @@ export function GembaWalkWorkspace({
     () => sections.flatMap((section) => section.questions.map((q) => q.id)),
     [sections],
   );
-  const restoredPromptId = useSyncExternalStore(
-    subscribeGembaWalkPromptLocation,
-    () =>
-      readGembaWalkPromptIdFromSearch(window.location.search) ??
-      readStoredGembaWalkPromptId(walkId),
-    () => initialPromptId,
-  );
-  const restoredIndex = resolveGembaWalkPromptIndex({
+  const storedPromptId = readStoredGembaWalkPromptId(walkId);
+  const promptIndex = resolveActiveGembaWalkPromptIndex({
     questionIds,
-    preferredQuestionId: restoredPromptId ?? initialPromptId,
-    storedQuestionId: restoredPromptId,
+    urlPromptId,
+    initialPromptId,
+    storedPromptId,
   });
-  const [userIndex, setUserIndex] = useState<number | null>(null);
-  const [indexWalkId, setIndexWalkId] = useState(walkId);
-  if (indexWalkId !== walkId) {
-    setIndexWalkId(walkId);
-    setUserIndex(null);
-  }
+  const urlCanonicalizedWalkIdRef = useRef<string | null>(null);
   const [navigating, setNavigating] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [completeOpen, setCompleteOpen] = useState(false);
@@ -227,15 +261,11 @@ export function GembaWalkWorkspace({
   const handleObservationsChange = useCallback((next: WalkObservation[]) => {
     setLiveObservations(next);
   }, []);
-  const index = userIndex ?? restoredIndex;
   const safeIndex =
     flatQuestions.length === 0
       ? 0
-      : Math.min(Math.max(index, 0), flatQuestions.length - 1);
+      : Math.min(Math.max(promptIndex, 0), flatQuestions.length - 1);
   const current = flatQuestions[safeIndex];
-  const progress = flatQuestions.length
-    ? Math.round(((safeIndex + 1) / flatQuestions.length) * 100)
-    : 0;
   const {
     getAnswer,
     getStatus,
@@ -253,28 +283,121 @@ export function GembaWalkWorkspace({
     saveAnswer: saveGembaWalkAnswer,
   });
 
+  const answeredCount = flatQuestions.filter((item) =>
+    hasUsableGembaPromptAnswer(item.question, getAnswer(item.question.id)),
+  ).length;
+  const requiredQuestions = flatQuestions.filter(
+    (item) => item.question.is_required,
+  );
+  const answeredRequiredCount = requiredQuestions.filter((item) =>
+    hasUsableGembaPromptAnswer(item.question, getAnswer(item.question.id)),
+  ).length;
+  const progress = requiredQuestions.length
+    ? answerProgressPercent(answeredRequiredCount, requiredQuestions.length)
+    : answerProgressPercent(answeredCount, flatQuestions.length);
+  const sectionNavItems = useMemo(
+    () =>
+      sections.map((section) => {
+        const questions = section.questions;
+        const answered = questions.filter((question) =>
+          hasUsableGembaPromptAnswer(question, getAnswer(question.id)),
+        ).length;
+        return {
+          id: section.id,
+          label: section.title,
+          completion: deriveSectionCompletionState(answered, questions.length),
+          detail: `${answered}/${questions.length}`,
+        };
+      }),
+    [getAnswer, sections],
+  );
+
+  const syncPromptLocation = useCallback(
+    (questionId: string, mode: "push" | "replace" = "replace") => {
+      writeStoredGembaWalkPromptId(walkId, questionId);
+      const nextPath = `${pathname}${buildGembaWalkPromptSearch(questionId)}`;
+      const currentPath = `${pathname}${window.location.search}`;
+      if (currentPath === nextPath) return;
+      const navigate = mode === "push" ? router.push : router.replace;
+      navigate(nextPath, { scroll: false });
+    },
+    [pathname, router, walkId],
+  );
+
   useEffect(() => {
-    const questionId = flatQuestions[safeIndex]?.question.id;
-    if (!questionId || status !== "in_progress" || completing) return;
-    writeStoredGembaWalkPromptId(walkId, questionId);
-    const nextSearch = buildGembaWalkPromptSearch(questionId);
-    if (window.location.search !== nextSearch) {
-      window.history.replaceState(
-        null,
-        "",
-        `${window.location.pathname}${nextSearch}`,
-      );
+    if (status !== "in_progress" || completing) return;
+
+    const windowPrompt = readPromptIdFromWindowLocation();
+    if (windowPrompt) {
+      writeStoredGembaWalkPromptId(walkId, windowPrompt);
+      if (urlCanonicalizedWalkIdRef.current !== walkId) {
+        urlCanonicalizedWalkIdRef.current = walkId;
+      }
+      return;
     }
-  }, [flatQuestions, safeIndex, status, walkId, completing]);
+
+    if (urlCanonicalizedWalkIdRef.current === walkId) {
+      return;
+    }
+
+    const bootstrapIndex = resolveActiveGembaWalkPromptIndex({
+      questionIds,
+      urlPromptId: null,
+      initialPromptId,
+      storedPromptId: null,
+    });
+    const questionId = flatQuestions[bootstrapIndex]?.question.id;
+    if (!questionId) return;
+    syncPromptLocation(questionId, "replace");
+    urlCanonicalizedWalkIdRef.current = walkId;
+  }, [
+    completing,
+    flatQuestions,
+    initialPromptId,
+    questionIds,
+    status,
+    syncPromptLocation,
+    walkId,
+  ]);
+
+  useEffect(() => {
+    const viewport = document.querySelector(
+      ".platform-main-viewport",
+    ) as HTMLElement | null;
+    if (viewport) {
+      viewport.scrollTop = 0;
+    }
+  }, [safeIndex]);
+
+  useEffect(() => {
+    if (status !== "in_progress" || completing) return;
+
+    const syncRouterToHistory = () => {
+      const windowPrompt = readPromptIdFromWindowLocation();
+      if (!windowPrompt) return;
+      const routerPrompt =
+        searchParams.get(GEMBA_WALK_PROMPT_PARAM)?.trim() ?? null;
+      if (windowPrompt === routerPrompt) return;
+      writeStoredGembaWalkPromptId(walkId, windowPrompt);
+      router.replace(`${pathname}${buildGembaWalkPromptSearch(windowPrompt)}`, {
+        scroll: false,
+      });
+    };
+
+    window.addEventListener("popstate", syncRouterToHistory);
+    return () => window.removeEventListener("popstate", syncRouterToHistory);
+  }, [completing, pathname, router, searchParams, status, walkId]);
 
   async function moveTo(nextIndex: number) {
     if (!current) return;
     if (nextIndex === safeIndex) return;
+    const target = flatQuestions[nextIndex];
+    if (!target) return;
     setNavigating(true);
     try {
       const saved = await flushQuestion(current.question.id);
       if (!saved) return;
-      setUserIndex(nextIndex);
+      syncPromptLocation(target.question.id, "push");
     } finally {
       setNavigating(false);
     }
@@ -386,9 +509,6 @@ export function GembaWalkWorkspace({
   const saveStatus = getStatus(current.question.id);
   const saveError = getError(current.question.id);
   const questionBusy = navigating || isQuestionBusy(current.question.id);
-  const answeredCount = flatQuestions.filter((item) =>
-    hasUsableGembaPromptAnswer(item.question, getAnswer(item.question.id)),
-  ).length;
   const unansweredRequiredCount = countUnansweredRequiredGembaPrompts(
     flatQuestions.map((item) => item.question),
     getAnswer,
@@ -396,190 +516,257 @@ export function GembaWalkWorkspace({
   const observationCounts = countGembaObservationsByType(liveObservations);
 
   return (
-    <div className="flex flex-col gap-6" data-testid="gemba-walk-workspace">
-      <div className="flex flex-wrap items-center gap-3">
-        <Badge variant="outline" data-testid="gemba-walk-status">
-          {formatGembaWalkStatus(status)}
-        </Badge>
-        <Progress
-          value={progress}
-          className="h-2 w-full max-w-xs"
-          aria-label="Walk progress"
-        />
-        {canComplete ? (
-          <Button
-            type="button"
-            className="min-h-11 sm:ml-auto"
-            disabled={completing}
-            onClick={openCompletePanel}
-            data-testid="gemba-complete-walk"
-          >
-            Complete walk
-          </Button>
-        ) : null}
-      </div>
-      {completeError ? (
-        <p
-          className="text-sm text-destructive"
-          role="alert"
-          data-testid="gemba-complete-error"
-        >
-          {completeError}
-        </p>
-      ) : null}
-
-      <GembaObservationPanel
-        walkId={walkId}
-        observations={observations}
-        evidence={evidence}
-        canEdit={canEdit}
-        onIntegrityChange={handleObservationIntegrity}
-        onObservationsChange={handleObservationsChange}
+    <div
+      className="flex flex-col gap-6 lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-8"
+      data-testid="gemba-walk-workspace"
+    >
+      <SectionProgressNav
+        ariaLabel="Walk sections"
+        items={sectionNavItems}
+        activeId={current.section.id}
+        disabled={questionBusy}
+        onSelect={(sectionId) => {
+          const idx = flatQuestions.findIndex(
+            (f) => f.section.id === sectionId,
+          );
+          if (idx >= 0) {
+            void moveTo(idx);
+          }
+        }}
+        testId="gemba-section-nav"
+        testIdPrefix="gemba-section"
+        className="lg:sticky lg:top-4 lg:self-start"
       />
 
-      <div className="rounded-lg border border-border bg-surface p-4 sm:p-6">
-        <p className="text-sm text-muted-foreground">{current.section.title}</p>
-        <h2 className="typography-section-title mt-2">
-          {current.question.prompt}
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {current.question.is_required ? "Required prompt" : "Optional prompt"}
-        </p>
-        <div className="mt-6">
-          <Label htmlFor="walk-notes">Notes</Label>
-          <Textarea
-            id="walk-notes"
-            className="mt-2 min-h-24"
-            value={answer.is_not_applicable ? "" : (answer.text_value ?? "")}
-            disabled={!canEdit}
-            data-testid="gemba-walk-notes"
-            onChange={(e) => changeText(current.question.id, e.target.value)}
-            onBlur={() => {
-              void flushQuestion(current.question.id);
-            }}
+      <div className="flex min-w-0 flex-col gap-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <Badge variant="outline" data-testid="gemba-walk-status">
+            {formatGembaWalkStatus(status)}
+          </Badge>
+          <Progress
+            value={progress}
+            className="h-2 w-full max-w-xs"
+            aria-label="Walk progress"
+            data-testid="gemba-answer-progress"
           />
-        </div>
-        {current.question.allows_not_applicable ? (
-          <Button
-            type="button"
-            variant={answer.is_not_applicable ? "secondary" : "outline"}
-            className="mt-3 min-h-11"
-            disabled={!canEdit}
-            aria-pressed={Boolean(answer.is_not_applicable)}
-            onClick={() => selectNotApplicable(current.question.id)}
-            data-testid="gemba-answer-na"
+          <span
+            className="text-sm text-muted-foreground"
+            data-testid="gemba-answer-progress-label"
           >
-            N/A
-          </Button>
-        ) : null}
-        <div className="mt-4">
-          <AnswerSaveFeedback
-            status={saveStatus}
-            error={saveError}
-            canRetry={canEdit}
-            onRetry={() => retryQuestion(current.question.id)}
-          />
+            {requiredQuestions.length > 0
+              ? `${answeredRequiredCount}/${requiredQuestions.length} required · `
+              : ""}
+            {answeredCount}/{flatQuestions.length} answered
+          </span>
+          {canComplete ? (
+            <Button
+              type="button"
+              className="hidden min-h-11 sm:ml-auto sm:inline-flex"
+              disabled={completing}
+              onClick={openCompletePanel}
+              data-testid="gemba-complete-walk"
+            >
+              Complete walk
+            </Button>
+          ) : null}
         </div>
+        {completeError ? (
+          <p
+            className="text-sm text-destructive"
+            role="alert"
+            data-testid="gemba-complete-error"
+          >
+            {completeError}
+          </p>
+        ) : null}
 
-        <GembaEvidenceBlock
+        <GembaObservationPanel
+          siteUnitId={siteUnitId}
           walkId={walkId}
-          sectionId={current.section.id}
-          questionId={current.question.id}
+          observations={observations}
           evidence={evidence}
           canEdit={canEdit}
+          projectOptions={projectOptions}
+          requiresSiteSelection={requiresSiteSelection}
+          linkedProjectsByObservationId={linkedProjectsByObservationId}
+          actionCountsByObservation={actionCountsByObservation}
+          onIntegrityChange={handleObservationIntegrity}
+          onObservationsChange={handleObservationsChange}
+          onActionCountsChange={() => router.refresh()}
         />
-      </div>
 
-      <div className="sticky bottom-0 flex gap-3 border-t border-border bg-background py-4">
-        <Button
-          type="button"
-          variant="outline"
-          size="default"
-          className="min-h-11 flex-1"
-          disabled={safeIndex === 0 || questionBusy}
-          onClick={() => moveTo(Math.max(0, safeIndex - 1))}
-        >
-          Previous
-        </Button>
-        <Button
-          type="button"
-          size="default"
-          className="min-h-11 flex-1"
-          disabled={safeIndex >= flatQuestions.length - 1 || questionBusy}
-          onClick={() =>
-            moveTo(Math.min(flatQuestions.length - 1, safeIndex + 1))
-          }
-        >
-          Next
-        </Button>
-      </div>
-
-      <Dialog open={completeOpen} onOpenChange={setCompleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Complete this walk?</DialogTitle>
-            <DialogDescription>
-              Review the walk, add an optional summary, then confirm. Completed
-              walks cannot be edited.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-3 text-sm">
-            <p data-testid="gemba-completion-answered-count">
-              Answered prompts: {answeredCount} of {questionIds.length}
-            </p>
-            <p
-              className={
-                unansweredRequiredCount > 0 ? "text-destructive" : undefined
-              }
-              data-testid="gemba-completion-required-unanswered"
-            >
-              Required prompts unanswered: {unansweredRequiredCount}
-            </p>
-            <p data-testid="gemba-completion-observation-count">
-              Observations: {liveObservations.length} (
-              {formatGembaObservationType("positive_practice")}{" "}
-              {observationCounts.positive_practice},{" "}
-              {formatGembaObservationType("improvement_opportunity")}{" "}
-              {observationCounts.improvement_opportunity},{" "}
-              {formatGembaObservationType("issue")} {observationCounts.issue})
-            </p>
-            <div>
-              <Label htmlFor="gemba-summary-notes">
-                Summary / overall conclusion
-              </Label>
-              <Textarea
-                id="gemba-summary-notes"
-                className="mt-2 min-h-24"
-                value={summary}
-                onChange={(event) => setSummary(event.target.value)}
-                data-testid="gemba-summary-notes"
-              />
-            </div>
+        <div className="rounded-lg border border-border bg-surface p-4 sm:p-6">
+          <p className="text-sm text-muted-foreground">
+            {current.section.title}
+          </p>
+          <h2
+            className="typography-section-title mt-2"
+            data-testid="gemba-walk-prompt-heading"
+          >
+            <span>{current.question.prompt}</span>
+            {current.question.is_required ? (
+              <span
+                className="text-destructive"
+                aria-hidden="true"
+                title="Required"
+              >
+                {" "}
+                *
+              </span>
+            ) : null}
+            <span className="sr-only">
+              {current.question.is_required ? " (required)" : " (optional)"}
+            </span>
+          </h2>
+          <div className="mt-6">
+            <Label htmlFor="walk-notes">Notes</Label>
+            <Textarea
+              id="walk-notes"
+              className="mt-2 min-h-24"
+              value={answer.is_not_applicable ? "" : (answer.text_value ?? "")}
+              disabled={!canEdit}
+              data-testid="gemba-walk-notes"
+              onChange={(e) => changeText(current.question.id, e.target.value)}
+              onBlur={() => {
+                void flushQuestion(current.question.id);
+              }}
+            />
           </div>
-          <DialogFooter>
+          {current.question.allows_not_applicable ? (
+            <Button
+              type="button"
+              variant={answer.is_not_applicable ? "secondary" : "outline"}
+              className="mt-3 min-h-11"
+              disabled={!canEdit}
+              aria-pressed={Boolean(answer.is_not_applicable)}
+              onClick={() => selectNotApplicable(current.question.id)}
+              data-testid="gemba-answer-na"
+            >
+              N/A
+            </Button>
+          ) : null}
+          <div className="mt-4">
+            <AnswerSaveFeedback
+              status={saveStatus}
+              error={saveError}
+              canRetry={canEdit}
+              onRetry={() => retryQuestion(current.question.id)}
+            />
+          </div>
+
+          <GembaEvidenceBlock
+            walkId={walkId}
+            sectionId={current.section.id}
+            questionId={current.question.id}
+            evidence={evidence}
+            canEdit={canEdit}
+          />
+        </div>
+
+        <div className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-border bg-background pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          {canComplete ? (
+            <Button
+              type="button"
+              className="min-h-11 w-full sm:hidden"
+              disabled={completing}
+              onClick={openCompletePanel}
+              data-testid="gemba-complete-walk-mobile"
+            >
+              Complete walk
+            </Button>
+          ) : null}
+          <div className="flex gap-3">
             <Button
               type="button"
               variant="outline"
-              className="min-h-11"
-              disabled={completing}
-              onClick={() => setCompleteOpen(false)}
+              size="default"
+              className="min-h-11 flex-1"
+              disabled={safeIndex === 0 || questionBusy}
+              onClick={() => moveTo(Math.max(0, safeIndex - 1))}
             >
-              Cancel
+              Previous
             </Button>
             <Button
               type="button"
-              className="min-h-11"
-              disabled={completing || unansweredRequiredCount > 0}
-              onClick={() => {
-                void handleConfirmComplete();
-              }}
-              data-testid="gemba-confirm-complete"
+              size="default"
+              className="min-h-11 flex-1"
+              disabled={safeIndex >= flatQuestions.length - 1 || questionBusy}
+              onClick={() =>
+                moveTo(Math.min(flatQuestions.length - 1, safeIndex + 1))
+              }
             >
-              {completing ? "Completing…" : "Confirm completion"}
+              Next
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+
+        <Dialog open={completeOpen} onOpenChange={setCompleteOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Complete this walk?</DialogTitle>
+              <DialogDescription>
+                Review the walk, add an optional summary, then confirm.
+                Completed walks cannot be edited.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-3 text-sm">
+              <p data-testid="gemba-completion-answered-count">
+                Answered prompts: {answeredCount} of {questionIds.length}
+              </p>
+              <p
+                className={
+                  unansweredRequiredCount > 0 ? "text-destructive" : undefined
+                }
+                data-testid="gemba-completion-required-unanswered"
+              >
+                Required prompts unanswered: {unansweredRequiredCount}
+              </p>
+              <p data-testid="gemba-completion-observation-count">
+                Observations: {liveObservations.length} (
+                {formatGembaObservationType("positive_practice")}{" "}
+                {observationCounts.positive_practice},{" "}
+                {formatGembaObservationType("improvement_opportunity")}{" "}
+                {observationCounts.improvement_opportunity},{" "}
+                {formatGembaObservationType("issue")} {observationCounts.issue})
+              </p>
+              <div>
+                <Label htmlFor="gemba-summary-notes">
+                  Summary / overall conclusion
+                </Label>
+                <Textarea
+                  id="gemba-summary-notes"
+                  className="mt-2 min-h-24"
+                  value={summary}
+                  onChange={(event) => setSummary(event.target.value)}
+                  data-testid="gemba-summary-notes"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11"
+                disabled={completing}
+                onClick={() => setCompleteOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                className="min-h-11"
+                disabled={completing || unansweredRequiredCount > 0}
+                onClick={() => {
+                  void handleConfirmComplete();
+                }}
+                data-testid="gemba-confirm-complete"
+              >
+                {completing ? "Completing…" : "Confirm completion"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }

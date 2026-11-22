@@ -53,6 +53,27 @@ export async function claimSuggestionForReview(
   return { ok: true };
 }
 
+export async function delegateSuggestionApproval(
+  suggestionId: string,
+  delegateMembershipId: string,
+  reason?: string,
+): Promise<ActionResult> {
+  const supabase = await createServerSupabaseClient();
+
+  const trimmedReason = reason?.trim();
+  const { error } = await supabase.rpc("delegate_suggestion_approval", {
+    target_suggestion_id: suggestionId,
+    target_delegate_membership_id: delegateMembershipId,
+    ...(trimmedReason ? { target_reason: trimmedReason } : {}),
+  });
+
+  if (error) return reviewActionError(error);
+
+  reviewWorkflowPaths(suggestionId);
+
+  return { ok: true };
+}
+
 export async function assignSuggestionReviewer(
   suggestionId: string,
   reviewerMembershipId: string,

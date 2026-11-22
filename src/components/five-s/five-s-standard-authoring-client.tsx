@@ -1,0 +1,520 @@
+"use client";
+
+import { useState } from "react";
+
+import { useAuthoringSavedFlash } from "@/components/authoring/use-authoring-saved-flash";
+import { DialogServerActionForm } from "@/components/ui/dialog-server-action-form";
+
+import {
+  addFiveSQuestionFromForm,
+  addFiveSSectionFromForm,
+  discardFiveSStandardDraftFromForm,
+  removeFiveSQuestionFromForm,
+  removeFiveSSectionFromForm,
+  setFiveSStandardApplicableUnitsFromForm,
+  setFiveSStandardScoringScaleFromForm,
+} from "@/app/(platform)/platform/5s/actions";
+import { Trash2 } from "lucide-react";
+
+import { ModuleWriteButton } from "@/components/billing/module-write-button";
+import { FiveSScoringScaleFields } from "@/components/five-s/scoring-scale-fields";
+import { CompactApplicableUnitsField } from "@/components/organisation/compact-applicable-units-field";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ResponsiveFormDialog } from "@/components/ui/responsive-form-dialog";
+import type { FiveSScoringScale } from "@/modules/5s/scoring-scale";
+import { fiveSQuestionTypeLabel } from "@/modules/5s/templates";
+import type { UnitSelectOption } from "@/modules/organisation/site-context";
+import type { FlatOrganisationUnit } from "@/modules/organisation/unit-hierarchy";
+
+type AuthoringSection = {
+  id: string;
+  title: string;
+  questions: Array<{ id: string; prompt: string; questionType: string }>;
+};
+
+export function FiveSApplicabilityEditor({
+  standardId,
+  configurationUnits,
+  applicabilitySelection,
+  staleWarning,
+}: {
+  standardId: string;
+  configurationUnits: {
+    hierarchyUnits: FlatOrganisationUnit[];
+    units: UnitSelectOption[];
+    requiresSiteSelection: boolean;
+  };
+  applicabilitySelection: {
+    selectedIds: ReadonlySet<string>;
+    preservedIds: readonly string[];
+  };
+  staleWarning: string | null;
+}) {
+  const [open, setOpen] = useState(false);
+  const flashSaved = useAuthoringSavedFlash();
+
+  return (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        className="min-h-11 w-fit"
+        data-testid="five-s-edit-applicability-open"
+        onClick={() => setOpen(true)}
+      >
+        Edit locations
+      </Button>
+      <ResponsiveFormDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Edit locations"
+        testId="five-s-applicability-dialog"
+
+        enableGuard
+      >
+        <DialogServerActionForm
+          action={setFiveSStandardApplicableUnitsFromForm}
+          className="flex flex-col gap-4"
+          onSuccess={() => {
+            flashSaved("applicability");
+            setOpen(false);
+          }}
+        >
+          <input type="hidden" name="standardId" value={standardId} />
+          <CompactApplicableUnitsField
+            hierarchyUnits={configurationUnits.hierarchyUnits}
+            options={configurationUnits.units}
+            selectedIds={applicabilitySelection.selectedIds}
+            preservedIds={applicabilitySelection.preservedIds}
+            staleWarning={staleWarning}
+            requiresSiteSelection={configurationUnits.requiresSiteSelection}
+          />
+          <Button
+            type="submit"
+            className="min-h-11"
+            disabled={
+              configurationUnits.units.length === 0 &&
+              applicabilitySelection.preservedIds.length === 0
+            }
+            data-testid="save-five-s-applicability"
+          >
+            Save applicable areas
+          </Button>
+        </DialogServerActionForm>
+      </ResponsiveFormDialog>
+    </>
+  );
+}
+
+export function FiveSScoringScaleEditor({
+  standardId,
+  versionId,
+  initial,
+  saved,
+}: {
+  standardId: string;
+  versionId: string;
+  initial: FiveSScoringScale | null;
+  saved: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const flashSaved = useAuthoringSavedFlash();
+
+  return (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        className="min-h-11 w-fit"
+        data-testid="five-s-edit-scoring-scale-open"
+        onClick={() => setOpen(true)}
+      >
+        Edit scoring scale
+      </Button>
+      <ResponsiveFormDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Scoring scale"
+        testId="five-s-scoring-scale-dialog"
+        contentClassName="sm:max-w-xl"
+
+        enableGuard
+      >
+        <DialogServerActionForm
+          action={setFiveSStandardScoringScaleFromForm}
+          className="flex flex-col gap-4"
+          onSuccess={() => {
+            flashSaved("scale");
+            setOpen(false);
+          }}
+        >
+          <input type="hidden" name="versionId" value={versionId} />
+          <input type="hidden" name="standardId" value={standardId} />
+          <FiveSScoringScaleFields
+            initial={initial}
+            saved={saved}
+            idPrefix={`draft-scale-${versionId}`}
+          />
+          <Button
+            type="submit"
+            className="min-h-11"
+            data-testid="save-five-s-scoring-scale"
+          >
+            Save scoring scale
+          </Button>
+        </DialogServerActionForm>
+      </ResponsiveFormDialog>
+    </>
+  );
+}
+
+type RemoveTarget =
+  | { kind: "question"; id: string; label: string }
+  | { kind: "section"; id: string; label: string };
+
+export function FiveSDiscardDraftControl({
+  standardId,
+  versionId,
+}: {
+  standardId: string;
+  versionId: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <ModuleWriteButton
+        type="button"
+        variant="outline"
+        className="min-h-11 w-fit"
+        data-testid="five-s-discard-draft-open"
+        onClick={() => setOpen(true)}
+      >
+        Discard draft
+      </ModuleWriteButton>
+      <ResponsiveFormDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Discard draft?"
+        description="This removes the draft version and its categories and questions. The published version stays active. This cannot be undone."
+        testId="five-s-discard-draft-dialog"
+      >
+        <DialogServerActionForm
+          action={discardFiveSStandardDraftFromForm}
+          className="flex flex-col gap-4"
+          onSuccess={() => setOpen(false)}
+        >
+          <input type="hidden" name="versionId" value={versionId} />
+          <input type="hidden" name="standardId" value={standardId} />
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11"
+              onClick={() => setOpen(false)}
+            >
+              Keep draft
+            </Button>
+            <ModuleWriteButton
+              type="submit"
+              variant="destructive"
+              className="min-h-11"
+              data-testid="five-s-discard-draft-confirm"
+            >
+              Discard draft
+            </ModuleWriteButton>
+          </div>
+        </DialogServerActionForm>
+      </ResponsiveFormDialog>
+    </>
+  );
+}
+
+export function FiveSDraftAuthoringPanels({
+  standardId,
+  versionId,
+  sections,
+}: {
+  standardId: string;
+  versionId: string;
+  sections: AuthoringSection[];
+}) {
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [questionSectionId, setQuestionSectionId] = useState<string | null>(
+    null,
+  );
+  const [removeTarget, setRemoveTarget] = useState<RemoveTarget | null>(null);
+  const [removeStructuralError, setRemoveStructuralError] = useState<
+    string | null
+  >(null);
+  const flashSaved = useAuthoringSavedFlash();
+
+  return (
+    <>
+      <input type="hidden" name="versionId" value={versionId} readOnly />
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          className="min-h-11"
+          data-testid="five-s-add-category-open"
+          onClick={() => setCategoryOpen(true)}
+        >
+          Add category
+        </Button>
+      </div>
+
+      <ResponsiveFormDialog
+        open={categoryOpen}
+        onOpenChange={setCategoryOpen}
+        title="Add category"
+        testId="five-s-add-category-dialog"
+
+        enableGuard
+      >
+        <DialogServerActionForm
+          action={addFiveSSectionFromForm}
+          className="flex flex-col gap-4"
+          onSuccess={() => {
+            flashSaved("section");
+            setCategoryOpen(false);
+          }}
+        >
+          <input type="hidden" name="versionId" value={versionId} />
+          <input type="hidden" name="standardId" value={standardId} />
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="sectionTitle">Category name</Label>
+            <Input
+              id="sectionTitle"
+              name="sectionTitle"
+              required
+              className="min-h-11"
+            />
+          </div>
+          <Button type="submit" className="min-h-11">
+            Add category
+          </Button>
+        </DialogServerActionForm>
+      </ResponsiveFormDialog>
+
+      <ResponsiveFormDialog
+        open={questionSectionId != null}
+        onOpenChange={(next) => {
+          if (!next) setQuestionSectionId(null);
+        }}
+        title="Add question"
+        testId="five-s-add-question-dialog"
+
+        enableGuard
+      >
+        {questionSectionId ? (
+          <DialogServerActionForm
+            action={addFiveSQuestionFromForm}
+            className="flex flex-col gap-4"
+            onSuccess={() => {
+              flashSaved("question");
+              setQuestionSectionId(null);
+            }}
+          >
+            <input type="hidden" name="versionId" value={versionId} />
+            <input type="hidden" name="sectionId" value={questionSectionId} />
+            <input type="hidden" name="standardId" value={standardId} />
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="five-s-question-prompt-dialog">Question</Label>
+              <Input
+                id="five-s-question-prompt-dialog"
+                name="prompt"
+                required
+                className="min-h-11"
+                data-testid="five-s-question-prompt"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="five-s-question-type-dialog">Type</Label>
+              <select
+                id="five-s-question-type-dialog"
+                name="questionType"
+                className="min-h-11 rounded-md border border-border px-3"
+              >
+                <option value="yes_no">Yes / No</option>
+                <option value="score">Score</option>
+              </select>
+            </div>
+            <Button type="submit" className="min-h-11">
+              Add question
+            </Button>
+          </DialogServerActionForm>
+        ) : null}
+      </ResponsiveFormDialog>
+
+      <ResponsiveFormDialog
+        open={removeTarget != null}
+        onOpenChange={(next) => {
+          if (!next) {
+            setRemoveTarget(null);
+            setRemoveStructuralError(null);
+          }
+        }}
+        title={
+          removeTarget?.kind === "section"
+            ? "Remove category?"
+            : "Remove question?"
+        }
+        {...(removeTarget
+          ? {
+              description:
+                removeTarget.kind === "section"
+                  ? `“${removeTarget.label}” and its questions will be removed from this draft. This cannot be undone.`
+                  : `“${removeTarget.label}” will be removed from this draft. This cannot be undone.`,
+            }
+          : {})}
+        testId="five-s-remove-structural-dialog"
+      >
+        {removeTarget ? (
+          <DialogServerActionForm
+            action={
+              removeTarget.kind === "section"
+                ? removeFiveSSectionFromForm
+                : removeFiveSQuestionFromForm
+            }
+            className="flex flex-col gap-4"
+            onError={(error) => {
+              setRemoveStructuralError(
+                error instanceof Error ? error.message : "Removal failed.",
+              );
+            }}
+            onSuccess={() => {
+              flashSaved(
+                removeTarget.kind === "section"
+                  ? "remove_section"
+                  : "remove_question",
+              );
+              setRemoveStructuralError(null);
+              setRemoveTarget(null);
+            }}
+          >
+            {removeStructuralError ? (
+              <p
+                role="alert"
+                className="text-sm text-destructive"
+                data-testid="five-s-remove-structural-error"
+              >
+                {removeStructuralError}
+              </p>
+            ) : null}
+            <input type="hidden" name="standardId" value={standardId} />
+            <input
+              type="hidden"
+              name={
+                removeTarget.kind === "section" ? "sectionId" : "questionId"
+              }
+              value={removeTarget.id}
+            />
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11"
+                onClick={() => setRemoveTarget(null)}
+              >
+                Cancel
+              </Button>
+              <ModuleWriteButton
+                type="submit"
+                variant="destructive"
+                className="min-h-11"
+                data-testid="five-s-remove-structural-confirm"
+              >
+                {removeTarget.kind === "section"
+                  ? "Remove category"
+                  : "Remove question"}
+              </ModuleWriteButton>
+            </div>
+          </DialogServerActionForm>
+        ) : null}
+      </ResponsiveFormDialog>
+
+      {sections.map((section) => (
+        <div
+          key={section.id}
+          className="rounded-lg border border-border p-4"
+          data-testid="authoring-section"
+        >
+          <input type="hidden" name="sectionId" value={section.id} readOnly />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="font-medium">{section.title}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="min-h-11"
+                data-testid={`five-s-add-question-open-${section.id}`}
+                onClick={() => setQuestionSectionId(section.id)}
+              >
+                Add question
+              </Button>
+              <ModuleWriteButton
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="min-h-11 min-w-11 text-destructive"
+                aria-label={`Remove category ${section.title}`}
+                data-testid={`five-s-remove-section-open-${section.id}`}
+                onClick={() =>
+                  setRemoveTarget({
+                    kind: "section",
+                    id: section.id,
+                    label: section.title,
+                  })
+                }
+              >
+                <Trash2 className="h-4 w-4" aria-hidden />
+              </ModuleWriteButton>
+            </div>
+          </div>
+          {section.questions.length > 0 ? (
+            <ul className="mt-3 flex flex-col gap-2">
+              {section.questions.map((question) => (
+                <li
+                  key={question.id}
+                  className="flex items-start justify-between gap-2 rounded-md border border-border bg-surface px-3 py-2"
+                  data-testid="authoring-question"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium">{question.prompt}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {fiveSQuestionTypeLabel(question.questionType)}
+                    </p>
+                  </div>
+                  <ModuleWriteButton
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="min-h-11 min-w-11 shrink-0 text-destructive"
+                    aria-label={`Remove question ${question.prompt}`}
+                    data-testid={`five-s-remove-question-open-${question.id}`}
+                    onClick={() =>
+                      setRemoveTarget({
+                        kind: "question",
+                        id: question.id,
+                        label: question.prompt,
+                      })
+                    }
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden />
+                  </ModuleWriteButton>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-3 text-sm text-muted-foreground">
+              No questions in this category yet.
+            </p>
+          )}
+        </div>
+      ))}
+    </>
+  );
+}

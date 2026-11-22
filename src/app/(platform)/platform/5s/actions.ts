@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { buildAuthoringSavedRedirectPath } from "@/lib/authoring/authoring-query";
 import { readApplicableUnitIds } from "@/modules/operational/five-s-applicability";
+import { fiveSAuthoringQuestionTypeError } from "@/modules/5s/question-types";
 import {
   readFiveSScoringScaleForm,
   resolveFiveSScoringScale,
@@ -130,12 +131,8 @@ export async function setFiveSStandardApplicableUnitsFromForm(
   if (result.error) {
     throw new Error(result.error);
   }
-  redirect(
-    buildAuthoringSavedRedirectPath(
-      `/platform/5s/standards/${standardId}`,
-      "applicability",
-    ),
-  );
+  revalidatePath("/platform/5s");
+  revalidatePath(`/platform/5s/standards/${standardId}`);
 }
 
 export async function addFiveSSection(
@@ -160,6 +157,11 @@ export async function addFiveSQuestion(
   position: number,
   questionType: string,
 ) {
+  const typeError = fiveSAuthoringQuestionTypeError(questionType);
+  if (typeError) {
+    return { error: typeError };
+  }
+
   const supabase = await createServerSupabaseClient();
   const contributesToScore =
     questionType === "score" || questionType === "yes_no";
@@ -260,12 +262,6 @@ export async function setFiveSStandardScoringScaleFromForm(formData: FormData) {
   }
   revalidatePath("/platform/5s");
   revalidatePath(`/platform/5s/standards/${standardId}`);
-  redirect(
-    buildAuthoringSavedRedirectPath(
-      `/platform/5s/standards/${standardId}`,
-      "scale",
-    ),
-  );
 }
 
 export async function saveFiveSAuditAnswer(
@@ -390,29 +386,6 @@ export async function createFiveSFinding(
   return { findingId: data as string };
 }
 
-export async function createFiveSAction(
-  auditId: string,
-  title: string,
-  description?: string,
-) {
-  const supabase = await createServerSupabaseClient();
-  const rpcArgs: {
-    target_title: string;
-    target_audit_id: string;
-    target_description?: string;
-  } = {
-    target_title: title,
-    target_audit_id: auditId,
-  };
-  if (description) {
-    rpcArgs.target_description = description;
-  }
-
-  const { data, error } = await supabase.rpc("create_five_s_action", rpcArgs);
-  if (error) return { error: error.message };
-  return { actionId: data as string };
-}
-
 export async function startFiveSAuditFromForm(formData: FormData) {
   const standardId = String(formData.get("standardId"));
   const unitId = String(formData.get("unitId"));
@@ -444,12 +417,8 @@ export async function addFiveSSectionFromForm(formData: FormData) {
     authoring.nextSectionPosition,
   );
   throwIfActionError(result);
-  redirect(
-    buildAuthoringSavedRedirectPath(
-      `/platform/5s/standards/${standardId}`,
-      "section",
-    ),
-  );
+  revalidatePath("/platform/5s");
+  revalidatePath(`/platform/5s/standards/${standardId}`);
 }
 
 export async function addFiveSQuestionFromForm(formData: FormData) {
@@ -460,6 +429,10 @@ export async function addFiveSQuestionFromForm(formData: FormData) {
   const standardId = String(formData.get("standardId"));
   if (!prompt) {
     throw new Error("Question prompt is required");
+  }
+  const typeError = fiveSAuthoringQuestionTypeError(questionType);
+  if (typeError) {
+    throw new Error(typeError);
   }
 
   const supabase = await createServerSupabaseClient();
@@ -484,12 +457,8 @@ export async function addFiveSQuestionFromForm(formData: FormData) {
     questionType,
   );
   throwIfActionError(result);
-  redirect(
-    buildAuthoringSavedRedirectPath(
-      `/platform/5s/standards/${standardId}`,
-      "question",
-    ),
-  );
+  revalidatePath("/platform/5s");
+  revalidatePath(`/platform/5s/standards/${standardId}`);
 }
 
 export async function publishFiveSStandardFromForm(formData: FormData) {
@@ -592,4 +561,68 @@ export async function createFiveSStandardSuccessorFromForm(formData: FormData) {
     throw new Error(result.error);
   }
   redirect(`/platform/5s/standards/${standardId}`);
+}
+
+export async function removeFiveSQuestion(questionId: string) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("remove_five_s_question", {
+    target_question_id: questionId,
+  });
+  if (error) return { error: error.message };
+  return { ok: true };
+}
+
+export async function removeFiveSSection(sectionId: string) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("remove_five_s_section", {
+    target_section_id: sectionId,
+  });
+  if (error) return { error: error.message };
+  return { ok: true };
+}
+
+export async function discardFiveSStandardDraft(standardVersionId: string) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("discard_five_s_standard_draft", {
+    target_standard_version_id: standardVersionId,
+  });
+  if (error) return { error: error.message };
+  return { ok: true };
+}
+
+export async function removeFiveSQuestionFromForm(formData: FormData) {
+  const questionId = String(formData.get("questionId") ?? "").trim();
+  const standardId = String(formData.get("standardId") ?? "").trim();
+  if (!questionId || !standardId) {
+    throw new Error("Question and standard are required");
+  }
+  throwIfActionError(await removeFiveSQuestion(questionId));
+  revalidatePath("/platform/5s");
+  revalidatePath(`/platform/5s/standards/${standardId}`);
+}
+
+export async function removeFiveSSectionFromForm(formData: FormData) {
+  const sectionId = String(formData.get("sectionId") ?? "").trim();
+  const standardId = String(formData.get("standardId") ?? "").trim();
+  if (!sectionId || !standardId) {
+    throw new Error("Category and standard are required");
+  }
+  throwIfActionError(await removeFiveSSection(sectionId));
+  revalidatePath("/platform/5s");
+  revalidatePath(`/platform/5s/standards/${standardId}`);
+}
+
+export async function discardFiveSStandardDraftFromForm(formData: FormData) {
+  const versionId = String(formData.get("versionId") ?? "").trim();
+  const standardId = String(formData.get("standardId") ?? "").trim();
+  if (!versionId || !standardId) {
+    throw new Error("Draft version and standard are required");
+  }
+  throwIfActionError(await discardFiveSStandardDraft(versionId));
+  redirect(
+    buildAuthoringSavedRedirectPath(
+      `/platform/5s/standards/${standardId}`,
+      "discard",
+    ),
+  );
 }

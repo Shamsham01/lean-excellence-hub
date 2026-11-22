@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 
+import { linkProblemSolvingCaseToCiProject } from "@/app/(platform)/platform/projects/linking-actions";
 import {
   addProblemSolvingSourceLink,
   createProblemSolvingCaseDraft,
   updateProblemSolvingCaseDraft,
 } from "@/app/(platform)/platform/problem-solving/actions";
+import { ProjectSelect } from "@/components/projects/project-select";
+import { RelatedWorkPanel } from "@/components/problem-solving/related-work-panel";
 import { OrganisationalUnitSelect } from "@/components/organisation/organisational-unit-select";
 import { PersonSelect } from "@/components/people/person-select";
 import { Button } from "@/components/ui/button";
@@ -25,8 +28,9 @@ import {
   severityLabel,
 } from "@/lib/problem-solving/status";
 import type { ProblemSolvingMethod } from "@/lib/problem-solving/types";
+import type { ProjectSelectorOption } from "@/lib/projects/types";
 import { navigateTo } from "@/lib/navigation/navigate";
-import { cn } from "@/lib/utils";
+import { WizardStepProgressNav } from "@/components/ui/wizard-step-progress-nav";
 
 const WIZARD_STEPS = [
   "Basics",
@@ -41,6 +45,7 @@ type CreateCaseWizardProps = {
   units: UnitSelectOption[];
   members: PersonSelectOption[];
   methods: ProblemSolvingMethod[];
+  projects: ProjectSelectorOption[];
   requiresSiteSelection?: boolean;
 };
 
@@ -48,6 +53,7 @@ export function CreateCaseWizard({
   units,
   members,
   methods,
+  projects,
   requiresSiteSelection = false,
 }: CreateCaseWizardProps) {
   const [step, setStep] = useState(0);
@@ -68,6 +74,7 @@ export function CreateCaseWizard({
   const [severity, setSeverity] = useState<string>(SEVERITIES[1]);
   const [priority, setPriority] = useState<string>(PRIORITIES[1]);
   const [methodVersionId, setMethodVersionId] = useState("");
+  const [linkedProjectId, setLinkedProjectId] = useState("");
   const [sourceResourceId, setSourceResourceId] = useState("");
 
   function nextStep() {
@@ -81,6 +88,13 @@ export function CreateCaseWizard({
 
   function prevStep() {
     setStep((current) => Math.max(current - 1, 0));
+  }
+
+  function isStepComplete(stepIndex: number) {
+    if (stepIndex === 0) {
+      return Boolean(title.trim() && unitId && ownerId);
+    }
+    return stepIndex < step;
   }
 
   async function handleCreate() {
@@ -114,9 +128,6 @@ export function CreateCaseWizard({
         priority,
         ...(facilitatorId ? { facilitatorMembershipId: facilitatorId } : {}),
         ...(methodVersionId ? { methodVersionId } : {}),
-        ...(sourceResourceId.trim()
-          ? { sourceResourceId: sourceResourceId.trim() }
-          : {}),
       });
       if (draftResult.error || !draftResult.id) {
         throw new Error(draftResult.error ?? "Draft creation failed");
@@ -149,6 +160,14 @@ export function CreateCaseWizard({
       });
       if (updateResult.error) throw new Error(updateResult.error);
 
+      if (linkedProjectId.trim()) {
+        const linkResult = await linkProblemSolvingCaseToCiProject(
+          caseId,
+          linkedProjectId.trim(),
+        );
+        if (linkResult.error) throw new Error(linkResult.error);
+      }
+
       if (sourceResourceId.trim()) {
         await addProblemSolvingSourceLink(
           caseId,
@@ -170,23 +189,14 @@ export function CreateCaseWizard({
       className="flex flex-col gap-6"
       data-testid="create-problem-solving-wizard"
     >
-      <nav className="-mx-1 flex [scrollbar-width:none] gap-2 overflow-x-auto px-1 pb-1 [&::-webkit-scrollbar]:hidden">
-        {WIZARD_STEPS.map((label, index) => (
-          <button
-            key={label}
-            type="button"
-            onClick={() => setStep(index)}
-            className={cn(
-              "min-h-9 shrink-0 rounded-md border px-3 py-2 text-xs font-medium",
-              index === step
-                ? "border-primary bg-primary/10 text-foreground"
-                : "border-border text-muted-foreground",
-            )}
-          >
-            {index + 1}. {label}
-          </button>
-        ))}
-      </nav>
+      <WizardStepProgressNav
+        ariaLabel="Create problem solving case steps"
+        steps={WIZARD_STEPS}
+        activeStep={step}
+        isStepComplete={isStepComplete}
+        onSelectStep={setStep}
+        testId="create-case-step-nav"
+      />
 
       <Card>
         <CardHeader>
@@ -253,6 +263,10 @@ export function CreateCaseWizard({
                   onChange={(e) => setBackground(e.target.value)}
                 />
               </label>
+              <RelatedWorkPanel
+                mode="draft"
+                queryText={`${title} ${problemStatement}`.trim()}
+              />
               <label className="flex flex-col gap-1 text-sm">
                 <span>Business impact</span>
                 <Textarea
@@ -357,12 +371,19 @@ export function CreateCaseWizard({
                   )}
                 </select>
               </label>
+              <ProjectSelect
+                options={projects}
+                value={linkedProjectId}
+                onChange={setLinkedProjectId}
+                requiresSiteSelection={requiresSiteSelection}
+              />
               <label className="flex flex-col gap-1 text-sm">
-                <span>Source resource ID (optional)</span>
+                <span>Other source resource ID (optional)</span>
                 <Input
                   value={sourceResourceId}
                   onChange={(e) => setSourceResourceId(e.target.value)}
-                  placeholder="Link to suggestion or project"
+                  placeholder="Suggestion or other resource UUID"
+                  data-testid="create-case-other-source-id"
                 />
               </label>
             </>

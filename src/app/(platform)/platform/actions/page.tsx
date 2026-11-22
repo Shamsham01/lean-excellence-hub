@@ -1,14 +1,18 @@
-import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
-import { ActionCreateForm } from "@/components/actions/action-create-form";
-import { ActionFilters } from "@/components/actions/action-filters";
-import { ActionList } from "@/components/actions/action-list";
+import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
+import { ActionPlannerShell } from "@/components/actions/action-planner-shell";
+import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
 import { PageHeader } from "@/components/platform/page-header";
-import { Card, CardContent } from "@/components/ui/card";
+import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
+import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
 import { parseActionListFilters } from "@/lib/actions/action-filters";
+import { loadActionPlannerSummaries } from "@/lib/actions/load-planner-summaries";
 import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
 import { ACTIONS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { formatFiveSAuditStatus } from "@/modules/5s/audit-status";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function ActionsPage({
@@ -16,8 +20,13 @@ export default async function ActionsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const canRead = await currentMemberHasPermission(ACTIONS_PERMISSIONS.read);
-  if (!canRead) notFound();
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: ACTIONS_PERMISSIONS.read,
+    module: "actions",
+    title: "Actions",
+    baselineOpensModule: true,
+  });
+  if (workplaceView) return workplaceView;
 
   const canCreate = await currentMemberHasPermission(
     ACTIONS_PERMISSIONS.create,
@@ -26,13 +35,16 @@ export default async function ActionsPage({
   const filters = parseActionListFilters(rawParams);
   const selectorOptions = await loadSiteScopedSelectorOptions();
   const supabase = await createServerSupabaseClient();
+  const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
+    parseAnalyticsRangeDays(rawParams.range),
+  );
 
   const sourceActionIds = await loadSourceActionIds(supabase, filters);
 
   let actionQuery = supabase
     .from("actions")
     .select(
-      "id, action_number, title, status, priority, created_at, due_at, unit_id, source_resource_id",
+      "id, action_number, title, status, priority, created_at, due_at, unit_id, source_resource_id, version",
     )
     .order("created_at", { ascending: false });
 
@@ -51,6 +63,7 @@ export default async function ActionsPage({
     priority: string;
     created_at: string;
     due_at: string | null;
+    version: number;
   }> = [];
 
   if (sourceActionIds && sourceActionIds.length === 0) {
@@ -75,57 +88,72 @@ export default async function ActionsPage({
     .from("maturity_criteria")
     .select("id, name")
     .order("name");
+  const { data: auditRows } = await supabase
+    .from("five_s_audits")
+    .select(
+      "id, status, standard_name_snapshot, unit_name_snapshot, completed_at, created_at",
+    )
+    .order("created_at", { ascending: false })
+    .limit(200);
 
-  const openCount = actions.filter(
-    (a) => a.status === "open" || a.status === "in_progress",
-  ).length;
+  const plannerActions = await loadActionPlannerSummaries(actions);
+  const openActionParam =
+    typeof rawParams.action === "string"
+      ? rawParams.action
+      : Array.isArray(rawParams.action)
+        ? rawParams.action[0]
+        : undefined;
+  const openActionId = openActionParam ?? null;
 
   return (
     <div className="flex flex-col gap-8" data-testid="actions-page">
-      <PageHeader
-        title="Actions"
-        description="Improvement actions linked to assessments and operational work."
+      <PageHeader title="Actions" leanAiHelpLabel="Actions" />
+
+      <Suspense fallback={null}>
+        <ActionPlannerShell
+          actions={plannerActions}
+          initialOpenActionId={openActionId}
+          canCreate={canCreate}
+          listFilters={{
+            filters,
+            people: selectorOptions.people,
+            units: selectorOptions.units.map((unit) => ({
+              id: unit.id,
+              label: unit.name,
+            })),
+            assessments: (assessmentRows ?? []).map((assessment) => ({
+              id: assessment.id,
+              label: `${assessment.assessment_type} · ${assessment.status}`,
+            })),
+            pillars: (pillarRows ?? []).map((pillar) => ({
+              id: pillar.id,
+              label: pillar.name,
+            })),
+            criteria: (criterionRows ?? []).map((criterion) => ({
+              id: criterion.id,
+              label: criterion.name,
+            })),
+            audits: (auditRows ?? []).map((audit) => {
+              const labelParts = [
+                audit.standard_name_snapshot ?? "5S audit",
+                audit.unit_name_snapshot,
+                formatFiveSAuditStatus(audit.status),
+              ].filter(Boolean);
+              return {
+                id: audit.id,
+                label: labelParts.join(" · "),
+              };
+            }),
+          }}
+        />
+      </Suspense>
+      <ModulePageInsightsDeferred
+        module="actions"
+        rangeDays={analyticsRange.days}
+        testId="actions-analytics"
+        showAgeingTable={false}
       />
-
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="bg-surface">
-          <CardContent className="p-4">
-            <p className="typography-metric-label">Open</p>
-            <p className="typography-metric-value">{openCount}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-surface">
-          <CardContent className="p-4">
-            <p className="typography-metric-label">Total</p>
-            <p className="typography-metric-value">{actions.length}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <ActionFilters
-        filters={filters}
-        people={selectorOptions.people}
-        units={selectorOptions.units.map((unit) => ({
-          id: unit.id,
-          label: unit.name,
-        }))}
-        assessments={(assessmentRows ?? []).map((assessment) => ({
-          id: assessment.id,
-          label: `${assessment.assessment_type} · ${assessment.status}`,
-        }))}
-        pillars={(pillarRows ?? []).map((pillar) => ({
-          id: pillar.id,
-          label: pillar.name,
-        }))}
-        criteria={(criterionRows ?? []).map((criterion) => ({
-          id: criterion.id,
-          label: criterion.name,
-        }))}
-      />
-
-      {canCreate ? <ActionCreateForm /> : null}
-
-      <ActionList actions={actions} />
+      <WorkplaceSharedRecords module="actions" />
     </div>
   );
 }
@@ -175,10 +203,14 @@ async function loadSourceActionIds(
       .from("suggestion_action_context")
       .select("action_id");
     sets.push((data ?? []).map((row) => row.action_id));
-  } else if (filters.source === "five_s_audit") {
-    const { data } = await supabase
+  } else if (filters.source === "five_s_audit" || filters.audit) {
+    let contextQuery = supabase
       .from("five_s_action_context")
-      .select("action_id");
+      .select("action_id, audit_id");
+    if (filters.audit) {
+      contextQuery = contextQuery.eq("audit_id", filters.audit);
+    }
+    const { data } = await contextQuery;
     sets.push((data ?? []).map((row) => row.action_id));
   } else if (filters.source === "gemba_walk") {
     const { data } = await supabase

@@ -33,6 +33,10 @@ import {
   projectSuggestionReviewerReassigned,
 } from "./projectors/suggestion-reviewer-reassigned.ts";
 import {
+  SUGGESTION_SUBMITTED_EVENT,
+  projectSuggestionSubmitted,
+} from "./projectors/suggestion-submitted.ts";
+import {
   SKILL_PROFICIENCY_VALIDATED_EVENT,
   projectSkillProficiencyValidated,
 } from "./projectors/skill-proficiency-validated.ts";
@@ -74,6 +78,10 @@ export const NOTIFICATION_EVENT_PROJECTORS: DomainEventProjector[] = [
   {
     eventType: RECOGNITION_AWARDED_EVENT,
     project: projectRecognitionAwarded,
+  },
+  {
+    eventType: SUGGESTION_SUBMITTED_EVENT,
+    project: projectSuggestionSubmitted,
   },
   {
     eventType: SUGGESTION_REVIEWER_ASSIGNED_EVENT,

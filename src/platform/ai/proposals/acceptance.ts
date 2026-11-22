@@ -4,6 +4,7 @@ import { PROBLEM_SOLVING_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { normalizeFishboneCategory } from "@/lib/problem-solving/hypothesis";
 import type { AiProposalType } from "@/platform/ai/types";
 import { proposalPayloadSchemas } from "@/platform/ai/proposals/contracts";
 
@@ -67,16 +68,23 @@ export async function acceptAiProposal(
     case "hypothesis": {
       await requirePermission(PROBLEM_SOLVING_PERMISSIONS.manage);
       const hyp = proposalPayloadSchemas.hypothesis.parse(editedPayload);
-      const { data: hypId, error: hypError } = await supabase.rpc(
-        "create_hypothesis",
-        {
-          target_problem_solving_case_id: caseId,
-          target_statement: hyp.statement,
-          target_category: hyp.category ?? null,
-          target_rationale: hyp.rationale ?? null,
-          target_parent_hypothesis_id: hyp.parent_hypothesis_id ?? null,
-        },
-      );
+      if (hyp.analysis_node_id) {
+        await assertAnalysisNodeInCase(supabase, caseId, hyp.analysis_node_id);
+      }
+      const { data: hypId, error: hypError } = hyp.analysis_node_id
+        ? await supabase.rpc("promote_analysis_node_to_hypothesis", {
+            target_node_id: hyp.analysis_node_id,
+            target_statement: hyp.statement,
+            target_category: hyp.category ?? null,
+            target_problem_solving_case_id: caseId,
+          })
+        : await supabase.rpc("create_hypothesis", {
+            target_problem_solving_case_id: caseId,
+            target_statement: hyp.statement,
+            target_category: hyp.category ?? null,
+            target_rationale: hyp.rationale ?? null,
+            target_parent_hypothesis_id: hyp.parent_hypothesis_id ?? null,
+          });
       if (hypError) throw hypError;
       await recordAcceptance(supabase, proposal, {
         hypothesis_id: hypId as string,
@@ -93,8 +101,10 @@ export async function acceptAiProposal(
         {
           target_hypothesis_id: test.hypothesis_id,
           target_test_question: test.test_question,
-          target_expected_result: test.expected_result,
-          target_method: test.method ?? null,
+          ...(test.expected_result?.trim()
+            ? { target_expected_result: test.expected_result.trim() }
+            : {}),
+          target_method: test.method,
         },
       );
       if (testError) throw testError;
@@ -266,6 +276,144 @@ export async function acceptAiProposal(
       return { resultId: llId as string, resultType: proposal.proposal_type };
     }
 
+    case "problem_statement": {
+      await requirePermission(PROBLEM_SOLVING_PERMISSIONS.manage);
+      const ps = proposalPayloadSchemas.problem_statement.parse(editedPayload);
+      const { error: psError } = await supabase.rpc(
+        "update_problem_solving_problem_statement",
+        {
+          target_case_id: caseId,
+          target_problem_statement: ps.statement,
+        },
+      );
+      if (psError) throw psError;
+      await recordAcceptance(supabase, proposal, {
+        problem_solving_case_id: caseId,
+      });
+      return { resultId: caseId, resultType: proposal.proposal_type };
+    }
+
+    case "target_condition": {
+      await requirePermission(PROBLEM_SOLVING_PERMISSIONS.manage);
+      const tc = proposalPayloadSchemas.target_condition.parse(editedPayload);
+      const { error: tcError } = await supabase.rpc(
+        "update_problem_solving_target_condition",
+        {
+          target_case_id: caseId,
+          target_target_condition: tc.statement,
+        },
+      );
+      if (tcError) throw tcError;
+      await recordAcceptance(supabase, proposal, {
+        problem_solving_case_id: caseId,
+      });
+      return { resultId: caseId, resultType: proposal.proposal_type };
+    }
+
+    case "five_why_chain": {
+      await requirePermission(PROBLEM_SOLVING_PERMISSIONS.manage);
+      const chain = proposalPayloadSchemas.five_why_chain.parse(editedPayload);
+      const title = chain.title ?? "5 Why analysis";
+      const { data: analysisId, error: analysisError } = await supabase.rpc(
+        "create_analysis",
+        {
+          target_problem_solving_case_id: caseId,
+          target_analysis_type: "five_whys",
+          target_title: title,
+        },
+      );
+      if (analysisError) throw analysisError;
+      let parentNodeId: string | null = null;
+      for (const [index, step] of chain.steps.entries()) {
+        const metadata =
+          step.evidence && step.evidence.length > 0
+            ? { evidence: step.evidence }
+            : {};
+        const { data: nodeId, error: nodeError } = await supabase.rpc(
+          "add_analysis_node",
+          {
+            target_analysis_id: analysisId,
+            target_label: step.label,
+            target_parent_node_id: parentNodeId,
+            target_sort_order: index,
+            target_display_metadata: metadata,
+          },
+        );
+        if (nodeError) throw nodeError;
+        parentNodeId = nodeId as string;
+      }
+      if (chain.root_cause_summary?.trim()) {
+        const { data: hypId, error: hypError } = await supabase.rpc(
+          "create_hypothesis",
+          {
+            target_problem_solving_case_id: caseId,
+            target_statement: chain.root_cause_summary.trim(),
+            target_rationale: "Drafted from accepted 5 Why chain.",
+          },
+        );
+        if (hypError) throw hypError;
+        await recordAcceptance(supabase, proposal, {
+          hypothesis_id: hypId as string,
+        });
+        return {
+          resultId: hypId as string,
+          resultType: proposal.proposal_type,
+        };
+      }
+      await recordAcceptance(supabase, proposal, {
+        problem_solving_case_id: caseId,
+      });
+      return {
+        resultId: analysisId as string,
+        resultType: proposal.proposal_type,
+      };
+    }
+
+    case "fishbone_cause": {
+      await requirePermission(PROBLEM_SOLVING_PERMISSIONS.manage);
+      const fb = proposalPayloadSchemas.fishbone_cause.parse(editedPayload);
+      const category = normalizeFishboneCategory(fb.category);
+      let analysisId = fb.analysis_id ?? null;
+      if (!analysisId) {
+        const { data: existingRows, error: existingError } = await supabase
+          .from("problem_solving_analyses")
+          .select("id")
+          .eq("problem_solving_case_id", caseId)
+          .eq("analysis_type", "fishbone")
+          .order("created_at", { ascending: true })
+          .limit(1);
+        if (existingError) throw existingError;
+        const existingId =
+          (existingRows as Array<{ id: string }> | null)?.[0]?.id ?? null;
+        if (existingId) {
+          analysisId = existingId;
+        } else {
+          const { data: createdAnalysisId, error: analysisError } =
+            await supabase.rpc("create_analysis", {
+              target_problem_solving_case_id: caseId,
+              target_analysis_type: "fishbone",
+              target_title: fb.analysis_title ?? "Fishbone analysis",
+            });
+          if (analysisError) throw analysisError;
+          analysisId = createdAnalysisId as string;
+        }
+      }
+      const { data: nodeId, error: nodeError } = await supabase.rpc(
+        "add_analysis_node",
+        {
+          target_analysis_id: analysisId,
+          target_label: fb.label,
+          target_parent_node_id: fb.parent_node_id ?? null,
+          target_category: category,
+        },
+      );
+      if (nodeError) throw nodeError;
+      await recordAcceptance(supabase, proposal, {
+        problem_solving_case_id: caseId,
+      });
+      return { resultId: nodeId as string, resultType: proposal.proposal_type };
+    }
+
     default:
       throw new Error("Unsupported proposal type.");
   }
@@ -274,7 +422,7 @@ export async function acceptAiProposal(
 async function recordAcceptance(
   supabase: SupabaseClient,
   proposal: { id: string },
-  resultRef: Record<string, string>,
+  resultRef: Record<string, string | undefined>,
 ): Promise<void> {
   const { error } = await supabase.rpc("record_ai_proposal_accepted", {
     target_ai_proposal_id: proposal.id,
@@ -292,6 +440,8 @@ async function recordAcceptance(
     target_session_entry_id: resultRef.session_entry_id ?? undefined,
     target_action_id: resultRef.action_id ?? undefined,
     target_lesson_learned_id: resultRef.lesson_learned_id ?? undefined,
+    target_problem_solving_case_id:
+      resultRef.problem_solving_case_id ?? undefined,
   });
   if (error) throw error;
 }
@@ -309,6 +459,22 @@ async function assertHypothesisInCase(
     .maybeSingle();
   if (error || !data) {
     throw new Error("Referenced hypothesis is not valid for this case.");
+  }
+}
+
+async function assertAnalysisNodeInCase(
+  supabase: SupabaseClient,
+  caseId: string,
+  nodeId: string,
+) {
+  const { data, error } = await supabase
+    .from("problem_solving_analysis_nodes")
+    .select("id, problem_solving_analyses!inner(problem_solving_case_id)")
+    .eq("id", nodeId)
+    .eq("problem_solving_analyses.problem_solving_case_id", caseId)
+    .maybeSingle();
+  if (error || !data) {
+    throw new Error("Referenced cause is not valid for this case.");
   }
 }
 

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useId, useState, useTransition } from "react";
 
-import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
+import { CompactApplicableUnitsField } from "@/components/organisation/compact-applicable-units-field";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +24,7 @@ import {
   findExactConfigurationNameMatch,
 } from "@/modules/module-setup/name-match";
 import type { UnitSelectOption } from "@/modules/organisation/site-context";
+import type { FlatOrganisationUnit } from "@/modules/organisation/unit-hierarchy";
 
 type SendResult =
   | {
@@ -39,15 +40,17 @@ type SendResult =
 
 type SetupBuilderWorkspaceProps = {
   moduleLabel: string;
-  noun: "5S standard" | "Gemba definition";
+  noun: "5S standard" | "Gemba definition" | "Training catalogue";
   setupHref: string;
   manualHref: string;
   quickStartHref: string;
   starters: string[];
   existingNames: string[];
+  hierarchyUnits?: FlatOrganisationUnit[];
   units: UnitSelectOption[];
   requiresSiteSelection: boolean;
   showThreshold: boolean;
+  showApplicability?: boolean;
   initial: ModuleSetupBuilderSnapshot | null;
   unavailableMessage: string | null;
   send: (input: {
@@ -72,9 +75,11 @@ export function SetupBuilderWorkspace({
   quickStartHref,
   starters,
   existingNames,
+  hierarchyUnits = [],
   units,
   requiresSiteSelection,
   showThreshold,
+  showApplicability = true,
   initial,
   unavailableMessage,
   send,
@@ -532,11 +537,15 @@ export function SetupBuilderWorkspace({
                   />
                 </div>
               ) : null}
-              <ApplicableUnitsField
-                options={units}
-                requiresSiteSelection={requiresSiteSelection}
-                description="You choose where this draft applies."
-              />
+              {showApplicability ? (
+                <CompactApplicableUnitsField
+                  hierarchyUnits={hierarchyUnits}
+                  options={units}
+                  requiresSiteSelection={requiresSiteSelection}
+                  description="You choose where this draft applies."
+                  onSelectedIdsChange={() => setCreateError(null)}
+                />
+              ) : null}
               {createError ? (
                 <p
                   role="alert"

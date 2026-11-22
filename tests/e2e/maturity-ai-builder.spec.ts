@@ -2,11 +2,13 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 
 import {
+  ensureLeanAiAssistantOpen,
   loginAndSelectOrganisation,
   provisionLeanAiContextE2eUser,
   resolveSupabaseEnv,
   type LeanAiContextE2eUser,
 } from "./helpers/leanai-context";
+import { platformMain } from "./helpers/platform-main";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const STARTER =
@@ -154,15 +156,23 @@ test.describe("Maturity framework builder with LeanAI", () => {
     await loginAndSelectOrganisation(page, user, user.organisationAName);
 
     await page.goto("/platform/maturity/models");
+    const main = platformMain(page);
     await expect(
-      page.getByTestId("maturity-build-with-leanai-section"),
+      main.getByTestId("maturity-build-with-leanai-section"),
     ).toBeVisible({ timeout: 30_000 });
     await expect(
-      page.getByTestId("maturity-build-with-leanai-unavailable"),
+      main.getByTestId("maturity-build-with-leanai-unavailable"),
     ).toContainText(/LeanAI is turned off/i);
-    await expect(page.getByTestId("maturity-build-with-leanai")).toHaveCount(0);
-    await expect(page.getByTestId("maturity-quick-start-card")).toBeVisible();
-    await expect(page.locator("#maturity-manual-create")).toBeVisible();
+    await expect(main.getByTestId("maturity-build-with-leanai")).toHaveCount(0);
+    await expect(main.getByTestId("maturity-quick-start-card")).toBeVisible();
+    // `#maturity-manual-create` must stay unique in the primary column; strict
+    // locators fail if a duplicate appears elsewhere in the document (invalid HTML).
+    await expect(
+      page
+        .getByTestId("platform-main")
+        .getByTestId("maturity-manual-create-section")
+        .first(),
+    ).toBeVisible();
 
     await page.goto("/platform/maturity/builder");
     await expect(
@@ -575,6 +585,7 @@ test.describe("Maturity framework builder with LeanAI", () => {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await loginAndSelectOrganisation(page, user, user.organisationAName);
     await page.goto("/platform/maturity/models");
+    await ensureLeanAiAssistantOpen(page);
     const desktop = page.getByTestId("leanai-assistant-desktop");
     await expect(desktop).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("leanai-assistant-rail")).toHaveCount(0);

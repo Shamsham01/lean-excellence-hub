@@ -35,7 +35,9 @@ export function ProfileAccessGrants({
   if (view.mode === "none") {
     return (
       <div className="sm:col-span-2">
-        <dt className="text-muted-foreground">Application access</dt>
+        <dt className="text-muted-foreground" data-testid="your-access-summary">
+          Your access
+        </dt>
         <dd data-testid="profile-application-access-empty">
           No active access grants
         </dd>
@@ -47,14 +49,19 @@ export function ProfileAccessGrants({
     return (
       <>
         <div>
-          <dt className="text-muted-foreground">Application role</dt>
-          <dd data-testid="profile-application-role">
+          <dt
+            className="text-muted-foreground"
+            data-testid="your-access-summary"
+          >
+            Your access
+          </dt>
+          <dd className="break-words" data-testid="profile-application-role">
             {view.grant.role_display_name}
           </dd>
         </div>
         <div>
           <dt className="text-muted-foreground">Access scope</dt>
-          <dd data-testid="profile-access-scope">
+          <dd className="break-words" data-testid="profile-access-scope">
             {formatAccessScopeDisplay(view.grant)}
           </dd>
         </div>
@@ -64,7 +71,9 @@ export function ProfileAccessGrants({
 
   return (
     <div className="sm:col-span-2">
-      <dt className="text-muted-foreground">Application access</dt>
+      <dt className="text-muted-foreground" data-testid="your-access-summary">
+        Your access
+      </dt>
       <dd>
         <ul
           className="mt-1 flex flex-col gap-3"
@@ -73,14 +82,17 @@ export function ProfileAccessGrants({
           {view.grants.map((grant, index) => (
             <li
               key={`${grant.role_display_name}-${grant.scope_type}-${grant.scope_unit_name ?? "org"}-${index}`}
-              className="rounded-md border border-border px-3 py-2"
+              className="min-w-0 rounded-md border border-border px-3 py-2"
               data-testid="profile-application-access-item"
             >
-              <p className="font-medium" data-testid="profile-application-role">
+              <p
+                className="font-medium break-words"
+                data-testid="profile-application-role"
+              >
                 {grant.role_display_name}
               </p>
               <p
-                className="text-muted-foreground"
+                className="break-words text-muted-foreground"
                 data-testid="profile-access-scope"
               >
                 {formatAccessScopeDisplay(grant)}

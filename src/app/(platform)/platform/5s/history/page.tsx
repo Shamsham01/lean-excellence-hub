@@ -1,11 +1,23 @@
 import { PageHeader } from "@/components/platform/page-header";
+import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { AppLink } from "@/components/ui/app-link";
 import { Card, CardContent } from "@/components/ui/card";
+import { formatFiveSAuditScoreBand } from "@/modules/5s/audit-status";
+import { FIVE_S_PERMISSIONS } from "@/modules/operational/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function FiveSHistoryPage() {
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: FIVE_S_PERMISSIONS.read,
+    module: "five_s",
+    title: "5S",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
-  const { data: audits } = await supabase
+  const { data: audits, error: auditsError } = await supabase
     .from("five_s_audits")
     .select(
       "id, status, overall_score_percent, target_percent, result_status, standard_name_snapshot, unit_name_snapshot, completed_at, auditor_membership_id",
@@ -14,12 +26,20 @@ export default async function FiveSHistoryPage() {
     .order("completed_at", { ascending: false })
     .limit(50);
 
-  return (
-    <div className="flex flex-col gap-8" data-testid="five-s-history-page">
-      <PageHeader
+  if (auditsError) {
+    return (
+      <ModuleReadError
         title="5S history"
         description="Completed audits with immutable scores."
+        message="Completed audits could not be loaded. Refresh the page and try again."
+        module="five_s"
       />
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-8" data-testid="five-s-history-page">
+      <PageHeader title="5S history" />
       <Card>
         <CardContent className="flex flex-col gap-2 py-6">
           {audits?.length ? (
@@ -40,13 +60,15 @@ export default async function FiveSHistoryPage() {
                 </div>
                 <div className="text-right text-sm">
                   <p className="font-medium">{audit.overall_score_percent}%</p>
-                  <p className="text-muted-foreground">{audit.result_status}</p>
+                  <p className="text-muted-foreground">
+                    {formatFiveSAuditScoreBand(audit.result_status)}
+                  </p>
                 </div>
               </AppLink>
             ))
           ) : (
             <p className="text-sm text-muted-foreground">
-              No completed audits yet.
+              No completed audits are available with your access.
             </p>
           )}
         </CardContent>

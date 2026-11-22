@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import { skipStructureFirstStep } from "@/app/onboarding/setup/actions";
 import {
   inviteColleague,
@@ -27,6 +29,7 @@ export function PeopleSetupStep({
   owners,
   members,
   pendingInvitations,
+  pendingInvitationNamesUnavailable = false,
   offers,
   units,
   jobFunctions,
@@ -36,6 +39,7 @@ export function PeopleSetupStep({
   owners: StructureFirstOwner[];
   members: StructureFirstMember[];
   pendingInvitations: StructureFirstPendingInvitation[];
+  pendingInvitationNamesUnavailable?: boolean;
   offers: DelegatableAccessOffer[];
   units: Array<{
     id: string;
@@ -140,16 +144,13 @@ export function PeopleSetupStep({
         </h3>
         <PendingInvitationsList
           invitations={pendingInvitations}
+          namesUnavailable={pendingInvitationNamesUnavailable}
           onRevoke={revokeInvitation}
           onReissue={reissueInvitation}
         />
       </div>
 
-      {message ? (
-        <p className="text-sm text-destructive" role="alert">
-          {message}
-        </p>
-      ) : null}
+      {message ? <InlineAlert tone="error">{message}</InlineAlert> : null}
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <Button

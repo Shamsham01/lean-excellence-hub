@@ -6,7 +6,11 @@ import { redirect, RedirectType } from "next/navigation";
 import { buildAuthoringSavedRedirectPath } from "@/lib/authoring/authoring-query";
 import { findResumableGembaWalkId } from "@/modules/operational/gemba-active-walks";
 import { readApplicableUnitIds } from "@/modules/operational/gemba-applicability";
-import { gembaWalkPath } from "@/modules/operational/gemba-walk-prompt";
+import {
+  buildGembaWalkPromptSearch,
+  gembaWalkPath,
+} from "@/modules/operational/gemba-walk-prompt";
+import { resolveFirstGembaWalkPromptId } from "@/modules/operational/resolve-first-gemba-walk-prompt";
 import {
   loadTemplateAuthoringChildren,
   nextQuestionPosition,
@@ -93,12 +97,8 @@ export async function setGembaDefinitionApplicableUnitsFromForm(
   if (result.error) {
     throw new Error(result.error);
   }
-  redirect(
-    buildAuthoringSavedRedirectPath(
-      `/platform/gemba/definitions/${definitionId}`,
-      "applicability",
-    ),
-  );
+  revalidatePath("/platform/gemba");
+  revalidatePath(`/platform/gemba/definitions/${definitionId}`);
 }
 
 export async function addGembaSection(
@@ -185,7 +185,17 @@ export async function startGembaWalkFromForm(formData: FormData) {
   const definitionId = String(formData.get("definitionId"));
   const unitId = String(formData.get("unitId"));
   const result = await startGembaWalk(definitionId, unitId);
-  if (result.walkId) redirect(`/platform/gemba/walks/${result.walkId}`);
+  if (result.walkId) {
+    const supabase = await createServerSupabaseClient();
+    const firstPromptId = await resolveFirstGembaWalkPromptId(
+      supabase,
+      result.walkId,
+    );
+    const query = firstPromptId
+      ? buildGembaWalkPromptSearch(firstPromptId)
+      : "";
+    redirect(`/platform/gemba/walks/${result.walkId}${query}`);
+  }
 }
 
 export async function saveGembaWalkAnswer(
@@ -347,12 +357,8 @@ export async function addGembaSectionFromForm(formData: FormData) {
     authoring.nextSectionPosition,
   );
   throwIfActionError(result);
-  redirect(
-    buildAuthoringSavedRedirectPath(
-      `/platform/gemba/definitions/${definitionId}`,
-      "section",
-    ),
-  );
+  revalidatePath("/platform/gemba");
+  revalidatePath(`/platform/gemba/definitions/${definitionId}`);
 }
 
 export async function addGembaQuestionFromForm(formData: FormData) {
@@ -385,12 +391,8 @@ export async function addGembaQuestionFromForm(formData: FormData) {
     nextQuestionPosition(section),
   );
   throwIfActionError(result);
-  redirect(
-    buildAuthoringSavedRedirectPath(
-      `/platform/gemba/definitions/${definitionId}`,
-      "question",
-    ),
-  );
+  revalidatePath("/platform/gemba");
+  revalidatePath(`/platform/gemba/definitions/${definitionId}`);
 }
 
 export async function completeGembaWalkFromForm(formData: FormData) {

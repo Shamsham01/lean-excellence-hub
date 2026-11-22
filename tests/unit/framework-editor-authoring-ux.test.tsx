@@ -126,6 +126,7 @@ describe("FrameworkEditor authoring UX", () => {
     fireEvent.click(screen.getByTestId("framework-step-levels"));
 
     expect(window.location.search).toBe("?step=levels");
+    fireEvent.click(screen.getByTestId("framework-add-level-open"));
     expect(screen.getByLabelText("Level name")).toBeInTheDocument();
 
     window.history.replaceState(
@@ -137,6 +138,7 @@ describe("FrameworkEditor authoring UX", () => {
     cleanup();
     renderEditor({ initialAuthoringStep: "levels" });
 
+    fireEvent.click(screen.getByTestId("framework-add-level-open"));
     expect(screen.getByLabelText("Level name")).toBeInTheDocument();
     expect(
       screen.queryByTestId("framework-details-form"),
@@ -781,6 +783,7 @@ describe("FrameworkEditor authoring UX", () => {
     expect(screen.queryByLabelText(/^Position$/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/^Position$/)).not.toBeInTheDocument();
 
+    fireEvent.click(screen.getByTestId("framework-add-pillar-open"));
     const addPillarForm = screen.getByTestId("add-pillar-form");
     fireEvent.change(within(addPillarForm).getByLabelText("Pillar name"), {
       target: { value: "Daily Management" },
@@ -821,6 +824,7 @@ describe("FrameworkEditor authoring UX", () => {
     });
 
     expect(screen.queryByLabelText(/^Position$/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("framework-add-criterion-open"));
     const addCriterionForm = screen.getByTestId("add-criterion-form");
     fireEvent.change(
       within(addCriterionForm).getByLabelText("Criterion name"),
@@ -864,6 +868,7 @@ describe("FrameworkEditor authoring UX", () => {
     });
 
     expect(screen.queryByLabelText(/^Position$/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("framework-add-question-open"));
     const addQuestionForm = screen.getByTestId("add-question-form");
     fireEvent.change(
       within(addQuestionForm).getByLabelText("Question prompt"),

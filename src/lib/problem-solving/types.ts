@@ -1,4 +1,5 @@
 import type { MethodStage } from "@/lib/problem-solving/stages";
+import type { ProjectLinkSummary } from "@/lib/projects/types";
 
 export type ProblemSolvingPortfolioItem = {
   id: string;
@@ -34,6 +35,8 @@ export type ProblemSolvingOverview = {
   active_cases: number;
   total_cases: number;
   cases_with_verified_causes: number;
+  /** Total verified hypotheses (root causes) across readable cases */
+  verified_cause_count?: number;
   cases_with_effective_countermeasures: number;
 };
 
@@ -124,6 +127,7 @@ export type ProblemSolvingEffectivenessCheck = {
   observation_window_end: string | null;
   due_date: string | null;
   result: string | null;
+  result_rationale?: string | null;
   verified_by_membership_id: string | null;
   verified_at: string | null;
   created_by_membership_id: string;
@@ -181,6 +185,7 @@ export type ProblemSolvingActionSummary = {
   id: string;
   title: string;
   description: string | null;
+  expected_result?: string | null;
   status: string;
   priority: string;
   due_at: string | null;
@@ -244,6 +249,10 @@ export type ProblemSolvingCaseDetail = {
   cancelled_at: string | null;
   cancelled_by_membership_id: string | null;
   target_due_at: string | null;
+  sustain_plan_standardised: string | null;
+  sustain_plan_owner_membership_id: string | null;
+  sustain_plan_monitoring: string | null;
+  sustain_plan_review_date: string | null;
   activated_at: string | null;
   created_by_membership_id: string;
   created_at: string;
@@ -259,6 +268,7 @@ export type ProblemSolvingCaseDetail = {
   actions: ProblemSolvingActionSummary[];
   evidence_links: ProblemSolvingEvidenceLink[];
   source_links: ProblemSolvingSourceLinkSummary[] | Record<string, unknown>;
+  linked_project?: ProjectLinkSummary | null;
 };
 
 export type ProblemSolvingCurrentConditionItem = {
@@ -303,9 +313,9 @@ export type ProblemSolvingAnalysisNode = {
   analysis_id: string;
   parent_node_id: string | null;
   label: string;
-  node_type: string;
+  category?: string | null;
   sort_order: number;
-  hypothesis_id: string | null;
+  linked_hypothesis_id: string | null;
   created_at: string;
 };
 

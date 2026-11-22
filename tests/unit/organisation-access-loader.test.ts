@@ -6,14 +6,31 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 const rpc = vi.fn();
+const signOut = vi.fn(async () => ({ error: null }));
+const redirect = vi.fn((path: string) => {
+  throw Object.assign(new Error(`REDIRECT:${path}`), {
+    digest: `NEXT_REDIRECT;replace;${path}`,
+  });
+});
 const readRequestPathname = vi.fn(async () => "/platform/gemba");
 
+vi.mock("next/navigation", () => ({
+  redirect: (path: string) => redirect(path),
+}));
+
 vi.mock("@/platform/supabase/server", () => ({
-  createServerSupabaseClient: async () => ({ rpc }),
+  createServerSupabaseClient: async () => ({
+    auth: { signOut },
+    rpc,
+  }),
 }));
 
 vi.mock("@/platform/http/request-path", () => ({
   readRequestPathname: () => readRequestPathname(),
+}));
+
+vi.mock("@/platform/env", () => ({
+  getServerEnvironment: () => ({ APP_ORIGIN: "http://127.0.0.1:3000" }),
 }));
 
 import {
@@ -33,16 +50,28 @@ describe("shared organisation loaders", () => {
     await expect(listEligibleOrganisations()).resolves.toEqual([]);
   });
 
-  it("fails closed on list_my_eligible_organisations errors instead of returning []", async () => {
+  it("redirects to login on list_my_eligible_organisations auth-session failures", async () => {
     rpc.mockResolvedValueOnce({
       data: null,
       error: { code: "PGRST301", message: "JWT expired" },
     });
 
+    await expect(listEligibleOrganisations()).rejects.toThrow(
+      "REDIRECT:/login?next=%2Fplatform%2Fgemba",
+    );
+    expect(signOut).toHaveBeenCalledWith({ scope: "local" });
+  });
+
+  it("fails closed on list_my_eligible_organisations infrastructure errors", async () => {
+    rpc.mockResolvedValueOnce({
+      data: null,
+      error: { code: "57014", message: "statement timeout" },
+    });
+
     await expect(listEligibleOrganisations()).rejects.toBeInstanceOf(
       PlatformBoundaryError,
     );
-    await expect(listEligibleOrganisations()).rejects.not.toEqual([]);
+    expect(redirect).not.toHaveBeenCalled();
   });
 
   it("fails closed on current_organisation_id errors instead of treating them as no org", async () => {

@@ -1,6 +1,6 @@
 begin;
 
-select plan(54);
+select plan(57);
 
 -- ---------------------------------------------------------------------------
 -- Users and organisations
@@ -32,6 +32,12 @@ values
 (
   'd2000000-0000-0000-0000-000000000004',
   's2a-other-org@example.test',
+  statement_timestamp(), statement_timestamp(), statement_timestamp(),
+  '{"provider":"email","providers":["email"]}', '{}', false, false
+),
+(
+  'd2000000-0000-0000-0000-000000000005',
+  's2a-alternate@example.test',
   statement_timestamp(), statement_timestamp(), statement_timestamp(),
   '{"provider":"email","providers":["email"]}', '{}', false, false
 );
@@ -83,6 +89,11 @@ values
 (
   'd2100000-0000-0000-0000-000000000004',
   'd2000000-0000-0000-0000-000000000004',
+  statement_timestamp(), statement_timestamp()
+),
+(
+  'd2100000-0000-0000-0000-000000000005',
+  'd2000000-0000-0000-0000-000000000005',
   statement_timestamp(), statement_timestamp()
 );
 
@@ -288,6 +299,57 @@ set status = 'active',
     enrolment_completed_at = statement_timestamp()
 where user_id = 'd2000000-0000-0000-0000-000000000003';
 
+with inserted_membership as (
+  insert into public.organisation_memberships (
+    organisation_id, user_id, status, activated_at
+  )
+  values (
+    (select id from s2a_ids where key = 'organisation'),
+    'd2000000-0000-0000-0000-000000000005',
+    'active',
+    statement_timestamp()
+  )
+  returning id
+)
+insert into s2a_ids (key, id)
+select 'alternate_membership', id from inserted_membership;
+
+update private.identity_controls
+set status = 'active',
+    enrolment_status = 'complete',
+    enrolment_completed_at = statement_timestamp()
+where user_id = 'd2000000-0000-0000-0000-000000000005';
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"d2000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"d2100000-0000-0000-0000-000000000001","email":"s2a-owner@example.test"}',
+  true
+);
+set local role authenticated;
+
+select ok(
+  public.grant_role_version(
+    (select id from s2a_ids where key = 'organisation'),
+    (select id from s2a_ids where key = 'alternate_membership'),
+    (select id from s2a_ids where key = 'reviewer_role'),
+    'unit_subtree',
+    (select id from s2a_ids where key = 'unit_root')
+  ) is not null,
+  'alternate reviewer receives scoped review capability'
+);
+
+select ok(
+  public.assign_membership_job_function(
+    (select id from s2a_ids where key = 'alternate_membership'),
+    (select id from s2a_ids where key = 'job_function'),
+    true,
+    (select id from s2a_ids where key = 'unit_root')
+  ) is not null,
+  'alternate reviewer primary job assignment'
+);
+
+reset role;
+
 -- Cross-org membership (provision_organisation already created owner membership)
 insert into s2a_ids (key, id)
 select 'other_org_membership', membership_row.id
@@ -423,7 +485,7 @@ select ok(
 insert into s2a_ids (key, id)
 select 'reassign_assignment', public.assign_suggestion_reviewer(
   (select id from s2a_ids where key = 'suggestion'),
-  (select id from s2a_ids where key = 'owner_membership')
+  (select id from s2a_ids where key = 'alternate_membership')
 );
 
 select is(
@@ -448,8 +510,19 @@ select is(
   (select reviewer_membership_id
    from public.suggestion_review_assignments assignment_row
    where assignment_row.id = (select id from s2a_ids where key = 'reassign_assignment')),
-  (select id from s2a_ids where key = 'owner_membership'),
+  (select id from s2a_ids where key = 'alternate_membership'),
   'reassignment activates the new reviewer'
+);
+
+select throws_ok(
+  format(
+    'select public.assign_suggestion_reviewer(%L::uuid, %L::uuid)',
+    (select id from s2a_ids where key = 'suggestion'),
+    (select id from s2a_ids where key = 'owner_membership')
+  ),
+  '22023',
+  'cannot assign the suggestion author as reviewer',
+  'manager cannot assign suggestion author as reviewer'
 );
 
 select throws_ok(
@@ -738,7 +811,7 @@ select set_config(
 select ok(
   public.assign_suggestion_reviewer(
     (select id from s2a_ids where key = 'visibility_suggestion'),
-    (select id from s2a_ids where key = 'owner_membership')
+    (select id from s2a_ids where key = 'alternate_membership')
   ) is not null,
   'manager reassign ends prior reviewer temporary access'
 );

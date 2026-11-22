@@ -5,8 +5,14 @@ import {
 } from "@/modules/module-setup/ai-builder/context";
 import { FIVE_S_BUILDER_CONTEXT_CONTRACT } from "@/modules/5s/ai-builder/types";
 import { GEMBA_BUILDER_CONTEXT_CONTRACT } from "@/modules/gemba/ai-builder/types";
+import { SKILLS_BUILDER_CONTEXT_CONTRACT } from "@/modules/skills/ai-builder/types";
 import { FIVE_S_SETUP_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/five-s-setup-builder";
 import { GEMBA_SETUP_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/gemba-setup-builder";
+import { SKILLS_GENERATE_DRAFT_INSTRUCTION } from "@/modules/skills/ai-builder/generate-draft-instruction";
+import { SKILLS_SETUP_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/skills-setup-builder";
+import { TRAINING_SETUP_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/training-setup-builder";
+import { TRAINING_BUILDER_CONTEXT_CONTRACT } from "@/modules/training/ai-builder/types";
+import { TRAINING_GENERATE_DRAFT_INSTRUCTION } from "@/modules/training/ai-builder/generate-draft-instruction";
 import type { CreateResponseResult } from "@/platform/ai/types";
 
 const USAGE = {
@@ -22,7 +28,9 @@ export function fakeModuleSetupBuilderResponse(
 ): CreateResponseResult | null {
   if (
     formatName !== FIVE_S_SETUP_BUILDER_FORMAT_NAME &&
-    formatName !== GEMBA_SETUP_BUILDER_FORMAT_NAME
+    formatName !== GEMBA_SETUP_BUILDER_FORMAT_NAME &&
+    formatName !== SKILLS_SETUP_BUILDER_FORMAT_NAME &&
+    formatName !== TRAINING_SETUP_BUILDER_FORMAT_NAME
   ) {
     return null;
   }
@@ -30,7 +38,11 @@ export function fakeModuleSetupBuilderResponse(
   const contract =
     formatName === FIVE_S_SETUP_BUILDER_FORMAT_NAME
       ? FIVE_S_BUILDER_CONTEXT_CONTRACT
-      : GEMBA_BUILDER_CONTEXT_CONTRACT;
+      : formatName === GEMBA_SETUP_BUILDER_FORMAT_NAME
+        ? GEMBA_BUILDER_CONTEXT_CONTRACT
+        : formatName === TRAINING_SETUP_BUILDER_FORMAT_NAME
+          ? TRAINING_BUILDER_CONTEXT_CONTRACT
+          : SKILLS_BUILDER_CONTEXT_CONTRACT;
   const markers = contextMarkers(contract);
   const context = extractModuleSetupBuilderContext(
     lastUser,
@@ -61,7 +73,11 @@ export function fakeModuleSetupBuilderResponse(
   const envelope =
     formatName === FIVE_S_SETUP_BUILDER_FORMAT_NAME
       ? fiveSEnvelope(context, request)
-      : gembaEnvelope(context, request);
+      : formatName === GEMBA_SETUP_BUILDER_FORMAT_NAME
+        ? gembaEnvelope(context, request)
+        : formatName === TRAINING_SETUP_BUILDER_FORMAT_NAME
+          ? trainingEnvelope(context, request)
+          : skillsEnvelope(context, request);
 
   return {
     outputText: envelope.message,
@@ -75,6 +91,198 @@ function extractRequest(lastUser: string): string {
   const marker = "User request:\n";
   const index = lastUser.lastIndexOf(marker);
   return (index >= 0 ? lastUser.slice(index + marker.length) : lastUser).trim();
+}
+
+function trainingEnvelope(
+  _context: ModuleSetupBuilderContext | null,
+  request: string,
+) {
+  const explicitDraft = request.includes(TRAINING_GENERATE_DRAFT_INSTRUCTION);
+  if (request.includes("TRAINING_DISCOVERY_TEST") && !explicitDraft) {
+    return {
+      message: "Which roles need which courses?",
+      phase: "discovery",
+      understanding: {
+        operation: "Manufacturing line",
+        audience: null,
+        delivery: null,
+        compliance: null,
+        curriculum: null,
+      },
+      questions: [
+        {
+          question: "Which roles should the starter courses target?",
+          suggested_answers: ["Line Operator", "Team Leader"],
+        },
+      ],
+      change_summary: [],
+      proposal: null,
+    };
+  }
+
+  return {
+    message:
+      "Here is a draft Training catalogue. Nothing is scheduled or published.",
+    phase: "proposal",
+    understanding: {
+      operation: "Line operation",
+      audience: "New starters",
+      delivery: "Mixed classroom and practical",
+      compliance: "Mandatory safety",
+      curriculum: "Job function requirements",
+    },
+    questions: [],
+    change_summary: ["Proposed two starter courses."],
+    proposal: {
+      title: "Line operator onboarding",
+      courses: [
+        {
+          name: "Induction and site safety",
+          category: "Safety",
+          description: "Site rules and emergencies.",
+          duration_minutes: 90,
+          delivery_method: "classroom",
+          learning_objectives: "Describe hazards and escalation.",
+        },
+        {
+          name: "Quality at the point of work",
+          category: "Quality",
+          description: "Checks and containment.",
+          duration_minutes: 60,
+          delivery_method: "workshop",
+          learning_objectives: "Complete defined checks.",
+        },
+      ],
+      curriculum: {
+        name: "Operator requirements",
+        description: null,
+        requirements: [
+          {
+            course_name: "Induction and site safety",
+            suggested_job_function: "Line Operator",
+            mandatory: true,
+            notes: null,
+          },
+        ],
+      },
+      notes: ["Sample proposal. Not published."],
+    },
+  };
+}
+
+function emptySkillsUnderstanding() {
+  return {
+    operation: null,
+    scale: null,
+    roles: null,
+    evidence: null,
+    applicability: null,
+  };
+}
+
+function skillsEnvelope(
+  context: ModuleSetupBuilderContext | null,
+  request: string,
+) {
+  const explicitDraft = request.includes(SKILLS_GENERATE_DRAFT_INSTRUCTION);
+  if (request.includes("SKILLS_DISCOVERY_TEST") && !explicitDraft) {
+    return {
+      message:
+        "I need a little more detail before drafting skills and requirements.",
+      phase: "discovery",
+      understanding: {
+        operation: "Bakery production",
+        scale: null,
+        roles: null,
+        evidence: null,
+        applicability: null,
+      },
+      questions: [
+        {
+          question: "Which operation should this setup focus on?",
+          suggested_answers: ["Deck oven line", "Packaging hall"],
+        },
+        {
+          question: "How many proficiency levels do you want?",
+          suggested_answers: ["Two levels", "Three levels"],
+        },
+        {
+          question: "Which roles must demonstrate the skills?",
+          suggested_answers: ["Oven Operator", "Team Leader"],
+        },
+        {
+          question: "Extra question that must be trimmed for storage",
+          suggested_answers: ["Should not appear after reload"],
+        },
+      ],
+      change_summary: [],
+      proposal: null,
+    };
+  }
+
+  if (
+    request.includes("SKILLS_ERROR_TEST") &&
+    context?.request.retry !== true
+  ) {
+    return {
+      message: "This proposal cannot be used yet.",
+      phase: "proposal",
+      understanding: emptySkillsUnderstanding(),
+      questions: [],
+      change_summary: [],
+      proposal: {
+        title: "Broken bakery setup",
+        scale: { name: "Broken", description: null, levels: [] },
+        skills: [],
+        requirements: [],
+        notes: [],
+      },
+    };
+  }
+
+  return {
+    message:
+      "Here is a draft Skills setup. It is not published, and nobody is assessed.",
+    phase: "proposal",
+    understanding: {
+      operation: "Bakery oven",
+      scale: "Aware and Competent",
+      roles: "Oven Operator",
+      evidence: "Observed start-up",
+      applicability: "The person confirms where it applies.",
+    },
+    questions: [],
+    change_summary: ["Proposed an oven skill and a two-level scale."],
+    proposal: {
+      title: "Bakery oven capability",
+      scale: {
+        name: "Bakery proficiency",
+        description: "Demonstrated ability.",
+        levels: [
+          { order: 0, label: "Aware", guidance: "Can describe the risk." },
+          { order: 1, label: "Competent", guidance: "Can perform the task." },
+        ],
+      },
+      skills: [
+        {
+          name: "Operate and monitor the oven",
+          category: "Process",
+          description: "Run the oven to the standard.",
+          evidence_expectations:
+            "Observed start-up. Training attendance is not enough.",
+        },
+      ],
+      requirements: [
+        {
+          skill_name: "Operate and monitor the oven",
+          suggested_job_function: "Oven Operator",
+          level_label: "Competent",
+          evidence_requirement: "Observed start-up.",
+        },
+      ],
+      notes: ["Sample proposal. Not published."],
+    },
+  };
 }
 
 function emptyFiveSUnderstanding() {
@@ -196,8 +404,9 @@ function fiveSEnvelope(
                 guidance: null,
               },
               {
-                prompt: "What is still here that the team does not need today?",
-                question_type: "short_text",
+                prompt:
+                  "How consistently is non-essential material cleared from the line-side area?",
+                question_type: "score",
                 guidance: null,
               },
             ],
@@ -213,8 +422,9 @@ function fiveSEnvelope(
                 guidance: null,
               },
               {
-                prompt: "What would help this standard stay in place?",
-                question_type: "short_text",
+                prompt:
+                  "How visibly are the agreed housekeeping routines followed each shift?",
+                question_type: "score",
                 guidance: null,
               },
             ],
@@ -239,7 +449,7 @@ function fiveSEnvelope(
       ...emptyFiveSUnderstanding(),
       environment: "Packing",
       purpose: "See whether the workplace matches the team's own standard.",
-      scoring: "Yes/no and a 1 to 5 score.",
+      scoring: "Yes/no checks and scored prompts on a 1 to 5 scale.",
     },
     questions: [],
     change_summary: changeSummary,

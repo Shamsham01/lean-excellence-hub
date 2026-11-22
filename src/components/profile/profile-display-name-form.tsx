@@ -35,6 +35,7 @@ export function ProfileDisplayNameForm({
 
   return (
     <form
+      id="profile-display-name-form"
       className="flex flex-col gap-4"
       onSubmit={handleSubmit}
       data-testid="profile-display-name-form"
@@ -48,8 +49,8 @@ export function ProfileDisplayNameForm({
           placeholder="Your name"
         />
         <p className="text-xs text-muted-foreground">
-          This name appears in people directories and collaboration features
-          across organisations you belong to.
+          This personal name belongs to your account. Each organisation also
+          keeps the name on your membership there.
         </p>
       </div>
       {message ? (

@@ -52,11 +52,13 @@ async function assertAuthoringStepVisible(page: Page, step: AuthoringStep) {
       await expect(page.getByTestId("framework-details-form")).toHaveCount(0);
       break;
     case "levels":
-      await expect(page.getByLabel("Level name")).toBeVisible();
+      await expect(page.getByTestId("framework-add-level-open")).toBeVisible();
+      await expect(page.getByLabel("Level name")).toHaveCount(0);
       await expect(page.getByTestId("framework-details-form")).toHaveCount(0);
       break;
     case "pillars":
-      await expect(page.getByLabel("Pillar name")).toBeVisible();
+      await expect(page.getByTestId("framework-add-pillar-open")).toBeVisible();
+      await expect(page.getByLabel("Pillar name")).toHaveCount(0);
       await expect(page.getByTestId("framework-details-form")).toHaveCount(0);
       break;
   }

@@ -209,6 +209,25 @@ export async function claimSiteQuantityIncrease(
   return parseSiteQuantityIncreaseClaim(data);
 }
 
+export async function recordPlatformStripeMode(input: {
+  organisationId: string;
+  livemode: boolean;
+  providerEventId: string;
+}) {
+  const { error } = await createSecretClient().rpc(
+    "record_platform_stripe_mode" as never,
+    {
+      livemode: input.livemode,
+      provider_event_id: input.providerEventId,
+      target_organisation_id: input.organisationId,
+    } as never,
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
 export async function loadCurrentOrganisationSubscriptionBinding(
   supabase: SupabaseClient<Database>,
 ) {

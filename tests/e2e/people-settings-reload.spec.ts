@@ -11,15 +11,19 @@ import {
 } from "./helpers/onboarding-auth";
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import { loginAsSiteBoundaryPeopleDelegate } from "./helpers/cookieworks-auth";
+import { platformMain } from "./helpers/platform-main";
+import { openPeopleInviteDialog } from "./helpers/form-dialogs";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const PEOPLE_SETTINGS_PATH = "/platform/settings/people";
 
 async function assertAuthorisedPeopleControls(page: Page) {
-  const peoplePage = page.getByTestId("people-settings-page");
+  const main = platformMain(page);
+  const peoplePage = main.getByTestId("people-settings-page");
   await expect(peoplePage).toBeVisible();
+  await openPeopleInviteDialog(page);
   await expect(page.getByTestId("invite-colleague-form")).toBeVisible();
-  await expect(page.getByTestId("people-settings-create-link")).toBeVisible();
+  await expect(main.getByTestId("people-settings-create-link")).toBeVisible();
   await expect(page.locator("#invite-role")).toBeVisible();
   await expect(
     page.getByText("Ask an Organisation Administrator to invite colleagues"),
@@ -90,10 +94,11 @@ test.describe("People settings delegation gate stability", () => {
   }) => {
     await signInAsDemoUser(page, "operator");
     await page.goto(PEOPLE_SETTINGS_PATH);
-    await expect(page.getByTestId("people-settings-page")).not.toBeVisible();
+    const main = platformMain(page);
+    await expect(main.getByTestId("people-settings-page")).not.toBeVisible();
     await expect(page.getByTestId("invite-colleague-form")).not.toBeVisible();
     await expect(
-      page.getByTestId("people-settings-create-link"),
+      main.getByTestId("people-settings-create-link"),
     ).not.toBeVisible();
   });
 
@@ -112,12 +117,14 @@ test.describe("People settings delegation gate stability", () => {
 
     await loginAsSiteBoundaryPeopleDelegate(page);
     await page.goto(PEOPLE_SETTINGS_PATH);
+    const main = platformMain(page);
+    await openPeopleInviteDialog(page);
     await expect(page.getByTestId("invite-colleague-form")).toBeVisible({
       timeout: 30_000,
     });
 
     const scopeSelect = page.locator("#invite-scope");
-    await page.locator("#invite-role").selectOption({ index: 0 });
+    await page.locator("#invite-role").selectOption({ index: 1 });
     const scopeLabels = await scopeSelect
       .locator("option")
       .evaluateAll((options) =>
@@ -127,7 +134,7 @@ test.describe("People settings delegation gate stability", () => {
       );
 
     expect(scopeLabels).not.toContain("Entire organisation");
-    await expect(page.getByTestId("people-settings-create-link")).toHaveCount(
+    await expect(main.getByTestId("people-settings-create-link")).toHaveCount(
       0,
     );
   });

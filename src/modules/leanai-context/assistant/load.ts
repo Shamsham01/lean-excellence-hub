@@ -5,7 +5,10 @@ import { cache } from "react";
 import { assessCoachAiEligibility } from "@/modules/leanai-context/coach/eligibility";
 import { loadLeanAiInterventionPermissions } from "@/modules/leanai-context/interventions/load";
 import { loadLeanAiContextualSnapshot } from "@/modules/leanai-context/queries";
-import { AI_PERMISSIONS } from "@/modules/operational/permissions";
+import {
+  AI_PERMISSIONS,
+  SKILLS_PERMISSIONS,
+} from "@/modules/operational/permissions";
 import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
 import {
   getMaturityFrameworkTemplate,
@@ -22,9 +25,15 @@ import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { isAssistantUuid } from "./constants";
 import { buildMaturityAuthoringState } from "./maturity-state";
 import { buildMaturityAssessmentAssistantState } from "./maturity-assessment-state";
+import {
+  conversationUnavailableCopy,
+  leanAiConversationUnavailableCta,
+  starterPromptsForAccess,
+} from "./guidance-for-access";
 import { assistantPageDefinitionFor } from "./product-pages";
 import { parseAssistantRoute } from "./route-map";
 import { selectAssistantIntervention } from "./select-recommendation";
+import { buildSkillsLiveAssistantState } from "./skills-state";
 import { buildStructureAssistantState } from "./structure-state";
 import {
   buildSuggestionsSetupState,
@@ -36,6 +45,58 @@ export type AssistantRouteInput = {
   pathname: string;
   search?: string;
 };
+
+async function membershipHasOrganisationOwnerGrant(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  organisationId: string,
+  membershipId: string,
+): Promise<boolean> {
+  const { data: grants, error } = await supabase
+    .from("access_grants")
+    .select(
+      "id, role_versions!inner(status, roles!inner(is_owner_role, status))",
+    )
+    .eq("organisation_id", organisationId)
+    .eq("status", "active")
+    .eq("scope_type", "organisation")
+    .eq("grantee_membership_id", membershipId);
+
+  if (error) {
+    return false;
+  }
+
+  return (grants ?? []).some((grant) => {
+    const roleVersion = grant.role_versions as {
+      status: string;
+      roles: { is_owner_role: boolean; status: string };
+    } | null;
+    return (
+      roleVersion?.status === "published" &&
+      roleVersion.roles?.is_owner_role === true &&
+      roleVersion.roles?.status === "active"
+    );
+  });
+}
+
+/**
+ * Organisation owners should have LeanAI chat when the org and app allow it,
+ * even if the default application role has not yet granted `ai.use`.
+ */
+async function resolveLeanAiConversationPermission(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  organisationId: string,
+  membershipId: string,
+  hasAiUsePermission: boolean,
+): Promise<boolean> {
+  if (hasAiUsePermission) {
+    return true;
+  }
+  return membershipHasOrganisationOwnerGrant(
+    supabase,
+    organisationId,
+    membershipId,
+  );
+}
 
 function flattenRemaining(
   items: Array<{ key: string; status: string; reason: string }>,
@@ -69,6 +130,7 @@ export async function resolveLeanAiAssistantView(
   await prefetchMemberPermissions([
     AI_PERMISSIONS.use,
     MATURITY_PERMISSIONS.modelsManage,
+    SKILLS_PERMISSIONS.read,
     "suggestions.programmes.manage",
   ]);
 
@@ -96,31 +158,42 @@ export async function resolveLeanAiAssistantView(
   const organisationAiEnabled =
     leanAiItem?.reasonCode !== "lean_ai_disabled" &&
     leanAiItem?.supportingMetrics.organisation_enabled !== false;
+
+  const canUseAiForChat = await resolveLeanAiConversationPermission(
+    supabase,
+    snapshot.journey.organisationId,
+    snapshot.journey.membershipId,
+    canUseAi,
+  );
+
+  const readinessAllowsUser =
+    leanAiItem?.supportingMetrics.current_user_can_use !== false;
+
   const conversationAvailable =
     eligibility.ok &&
     snapshot.applicationAiAvailable &&
     organisationAiEnabled &&
-    canUseAi &&
-    leanAiItem?.supportingMetrics.current_user_can_use !== false;
+    canUseAiForChat &&
+    readinessAllowsUser;
 
-  let conversationUnavailableReason: string | null = null;
-  if (!conversationAvailable) {
-    if (!eligibility.ok) {
-      conversationUnavailableReason = eligibility.message;
-    } else if (!snapshot.applicationAiAvailable) {
-      conversationUnavailableReason =
-        "LeanAI conversation is turned off in this environment. Setup guidance below still works.";
-    } else if (!organisationAiEnabled) {
-      conversationUnavailableReason =
-        "LeanAI is turned off for this organisation. Deterministic setup guidance still works.";
-    } else if (!canUseAi) {
-      conversationUnavailableReason =
-        "You do not have permission to use LeanAI conversation. Setup guidance below still works.";
-    } else {
-      conversationUnavailableReason =
-        "LeanAI conversation is unavailable. Setup guidance below still works.";
-    }
-  }
+  const conversationUnavailableReason = conversationUnavailableCopy({
+    eligible: eligibility.ok,
+    eligibilityMessage: eligibility.ok ? null : eligibility.message,
+    applicationAvailable: snapshot.applicationAiAvailable,
+    organisationEnabled: organisationAiEnabled,
+    canUseConversation: canUseAiForChat && readinessAllowsUser,
+  });
+
+  const eligibilityDenied =
+    !eligibility.ok && eligibility.reason === "entitlement_denied";
+
+  const conversationUnavailableCta = leanAiConversationUnavailableCta({
+    eligible: eligibility.ok,
+    eligibilityDenied,
+    applicationAvailable: snapshot.applicationAiAvailable,
+    organisationEnabled: organisationAiEnabled,
+    canUseConversation: canUseAiForChat && readinessAllowsUser,
+  });
 
   const recommendation = selectAssistantIntervention({
     snapshot,
@@ -357,17 +430,64 @@ export async function resolveLeanAiAssistantView(
     }
   }
 
-  const remainingSetup = flattenRemaining(snapshot.readiness.items);
-  for (const reason of extraRemaining) {
-    if (
-      !remainingSetup.some((item) => item.reason === reason) &&
-      remainingSetup.length < 8
-    ) {
-      remainingSetup.push({
-        key: identity.module,
-        status: "incomplete",
-        reason,
-      });
+  if (identity.module === "skills") {
+    const canReadSkills = await currentMemberHasPermission(
+      SKILLS_PERMISSIONS.read,
+    );
+    if (!canReadSkills) {
+      Object.assign(
+        relevantState,
+        buildSkillsLiveAssistantState({ canReadSkills: false }),
+      );
+    } else {
+      const [activeSkills, draftSkills, publishedStandards] = await Promise.all(
+        [
+          supabase
+            .from("skills")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "active"),
+          supabase
+            .from("skills")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "draft"),
+          supabase
+            .from("skill_capability_set_versions")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "published"),
+        ],
+      );
+      Object.assign(
+        relevantState,
+        buildSkillsLiveAssistantState({
+          canReadSkills: true,
+          activeSkillCount: activeSkills.count ?? 0,
+          draftSkillCount: draftSkills.count ?? 0,
+          publishedStandardCount: publishedStandards.count ?? 0,
+        }),
+      );
+    }
+  }
+
+  const canAdministerPage =
+    canManageMaturity ||
+    canManageProgrammes ||
+    permissions["billing.manage"] === true ||
+    permissions["hierarchy.manage"] === true;
+  const remainingSetup = canAdministerPage
+    ? flattenRemaining(snapshot.readiness.items)
+    : [];
+  if (canAdministerPage) {
+    for (const reason of extraRemaining) {
+      if (
+        !remainingSetup.some((item) => item.reason === reason) &&
+        remainingSetup.length < 8
+      ) {
+        remainingSetup.push({
+          key: identity.module,
+          status: "incomplete",
+          reason,
+        });
+      }
     }
   }
 
@@ -395,6 +515,7 @@ export async function resolveLeanAiAssistantView(
     applicationAiAvailable: snapshot.applicationAiAvailable,
     conversationAvailable,
     conversationUnavailableReason,
+    conversationUnavailableCta,
     contextLabel,
     page: {
       module: identity.module,
@@ -409,12 +530,17 @@ export async function resolveLeanAiAssistantView(
       activeSiteName: activeSite,
     },
     terminology: [...definition.terminology],
-    starterPrompts: [...definition.starterPrompts],
+    starterPrompts: starterPromptsForAccess({
+      prompts: definition.starterPrompts,
+      canAdministerPage,
+    }),
     summary,
     remainingSetup,
     relevantState,
     allowedActions:
       allowedActions.length > 0 ? allowedActions : grantedActions.slice(0, 6),
+    fieldGuidance: [...(definition.fieldGuidance ?? [])],
+    guidanceFacts: [...definition.facts],
     recommendation,
   };
 }

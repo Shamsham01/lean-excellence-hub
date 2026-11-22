@@ -58,6 +58,23 @@ describe("platform navigation", () => {
     );
     expect(actionOnly.map((item) => item.href)).toContain("/platform/actions");
 
+    const workplaceOnly = filterPlatformNavigation(new Set(["workplace.view"]));
+    const workplaceHrefs = workplaceOnly.map((item) => item.href);
+    expect(workplaceHrefs).toContain("/platform/actions");
+    expect(workplaceHrefs).toContain("/platform/suggestions");
+    expect(workplaceHrefs).not.toContain("/platform/people");
+    expect(workplaceHrefs).not.toContain("/platform/templates");
+
+    const submitOnly = filterPlatformNavigation(
+      new Set(["suggestions.submit"]),
+    );
+    expect(submitOnly.map((item) => item.href)).toContain(
+      "/platform/suggestions",
+    );
+    expect(submitOnly.map((item) => item.href)).not.toContain(
+      "/platform/actions",
+    );
+
     const templateOnly = filterPlatformNavigation(new Set(["templates.read"]));
     expect(templateOnly.map((item) => item.href)).toEqual([
       "/platform/templates",

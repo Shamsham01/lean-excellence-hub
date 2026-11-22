@@ -37,10 +37,14 @@ test.describe("marketing header theme stability", () => {
     const banner = page.getByRole("banner");
     const before = await headerState(page);
     expect(before.top).toBe(0);
+    expect(before.height).toBeGreaterThan(0);
     expect(before.scrollY).toBe(SCROLL_Y);
 
+    const appearanceTrigger = page
+      .locator(".marketing-header-bar")
+      .getByRole("button", { name: /^Appearance: / });
     for (const choice of ["Dark", "Light", "Dark", "System"] as const) {
-      await banner.getByRole("button", { name: /^Appearance: / }).click();
+      await appearanceTrigger.click();
       await expect(
         page.getByRole("menu", { name: "Appearance" }),
       ).toBeVisible();
@@ -123,6 +127,7 @@ test.describe("marketing header theme stability", () => {
 
     const before = await headerState(page);
     expect(before.top).toBe(0);
+    expect(before.height).toBeGreaterThan(0);
 
     await page.getByRole("button", { name: "Open menu" }).click();
     const group = page.getByRole("group", { name: "Appearance" });
@@ -135,11 +140,12 @@ test.describe("marketing header theme stability", () => {
         "aria-pressed",
         "true",
       );
-      await expect(
-        page
-          .getByRole("banner")
-          .getByRole("button", { name: `Appearance: ${choice}` }),
-      ).toBeVisible();
+      // Below 1024 the theme switcher lives in the menu sheet only.
+      if (choice !== "System") {
+        await expect(page.locator("html")).toHaveClass(
+          new RegExp(choice.toLowerCase()),
+        );
+      }
       expect(await headerState(page)).toEqual(before);
     }
 

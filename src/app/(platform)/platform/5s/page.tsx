@@ -1,28 +1,65 @@
 import { EmptyState } from "@/components/platform/empty-state";
-import { MetricCard } from "@/components/platform/metric-card";
+import { OperationalCatalogTable } from "@/components/operational/operational-catalog-table";
+import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
+import { loadFiveSOverviewStartablePresentation } from "@/lib/operational/overview-catalog-rows";
 import { PageHeader } from "@/components/platform/page-header";
+import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
+import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
+import { ModuleReadError } from "@/components/workplace/module-read-error";
+import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FIVE_S_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { presentCatalogRead } from "@/modules/workplace/access-decision";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { Sparkles } from "lucide-react";
 
-export default async function FiveSOverviewPage() {
+export default async function FiveSOverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: FIVE_S_PERMISSIONS.read,
+    module: "five_s",
+    title: "5S",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
+  const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
+    parseAnalyticsRangeDays(params.range),
+  );
   const canManage = await currentMemberHasPermission(
     FIVE_S_PERMISSIONS.standardsManage,
   );
 
-  const { count: standardCount } = await supabase
-    .from("five_s_standards")
-    .select("id", { count: "exact", head: true });
-  const { data: standards } = await supabase
-    .from("five_s_standards")
-    .select("id, display_name")
-    .order("created_at", { ascending: false })
-    .limit(5);
+  let topRows;
+  let startableCount;
+  try {
+    ({ topRows, startableCount } =
+      await loadFiveSOverviewStartablePresentation(supabase));
+  } catch {
+    return (
+      <ModuleReadError
+        title="5S Audits"
+        description="Digital 5S auditing with scoring, evidence, and accountability."
+        message="5S standards could not be loaded. Refresh the page and try again."
+        module="five_s"
+      />
+    );
+  }
+
+  const catalog = presentCatalogRead({
+    failed: false,
+    visibleCount: startableCount,
+  });
+
   const { count: auditCount } = await supabase
     .from("five_s_audits")
     .select("id", { count: "exact", head: true })
@@ -41,16 +78,21 @@ export default async function FiveSOverviewPage() {
     .select("id", { count: "exact", head: true })
     .eq("lifecycle_status", "open");
 
-  if (!standardCount) {
+  if (catalog === "empty") {
     return (
-      <div className="flex flex-col gap-8">
-        <PageHeader
-          title="5S Audits"
-          description="Digital 5S auditing with scoring, evidence, and accountability."
-        />
+      <div className="flex flex-col gap-8" data-testid="five-s-empty-state">
+        <PageHeader title="5S Audits" />
         <EmptyState
-          title="No 5S standards yet"
-          description="Choose how to start. Manual, LEH Quick Start, and LeanAI each create a draft you review before anything is published."
+          title={
+            canManage
+              ? "No 5S standards yet"
+              : "No 5S standards are available with your access"
+          }
+          description={
+            canManage
+              ? "Set up your first 5S standard to start auditing."
+              : "Standards you can open will appear here."
+          }
           icon={<Sparkles className="size-5" />}
           {...(canManage
             ? {
@@ -59,6 +101,7 @@ export default async function FiveSOverviewPage() {
               }
             : {})}
         />
+        <WorkplaceSharedRecords module="five_s" />
       </div>
     );
   }
@@ -67,7 +110,6 @@ export default async function FiveSOverviewPage() {
     <div className="flex flex-col gap-8" data-testid="five-s-overview-page">
       <PageHeader
         title="5S Audits"
-        description="Score, evidence, and trend your 5S programme."
         actions={
           <>
             {canManage ? (
@@ -92,66 +134,34 @@ export default async function FiveSOverviewPage() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          label="Latest score"
-          value={
-            latestAudit?.overall_score_percent != null
-              ? `${latestAudit.overall_score_percent}%`
-              : "—"
-          }
-          hint={
-            latestAudit?.target_percent != null
-              ? `Target ${latestAudit.target_percent}%`
-              : "No completed audits"
-          }
-        />
-        <MetricCard label="Completed audits" value={auditCount ?? 0} />
-        <MetricCard label="Open schedule slots" value={openOccurrences ?? 0} />
-        <MetricCard label="Standards" value={standardCount ?? 0} />
-      </div>
-
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
           <CardTitle>Standards</CardTitle>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <AppLink href="/platform/5s/standards">All standards</AppLink>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <AppLink href="/platform/5s/history">History</AppLink>
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent
-          className="flex flex-col gap-2"
-          data-testid="five-s-standard-list"
-        >
-          {standards?.map((standard) => (
-            <AppLink
-              key={standard.id}
-              href={`/platform/5s/standards/${standard.id}`}
-              className="text-sm font-medium underline-offset-4 hover:underline"
-            >
-              {standard.display_name}
-            </AppLink>
-          ))}
+        <CardContent>
+          <OperationalCatalogTable
+            rows={topRows}
+            nameColumnLabel="Standard"
+            actionColumnLabel="Action"
+            testId="five-s-standard-list"
+          />
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Quick links</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-3">
-          <Button variant="outline" asChild>
-            <AppLink href="/platform/5s/standards">Standards</AppLink>
-          </Button>
-          <Button variant="outline" asChild>
-            <AppLink href="/platform/5s/history">History</AppLink>
-          </Button>
-          <Button variant="outline" asChild>
-            <AppLink
-              href="/platform/schedule"
-              data-testid="five-s-schedule-link"
-            >
-              Schedule
-            </AppLink>
-          </Button>
-        </CardContent>
-      </Card>
+      <ModulePageInsightsDeferred
+        module="five-s"
+        rangeDays={analyticsRange.days}
+        testId="five-s-analytics"
+      />
+      <WorkplaceSharedRecords module="five_s" />
     </div>
   );
 }

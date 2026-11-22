@@ -8,6 +8,8 @@ import { ALL_SITES_COOKIE_VALUE } from "@/modules/organisation/site-context";
 
 import { loginAsCookieWorksPersona } from "./helpers/cookieworks-auth";
 import {
+  ensureExecutionStartDialogOpen,
+  executionOpenTestId,
   expectExecutionHeaderLayout,
   optionLabels,
 } from "./helpers/execution-unit-select";
@@ -16,7 +18,9 @@ const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const BODMIN_FACTORY_LABEL = "Bodmin Cookie Factory";
 const EXETER_FACTORY_LABEL = "Exeter Cookie Factory";
 const FIVE_S_STANDARD = "QA CookieWorks 5S Standard";
+const BODMIN_FIVE_S_STANDARD = "QA Bodmin 5S Standard";
 const GEMBA_DEFINITION = "QA CookieWorks Gemba";
+const BODMIN_GEMBA_DEFINITION = "QA Bodmin Gemba";
 
 test.describe("CookieWorks 5S/Gemba execution site context", () => {
   test.describe.configure({ mode: "serial" });
@@ -49,24 +53,33 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
     await expect(switcher).toHaveValue(value!, { timeout: 15_000 });
   }
 
-  async function openFiveSStandard(page: Page) {
+  async function openFiveSStandard(
+    page: Page,
+    standardName: string = FIVE_S_STANDARD,
+  ) {
     await page.goto("/platform/5s/standards");
-    await page.getByRole("link", { name: FIVE_S_STANDARD }).click();
+    await page.getByRole("link", { name: standardName }).click();
     await expect(
-      page.getByRole("heading", { name: FIVE_S_STANDARD }),
+      page.getByRole("heading", { name: standardName }),
     ).toBeVisible();
   }
 
-  async function openGembaDefinition(page: Page) {
+  async function openGembaDefinition(
+    page: Page,
+    definitionName: string = GEMBA_DEFINITION,
+  ) {
     await page.goto("/platform/gemba/definitions");
-    await page.getByRole("link", { name: GEMBA_DEFINITION }).click();
+    await page.getByRole("link", { name: definitionName }).click();
     await expect(
-      page.getByRole("heading", { name: GEMBA_DEFINITION }),
+      page.getByRole("heading", { name: definitionName }),
     ).toBeVisible();
   }
 
   async function expectFiveSPackingOnlyTarget(page: Page) {
+    await ensureExecutionStartDialogOpen(page, "five-s-start-audit-form");
     const form = page.getByTestId("five-s-start-audit-form");
+    await expect(form.getByTestId("site-context-required")).toHaveCount(0);
+    await expect(form.getByTestId("applicable-units-empty")).toHaveCount(0);
     await expect(page.getByTestId("five-s-unit-select-locked")).toContainText(
       "Packing",
     );
@@ -75,7 +88,10 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
   }
 
   async function expectGembaPackingOnlyTarget(page: Page) {
+    await ensureExecutionStartDialogOpen(page, "gemba-start-walk-form");
     const form = page.getByTestId("gemba-start-walk-form");
+    await expect(form.getByTestId("site-context-required")).toHaveCount(0);
+    await expect(form.getByTestId("applicable-units-empty")).toHaveCount(0);
     await expect(page.getByTestId("gemba-unit-select-locked")).toContainText(
       "Packing",
     );
@@ -122,18 +138,16 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
     );
     await openFiveSStandard(page);
 
-    await expect(
-      page
-        .getByTestId("five-s-start-audit-form")
-        .getByTestId("site-context-required"),
-    ).toHaveText(
+    await expect(page.getByTestId("site-context-required")).toHaveText(
       "Select an active site in the sidebar before starting an audit.",
     );
-    await expect(page.getByTestId("applicable-units-empty")).toHaveText(
-      "Select an active site in the sidebar before choosing applicable areas.",
-    );
+    await expect(
+      page.getByTestId("five-s-start-audit-form-dialog"),
+    ).toBeHidden();
     await expect(page.getByTestId("five-s-unit-select")).toHaveCount(0);
-    await expect(page.getByTestId("five-s-start-audit")).toBeDisabled();
+    await expect(
+      page.getByTestId(executionOpenTestId("five-s-start-audit")),
+    ).toBeDisabled();
   });
 
   test("admin Gemba Start Walk follows the same Exeter/Bodmin site context", async ({
@@ -178,18 +192,14 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
     );
     await openGembaDefinition(page);
 
-    await expect(
-      page
-        .getByTestId("gemba-start-walk-form")
-        .getByTestId("site-context-required"),
-    ).toHaveText(
+    await expect(page.getByTestId("site-context-required")).toHaveText(
       "Select an active site in the sidebar before starting a walk.",
     );
-    await expect(page.getByTestId("applicable-units-empty")).toHaveText(
-      "Select an active site in the sidebar before choosing applicable areas.",
-    );
+    await expect(page.getByTestId("gemba-start-walk-form-dialog")).toBeHidden();
     await expect(page.getByTestId("gemba-unit-select")).toHaveCount(0);
-    await expect(page.getByTestId("gemba-start-walk")).toBeDisabled();
+    await expect(
+      page.getByTestId(executionOpenTestId("gemba-start-walk")),
+    ).toBeDisabled();
   });
 
   test("scoped production manager cannot obtain Exeter units from a forged site cookie", async ({
@@ -213,7 +223,7 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
         sameSite: "Lax",
       },
     ]);
-    await openFiveSStandard(page);
+    await openFiveSStandard(page, BODMIN_FIVE_S_STANDARD);
 
     // Production Manager is scoped to Bodmin Operations, not the plant root,
     // so PR #69 has no site switcher/label to forge. Authority remains RLS.
@@ -224,7 +234,7 @@ test.describe("CookieWorks 5S/Gemba execution site context", () => {
     }
 
     await expectFiveSPackingOnlyTarget(page);
-    await openGembaDefinition(page);
+    await openGembaDefinition(page, BODMIN_GEMBA_DEFINITION);
     await expectGembaPackingOnlyTarget(page);
   });
 });

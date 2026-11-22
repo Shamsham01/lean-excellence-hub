@@ -1,7 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { INVITATION_TOKEN_PATTERN } from "@/modules/identity/invitation-constants";
-import { acceptInvitation } from "@/modules/identity/invitations";
+import {
+  acceptInvitation,
+  invitationTokenDigest,
+} from "@/modules/identity/invitations";
 import { resolvePostAuthenticationRedirectPath } from "@/modules/identity/session";
 import {
   buildCanonicalRedirectUrl,
@@ -43,6 +46,20 @@ export async function POST(request: NextRequest) {
   const supabase = createRouteHandlerSupabaseClient(request, response);
 
   try {
+    const displayName = formData.get("displayName");
+    if (typeof displayName === "string" && displayName.trim()) {
+      const { error: nameError } = await supabase.rpc(
+        "confirm_invited_display_name",
+        {
+          invitation_token_digest: invitationTokenDigest(token),
+          target_display_name: displayName.trim(),
+        },
+      );
+      if (nameError) {
+        throw nameError;
+      }
+    }
+
     await acceptInvitation(token, supabase);
     redirectPath = await resolvePostAuthenticationRedirectPath(supabase);
   } catch {

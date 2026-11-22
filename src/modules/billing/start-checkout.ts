@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getBillingProvider } from "@/modules/billing/get-provider";
+import { isSelfServiceCheckoutEnabled } from "@/modules/billing/checkout-control";
 import { isSelfServicePlan } from "@/modules/billing/catalogue";
 import { loadCurrentOrganisationBillingManagement } from "@/modules/billing/current-billing";
 import {
@@ -22,6 +23,12 @@ export async function startOrganisationCheckout(input: {
   planCode: SelfServicePlanCode;
   interval: BillingInterval;
 }) {
+  if (!isSelfServiceCheckoutEnabled()) {
+    throw new BillingProviderError(
+      "New subscriptions are temporarily unavailable.",
+      "unsupported",
+    );
+  }
   if (!isSelfServicePlan(input.planCode)) {
     throw new Error("That plan is not available for self-service checkout.");
   }

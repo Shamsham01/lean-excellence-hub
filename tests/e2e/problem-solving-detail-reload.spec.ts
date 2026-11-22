@@ -5,6 +5,12 @@ import {
   DEMO_USERS,
 } from "../../scripts/demo-seed/constants";
 import { signInAsDemoUser } from "./helpers/demo-auth";
+import {
+  richDemoCasePortfolioLink,
+  disableProblemSolvingStageAutoDraft,
+  expectProblemSolvingPortfolioNavigation,
+  openProblemSolvingStage,
+} from "./helpers/guided-problem-solving-workspace";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const RELOAD_COUNT = 10;
@@ -12,6 +18,9 @@ const RELOAD_COUNT = 10;
 async function assertFunctionalWorkspace(page: Page) {
   const workspace = page.getByTestId("problem-solving-workspace");
   await expect(workspace).toBeVisible();
+  const mainViewport = page.locator(".platform-main-viewport").first();
+  await expect(mainViewport).toBeVisible();
+  await expect(mainViewport).toHaveJSProperty("scrollTop", 0);
   await expect(page.getByTestId("problem-solving-header")).toBeVisible();
   const ownerName = page.getByTestId("problem-solving-owner-name");
   await expect(ownerName).toBeVisible();
@@ -26,10 +35,9 @@ async function assertFunctionalWorkspace(page: Page) {
   await expect(
     page.getByRole("heading", { name: DEMO_PROBLEM_SOLVING_CASE.title }),
   ).toBeVisible();
-  await expect(page.getByTestId("tab-overview")).toBeVisible();
-  await expect(page.getByTestId("tab-cause-analysis")).toBeVisible();
-  await expect(page.getByTestId("tab-verification")).toBeVisible();
-  await expect(page.getByTestId("problem-solving-back-link")).toBeVisible();
+  await expect(page.getByTestId("pps-stage-rail")).toBeVisible();
+  await expect(page.getByTestId("lean-ai-panel")).toBeVisible();
+  await expectProblemSolvingPortfolioNavigation(page);
   await expect(page.getByTestId("workspace-load-error")).toHaveCount(0);
   await expect(
     page.getByRole("heading", { name: /couldn’t load/i }),
@@ -45,6 +53,10 @@ test.describe("Problem solving case detail reload reliability", () => {
     "Requires E2E_WITH_SUPABASE=1 and demo seed applied",
   );
 
+  test.beforeEach(async ({ page }) => {
+    await disableProblemSolvingStageAutoDraft(page);
+  });
+
   test("seeded case opens from portfolio and survives direct URL, hard reload, and repeated reloads", async ({
     page,
   }) => {
@@ -54,9 +66,7 @@ test.describe("Problem solving case detail reload reliability", () => {
       page.getByTestId("problem-solving-portfolio-page"),
     ).toBeVisible();
 
-    const caseRow = page
-      .getByRole("link", { name: new RegExp(DEMO_PROBLEM_SOLVING_CASE.title) })
-      .first();
+    const caseRow = await richDemoCasePortfolioLink(page);
     await expect(caseRow).toBeVisible();
     const caseHref = await caseRow.getAttribute("href");
     expect(caseHref).toMatch(/\/platform\/problem-solving\/[0-9a-f-]{36}$/);
@@ -84,14 +94,16 @@ test.describe("Problem solving case detail reload reliability", () => {
     await page.goto(caseHref ?? "/platform/problem-solving");
     await assertFunctionalWorkspace(page);
 
-    await page.getByTestId("tab-cause-analysis").click();
+    await openProblemSolvingStage(page, "ROOT_CAUSE_ANALYSIS");
     await expect(
       page.getByText(
         DEMO_PROBLEM_SOLVING_CASE.hypotheses.pressureVariation.statement,
       ),
     ).toBeVisible();
-    await page.getByTestId("tab-overview").click();
-    await expect(page.getByTestId("tab-overview")).toBeVisible();
+    await openProblemSolvingStage(page, "DEFINE");
+    await expect(
+      page.getByTestId("problem-solving-overview-panel"),
+    ).toBeVisible();
   });
 
   test("unauthorised operator cannot open seeded case via direct URL", async ({
@@ -99,9 +111,7 @@ test.describe("Problem solving case detail reload reliability", () => {
   }) => {
     await signInAsDemoUser(page, "manager");
     await page.goto("/platform/problem-solving");
-    const caseRow = page
-      .getByRole("link", { name: new RegExp(DEMO_PROBLEM_SOLVING_CASE.title) })
-      .first();
+    const caseRow = await richDemoCasePortfolioLink(page);
     const caseHref = await caseRow.getAttribute("href");
     expect(caseHref).toBeTruthy();
 

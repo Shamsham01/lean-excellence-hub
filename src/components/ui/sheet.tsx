@@ -20,10 +20,10 @@ export function SheetContent({
 }) {
   return (
     <SheetPrimitive.Portal>
-      <SheetPrimitive.Overlay className="fixed inset-0 z-50 bg-foreground/40" />
+      <SheetPrimitive.Overlay className="fixed inset-0 z-50 bg-foreground/30 backdrop-blur-[2px]" />
       <SheetPrimitive.Content
         className={cn(
-          "fixed z-50 flex flex-col gap-4 bg-sidebar p-4 shadow-lg transition ease-in-out",
+          "leh-shadow-soft fixed z-50 flex flex-col gap-4 bg-card p-4 transition ease-in-out",
           side === "left" &&
             "inset-y-0 left-0 h-full w-[min(100%,18rem)] border-r border-sidebar-border",
           side === "right" &&

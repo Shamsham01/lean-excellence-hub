@@ -23,8 +23,13 @@ concurrency:
 
 env:
   APP_ORIGIN: http://127.0.0.1:3000
+  AUTH_EMAIL_FROM: onboarding@test.test
+  AUTH_EMAIL_FROM_NAME: Lean Excellence Hub
+  # Edge functions run in Docker; reach host Mailpit via the default bridge gateway.
+  INVITATION_DELIVERY_MAILPIT_URL: http://172.17.0.1:54324
   AUTH_RATE_LIMIT_PEPPER: ci-only-pepper-that-is-at-least-32-characters
   BILLING_PROVIDER: fake
+  LEH_SELF_SERVICE_CHECKOUT_ENABLED: "true"
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
   NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
   SUPABASE_SECRET_KEY: sb_secret_ci_placeholder
@@ -63,10 +68,10 @@ jobs:
     name: Full Regression / Quality
     needs:
       - quality-warmup
+    # always() without !cancelled(): required gates must run and fail explicitly when
+    # upstream jobs fail, time out, or cancel — skipped required checks count as pass.
     if: >-
       always() &&
-      !cancelled() &&
-      (needs.quality-warmup.result == 'success' || needs.quality-warmup.result == 'skipped') &&
       (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -75,6 +80,14 @@ jobs:
       checks: read
       contents: read
     steps:
+      - name: Require quality warmup prerequisite
+        shell: bash
+        run: |
+          warmup="${{ needs.quality-warmup.result }}"
+          if [ "$warmup" != "success" ] && [ "$warmup" != "skipped" ]; then
+            echo "Prepare quality gate must succeed or be skipped for non-PR runs (got: $warmup)."
+            exit 1
+          fi
       - uses: actions/checkout@v7
       - name: Confirm Fast CI / Quality passed for this pull request
         if: github.event_name == 'pull_request'
@@ -117,12 +130,40 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
+  playwright-browsers:
+    name: Full Regression / Playwright browsers
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          node-version: 24
+      - name: Install dependencies
+        run: ./scripts/ci/timed.sh "npm ci" npm ci
+      - uses: ./.github/actions/playwright-chromium
+        with:
+          browsers: chromium webkit
+
   end-to-end-smoke:
     name: Full Regression / E2E smoke
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    needs:
+      - playwright-browsers
+    if: >-
+      always() &&
+      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - name: Require Playwright browser warmup
+        shell: bash
+        run: |
+          if [ "${{ needs.playwright-browsers.result }}" != "success" ]; then
+            echo "Full Regression / Playwright browsers must succeed (got: ${{ needs.playwright-browsers.result }})."
+            exit 1
+          fi
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
@@ -200,9 +241,13 @@ jobs:
 
   e2e-shards:
     name: Full Regression / E2E ${{ matrix.label }}
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    needs:
+      - playwright-browsers
+    if: >-
+      always() &&
+      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 32
     strategy:
       fail-fast: false
       matrix:
@@ -210,6 +255,7 @@ jobs:
           - label: platform
             specs: >-
               tests/e2e/platform-shell.spec.ts
+              tests/e2e/platform-android-scroll.spec.ts
               tests/e2e/platform-reliability.spec.ts
               tests/e2e/maturity-journeys.spec.ts
               tests/e2e/maturity-quick-start.spec.ts
@@ -219,16 +265,19 @@ jobs:
               tests/e2e/scheduling-journeys.spec.ts
               tests/e2e/schedule-lifecycle.spec.ts
               tests/e2e/schedule-nav-click.spec.ts
+              tests/e2e/schedule-activity-picker.spec.ts
               tests/e2e/core-platform-nav-click.spec.ts
               tests/e2e/milestone6-closure.spec.ts
-              tests/e2e/five-s-gemba-authoring.spec.ts
               tests/e2e/five-s-scoring-scale.spec.ts
-              tests/e2e/mobile-dialog-location-scroll.spec.ts
               tests/e2e/maturity-authoring-step-reload.spec.ts
               tests/e2e/mobile-shell-tabs.spec.ts
+              tests/e2e/mobile-dialog-location-scroll.spec.ts
+              tests/e2e/form-dialog-mobile-sheets.spec.ts
               tests/e2e/site-security-boundary.spec.ts
               tests/e2e/cookieworks-execution-site-context.spec.ts
               tests/e2e/billing-founding-onboarding.spec.ts
+              tests/e2e/clean-org-onboarding-journey.spec.ts
+              tests/e2e/customer-go-live-journey.spec.ts
               tests/e2e/site-capacity.spec.ts
               tests/e2e/organisation-ownership-transfer.spec.ts
               tests/e2e/leanai-context-readiness.spec.ts
@@ -236,8 +285,15 @@ jobs:
               tests/e2e/leanai-coach-explain.spec.ts
               tests/e2e/leanai-assistant.spec.ts
               tests/e2e/maturity-assessment-workspace.spec.ts
+              tests/e2e/in-app-notification-journey-341.spec.ts
+              tests/e2e/platform-notification-bell.spec.ts
+          - label: five-s-authoring
+            specs: >-
+              tests/e2e/five-s-gemba-authoring.spec.ts
+              tests/e2e/five-s-standard-draft-removal.spec.ts
           - label: workforce
             specs: >-
+              tests/e2e/skills-assessment-method-persistence.spec.ts
               tests/e2e/training-journeys.spec.ts
               tests/e2e/milestone7-closure.spec.ts
               tests/e2e/invitation-lifecycle.spec.ts
@@ -247,12 +303,20 @@ jobs:
               tests/e2e/workforce-provisioning.spec.ts
               tests/e2e/workforce-bulk-import.spec.ts
               tests/e2e/training-skills-recognition-nav-click.spec.ts
+              tests/e2e/skills-setup.spec.ts
+              tests/e2e/skills-setup-recovery.spec.ts
+              tests/e2e/training-setup.spec.ts
               tests/e2e/training-course-authoring.spec.ts
               tests/e2e/training-curriculum-authoring.spec.ts
+              tests/e2e/skills-training-matrix-two-site.spec.ts
+              tests/e2e/people-mobile-organisation-assignment.spec.ts
+              tests/e2e/people-access.spec.ts
+              tests/e2e/people-colleague-import.spec.ts
           - label: improvement
             specs: >-
               tests/e2e/milestone8-closure.spec.ts
               tests/e2e/milestone9-closure.spec.ts
+              tests/e2e/workplace-viewer-routing.spec.ts
               tests/e2e/suggestion-portfolio.spec.ts
               tests/e2e/suggestion-reviewer-workflow.spec.ts
               tests/e2e/nav-click.spec.ts
@@ -260,11 +324,17 @@ jobs:
               tests/e2e/problem-solving-maturity-nav-click.spec.ts
               tests/e2e/problem-solving-detail-reload.spec.ts
               tests/e2e/suggestions-nav-click.spec.ts
+              tests/e2e/form-dialog-deep-links.spec.ts
               tests/e2e/suggestion-submission-evidence.spec.ts
               tests/e2e/action-lifecycle.spec.ts
+              tests/e2e/actions-planner.spec.ts
+              tests/e2e/actions-planner-screenshots.spec.ts
+              tests/e2e/chart-tooltip-theme.spec.ts
+              tests/e2e/benefit-chart-tooltip.spec.ts
               tests/e2e/project-charter-benefits-lineage.spec.ts
               tests/e2e/milestone10-closure.spec.ts
               tests/e2e/milestone11-closure.spec.ts
+              tests/e2e/suggestion-approval-delegation.spec.ts
           - label: cookieworks
             specs: >-
               tests/e2e/cookieworks-ci-loop.spec.ts
@@ -272,6 +342,13 @@ jobs:
           - label: ai-closure
             specs: tests/e2e/milestone12-closure.spec.ts
     steps:
+      - name: Require Playwright browser warmup
+        shell: bash
+        run: |
+          if [ "${{ needs.playwright-browsers.result }}" != "success" ]; then
+            echo "Full Regression / Playwright browsers must succeed (got: ${{ needs.playwright-browsers.result }})."
+            exit 1
+          fi
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
@@ -284,29 +361,68 @@ jobs:
           startup-timeout-minutes: "8"
           max-attempts: "2"
       - uses: ./.github/actions/playwright-chromium
+        with:
+          browsers: ${{ matrix.label == 'platform' && 'chromium webkit' || 'chromium' }}
       - uses: ./.github/actions/supabase-playwright-e2e
         with:
           shard-label: ${{ matrix.label }}
           spec-list: ${{ matrix.specs }}
+      - name: Upload Playwright screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-screenshots-${{ matrix.label }}
+          path: test-results/**/*.png
+          if-no-files-found: ignore
+          retention-days: 14
       - if: always()
         run: npm run db:stop
 
   database:
     name: Full Regression / Database
     needs:
+      - changes
       - database-core
       - qa-recovery
       - e2e-shards
+    # always() without !cancelled(): required gates must run and fail explicitly when
+    # upstream jobs fail, time out, or cancel — skipped required checks count as pass.
     if: >-
       always() &&
-      !cancelled() &&
-      (github.event_name != 'pull_request' || github.event.pull_request.draft == false) &&
-      needs.database-core.result == 'success' &&
-      (needs.qa-recovery.result == 'success' || needs.qa-recovery.result == 'skipped') &&
-      needs.e2e-shards.result == 'success'
+      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Enforce database regression prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail() { echo "$1"; exit 1; }
+
+          changes="${{ needs.changes.result }}"
+          database_core="${{ needs.database-core.result }}"
+          qa_recovery="${{ needs.qa-recovery.result }}"
+          e2e_shards="${{ needs.e2e-shards.result }}"
+
+          if [ "$changes" != "success" ]; then
+            fail "Detect specialised regression scope must succeed (got: $changes)."
+          fi
+          if [ "$database_core" != "success" ]; then
+            fail "Full Regression / Database core must succeed (got: $database_core)."
+          fi
+          if [ "$qa_recovery" = "success" ]; then
+            echo "QA hosted replacement succeeded."
+          elif [ "$qa_recovery" = "skipped" ]; then
+            if [ "$changes" != "success" ]; then
+              fail "QA hosted replacement was skipped without successful scope detection."
+            fi
+            echo "QA hosted replacement skipped for scope (expected on some pull requests)."
+          else
+            fail "Full Regression / QA hosted replacement must succeed or scope-skip (got: $qa_recovery)."
+          fi
+          if [ "$e2e_shards" != "success" ]; then
+            fail "All Full Regression / E2E shards must succeed (matrix aggregate: $e2e_shards)."
+          fi
       - name: Publish database regression gate summary
         run: |
           {
@@ -321,10 +437,23 @@ jobs:
 
   qa-harness-windows:
     name: Full Regression / Windows QA harness
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    needs:
+      - changes
+    # always() without !cancelled(): required gates must run and fail explicitly when
+    # upstream jobs fail, time out, or cancel — skipped required checks count as pass.
+    if: >-
+      always() &&
+      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     runs-on: windows-latest
     timeout-minutes: 20
     steps:
+      - name: Require specialised regression scope detection
+        shell: bash
+        run: |
+          if [ "${{ needs.changes.result }}" != "success" ]; then
+            echo "Detect specialised regression scope must succeed (got: ${{ needs.changes.result }})."
+            exit 1
+          fi
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:

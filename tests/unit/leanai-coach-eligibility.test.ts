@@ -44,7 +44,7 @@ describe("Coach AI eligibility", () => {
     }
   });
 
-  it("blocks plans with a zero LeanAI allowance", async () => {
+  it("does not block on catalogue token allowance while enforcement is off", async () => {
     isAvailable.mockReturnValue(true);
     const result = await assessCoachAiEligibility({
       rpc: vi.fn().mockResolvedValue({
@@ -56,10 +56,7 @@ describe("Coach AI eligibility", () => {
         error: null,
       }),
     } as never);
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.reason).toBe("entitlement_denied");
-    }
+    expect(result.ok).toBe(true);
   });
 
   it("maps monthly ceiling and enablement RPC errors", () => {

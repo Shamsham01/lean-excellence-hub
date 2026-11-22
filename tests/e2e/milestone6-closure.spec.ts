@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
+  clickExecutionStartSubmit,
   expectExecutionHeaderLayout,
   selectFirstExecutionUnit,
 } from "./helpers/execution-unit-select";
@@ -56,7 +57,7 @@ test.describe("Milestone 6 closure journeys", () => {
     await page.goto("/platform/5s/standards");
     await page.getByRole("link", { name: DEMO_FIVE_S_STANDARD.name }).click();
     await selectFirstExecutionUnit(page, "five-s-unit-select");
-    await page.getByRole("button", { name: "Start audit" }).click();
+    await clickExecutionStartSubmit(page, "five-s-start-audit");
     await expect(page.getByLabel("Audit progress")).toBeVisible();
 
     const fixturePath = join(tmpdir(), "five-s-evidence.txt");
@@ -71,7 +72,7 @@ test.describe("Milestone 6 closure journeys", () => {
     await page.goto("/platform/gemba/definitions");
     await page.getByRole("link", { name: DEMO_GEMBA_DEFINITION.name }).click();
     await selectFirstExecutionUnit(page, "gemba-unit-select");
-    await page.getByRole("button", { name: "Start walk" }).click();
+    await clickExecutionStartSubmit(page, "gemba-start-walk");
     await expect(page.getByLabel("Walk progress")).toBeVisible();
 
     const fixturePath = join(tmpdir(), "gemba-evidence.txt");
@@ -111,7 +112,7 @@ test.describe("Milestone 6 closure journeys", () => {
       submitTestId: "five-s-start-audit",
     });
     await selectFirstExecutionUnit(page, "five-s-unit-select");
-    await page.getByRole("button", { name: "Start audit" }).click();
+    await clickExecutionStartSubmit(page, "five-s-start-audit");
 
     await expect(page.getByRole("button", { name: "Yes" })).toBeVisible();
     await expect(page.getByTestId("evidence-uploader")).toBeVisible();

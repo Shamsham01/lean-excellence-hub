@@ -33,7 +33,7 @@ function adminHelper(canPerform: boolean, isAdmin = false) {
   return "Ask an Organisation Administrator to complete this step.";
 }
 
-function buildCoreItems(
+export function buildCoreItems(
   data: SetupQueryResult,
   permissions: SetupPermissionSnapshot,
 ): SetupItem[] {
@@ -314,13 +314,51 @@ function buildRecommendedItems(
       status: trainingStatus,
       canAssess: !data.trainingCatalogUnavailable,
       canPerform: permissions.canManageTraining,
-      href: "/platform/training/courses",
+      href: "/platform/training/setup",
       helperMessage: adminHelper(
         permissions.canManageTraining,
         permissions.canManageTraining,
       ),
     },
   ];
+}
+
+export function computeOperationalSetupIncomplete(
+  data: import("./types").SetupQueryResult,
+  permissions: import("./types").SetupPermissionSnapshot,
+): boolean {
+  const gaps: boolean[] = [];
+
+  if (
+    permissions.canManageSkillsCatalog &&
+    !data.activeSkillCountUnavailable &&
+    (data.activeSkillCount ?? 0) === 0
+  ) {
+    gaps.push(true);
+  }
+  if (
+    permissions.canManageRecognition &&
+    !data.recognitionTypeCountUnavailable &&
+    (data.recognitionTypeCount ?? 0) === 0
+  ) {
+    gaps.push(true);
+  }
+  if (
+    permissions.canManageSchedules &&
+    !data.scheduleDefinitionCountUnavailable &&
+    (data.scheduleDefinitionCount ?? 0) === 0
+  ) {
+    gaps.push(true);
+  }
+  if (
+    permissions.canManageTraining &&
+    !data.trainingCatalogUnavailable &&
+    (data.trainingCatalogCount ?? 0) === 0
+  ) {
+    gaps.push(true);
+  }
+
+  return gaps.length > 0 && gaps.some(Boolean);
 }
 
 export function evaluateCoreSetup(items: SetupItem[]): CoreSetupState {
@@ -393,6 +431,10 @@ export function buildOrganisationSetupSnapshot(
   const core = evaluateCoreSetup(coreItems);
   const recommended = evaluateRecommendedSetup(recommendedItems);
   const next = pickNextAction(core, recommended);
+  const operationalSetupIncomplete = computeOperationalSetupIncomplete(
+    data,
+    permissions,
+  );
 
   return {
     organisationName: data.organisationName ?? "Your organisation",
@@ -403,11 +445,15 @@ export function buildOrganisationSetupSnapshot(
     recommended,
     nextActionHref: next.href,
     nextActionLabel: next.label,
+    operationalSetupIncomplete,
   };
 }
 
+export type MaturityQuickAction = "start" | "open" | "view" | "hidden";
+
 export function buildQuickActions(
   permissions: SetupPermissionSnapshot,
+  maturity: MaturityQuickAction = "hidden",
 ): import("./types").QuickAction[] {
   const actions: import("./types").QuickAction[] = [];
 
@@ -432,11 +478,25 @@ export function buildQuickActions(
       description: "Define a job function",
     });
   }
-  actions.push({
-    label: "Start Lean maturity",
-    href: "/platform/maturity",
-    description: "Open maturity programme",
-  });
+  if (maturity === "start") {
+    actions.push({
+      label: "Start Lean maturity",
+      href: "/platform/maturity",
+      description: "Open maturity programme",
+    });
+  } else if (maturity === "open") {
+    actions.push({
+      label: "Open maturity",
+      href: "/platform/maturity",
+      description: "Open maturity records you can use",
+    });
+  } else if (maturity === "view") {
+    actions.push({
+      label: "View maturity results",
+      href: "/platform/maturity",
+      description: "Published results in your viewing scope",
+    });
+  }
   if (permissions.canManageProjects) {
     actions.push({
       label: "Create CI project",

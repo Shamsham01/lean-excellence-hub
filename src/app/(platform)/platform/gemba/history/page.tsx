@@ -1,5 +1,6 @@
 import { GembaActiveWalkList } from "@/components/gemba/active-walk-list";
 import { PageHeader } from "@/components/platform/page-header";
+import { ModuleReadError } from "@/components/workplace/module-read-error";
 import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,9 +9,19 @@ import {
   mapActiveWalkRow,
 } from "@/modules/operational/gemba-active-walks";
 import { formatGembaWalkStatus } from "@/modules/operational/gemba-display";
+import { GEMBA_PERMISSIONS } from "@/modules/operational/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function GembaHistoryPage() {
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: GEMBA_PERMISSIONS.read,
+    module: "gemba",
+    title: "Gemba",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
   const { data: activeWalkRows } = await supabase
     .from("gemba_walks")
@@ -19,7 +30,7 @@ export default async function GembaHistoryPage() {
     .order("started_at", { ascending: false })
     .limit(20);
   const activeWalks = (activeWalkRows ?? []).map(mapActiveWalkRow);
-  const { data: walks } = await supabase
+  const { data: walks, error: walksError } = await supabase
     .from("gemba_walks")
     .select(
       "id, definition_name_snapshot, unit_name_snapshot, completed_at, summary_notes, status",
@@ -28,12 +39,20 @@ export default async function GembaHistoryPage() {
     .order("completed_at", { ascending: false })
     .limit(50);
 
-  return (
-    <div className="flex flex-col gap-8" data-testid="gemba-history-page">
-      <PageHeader
+  if (walksError) {
+    return (
+      <ModuleReadError
         title="Gemba history"
         description="Resume in-progress walks and review completed walks."
+        message="Completed walks could not be loaded. Refresh the page and try again."
+        module="gemba"
       />
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-8" data-testid="gemba-history-page">
+      <PageHeader title="Gemba history" />
       <Card>
         <CardHeader>
           <CardTitle>Walks in progress</CardTitle>
@@ -77,7 +96,7 @@ export default async function GembaHistoryPage() {
             ))
           ) : (
             <p className="text-sm text-muted-foreground">
-              No completed walks in your current scope yet.
+              No completed walks are available with your access.
             </p>
           )}
         </CardContent>

@@ -27,7 +27,13 @@ import { ProjectHeader } from "@/components/projects/project-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -58,12 +64,18 @@ import {
 } from "@/lib/projects/charter";
 import {
   formatProjectReference,
+  isActionProjectStatus,
+  isPreActiveProjectStatus,
   phaseStatusLabel,
   projectStatusBadgeVariant,
   projectStatusLabel,
   teamRoleLabel,
 } from "@/lib/projects/status";
-import type { ProjectDetail, ProjectTeamMember } from "@/lib/projects/types";
+import type {
+  ProjectDetail,
+  ProjectLinkedWorkItem,
+  ProjectTeamMember,
+} from "@/lib/projects/types";
 import type { PersonSelectOption } from "@/modules/organisation/site-context";
 
 type ProjectActionRow = {
@@ -103,6 +115,7 @@ type ProjectWorkspaceProps = {
   people: PersonSelectOption[];
   methodologies: MethodologyOption[];
   requiresSiteSelection?: boolean;
+  linkedWorkItems?: ProjectLinkedWorkItem[];
 };
 
 const TEAM_ROLES = ["owner", "sponsor", "facilitator", "member"] as const;
@@ -124,6 +137,7 @@ export function ProjectWorkspace({
   people,
   methodologies,
   requiresSiteSelection = false,
+  linkedWorkItems = [],
 }: ProjectWorkspaceProps) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
@@ -159,14 +173,10 @@ export function ProjectWorkspace({
   const [metricTarget, setMetricTarget] = useState("");
 
   const canEditDraft = canManage && detail.status === "draft";
-  const canEditTeam =
-    canManage && ["draft", "submitted", "approved"].includes(detail.status);
+  const preActive = isPreActiveProjectStatus(detail.status);
+  const canEditTeam = canManage && preActive;
   const canAddMetrics = canEditTeam;
-  const canCreateActions =
-    canManage &&
-    ["draft", "submitted", "approved", "active", "on_hold"].includes(
-      detail.status,
-    );
+  const canCreateActions = canManage && isActionProjectStatus(detail.status);
   const canEditEvidence =
     canUploadEvidence &&
     canManage &&
@@ -650,6 +660,33 @@ export function ProjectWorkspace({
               )}
             </CardContent>
           </Card>
+          <Card className="mt-4" data-testid="project-linked-work-panel">
+            <CardHeader>
+              <CardTitle>Linked operational work</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2">
+              {linkedWorkItems.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No gemba observations, 5S findings, or problem-solving cases
+                  link to this project yet.
+                </p>
+              ) : (
+                linkedWorkItems.map((item) => (
+                  <AppLink
+                    key={`${item.kind}-${item.id}`}
+                    href={item.href}
+                    className="flex flex-col gap-0.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted/40"
+                    data-testid={`project-linked-work-${item.kind}-${item.id}`}
+                  >
+                    <span className="text-xs text-muted-foreground">
+                      {item.kindLabel}
+                    </span>
+                    <span className="font-medium">{item.title}</span>
+                  </AppLink>
+                ))
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="phases">
@@ -705,6 +742,12 @@ export function ProjectWorkspace({
           <Card>
             <CardHeader>
               <CardTitle>Project actions</CardTitle>
+              {preActive ? (
+                <CardDescription>
+                  Linked actions count towards project progress once the project
+                  is Active.
+                </CardDescription>
+              ) : null}
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               {canCreateActions ? (

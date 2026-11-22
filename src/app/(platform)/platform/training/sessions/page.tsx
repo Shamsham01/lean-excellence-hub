@@ -16,7 +16,6 @@ export default async function TrainingSessionsPage() {
     <div className="flex flex-col gap-8" data-testid="training-sessions-page">
       <PageHeader
         title="Training sessions"
-        description="Scheduled and completed training sessions."
         actions={
           <Button variant="outline" size="sm" asChild>
             <AppLink

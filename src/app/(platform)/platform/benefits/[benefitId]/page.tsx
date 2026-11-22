@@ -9,7 +9,12 @@ import type {
   BenefitRealisationEntry,
   BenefitRealisationSummary,
 } from "@/lib/benefits/types";
+import { BENEFITS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import {
+  loadWorkplaceRecordFallback,
+  loadWorkplaceRecordView,
+} from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function BenefitDetailPage({
@@ -18,6 +23,16 @@ export default async function BenefitDetailPage({
   params: Promise<{ benefitId: string }>;
 }) {
   const { benefitId } = await params;
+  const workplaceView = await loadWorkplaceRecordView({
+    readPermission: BENEFITS_PERMISSIONS.read,
+    module: "benefits",
+    recordId: benefitId,
+    title: "Benefit",
+    denyWithoutAccess: false,
+    baselineOpensModule: true,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
 
   const { data: detail, error } = await callBenefitRpc<BenefitDetail>(
@@ -26,7 +41,15 @@ export default async function BenefitDetailPage({
     { target_benefit_id: benefitId },
   );
 
-  if (error || !detail) notFound();
+  if (error || !detail) {
+    const workplaceRecord = await loadWorkplaceRecordFallback({
+      module: "benefits",
+      recordId: benefitId,
+      title: "Benefit",
+    });
+    if (workplaceRecord) return workplaceRecord;
+    notFound();
+  }
 
   const canManage = await currentMemberHasPermission("benefits.manage");
   const canValidateCi = await currentMemberHasPermission(

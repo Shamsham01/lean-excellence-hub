@@ -7,7 +7,7 @@ function readComponent(path: string) {
 }
 
 describe("platform sidebar layout", () => {
-  it("uses independently scrollable navigation with fixed header and footer zones", () => {
+  it("uses a single scroll region for nav and account with a fixed header", () => {
     const navigation = readComponent(
       "src/components/platform/platform-navigation.tsx",
     );
@@ -21,15 +21,18 @@ describe("platform sidebar layout", () => {
       "src/components/platform/platform-sidebar-footer.tsx",
     );
 
-    expect(navigation).toContain("sidebar-scroll");
-    expect(navigation).toContain("overflow-y-auto");
-    expect(navigation).toContain('aria-label="Platform"');
+    expect(sidebar).toContain('aria-label="Platform"');
+    expect(sidebar).toContain('role="navigation"');
+    expect(navigation).not.toContain("overflow-y-auto");
+    expect(sidebar).toContain("sidebar-scroll");
+    expect(sidebar).toContain("overflow-y-auto");
     expect(header).toContain("shrink-0");
     expect(header).toContain("SiteContextSwitcher");
-    expect(footer).toContain("shrink-0");
+    expect(footer).not.toContain("ThemeToggle");
+    expect(footer).toContain("platform-nav-profile");
     expect(sidebar).toContain("h-dvh");
     expect(sidebar).toContain("min-h-0");
-    expect(sidebar).toContain("w-56");
+    expect(sidebar).toContain("w-[290px]");
   });
 
   it("constrains the mobile drawer to the dynamic viewport with a scrollable nav region", () => {
@@ -41,7 +44,8 @@ describe("platform sidebar layout", () => {
     expect(mobile).toContain("max-h-dvh");
     expect(mobile).toContain("min-h-0");
     expect(mobile).toContain("overflow-hidden");
-    expect(mobile).toContain("sticky top-0 z-40");
+    expect(mobile).toContain("sticky top-0 z-50");
+    expect(mobile).toContain("platform-mobile-command-trigger");
     expect(mobile).toContain("closeGutter");
     expect(mobile).toContain("PlatformSidebarHeader");
     expect(mobile).toContain("siteContext={siteContext}");
@@ -64,6 +68,7 @@ describe("platform sidebar layout", () => {
     expect(navigationModule).toContain("platformNavigation");
     expect(navigationModule).toContain("groupPlatformNavigation");
     expect(sidebar).not.toContain("platformNavigation:");
+    expect(sidebar).not.toContain("MobilePlatformNavigation");
     expect(mobile).toContain("PlatformNavigation");
   });
 });

@@ -74,8 +74,7 @@ test("homepage demo CTA opens the booking page", async ({ page }) => {
 
   await page
     .getByRole("banner")
-    .locator(".marketing-header-bar")
-    .getByRole("link", { name: "Book a live demo" })
+    .getByRole("link", { name: "Book a demo" })
     .click();
 
   await expect(page).toHaveURL(/\/demo$/);
@@ -110,16 +109,15 @@ test("demo page has no horizontal overflow at mobile, tablet and desktop", async
   }
 });
 
-test("mobile menu books a demo and reduced motion still shows the page", async ({
+test("mobile header books a demo and reduced motion still shows the page", async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await page.getByRole("button", { name: "Open menu" }).click();
   await page
-    .locator(".marketing-mobile-panel")
-    .getByRole("link", { name: "Book a live demo" })
+    .getByRole("banner")
+    .getByRole("link", { name: "Book a demo" })
     .click();
   await expect(page).toHaveURL(/\/demo$/);
   await expect(
@@ -155,8 +153,7 @@ test("client navigation remounts the mocked calendar", async ({ page }) => {
 
   const book = page
     .getByRole("banner")
-    .locator(".marketing-header-bar")
-    .getByRole("link", { name: "Book a live demo" });
+    .getByRole("link", { name: "Book a demo" });
   await book.click();
   await expect(page).toHaveURL(/\/demo$/);
   const first = page.locator("[data-leh-mock-embed]");

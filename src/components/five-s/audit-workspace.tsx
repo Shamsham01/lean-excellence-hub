@@ -1,7 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+
+import { InlineAlert } from "@/components/ui/alert";
 
 import {
   completeFiveSAudit,
@@ -20,7 +22,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { SectionProgressNav } from "@/components/ui/section-progress-nav";
 import { Textarea } from "@/components/ui/textarea";
+import { FiveSAuditRaiseAction } from "@/components/five-s/five-s-audit-raise-action";
+import { hasUsableFiveSAuditAnswer } from "@/modules/5s/audit-answer-usability";
+import { formatFiveSAuditStatus } from "@/modules/5s/audit-status";
+import { answerProgressPercent } from "@/modules/operational/answer-progress-percent";
+import { deriveSectionCompletionState } from "@/modules/operational/section-visual-state";
 import {
   LEGACY_FIVE_S_SCORING_SCALE,
   scoreIsOnFiveSScale,
@@ -42,6 +50,7 @@ type Section = {
 
 type AuditWorkspaceProps = {
   auditId: string;
+  siteUnitId?: string | null;
   status: string;
   sections: Section[];
   answers: Record<
@@ -57,6 +66,7 @@ type AuditWorkspaceProps = {
   canComplete?: boolean;
   scoringScale?: FiveSScoringScale;
   onComplete?: typeof completeFiveSAudit;
+  actionCountsByQuestion?: Record<string, number>;
 };
 
 function AnswerSaveFeedback({
@@ -86,9 +96,9 @@ function AnswerSaveFeedback({
       ) : null}
       {status === "error" ? (
         <>
-          <p className="text-sm text-destructive" role="alert">
+          <InlineAlert tone="error">
             {error ?? ANSWER_SAVE_ERROR_MESSAGE}
-          </p>
+          </InlineAlert>
           {canRetry ? (
             <Button
               type="button"
@@ -115,6 +125,7 @@ function isCompleteSuccess(result: unknown) {
 
 export function FiveSAuditWorkspace({
   auditId,
+  siteUnitId = null,
   status,
   sections,
   answers,
@@ -123,19 +134,21 @@ export function FiveSAuditWorkspace({
   canComplete = false,
   scoringScale = LEGACY_FIVE_S_SCORING_SCALE,
   onComplete = completeFiveSAudit,
+  actionCountsByQuestion = {},
 }: AuditWorkspaceProps) {
   const router = useRouter();
   const flatQuestions = sections.flatMap((s) =>
     s.questions.map((q) => ({ section: s, question: q })),
   );
   const [index, setIndex] = useState(0);
+  const [countsByQuestion, setCountsByQuestion] = useState(
+    () => actionCountsByQuestion,
+  );
+
   const [navigating, setNavigating] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [completeError, setCompleteError] = useState<string | null>(null);
   const current = flatQuestions[index];
-  const progress = flatQuestions.length
-    ? Math.round(((index + 1) / flatQuestions.length) * 100)
-    : 0;
   const {
     getAnswer,
     getStatus,
@@ -158,6 +171,27 @@ export function FiveSAuditWorkspace({
     scoringScale,
     saveAnswer: saveFiveSAuditAnswer,
   });
+
+  const answeredCount = flatQuestions.filter((item) =>
+    hasUsableFiveSAuditAnswer(item.question, getAnswer(item.question.id)),
+  ).length;
+  const progress = answerProgressPercent(answeredCount, flatQuestions.length);
+  const sectionNavItems = useMemo(
+    () =>
+      sections.map((section) => {
+        const questions = section.questions;
+        const answered = questions.filter((question) =>
+          hasUsableFiveSAuditAnswer(question, getAnswer(question.id)),
+        ).length;
+        return {
+          id: section.id,
+          label: section.title,
+          completion: deriveSectionCompletionState(answered, questions.length),
+          detail: `${answered}/${questions.length}`,
+        };
+      }),
+    [getAnswer, sections],
+  );
 
   async function moveTo(nextIndex: number) {
     if (!current) return;
@@ -255,37 +289,34 @@ export function FiveSAuditWorkspace({
 
   return (
     <div
-      className="flex flex-col gap-6 lg:grid lg:grid-cols-[200px_1fr] lg:gap-8"
+      className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,220px)_minmax(0,1fr)] lg:gap-8"
       data-testid="five-s-audit-workspace"
     >
-      <nav
-        className="flex flex-wrap gap-2 lg:sticky lg:top-4 lg:flex-col lg:gap-1 lg:self-start"
-        aria-label="Categories"
-      >
-        {sections.map((section) => (
-          <button
-            key={section.id}
-            type="button"
-            className="min-h-11 rounded-md px-3 py-2 text-left text-sm font-medium text-muted-foreground hover:bg-surface lg:w-full"
-            disabled={questionBusy}
-            onClick={() => {
-              const idx = flatQuestions.findIndex(
-                (f) => f.section.id === section.id,
-              );
-              if (idx >= 0) {
-                return moveTo(idx);
-              }
-              return undefined;
-            }}
-          >
-            {section.title}
-          </button>
-        ))}
-      </nav>
+      <div className="min-w-0 lg:sticky lg:top-4 lg:self-start">
+        <SectionProgressNav
+          ariaLabel="Audit categories"
+          items={sectionNavItems}
+          activeId={current.section.id}
+          disabled={questionBusy}
+          onSelect={(sectionId) => {
+            const idx = flatQuestions.findIndex(
+              (f) => f.section.id === sectionId,
+            );
+            if (idx >= 0) {
+              void moveTo(idx);
+            }
+          }}
+          testId="five-s-category-nav"
+          testIdPrefix="five-s-category"
+          itemGapClass="gap-2"
+        />
+      </div>
 
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-wrap items-center gap-3">
-          <Badge variant="outline">{status}</Badge>
+      <div className="flex min-w-0 flex-col gap-6">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
+          <Badge variant="outline" data-testid="five-s-audit-status-badge">
+            {formatFiveSAuditStatus(status)}
+          </Badge>
           <span className="text-sm text-muted-foreground">
             {current.section.title}
           </span>
@@ -293,12 +324,18 @@ export function FiveSAuditWorkspace({
             value={progress}
             className="h-2 w-full max-w-xs"
             aria-label="Audit progress"
+            data-testid="five-s-answer-progress"
           />
-          <span className="text-sm text-muted-foreground">{progress}%</span>
+          <span
+            className="text-sm text-muted-foreground"
+            data-testid="five-s-answer-progress-label"
+          >
+            {answeredCount}/{flatQuestions.length} answered
+          </span>
           {canComplete ? (
             <Button
               type="button"
-              className="min-h-11 sm:ml-auto"
+              className="hidden min-h-11 sm:ml-auto sm:inline-flex"
               disabled={completing}
               onClick={() => {
                 void handleComplete();
@@ -331,25 +368,27 @@ export function FiveSAuditWorkspace({
 
           <div className="mt-6 flex flex-col gap-4">
             {current.question.question_type === "yes_no" ? (
-              <div className="flex gap-3">
-                {(["yes", "no"] as const).map((value) => {
-                  const selected = value === "yes" ? yesSelected : noSelected;
-                  return (
-                    <Button
-                      key={value}
-                      type="button"
-                      size="default"
-                      variant={selected ? "default" : "outline"}
-                      className="min-h-11 min-w-24"
-                      disabled={!canEdit}
-                      aria-pressed={selected}
-                      onClick={() => selectYesNo(current.question.id, value)}
-                    >
-                      {value === "yes" ? "Yes" : "No"}
-                    </Button>
-                  );
-                })}
-              </div>
+              <>
+                <div className="flex gap-3">
+                  {(["yes", "no"] as const).map((value) => {
+                    const selected = value === "yes" ? yesSelected : noSelected;
+                    return (
+                      <Button
+                        key={value}
+                        type="button"
+                        size="default"
+                        variant={selected ? "default" : "outline"}
+                        className="min-h-11 min-w-24"
+                        disabled={!canEdit}
+                        aria-pressed={selected}
+                        onClick={() => selectYesNo(current.question.id, value)}
+                      >
+                        {value === "yes" ? "Yes" : "No"}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </>
             ) : numericQuestion ? (
               <div>
                 <FiveSScoreControl
@@ -431,30 +470,66 @@ export function FiveSAuditWorkspace({
             evidence={evidence}
             canEdit={canEdit}
           />
+
+          {canEdit ? (
+            <FiveSAuditRaiseAction
+              key={current.question.id}
+              linkContext={{
+                auditId,
+                siteUnitId,
+                sectionId: current.section.id,
+                questionId: current.question.id,
+                defaultTitle: current.question.prompt,
+              }}
+              actionCount={countsByQuestion[current.question.id] ?? 0}
+              onActionCreated={() => {
+                const questionId = current.question.id;
+                setCountsByQuestion((prev) => ({
+                  ...prev,
+                  [questionId]: (prev[questionId] ?? 0) + 1,
+                }));
+              }}
+            />
+          ) : null}
         </div>
 
-        <div className="sticky bottom-0 flex gap-3 border-t border-border bg-background py-4">
-          <Button
-            type="button"
-            variant="outline"
-            size="default"
-            className="min-h-11 flex-1"
-            disabled={index === 0 || questionBusy}
-            onClick={() => moveTo(Math.max(0, index - 1))}
-          >
-            Previous
-          </Button>
-          <Button
-            type="button"
-            size="default"
-            className="min-h-11 flex-1"
-            disabled={index >= flatQuestions.length - 1 || questionBusy}
-            onClick={() =>
-              moveTo(Math.min(flatQuestions.length - 1, index + 1))
-            }
-          >
-            Next
-          </Button>
+        <div className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-border bg-background pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          {canComplete ? (
+            <Button
+              type="button"
+              className="min-h-11 w-full sm:hidden"
+              disabled={completing}
+              onClick={() => {
+                void handleComplete();
+              }}
+              data-testid="five-s-complete-audit-mobile"
+            >
+              {completing ? "Completing…" : "Complete audit"}
+            </Button>
+          ) : null}
+          <div className="flex gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="default"
+              className="min-h-11 flex-1"
+              disabled={index === 0 || questionBusy}
+              onClick={() => moveTo(Math.max(0, index - 1))}
+            >
+              Previous
+            </Button>
+            <Button
+              type="button"
+              size="default"
+              className="min-h-11 flex-1"
+              disabled={index >= flatQuestions.length - 1 || questionBusy}
+              onClick={() =>
+                moveTo(Math.min(flatQuestions.length - 1, index + 1))
+              }
+            >
+              Next
+            </Button>
+          </div>
         </div>
       </div>
     </div>

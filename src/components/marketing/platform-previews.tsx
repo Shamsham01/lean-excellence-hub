@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { cn } from "@/lib/utils";
+
 import {
   MarketingContainer,
   MarketingSection,
@@ -8,27 +10,68 @@ import {
   StatusChip,
 } from "./primitives";
 
+export function ProductVignetteChrome({
+  title,
+  route,
+  badge,
+}: {
+  title: string;
+  route: string;
+  badge?: ReactNode;
+}) {
+  return (
+    <div className="marketing-preview-chrome marketing-preview-chrome-product">
+      <span className="marketing-product-vignette-dots" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+      </span>
+      <div className="marketing-preview-chrome-product-text min-w-0">
+        <p className="marketing-preview-title">{title}</p>
+        <p className="marketing-product-vignette-route">{route}</p>
+      </div>
+      <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
+        {badge}
+        <StatusChip>Example</StatusChip>
+      </div>
+    </div>
+  );
+}
+
 function PreviewFrame({
   id,
   title,
+  route,
+  chromeBadge,
   children,
   caption,
   className,
+  bodyClassName,
 }: {
   id: string;
   title: string;
+  route: string;
+  chromeBadge?: ReactNode;
   children: ReactNode;
   caption: string;
   className?: string;
+  bodyClassName?: string;
 }) {
   return (
-    <figure id={id} className={className}>
-      <div className="marketing-preview">
-        <div className="marketing-preview-chrome">
-          <p className="marketing-preview-title">{title}</p>
+    <figure id={id} className={cn("marketing-product-vignette", className)}>
+      <div className="marketing-preview marketing-preview-product">
+        <ProductVignetteChrome
+          title={title}
+          route={route}
+          badge={chromeBadge}
+        />
+        <div className={cn("marketing-preview-body", bodyClassName)}>
+          {children}
         </div>
-        <div className="marketing-preview-body">{children}</div>
       </div>
+      <p className="marketing-preview-aux-note">
+        Example data · fictional site
+      </p>
       <PreviewCaption>{caption}</PreviewCaption>
     </figure>
   );
@@ -61,6 +104,7 @@ function MaturityPreview() {
     <PreviewFrame
       id="maturity"
       title="Maturity"
+      route="/platform/maturity · Bodmin Bakery"
       className="marketing-platform-maturity"
       caption="Highlighted cells are not actual site scores — they show the framework scale, not a scored site."
     >
@@ -111,6 +155,8 @@ function GembaPreview() {
     <PreviewFrame
       id="gemba"
       title="Gemba"
+      route="/platform/gemba · Walk in progress"
+      chromeBadge={<StatusChip tone="accent">Live</StatusChip>}
       className="marketing-platform-gemba"
       caption="Observations become owned follow-up in the same system."
     >
@@ -142,6 +188,8 @@ function FiveSPreview() {
     <PreviewFrame
       id="five-s"
       title="5S"
+      route="/platform/5s · Scheduled audit (mobile)"
+      bodyClassName="marketing-preview-body-touch"
       className="marketing-platform-fives"
       caption="Adherence, findings and overdue sustainment — not a percentage trophy."
     >
@@ -176,6 +224,7 @@ function SuggestionsPreview() {
     <PreviewFrame
       id="suggestions"
       title="Suggestions"
+      route="/platform/suggestions · Queue"
       className="marketing-platform-suggestions"
       caption="Count is not the point — conversion and feedback are."
     >
@@ -210,6 +259,7 @@ function ProblemSolvingPreview() {
     <PreviewFrame
       id="problem-solving"
       title="Problem Solving"
+      route="/platform/problem-solving · Case PS-214"
       className="marketing-platform-problemsolving"
       caption="Methodology-neutral stages — the organisation chooses A3, 8D, DMAIC or its own method."
     >
@@ -277,6 +327,7 @@ function ActionsPreview() {
     <PreviewFrame
       id="actions"
       title="Actions"
+      route="/platform/actions · Owned work"
       className="marketing-platform-actions"
       caption="One accountable action system across Gemba, 5S, suggestions and problem solving."
     >
@@ -309,6 +360,7 @@ function ProjectsBenefitsPreview() {
     <PreviewFrame
       id="projects-benefits"
       title="Projects & Benefits"
+      route="/platform/projects · Benefits pipeline"
       className="marketing-platform-projects"
       caption="Forecast and realisation stay separate. No invented financial result."
     >
@@ -346,6 +398,7 @@ function TrainingSkillsPreview() {
     <PreviewFrame
       id="training-skills"
       title="Training & Skills"
+      route="/platform/skills/matrix · Role coverage"
       className="marketing-platform-training"
       caption="Gaps and requirements, not a course catalogue."
     >

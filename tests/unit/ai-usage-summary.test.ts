@@ -6,6 +6,7 @@ import {
   isEmptyAiUsageSummary,
   logAiUsageLoadError,
   parseAiUsageSummary,
+  pauseMeterTokens,
   totalAiUsageTokens,
 } from "@/lib/ai/usage-summary";
 
@@ -133,6 +134,7 @@ describe("usage summary helpers", () => {
 
     expect(summary).not.toBeNull();
     expect(totalAiUsageTokens(summary!)).toBe(300);
+    expect(pauseMeterTokens(summary!)).toBe(375);
   });
 
   it("detects an empty month-to-date summary", () => {

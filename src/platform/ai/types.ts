@@ -35,7 +35,11 @@ export type AiProposalType =
   | "sustainment_item"
   | "session_question"
   | "session_summary"
-  | "lessons_learned";
+  | "lessons_learned"
+  | "problem_statement"
+  | "target_condition"
+  | "five_why_chain"
+  | "fishbone_cause";
 
 export const AI_PROPOSAL_TYPES = [
   "current_condition_item",
@@ -49,6 +53,10 @@ export const AI_PROPOSAL_TYPES = [
   "session_question",
   "session_summary",
   "lessons_learned",
+  "problem_statement",
+  "target_condition",
+  "five_why_chain",
+  "fishbone_cause",
 ] as const satisfies readonly AiProposalType[];
 
 export const FORBIDDEN_PROPOSAL_TYPES = [
@@ -145,6 +153,11 @@ export type CreateResponseInput = {
   tools: Array<Record<string, unknown>>;
   maxOutputTokens: number;
   timeoutMs: number;
+  /**
+   * Overrides the SDK default of 2. Problem Solving passes 0 so a timed-out
+   * call fails inside the host limit instead of starting another billed attempt.
+   */
+  maxRetries?: number;
   reasoningEffort?: AiReasoningEffort;
   expectsStructuredOutput?: boolean;
   structuredOutputFormat?: StructuredOutputFormat;

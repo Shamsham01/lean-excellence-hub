@@ -6,6 +6,7 @@ import {
   DEMO_ROLES,
   DEMO_USERS,
 } from "../../scripts/demo-seed/constants";
+import { openPeopleInviteDialog } from "./helpers/form-dialogs";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -31,6 +32,7 @@ test.describe("Invitation application role picker", () => {
     await loginAsAdmin(page);
     await page.goto("/platform/settings/people");
     await expect(page.getByTestId("people-settings-page")).toBeVisible();
+    await openPeopleInviteDialog(page);
 
     const roleSelect = page.locator("#invite-role");
     await expect(roleSelect).toBeVisible();
@@ -63,6 +65,7 @@ test.describe("Invitation application role picker", () => {
   }) => {
     await loginAsAdmin(page);
     await page.goto("/platform/settings/people");
+    await openPeopleInviteDialog(page);
     await expect(page.getByTestId("invite-colleague-form")).toBeVisible();
 
     const roleSelect = page.locator("#invite-role");

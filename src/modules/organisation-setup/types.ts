@@ -49,6 +49,8 @@ export type OrganisationSetupSnapshot = {
   recommended: RecommendedSetupState;
   nextActionHref: string | null;
   nextActionLabel: string | null;
+  /** When true, compact "Ready to start" must not claim full operational readiness. */
+  operationalSetupIncomplete: boolean;
 };
 
 export type SetupQueryResult = {
@@ -83,6 +85,15 @@ export type SetupQueryResult = {
   maturityAssessmentUnavailable: boolean;
   trainingCatalogCount: number | null;
   trainingCatalogUnavailable: boolean;
+  /** Active skills count (empty org onboarding signal). */
+  activeSkillCount: number | null;
+  activeSkillCountUnavailable: boolean;
+  /** Recognition types configured (empty when zero for admins). */
+  recognitionTypeCount: number | null;
+  recognitionTypeCountUnavailable: boolean;
+  /** Schedule definitions for operational cadence (empty when zero for admins). */
+  scheduleDefinitionCount: number | null;
+  scheduleDefinitionCountUnavailable: boolean;
   hasChildUnits: boolean | null;
   childUnitsUnavailable: boolean;
   currentAdminHasPrimaryAssignment: boolean | null;
@@ -101,6 +112,9 @@ export type SetupPermissionSnapshot = {
   canReadHierarchy: boolean;
   canReadMemberships: boolean;
   canManageProjects: boolean;
+  canManageSkillsCatalog: boolean;
+  canManageRecognition: boolean;
+  canManageSchedules: boolean;
   currentMembershipAdminHref: string | null;
 };
 

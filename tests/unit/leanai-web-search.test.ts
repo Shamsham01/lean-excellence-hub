@@ -7,6 +7,7 @@ import {
 } from "@/modules/leanai-context/assistant/external-sources";
 import { messagesFromSessionDetail } from "@/modules/leanai-context/assistant/conversation-history";
 import { buildCoachAssistantSystemPrompt } from "@/platform/ai/prompts/coach-assistant";
+import { buildOperationalRetrievalOpenAiTools } from "@/platform/ai/tools/operational-retrieval-schemas";
 import {
   OPENAI_WEB_SEARCH_TOOL,
   workspaceAssistantTools,
@@ -42,8 +43,12 @@ describe("external web sources", () => {
 
 describe("workspace assistant web-search tools", () => {
   it("offers the OpenAI Responses web_search tool only when enabled", () => {
-    expect(workspaceAssistantTools(false)).toEqual([]);
-    expect(workspaceAssistantTools(true)).toEqual([OPENAI_WEB_SEARCH_TOOL]);
+    const operational = buildOperationalRetrievalOpenAiTools();
+    expect(workspaceAssistantTools(false)).toEqual(operational);
+    expect(workspaceAssistantTools(true)).toEqual([
+      ...operational,
+      OPENAI_WEB_SEARCH_TOOL,
+    ]);
     expect(OPENAI_WEB_SEARCH_TOOL.type).toBe("web_search");
   });
 });

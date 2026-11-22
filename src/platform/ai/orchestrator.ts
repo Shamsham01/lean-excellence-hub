@@ -5,6 +5,10 @@ import { createHash } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
+  buildOpenAiToolsForStage,
+  resolveCanonicalStageKey,
+} from "@/lib/problem-solving/stage-draft";
+import {
   AI_DEFAULTS,
   getAiEnvironment,
   isApplicationAiProviderAvailable,
@@ -13,8 +17,9 @@ import {
   prepareWorkflowModelCall,
   reasoningManifestFields,
 } from "@/platform/ai/model-compatibility";
-import { problemSolvingModelId } from "@/platform/ai/model-routing";
+import { selectProblemSolvingModelId } from "@/platform/ai/model-routing";
 import {
+  AI_PROVIDER_ERROR_CODES,
   AiProviderError,
   aiRunFailureCategory,
 } from "@/platform/ai/providers/errors";
@@ -24,6 +29,29 @@ import {
   buildSystemPrompt,
   hashPrompt,
 } from "@/platform/ai/prompts/problem-solving-facilitator";
+import {
+  reconcileCompletedAiRunTurn,
+  readExistingAiRun,
+} from "@/platform/ai/ai-run-reconciliation";
+import { failAiRunBestEffort } from "@/platform/ai/fail-ai-run-best-effort";
+import { ensureAiRunSettledBestEffort } from "@/platform/ai/ensure-ai-run-settled";
+import {
+  AI_TURN_IN_PROGRESS_MESSAGE,
+  AI_TURN_UNCERTAIN_COMPLETION_MESSAGE,
+  AI_STALE_RUN_AFTER_MS,
+  AI_TURN_FINALIZE_BUFFER_MS,
+  AI_TURN_PARTIAL_CONTINUATION_MESSAGE,
+  createAiRunDeadline,
+  resolveAiTurnWallClockMs,
+  runWithinAiTurnBudget,
+  shouldFinalizePartialContinuation,
+} from "@/platform/ai/run-deadline";
+import { recordAiRunProviderDispatch } from "@/platform/ai/record-ai-run-provider-dispatch";
+import { shouldRetryProviderOnce } from "@/platform/ai/provider-turn-retry";
+import {
+  recoverStaleAiRunsForProblemSolvingCase,
+  recoverStaleAiRunsForSession,
+} from "@/platform/ai/stale-ai-run-recovery";
 import { resolveAIProvider } from "@/platform/ai/registry";
 import {
   createSourceAllowlist,
@@ -31,12 +59,17 @@ import {
   toDbSourceRef,
 } from "@/platform/ai/source-allowlist";
 import { sanitizeEnvelopeProposals } from "@/platform/ai/proposals/contracts";
+import { executeOperationalRetrievalTool } from "@/platform/ai/tools/operational-retrieval-executors";
+import { isOperationalRetrievalTool } from "@/platform/ai/tools/operational-retrieval-schemas";
+import { buildProblemSolvingFacilitatorProviderTools } from "@/platform/ai/problem-solving-facilitator-request";
 import { executeProblemSolvingTool } from "@/platform/ai/tools/problem-solving-executors";
+import { ProblemSolvingProposalBuffer } from "@/platform/ai/tools/proposal-tool-buffer";
 import {
-  PROBLEM_SOLVING_READ_TOOLS,
-  buildOpenAiTools,
+  PROBLEM_SOLVING_TOOLS,
+  PROBLEM_SOLVING_WRITE_TOOLS,
   type ProblemSolvingToolName,
 } from "@/platform/ai/tools/problem-solving-schemas";
+import { reconcileProblemSolvingAiTurnByIdempotencyKey } from "@/platform/ai/problem-solving-turn-reconcile";
 import type {
   AiSessionMode,
   FacilitatorEnvelope,
@@ -49,9 +82,13 @@ export type RunAiTurnInput = {
   caseId: string;
   mode: AiSessionMode;
   stageKey?: string | null;
+  viewStageKey?: string | null;
+  currentStageKey?: string | null;
   userMessage: string;
   idempotencyKey: string;
   conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
+  /** Tighter provider loop for bounded stage-draft actions. */
+  turnProfile?: "default" | "stage_draft";
 };
 
 export type RunAiTurnResult = {
@@ -60,8 +97,48 @@ export type RunAiTurnResult = {
   envelope: FacilitatorEnvelope;
 };
 
+async function problemSolvingSessionCaseId(
+  supabase: SupabaseClient,
+  sessionId: string,
+): Promise<string> {
+  const { data, error } = await supabase
+    .from("ai_sessions")
+    .select("problem_solving_case_id, context_type")
+    .eq("id", sessionId)
+    .maybeSingle();
+  const caseId = data?.problem_solving_case_id;
+  if (
+    error ||
+    data?.context_type !== "problem_solving" ||
+    typeof caseId !== "string" ||
+    caseId.length === 0
+  ) {
+    throw new Error("Lean AI session is not authorised for this case.");
+  }
+  return caseId;
+}
+
 function isProblemSolvingTool(name: string): name is ProblemSolvingToolName {
-  return (PROBLEM_SOLVING_READ_TOOLS as readonly string[]).includes(name);
+  return (PROBLEM_SOLVING_TOOLS as readonly string[]).includes(name);
+}
+
+function isProblemSolvingWriteTool(name: string): boolean {
+  return (PROBLEM_SOLVING_WRITE_TOOLS as readonly string[]).includes(name);
+}
+
+function resolveProblemSolvingWorkflow(
+  mode: AiSessionMode,
+):
+  | "problem_solving_challenge"
+  | "problem_solving_facilitate"
+  | "problem_solving" {
+  if (mode === "challenge") {
+    return "problem_solving_challenge";
+  }
+  if (mode === "facilitate" || mode === "ask" || mode === "review") {
+    return "problem_solving_facilitate";
+  }
+  return "problem_solving";
 }
 
 export async function runAiTurn(
@@ -75,42 +152,127 @@ export async function runAiTurn(
 
   const env = getAiEnvironment();
   const provider = resolveAIProvider();
-  const model = problemSolvingModelId(env);
+  const model = selectProblemSolvingModelId(input.mode, env);
   const prepared = prepareWorkflowModelCall({
-    workflow:
-      input.mode === "challenge"
-        ? "problem_solving_challenge"
-        : "problem_solving",
+    workflow: resolveProblemSolvingWorkflow(input.mode),
     model,
     environment: env,
   });
-  const maxToolCalls = env.AI_MAX_TOOL_CALLS ?? AI_DEFAULTS.maxToolCalls;
-  const timeoutMs = env.AI_RUN_TIMEOUT_MS ?? AI_DEFAULTS.runTimeoutMs;
+  const configuredMaxToolCalls =
+    env.AI_MAX_TOOL_CALLS ?? AI_DEFAULTS.maxToolCalls;
+  const maxToolCalls =
+    input.turnProfile === "stage_draft"
+      ? Math.min(AI_DEFAULTS.stageDraftMaxToolCalls, configuredMaxToolCalls)
+      : configuredMaxToolCalls;
+  const configuredPerCallTimeoutMs =
+    env.AI_RUN_TIMEOUT_MS ?? AI_DEFAULTS.runTimeoutMs;
+  const wallClockMs = resolveAiTurnWallClockMs(
+    env.AI_TURN_WALL_CLOCK_MS ?? AI_DEFAULTS.turnWallClockMs,
+  );
+  const deadline = createAiRunDeadline(wallClockMs);
   const expectsStructuredOutput = provider.name === "openai";
 
-  const systemPrompt = buildSystemPrompt(input.mode, input.stageKey);
-  const promptHash = hashPrompt(systemPrompt);
-
-  const { data: runId, error: startError } = await input.supabase.rpc(
-    "start_ai_run",
-    {
-      target_ai_session_id: input.sessionId,
-      target_user_message: input.userMessage,
-      target_idempotency_key: input.idempotencyKey,
-      target_provider: provider.name,
-      target_model: model,
-      target_prompt_key: PROMPT_KEY,
-      target_prompt_version: PROMPT_VERSION,
-      target_prompt_hash: promptHash,
-    },
+  const isStageDraft = input.turnProfile === "stage_draft";
+  const facilitationStageKey = resolveCanonicalStageKey(
+    input.viewStageKey ?? input.stageKey,
   );
+  const currentStageCanonical = input.currentStageKey
+    ? resolveCanonicalStageKey(input.currentStageKey)
+    : null;
+  const systemPrompt = buildSystemPrompt(input.mode, facilitationStageKey, {
+    viewStageKey: facilitationStageKey,
+    currentStageKey: currentStageCanonical,
+  });
+  const promptHash = hashPrompt(systemPrompt);
+  const sessionCaseId = await problemSolvingSessionCaseId(
+    input.supabase,
+    input.sessionId,
+  );
+  if (sessionCaseId !== input.caseId) {
+    throw new Error("Lean AI session is not authorised for this case.");
+  }
+
+  await recoverStaleAiRunsForProblemSolvingCase(
+    input.supabase,
+    input.caseId,
+    AI_STALE_RUN_AFTER_MS,
+  );
+  await recoverStaleAiRunsForSession(
+    input.supabase,
+    input.sessionId,
+    AI_STALE_RUN_AFTER_MS,
+  );
+
+  const started = await startProblemSolvingRun(input, {
+    provider: provider.name,
+    model,
+    promptHash,
+  });
+  let runId = started.runId;
+  let startError = started.error;
+  if (startError && isUniqueRunningRun(startError)) {
+    await recoverStaleAiRunsForSession(
+      input.supabase,
+      input.sessionId,
+      AI_STALE_RUN_AFTER_MS,
+    );
+    const retried = await startProblemSolvingRun(input, {
+      provider: provider.name,
+      model,
+      promptHash,
+    });
+    runId = retried.runId;
+    startError = retried.error;
+    if (startError && isUniqueRunningRun(startError)) {
+      throw new AiProviderError(
+        AI_PROVIDER_ERROR_CODES.RESPONSE_TEMPORARY,
+        AI_TURN_IN_PROGRESS_MESSAGE,
+        { provider: provider.name, model },
+      );
+    }
+  }
 
   if (startError || !runId) {
     throw startError ?? new Error("Failed to start AI run");
   }
 
+  const { data: claim, error: claimError } = await input.supabase.rpc(
+    "claim_ai_run_execution",
+    { target_ai_run_id: runId },
+  );
+  if (claimError) {
+    throw claimError;
+  }
+  if (claim === "completed") {
+    const reconciled = await reconcileCompletedAiRunTurn(input.supabase, runId);
+    if (!reconciled) {
+      throw new Error(
+        "Lean AI finished this request, but the reply could not be reloaded. Send the same message again.",
+      );
+    }
+    return reconciled;
+  }
+  if (claim === "in_progress") {
+    throw new AiProviderError(
+      AI_PROVIDER_ERROR_CODES.RESPONSE_TEMPORARY,
+      AI_TURN_IN_PROGRESS_MESSAGE,
+      { provider: provider.name, model },
+    );
+  }
+  if (claim === "failed" || claim === "timed_out" || claim === "denied") {
+    throw new AiProviderError(
+      AI_PROVIDER_ERROR_CODES.RESPONSE_TEMPORARY,
+      "That Lean AI attempt did not finish. Your message is still here. Send it again to start a fresh request.",
+      { provider: provider.name, model },
+    );
+  }
+  if (claim !== "claimed") {
+    throw new Error("Lean AI could not start this request.");
+  }
+
   const allowlist = createSourceAllowlist();
   addCaseToAllowlist(allowlist, input.caseId);
+  const proposalBuffer = new ProblemSolvingProposalBuffer();
 
   const messages = [
     ...input.conversationHistory,
@@ -118,6 +280,7 @@ export async function runAiTurn(
   ];
 
   const toolCallRecords: Array<Record<string, unknown>> = [];
+  const providerHopRecords: Array<Record<string, unknown>> = [];
   let totalToolCalls = 0;
   const totalUsage = {
     inputTokens: 0,
@@ -129,18 +292,44 @@ export async function runAiTurn(
   let envelope: FacilitatorEnvelope | undefined;
   let outputText = "";
   const startedAt = Date.now();
+  let turnError: unknown;
+  let turnCompleted = false;
 
   try {
     for (let iteration = 0; iteration <= maxToolCalls; iteration += 1) {
-      const response = await provider.createResponse({
+      deadline.assertWithinBudget(provider.name, model);
+      const hopStartedAt = Date.now();
+      const hopTimeoutMs = deadline.providerTimeoutMs(
+        configuredPerCallTimeoutMs,
+        provider.name,
         model,
+        { hopIndex: iteration },
+      );
+      const response = await invokeProblemSolvingProviderResponse({
+        supabase: input.supabase,
+        runId,
+        mode: input.mode,
+        deadline,
+        provider,
+        model,
+        configuredPerCallTimeoutMs,
+        prepared,
+        expectsStructuredOutput,
         systemPrompt,
         messages,
-        tools: buildOpenAiTools(),
-        maxOutputTokens: prepared.maxOutputTokens,
-        timeoutMs,
-        reasoningEffort: prepared.reasoningEffort,
-        ...(expectsStructuredOutput ? { expectsStructuredOutput: true } : {}),
+        hopIndex: iteration,
+        ...(isStageDraft
+          ? {
+              stageDraftTools: buildOpenAiToolsForStage(facilitationStageKey),
+            }
+          : {}),
+      });
+      providerHopRecords.push({
+        hop_index: iteration,
+        duration_ms: Date.now() - hopStartedAt,
+        timeout_ms: hopTimeoutMs,
+        model,
+        reasoning_effort: prepared.reasoningEffort,
       });
 
       providerRequestId = response.responseId ?? providerRequestId;
@@ -167,10 +356,14 @@ export async function runAiTurn(
       const toolResults: string[] = [];
       for (const toolCall of response.toolCalls) {
         if (totalToolCalls >= maxToolCalls) break;
-        if (!isProblemSolvingTool(toolCall.name)) {
+        const toolName = toolCall.name;
+        if (
+          !isProblemSolvingTool(toolName) &&
+          !isOperationalRetrievalTool(toolName)
+        ) {
           toolCallRecords.push({
             sequence_number: toolCallRecords.length + 1,
-            tool_name: toolCall.name,
+            tool_name: toolName,
             arguments_json: toolCall.arguments,
             arguments_hash: hashJson(toolCall.arguments),
             status: "denied",
@@ -181,15 +374,31 @@ export async function runAiTurn(
           continue;
         }
 
+        deadline.assertWithinBudget(provider.name, model);
         const started = Date.now();
-        const result = await executeProblemSolvingTool(
-          {
-            supabase: input.supabase,
-            caseId: input.caseId,
-            allowlist,
+        const result = await runWithinAiTurnBudget(
+          deadline,
+          provider.name,
+          model,
+          () => {
+            if (isOperationalRetrievalTool(toolName)) {
+              return executeOperationalRetrievalTool(
+                { supabase: input.supabase, allowlist },
+                toolName,
+                toolCall.arguments,
+              );
+            }
+            return executeProblemSolvingTool(
+              {
+                supabase: input.supabase,
+                caseId: input.caseId,
+                allowlist,
+                proposalBuffer,
+              },
+              toolName,
+              toolCall.arguments,
+            );
           },
-          toolCall.name,
-          toolCall.arguments,
         );
         for (const ref of result.sourceRefsAdded) {
           addRefToAllowlist(allowlist, ref);
@@ -213,13 +422,21 @@ export async function runAiTurn(
             result: result.resultMetadata,
           }),
         );
-        totalToolCalls += 1;
+        if (isStageDraft || isProblemSolvingWriteTool(toolName)) {
+          totalToolCalls += 1;
+        }
       }
 
       messages.push({
         role: "user",
         content: `Authorised tool results:\n${toolResults.join("\n")}`,
       });
+
+      if (shouldFinalizePartialContinuation(deadline)) {
+        outputText = AI_TURN_PARTIAL_CONTINUATION_MESSAGE;
+        envelope = fallbackEnvelope(outputText);
+        break;
+      }
 
       if (totalToolCalls >= maxToolCalls) {
         outputText =
@@ -239,7 +456,15 @@ export async function runAiTurn(
       envelope.source_refs,
     );
 
-    envelope.proposals = sanitizeEnvelopeProposals(envelope.proposals);
+    const toolProposals = proposalBuffer.drain().map((item) => ({
+      proposal_type: item.proposal_type,
+      payload: item.payload,
+      explanation: item.explanation,
+    }));
+    envelope.proposals = sanitizeEnvelopeProposals([
+      ...envelope.proposals,
+      ...toolProposals,
+    ]);
 
     const sourceRefsDb = envelope.source_refs.map((item) =>
       toDbSourceRef(item.ref),
@@ -251,56 +476,237 @@ export async function runAiTurn(
       display_permission_key: displayPermissionFor(proposal.proposal_type),
     }));
 
+    deadline.assertWithinBudget(provider.name, model);
+
     const manifest = {
       case_id: input.caseId,
       mode: input.mode,
-      stage_key: input.stageKey ?? null,
+      stage_key: facilitationStageKey,
       allowlist_size: allowlist.size,
+      wall_clock_ms: wallClockMs,
+      elapsed_ms: Date.now() - startedAt,
+      tool_iterations: toolCallRecords.length,
+      provider_hops: providerHopRecords,
       ...reasoningManifestFields(prepared),
     };
 
-    const { data: assistantMessageId, error: finishError } =
-      await input.supabase.rpc("finish_ai_run", {
-        target_ai_run_id: runId,
-        target_assistant_content: envelope.message,
-        target_structured_payload: envelope,
-        target_manifest_version: "v1",
-        target_manifest_json: manifest,
-        target_manifest_hash: hashJson(manifest),
-        target_provider_request_id: providerRequestId ?? null,
-        target_tool_calls: toolCallRecords,
-        target_source_references: sourceRefsDb,
-        target_proposals: proposalsDb,
-        target_input_tokens: totalUsage.inputTokens,
-        target_output_tokens: totalUsage.outputTokens,
-        target_cached_input_tokens: totalUsage.cachedInputTokens,
-        target_reasoning_tokens: totalUsage.reasoningTokens,
-        target_tool_call_count: totalToolCalls,
-        target_duration_ms: Date.now() - startedAt,
-      });
+    const finishedEnvelope = envelope;
+    const finishResult = await runWithinAiTurnBudget(
+      deadline,
+      provider.name,
+      model,
+      async () =>
+        input.supabase.rpc("finish_ai_run", {
+          target_ai_run_id: runId,
+          target_assistant_content: finishedEnvelope.message,
+          target_structured_payload: finishedEnvelope,
+          target_manifest_version: "v1",
+          target_manifest_json: manifest,
+          target_manifest_hash: hashJson(manifest),
+          target_provider_request_id: providerRequestId ?? null,
+          target_tool_calls: toolCallRecords,
+          target_source_references: sourceRefsDb,
+          target_proposals: proposalsDb,
+          target_input_tokens: totalUsage.inputTokens,
+          target_output_tokens: totalUsage.outputTokens,
+          target_cached_input_tokens: totalUsage.cachedInputTokens,
+          target_reasoning_tokens: totalUsage.reasoningTokens,
+          target_tool_call_count: totalToolCalls,
+          target_duration_ms: Date.now() - startedAt,
+        }),
+    );
+    const { data: assistantMessageId, error: finishError } = finishResult;
 
     if (finishError || !assistantMessageId) {
       throw finishError ?? new Error("Failed to finish AI run");
     }
 
+    turnCompleted = true;
     return {
       runId,
       assistantMessageId,
       envelope,
     };
   } catch (error) {
-    await input.supabase.rpc("fail_ai_run", {
-      target_ai_run_id: runId,
-      target_error_category: aiRunFailureCategory(error),
-      target_final_output:
-        error instanceof AiProviderError
-          ? error.message
-          : error instanceof Error
-            ? error.message
-            : "Lean AI encountered an error.",
-    });
+    turnError = error;
+    console.warn(
+      "[lean-ai:problem-solving-turn]",
+      JSON.stringify({
+        ai_run_id: runId,
+        ai_session_id: input.sessionId,
+        mode: input.mode,
+        prompt_version: PROMPT_VERSION,
+        model,
+        elapsed_ms: Date.now() - startedAt,
+        tool_calls: totalToolCalls,
+        error_category: aiRunFailureCategory(error),
+      }),
+    );
+    const completed = await reconcileCompletedAiRunTurn(input.supabase, runId);
+    if (completed) {
+      return completed;
+    }
+    await failAiRunBestEffort(input.supabase, runId, error);
+    const completedAfterCleanup = await reconcileCompletedAiRunTurn(
+      input.supabase,
+      runId,
+    );
+    if (completedAfterCleanup) {
+      return completedAfterCleanup;
+    }
+    await recoverStaleAiRunsForSession(
+      input.supabase,
+      input.sessionId,
+      wallClockMs + AI_TURN_FINALIZE_BUFFER_MS + 2_000,
+    );
+    const completedAfterStale = await reconcileCompletedAiRunTurn(
+      input.supabase,
+      runId,
+    );
+    if (completedAfterStale) {
+      return completedAfterStale;
+    }
+    const reconciledByKey = await reconcileProblemSolvingAiTurnByIdempotencyKey(
+      input.supabase,
+      {
+        caseId: input.caseId,
+        sessionId: input.sessionId,
+        idempotencyKey: input.idempotencyKey,
+      },
+    );
+    if (reconciledByKey.state === "completed") {
+      return {
+        runId: reconciledByKey.runId,
+        assistantMessageId: reconciledByKey.assistantMessageId,
+        envelope: reconciledByKey.envelope,
+      };
+    }
+    const snapshot = await readExistingAiRun(input.supabase, runId);
+    if (
+      !snapshot ||
+      snapshot.status === "running" ||
+      snapshot.status === "unknown"
+    ) {
+      throw new AiProviderError(
+        AI_PROVIDER_ERROR_CODES.RESPONSE_TIMEOUT,
+        AI_TURN_UNCERTAIN_COMPLETION_MESSAGE,
+        { provider: provider.name, model },
+      );
+    }
+    if (snapshot.status === "failed" || snapshot.status === "timed_out") {
+      if (
+        error instanceof AiProviderError &&
+        error.code === AI_PROVIDER_ERROR_CODES.RESPONSE_TIMEOUT
+      ) {
+        throw error;
+      }
+      throw new AiProviderError(
+        AI_PROVIDER_ERROR_CODES.RESPONSE_TEMPORARY,
+        reconciledByKey.state === "failed"
+          ? reconciledByKey.message
+          : "That Lean AI attempt did not finish. Your message is still here. Send it again to start a fresh request.",
+        { provider: provider.name, model },
+      );
+    }
     throw error;
+  } finally {
+    if (!turnCompleted) {
+      await ensureAiRunSettledBestEffort(
+        input.supabase,
+        runId,
+        turnError ?? new Error("turn_incomplete"),
+      );
+    }
   }
+}
+
+async function invokeProblemSolvingProviderResponse(input: {
+  supabase: RunAiTurnInput["supabase"];
+  runId: string;
+  mode: AiSessionMode;
+  deadline: ReturnType<typeof createAiRunDeadline>;
+  provider: ReturnType<typeof resolveAIProvider>;
+  model: string;
+  configuredPerCallTimeoutMs: number;
+  prepared: ReturnType<typeof prepareWorkflowModelCall>;
+  expectsStructuredOutput: boolean;
+  systemPrompt: string;
+  messages: Array<{ role: "user" | "assistant"; content: string }>;
+  stageDraftTools?: Array<Record<string, unknown>>;
+  hopIndex: number;
+}) {
+  const tools = buildProblemSolvingFacilitatorProviderTools(
+    input.stageDraftTools
+      ? { mode: input.mode, stageDraftTools: input.stageDraftTools }
+      : { mode: input.mode },
+  );
+  const callProvider = () =>
+    input.provider.createResponse({
+      model: input.model,
+      systemPrompt: input.systemPrompt,
+      messages: input.messages,
+      tools,
+      maxOutputTokens: input.prepared.maxOutputTokens,
+      timeoutMs: input.deadline.providerTimeoutMs(
+        input.configuredPerCallTimeoutMs,
+        input.provider.name,
+        input.model,
+        { hopIndex: input.hopIndex },
+      ),
+      maxRetries: 0,
+      reasoningEffort: input.prepared.reasoningEffort,
+      ...(input.expectsStructuredOutput
+        ? { expectsStructuredOutput: true }
+        : {}),
+    });
+
+  await recordAiRunProviderDispatch(input.supabase, input.runId);
+
+  try {
+    return await runWithinAiTurnBudget(
+      input.deadline,
+      input.provider.name,
+      input.model,
+      callProvider,
+    );
+  } catch (error) {
+    if (!shouldRetryProviderOnce(error, input.deadline)) {
+      throw error;
+    }
+    input.deadline.assertWithinBudget(input.provider.name, input.model);
+    return runWithinAiTurnBudget(
+      input.deadline,
+      input.provider.name,
+      input.model,
+      callProvider,
+    );
+  }
+}
+
+function isUniqueRunningRun(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "23505"
+  );
+}
+
+async function startProblemSolvingRun(
+  input: RunAiTurnInput,
+  identity: { provider: string; model: string; promptHash: string },
+): Promise<{ runId: string | null; error: unknown }> {
+  const { data, error } = await input.supabase.rpc("start_ai_run", {
+    target_ai_session_id: input.sessionId,
+    target_user_message: input.userMessage,
+    target_idempotency_key: input.idempotencyKey,
+    target_provider: identity.provider,
+    target_model: identity.model,
+    target_prompt_key: PROMPT_KEY,
+    target_prompt_version: PROMPT_VERSION,
+    target_prompt_hash: identity.promptHash,
+  });
+  return { runId: typeof data === "string" ? data : null, error };
 }
 
 function fallbackEnvelope(message: string): FacilitatorEnvelope {
@@ -333,6 +739,10 @@ function displayPermissionFor(proposalType: string): string {
     case "current_condition_item":
     case "session_question":
     case "session_summary":
+    case "fishbone_cause":
+    case "hypothesis":
+    case "hypothesis_test":
+    case "five_why_chain":
       return "problem_solving.contribute";
     default:
       return "problem_solving.manage";

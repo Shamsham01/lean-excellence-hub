@@ -12,21 +12,42 @@ describe("shared platform shell mobile layout", () => {
       "src/components/platform/mobile-platform-navigation.tsx",
     );
 
-    expect(mobile).toContain("sticky top-0 z-40");
+    expect(mobile).toContain("sticky top-0 z-50");
+    expect(mobile).toContain("platform-mobile-command-trigger");
     expect(mobile).toContain('data-testid="platform-mobile-chrome"');
     expect(mobile).toContain("min-w-0 flex-1 truncate");
+    expect(mobile).toContain('aria-label="Platform"');
+    expect(mobile).toContain('role="navigation"');
   });
 
   it("keeps the platform shell root and main workspace within the viewport width", () => {
     const shell = readComponent("src/components/platform/platform-shell.tsx");
 
-    expect(shell).toContain("min-h-dvh min-w-0 flex-col");
+    expect(shell).toContain("h-dvh max-h-dvh min-w-0 flex-col overflow-hidden");
+    expect(shell).toContain("lg:flex-row");
+    // Main column locks vertical overflow; nested platform-main-viewport scrolls.
+    expect(shell).toContain('data-testid="platform-main"');
     expect(shell).toContain(
-      "lg:h-dvh lg:max-h-dvh lg:flex-row lg:overflow-hidden",
+      "min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-hidden",
     );
+    expect(shell).toContain("platform-main-viewport");
     expect(shell).toContain(
-      "min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain",
+      "flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain",
     );
+    expect(shell).toContain("platform-main-inner");
+    expect(shell).toContain(
+      "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background lg:ml-[290px]",
+    );
+    expect(shell).toContain("MobilePlatformNavigation");
+    expect(shell).toContain("PlatformTopbar");
+  });
+
+  it("enables touch pan-y on the mobile main viewport scroller", () => {
+    const globals = readComponent("src/app/globals.css");
+
+    expect(globals).toContain(".platform-main-viewport");
+    expect(globals).not.toContain("touch-action: pan-y");
+    expect(globals).toContain("-webkit-overflow-scrolling: touch");
   });
 
   it("allows page header actions to wrap on narrow viewports", () => {

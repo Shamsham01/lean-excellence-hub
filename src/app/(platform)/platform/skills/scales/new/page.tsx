@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { ScaleCreateForm } from "@/components/skills/scale-create-form";
+import { ScaleNameCreateForm } from "@/components/skills/scale-name-create-form";
 import { PageHeader } from "@/components/platform/page-header";
 import { SKILLS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
@@ -24,7 +24,7 @@ export default async function NewProficiencyScalePage() {
         description="Name the scale, then add the levels your organisation actually uses."
       />
       <div className="max-w-xl">
-        <ScaleCreateForm />
+        <ScaleNameCreateForm />
       </div>
     </div>
   );

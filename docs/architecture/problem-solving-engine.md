@@ -52,8 +52,8 @@ The engine **must** distinguish:
 
 | Status | Meaning |
 | --- | --- |
-| `draft` | Incomplete; method not pinned |
-| `active` | Method pinned; investigation in progress |
+| `draft` | Incomplete; method may be unselected or pre-pinned (`method_version_id`) before activation |
+| `active` | Method and stage pinned; investigation in progress |
 | `closed` | Governed closure with `closure_outcome` |
 | `cancelled` | Distinct from resolved closure; requires rationale |
 

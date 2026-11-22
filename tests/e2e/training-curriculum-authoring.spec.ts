@@ -300,10 +300,19 @@ test.describe("Training curriculum authoring", () => {
     await expect(page.getByTestId("authoring-save-feedback")).toHaveText(
       "Requirement saved.",
     );
-    await page.getByRole("button", { name: "Remove" }).last().click();
+    await page
+      .locator('[data-testid^="training-curriculum-draft-requirement-"]')
+      .filter({ hasText: secondCourseName })
+      .getByRole("button", { name: "Remove" })
+      .click();
     await expect(page.getByTestId("authoring-save-feedback")).toHaveText(
       "Requirement saved.",
     );
+    await expect(
+      page
+        .locator('[data-testid^="training-curriculum-draft-requirement-"]')
+        .filter({ hasText: secondCourseName }),
+    ).toHaveCount(0);
     await expect(
       page.getByTestId("training-curriculum-review"),
     ).not.toContainText(secondCourseName);
@@ -330,6 +339,7 @@ test.describe("Training curriculum authoring", () => {
 
     await page.goto("/platform/training");
     await expect(page.getByTestId("training-overview")).toBeVisible();
+    await page.getByTestId("training-analytics-insights-toggle").click();
     await expect(
       page.getByTestId("training-outstanding-required"),
     ).not.toHaveText("0");

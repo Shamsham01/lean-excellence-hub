@@ -1,11 +1,19 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import {
+  DEMO_ORGANISATION,
+  DEMO_PROBLEM_SOLVING_CASE,
+} from "../../scripts/demo-seed/constants";
 import { expectPlatformOrganisationName } from "./helpers/platform-home";
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
   ensurePlatformE2eUser,
   platformE2eCredentials,
 } from "./helpers/platform-auth";
+import { expectModulePageHeading } from "./helpers/module-page-heading";
+import { openMobileDrawer } from "./helpers/open-mobile-drawer";
+import { platformSidebarSignOut } from "./helpers/platform-sign-out";
+import { richDemoCasePortfolioLink } from "./helpers/guided-problem-solving-workspace";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -34,19 +42,28 @@ const representativeRoutes = [
   { path: "/platform/settings", testId: "settings-page", label: "Settings" },
 ] as const;
 
+const mobileOverflowRoutes = [
+  { path: "/platform", testId: "platform-home-page", label: "Home" },
+  {
+    path: "/platform/people",
+    testId: "people-directory-page",
+    label: "People",
+  },
+  { path: "/platform/actions", testId: "actions-page", label: "Actions" },
+] as const;
+
 async function loginPlatformE2e(page: Page) {
   await page.goto("/login");
   await page.getByLabel("Email").fill(platformE2eCredentials.email);
   await page.getByLabel("Password").fill(platformE2eCredentials.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/platform/);
-}
-
-async function openMobileDrawer(page: Page) {
-  await page.getByRole("button", { name: "Open navigation menu" }).click();
-  const nav = page.getByRole("navigation", { name: "Platform" });
-  await expect(nav).toBeVisible();
-  return nav;
+  await Promise.all([
+    page.waitForURL(/\/platform/, { timeout: 30_000 }),
+    page.getByRole("button", { name: /sign in/i }).click(),
+  ]);
+  await expectPlatformOrganisationName(
+    page,
+    platformE2eCredentials.organisationName,
+  );
 }
 
 async function expectNoHorizontalOverflow(page: Page) {
@@ -59,15 +76,28 @@ async function expectNoHorizontalOverflow(page: Page) {
 
 async function scrollWorkspace(page: Page) {
   await page.evaluate(() => {
-    const main = document.querySelector("main");
-    const inner = main?.firstElementChild as HTMLElement | null;
+    const inner = document.querySelector(
+      ".platform-main-inner",
+    ) as HTMLElement | null;
     if (inner) {
       inner.style.minHeight = "300vh";
     }
-    if (main) {
-      main.scrollTop = main.scrollHeight;
+    const viewport = document.querySelector(
+      ".platform-main-viewport",
+    ) as HTMLElement | null;
+    if (viewport) {
+      viewport.scrollTop = viewport.scrollHeight;
     }
     window.scrollTo(0, document.body.scrollHeight);
+  });
+}
+
+/** Scroll the sidebar nav column so footer actions (Settings, Sign out) are in view; TailAdmin-style menu is not pinned at the bottom of the viewport. */
+async function scrollDesktopSidebarNavToBottom(
+  nav: ReturnType<Page["getByRole"]>,
+) {
+  await nav.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
   });
 }
 
@@ -132,7 +162,7 @@ test.describe("authenticated platform shell", () => {
 
     await page.getByRole("link", { name: "Actions" }).click();
     await expect(page).toHaveURL(/\/platform\/actions/);
-    await expect(page.getByRole("heading", { name: "Actions" })).toBeVisible();
+    await expectModulePageHeading(page, "Actions");
   });
 
   test("desktop shell keeps sidebar navigation usable at 1440x900", async ({
@@ -141,12 +171,22 @@ test.describe("authenticated platform shell", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await signInAsDemoUser(page, "admin");
 
-    const nav = page.getByRole("navigation", { name: "Platform" });
+    const sidebar = page.getByTestId("platform-desktop-sidebar");
+    const nav = sidebar.getByRole("navigation", { name: "Platform" });
     await expect(nav).toBeVisible();
-    await expect(page.getByText("Lean Excellence Hub")).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Sign out", exact: true }),
+      sidebar.getByRole("link", { name: "Lean Excellence Hub" }),
     ).toBeVisible();
+    await expect(sidebar.getByTestId("platform-sidebar-org-name")).toHaveText(
+      DEMO_ORGANISATION.name,
+    );
+    await expect(
+      page.getByTestId("platform-topbar").getByTestId("platform-theme-toggle"),
+    ).toBeVisible();
+    await expect(platformSidebarSignOut(page)).toBeVisible();
+    await expect(page.getByTestId("platform-desktop-main-chrome")).toHaveCount(
+      0,
+    );
 
     await expectFinalNavItemReachable(page, nav);
     await expectNoHorizontalOverflow(page);
@@ -158,16 +198,15 @@ test.describe("authenticated platform shell", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await signInAsDemoUser(page, "admin");
 
-    const sidebar = page.locator("aside").first();
+    const sidebar = page.getByTestId("platform-desktop-sidebar");
     const nav = sidebar.getByRole("navigation", { name: "Platform" });
     await expect(nav).toBeVisible();
 
     await scrollWorkspace(page);
+    await scrollDesktopSidebarNavToBottom(nav);
 
     await expect(nav).toBeInViewport();
-    await expect(
-      sidebar.getByRole("button", { name: "Sign out", exact: true }),
-    ).toBeInViewport();
+    await expect(platformSidebarSignOut(page)).toBeInViewport();
     await expect(
       sidebar.getByRole("link", { name: "Settings", exact: true }),
     ).toBeInViewport();
@@ -198,12 +237,14 @@ test.describe("authenticated platform shell", () => {
       });
       await signInAsDemoUser(page, "admin");
 
-      const nav = await openMobileDrawer(page);
-      const drawer = page.getByRole("dialog");
-      await expect(drawer.getByText("Lean Excellence Hub")).toBeVisible();
+      const { drawer, nav } = await openMobileDrawer(page);
       await expect(
-        drawer.getByRole("button", { name: "Sign out", exact: true }),
+        drawer.getByRole("link", { name: "Lean Excellence Hub" }),
       ).toBeVisible();
+      await expect(drawer.getByTestId("platform-sidebar-org-name")).toHaveText(
+        DEMO_ORGANISATION.name,
+      );
+      await expect(platformSidebarSignOut(page)).toBeVisible();
 
       const { lastLink } = await expectFinalNavItemReachable(page, nav);
       await expect(lastLink).toBeInViewport();
@@ -229,6 +270,31 @@ test.describe("authenticated platform shell", () => {
     await expectNoHorizontalOverflow(page);
   });
 
+  for (const route of mobileOverflowRoutes) {
+    test(`mobile page has no horizontal overflow on ${route.label} at 390x844`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await signInAsDemoUser(page, "admin");
+      await page.goto(route.path);
+      await expect(page.getByTestId(route.testId)).toBeVisible();
+      await expectNoHorizontalOverflow(page);
+    });
+  }
+
+  test("mobile problem-solving case view has no horizontal overflow at 390x844", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await signInAsDemoUser(page, "manager");
+    await page.goto("/platform/problem-solving");
+    await (await richDemoCasePortfolioLink(page)).click();
+    await expect(page.getByTestId("problem-solving-workspace")).toBeVisible({
+      timeout: 30_000,
+    });
+    await expectNoHorizontalOverflow(page);
+  });
+
   for (const route of representativeRoutes) {
     test(`mobile chrome stays usable on ${route.label} at 390x844`, async ({
       page,
@@ -240,6 +306,10 @@ test.describe("authenticated platform shell", () => {
       await expect(
         page.getByRole("button", { name: "Open navigation menu" }),
       ).toBeInViewport();
+      await expect(
+        page.getByTestId("platform-mobile-command-trigger"),
+      ).toBeInViewport();
+      await expect(page.getByTestId("platform-topbar")).toBeHidden();
       await expectNoHorizontalOverflow(page);
     });
   }
@@ -250,7 +320,7 @@ test.describe("authenticated platform shell", () => {
     await page.setViewportSize({ width: 375, height: 667 });
     await signInAsDemoUser(page, "admin");
 
-    const nav = await openMobileDrawer(page);
+    const { nav } = await openMobileDrawer(page);
     const recognitionLink = nav.getByRole("link", {
       name: "Recognition",
       exact: true,
@@ -270,16 +340,12 @@ test.describe("authenticated platform shell", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await signInAsDemoUser(page, "admin");
 
-    const nav = await openMobileDrawer(page);
+    const { nav } = await openMobileDrawer(page);
     await page.keyboard.press("Escape");
     await expect(nav).not.toBeVisible();
 
     await openMobileDrawer(page);
-    await expect(
-      page
-        .getByRole("dialog")
-        .getByRole("button", { name: "Sign out", exact: true }),
-    ).toBeVisible();
+    await expect(platformSidebarSignOut(page)).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 

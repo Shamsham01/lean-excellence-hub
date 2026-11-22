@@ -2,7 +2,9 @@ import { notFound } from "next/navigation";
 
 import { PageHeader } from "@/components/platform/page-header";
 import { PillarScoreList } from "@/components/maturity/maturity-charts";
+import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
 import { ScoreBadge } from "@/modules/maturity/status-badges";
+import { loadWorkplaceRecordView } from "@/modules/workplace/access";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +16,15 @@ export default async function OfficialResultPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const workplaceView = await loadWorkplaceRecordView({
+    readPermission: MATURITY_PERMISSIONS.read,
+    module: "maturity",
+    recordId: id,
+    title: "Maturity result",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
 
   const { data: result } = await supabase

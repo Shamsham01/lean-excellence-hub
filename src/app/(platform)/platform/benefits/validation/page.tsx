@@ -42,16 +42,12 @@ export default async function BenefitValidationQueuePage() {
   );
 
   const queue = queueData ?? { benefits: [], realisation_entries: [] };
-
   return (
     <div
       className="flex flex-col gap-6"
       data-testid="benefit-validation-queue-page"
     >
-      <PageHeader
-        title="Benefit validation queue"
-        description="Benefits and realisation entries awaiting your validation decision."
-      />
+      <PageHeader title="Benefit validation queue" />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

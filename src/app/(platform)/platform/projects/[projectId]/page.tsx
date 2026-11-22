@@ -8,9 +8,17 @@ import { callBenefitRpc } from "@/lib/benefits/supabase-untyped";
 import type { LinkedBenefitSummary } from "@/lib/benefits/types";
 import { loadSiteScopedSelectorOptions } from "@/lib/organisation/selector-options";
 import { callProjectRpc, untypedFrom } from "@/lib/projects/supabase-untyped";
-import type { ProjectDetail } from "@/lib/projects/types";
+import type {
+  ProjectDetail,
+  ProjectLinkedWorkItem,
+} from "@/lib/projects/types";
 import { resolvePersonDisplayName } from "@/modules/organisation/site-context";
+import { PROJECTS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import {
+  loadWorkplaceRecordFallback,
+  loadWorkplaceRecordView,
+} from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 export default async function ProjectDetailPage({
@@ -19,6 +27,16 @@ export default async function ProjectDetailPage({
   params: Promise<{ projectId: string }>;
 }) {
   const { projectId } = await params;
+  const workplaceView = await loadWorkplaceRecordView({
+    readPermission: PROJECTS_PERMISSIONS.read,
+    module: "projects",
+    recordId: projectId,
+    title: "Project",
+    denyWithoutAccess: false,
+    baselineOpensModule: true,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
 
   const { data: detail, error } = await callProjectRpc<ProjectDetail>(
@@ -27,7 +45,15 @@ export default async function ProjectDetailPage({
     { target_project_id: projectId },
   );
 
-  if (error || !detail) notFound();
+  if (error || !detail) {
+    const workplaceRecord = await loadWorkplaceRecordFallback({
+      module: "projects",
+      recordId: projectId,
+      title: "Project",
+    });
+    if (workplaceRecord) return workplaceRecord;
+    notFound();
+  }
 
   const canManage = await currentMemberHasPermission("projects.manage");
   const canCreateBenefit = await currentMemberHasPermission("benefits.create");
@@ -249,6 +275,65 @@ export default async function ProjectDetailPage({
   }>(supabase, "get_project_benefits", { target_project_id: projectId });
   const benefits = projectBenefitsData?.items ?? [];
 
+  const { data: workItemLinks } = await untypedFrom(
+    supabase,
+    "ci_project_source_links",
+  )
+    .select("source_resource_id")
+    .eq("project_id", projectId)
+    .eq("link_kind", "work_item")
+    .limit(20);
+
+  const linkedCaseIds =
+    workItemLinks?.map(
+      (row: { source_resource_id: string }) => row.source_resource_id,
+    ) ?? [];
+
+  const [{ data: linkedCaseRows }, { data: linkedObservationRows }] =
+    await Promise.all([
+      linkedCaseIds.length > 0
+        ? supabase
+            .from("problem_solving_cases")
+            .select("id, title, case_number")
+            .in("id", linkedCaseIds)
+        : Promise.resolve({
+            data: [] as {
+              id: string;
+              title: string;
+              case_number: string | null;
+            }[],
+          }),
+      untypedFrom(supabase, "gemba_walk_observations")
+        .select("id, observation_text, walk_id, linked_project_id")
+        .eq("linked_project_id", projectId)
+        .limit(20),
+    ]);
+
+  const linkedCases = linkedCaseRows ?? [];
+
+  const linkedWorkItems: ProjectLinkedWorkItem[] = [
+    ...linkedCases.map((caseRow) => ({
+      id: caseRow.id,
+      kind: "problem_solving_case" as const,
+      title: `${caseRow.case_number ? `${caseRow.case_number} · ` : ""}${caseRow.title}`,
+      href: `/platform/problem-solving/${caseRow.id}`,
+      kindLabel: "Problem solving case",
+    })),
+    ...(
+      (linkedObservationRows as Array<{
+        id: string;
+        observation_text: string;
+        walk_id: string;
+      }> | null) ?? []
+    ).map((observation) => ({
+      id: observation.id,
+      kind: "gemba_observation" as const,
+      title: observation.observation_text,
+      href: `/platform/gemba/walks/${observation.walk_id}`,
+      kindLabel: "Gemba observation",
+    })),
+  ];
+
   return (
     <div data-testid="project-detail-page">
       <ProjectWorkspace
@@ -268,6 +353,7 @@ export default async function ProjectDetailPage({
         people={selectorOptions.people}
         methodologies={methodologyOptions}
         requiresSiteSelection={selectorOptions.requiresSiteSelection}
+        linkedWorkItems={linkedWorkItems}
       />
       <AppLink
         href="/platform/projects"

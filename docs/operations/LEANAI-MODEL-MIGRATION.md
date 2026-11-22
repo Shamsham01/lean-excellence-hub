@@ -128,6 +128,11 @@ the API key or the prompt.
 
 ## Cost illustration
 
+These figures are an illustration from 26 October 2026. They are not a customer
+rate card, not an invoice, and not the versioned price book for internal
+monitoring. That follow-up is
+[leanai-internal-cost-governance.md](../architecture/leanai-internal-cost-governance.md).
+
 List prices below are standard short-context rates (at or under 272K input
 tokens) from the model pages on 26 October 2026. They are not measured LEH
 usage. The ledger stores actual input, output, cached, and reasoning token

@@ -1,5 +1,11 @@
 name: Install Playwright Chromium (cached)
-description: Cache browser binaries keyed by package-lock and install Chromium with system dependencies.
+description: Cache browser binaries keyed by package-lock and install requested browsers with system dependencies.
+
+inputs:
+  browsers:
+    description: Space-separated Playwright browser names to install (e.g. "chromium" or "chromium webkit").
+    required: false
+    default: chromium
 
 runs:
   using: composite
@@ -10,18 +16,48 @@ runs:
       with:
         path: ~/.cache/ms-playwright
         key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+        restore-keys: |
+          playwright-${{ runner.os }}-
 
     - name: Install Playwright Chromium
       shell: bash
       run: |
         set -euo pipefail
+        browsers="${{ inputs.browsers }}"
         start_epoch="$(date +%s)"
-        npx playwright install-deps chromium
-        npx playwright install chromium
+        # System libraries are required even when browser binaries are cached (WebKit).
+        # apt on hosted runners occasionally fails DNS resolution; retry before failing the warmup job.
+        install_deps_attempts=5
+        install_deps_succeeded=0
+        for attempt in $(seq 1 "${install_deps_attempts}"); do
+          echo "playwright install-deps attempt ${attempt}/${install_deps_attempts} [${browsers}]"
+          set +e
+          # shellcheck disable=SC2086
+          timeout 12m npx playwright install-deps ${browsers}
+          install_deps_status=$?
+          set -e
+          if [ "${install_deps_status}" -eq 0 ]; then
+            install_deps_succeeded=1
+            break
+          fi
+          echo "playwright install-deps failed (exit ${install_deps_status}); backing off before retry" >&2
+          sleep $((attempt * 20))
+        done
+        if [ "${install_deps_succeeded}" -ne 1 ]; then
+          echo "playwright install-deps did not succeed after ${install_deps_attempts} attempts" >&2
+          exit 1
+        fi
+        if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
+          # shellcheck disable=SC2086
+          npx playwright install --no-shell ${browsers}
+        else
+          # shellcheck disable=SC2086
+          npx playwright install ${browsers}
+        fi
         end_epoch="$(date +%s)"
         duration="$((end_epoch - start_epoch))"
         if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
           cache_state="${{ steps.playwright-cache.outputs.cache-hit == 'true' && 'hit' || 'miss' }}"
-          echo "- Playwright Chromium install (cache ${cache_state}): ${duration}s" >> "${GITHUB_STEP_SUMMARY}"
+          echo "- Playwright install [${browsers}] (cache ${cache_state}): ${duration}s" >> "${GITHUB_STEP_SUMMARY}"
         fi
-        echo "Playwright Chromium install completed in ${duration}s"
+        echo "Playwright install [${browsers}] completed in ${duration}s"

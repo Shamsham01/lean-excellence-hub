@@ -5,6 +5,7 @@ import {
   applyOrganisationSubscriptionSnapshot,
   claimBillingWebhookEvent,
   finishBillingWebhookEvent,
+  recordPlatformStripeMode,
 } from "./repository";
 import type { VerifiedWebhookEvent } from "./types";
 
@@ -37,6 +38,20 @@ export async function processVerifiedBillingEvent(
   }
 
   try {
+    const organisationId =
+      event.snapshot?.organisationId ?? event.organisationId;
+    if (
+      providerName === "stripe" &&
+      typeof event.stripeLivemode === "boolean" &&
+      organisationId
+    ) {
+      await recordPlatformStripeMode({
+        organisationId,
+        livemode: event.stripeLivemode,
+        providerEventId: event.eventId,
+      });
+    }
+
     if (!HANDLED_EVENT_TYPES.has(event.eventType) || !event.snapshot) {
       await finishBillingWebhookEvent({
         eventId: claimed.eventId,

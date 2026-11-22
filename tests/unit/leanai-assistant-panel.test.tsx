@@ -7,6 +7,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { LEANAI_ASSISTANT_DESKTOP_OPEN_STORAGE_KEY } from "@/modules/leanai-context/assistant/constants";
 import type { LeanAiAssistantView } from "@/modules/leanai-context/assistant/types";
 
 const view: LeanAiAssistantView = {
@@ -18,6 +19,7 @@ const view: LeanAiAssistantView = {
   conversationAvailable: false,
   conversationUnavailableReason:
     "LeanAI conversation is turned off in this environment. Setup guidance below still works.",
+  conversationUnavailableCta: null,
   contextLabel: "Suggestions · Configuration",
   page: {
     module: "suggestions",
@@ -45,6 +47,8 @@ const view: LeanAiAssistantView = {
   ],
   relevantState: { programmeCount: 0 },
   allowedActions: ["Create or edit programmes"],
+  fieldGuidance: [],
+  guidanceFacts: [],
   recommendation: {
     key: "suggestions_programme_setup",
     moduleKey: "suggestions",
@@ -101,6 +105,7 @@ describe("LeanAI assistant panel", () => {
       messages: [],
     });
     window.localStorage.clear();
+    window.localStorage.setItem(LEANAI_ASSISTANT_DESKTOP_OPEN_STORAGE_KEY, "1");
     window.sessionStorage.clear();
     window.history.replaceState({}, "", "/platform/suggestions/programmes");
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({
@@ -200,6 +205,7 @@ describe("LeanAI assistant panel", () => {
         applicationAiAvailable: true,
         conversationAvailable: true,
         conversationUnavailableReason: null,
+        conversationUnavailableCta: null,
       },
     });
     sendMessage.mockResolvedValue({
@@ -239,7 +245,10 @@ describe("LeanAI assistant panel", () => {
     ).toHaveTextContent("campaign");
   });
 
-  it("renders safe source links from a researched answer and restores them on reload", async () => {
+  it("keeps multiline user text literal and restores formatted answers and verified sources on reload", async () => {
+    const draft =
+      "**Research HODL Token Club.**\n\nCompare the public sources.";
+    const reply = "## Public findings\n\n[Background](https://example.com/)";
     loadView.mockResolvedValue({
       ok: true,
       view: {
@@ -247,13 +256,14 @@ describe("LeanAI assistant panel", () => {
         applicationAiAvailable: true,
         conversationAvailable: true,
         conversationUnavailableReason: null,
+        conversationUnavailableCta: null,
         capabilities: { webSearchEnabled: true },
       },
     });
     sendMessage.mockResolvedValue({
       ok: true,
       sessionId: "session-sources",
-      envelope: { message: "Public findings about HODL Token Club." },
+      envelope: { message: reply },
       modelClass: "standard",
       externalSources: [
         {
@@ -273,9 +283,23 @@ describe("LeanAI assistant panel", () => {
       expect(screen.getByLabelText("Ask LeanAI")).toBeEnabled();
     });
     fireEvent.change(screen.getByLabelText("Ask LeanAI"), {
-      target: { value: "Research HODL Token Club on the web." },
+      target: { value: draft },
     });
     fireEvent.click(screen.getByTestId("leanai-assistant-send"));
+
+    const userMessage = screen.getByTestId("leanai-assistant-user-message");
+    expect(userMessage.querySelector(".whitespace-pre-wrap")?.textContent).toBe(
+      draft,
+    );
+    expect(userMessage.querySelector("strong")).toBeNull();
+    expect(
+      await screen.findByRole("heading", { name: "Public findings" }),
+    ).toBeVisible();
+    expect(screen.getByRole("link", { name: "Background" })).toHaveAttribute(
+      "href",
+      "https://example.com/",
+    );
+    expect(sendMessage.mock.calls[0]?.[0]).toHaveProperty("message", draft);
 
     const sourceLink = await screen.findByTestId(
       "leanai-assistant-source-link",
@@ -299,9 +323,16 @@ describe("LeanAI assistant panel", () => {
       sessionId: "session-sources",
       messages: [
         {
+          id: "user-1",
+          role: "user",
+          content: draft,
+          createdAt: "2026-10-03T09:00:00.000Z",
+          source: "user",
+        },
+        {
           id: "assistant-1",
           role: "assistant",
-          content: "Public findings about HODL Token Club.",
+          content: reply,
           createdAt: "2026-10-03T09:00:01.000Z",
           source: "ai",
           externalSources: [
@@ -327,6 +358,16 @@ describe("LeanAI assistant panel", () => {
     expect(
       await screen.findByTestId("leanai-assistant-source-link"),
     ).toHaveAttribute("href", "https://www.hodltokenclub.com/");
+    expect(
+      screen.getByRole("heading", { name: "Public findings" }),
+    ).toBeVisible();
+    const restoredUserMessage = screen.getByTestId(
+      "leanai-assistant-user-message",
+    );
+    expect(
+      restoredUserMessage.querySelector(".whitespace-pre-wrap")?.textContent,
+    ).toBe(draft);
+    expect(restoredUserMessage.querySelector("strong")).toBeNull();
   });
 
   it("disables New while a message is sending", async () => {
@@ -337,6 +378,7 @@ describe("LeanAI assistant panel", () => {
         applicationAiAvailable: true,
         conversationAvailable: true,
         conversationUnavailableReason: null,
+        conversationUnavailableCta: null,
       },
     });
     sendMessage.mockImplementation(() => new Promise(() => undefined));
@@ -370,6 +412,7 @@ describe("LeanAI assistant panel", () => {
         applicationAiAvailable: true,
         conversationAvailable: true,
         conversationUnavailableReason: null,
+        conversationUnavailableCta: null,
       },
     });
     sendMessage
@@ -473,6 +516,7 @@ describe("LeanAI assistant panel", () => {
         applicationAiAvailable: true,
         conversationAvailable: true,
         conversationUnavailableReason: null,
+        conversationUnavailableCta: null,
       },
     });
 
@@ -525,6 +569,7 @@ describe("LeanAI assistant panel", () => {
         applicationAiAvailable: true,
         conversationAvailable: true,
         conversationUnavailableReason: null,
+        conversationUnavailableCta: null,
       },
     });
 
@@ -553,6 +598,7 @@ describe("LeanAI assistant panel", () => {
         applicationAiAvailable: true,
         conversationAvailable: true,
         conversationUnavailableReason: null,
+        conversationUnavailableCta: null,
       },
     });
     sendMessage.mockResolvedValue({
@@ -586,6 +632,7 @@ describe("LeanAI assistant panel", () => {
         applicationAiAvailable: true,
         conversationAvailable: true,
         conversationUnavailableReason: null,
+        conversationUnavailableCta: null,
       },
     });
     rerender(

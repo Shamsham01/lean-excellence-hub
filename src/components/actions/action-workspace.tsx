@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   completeAction,
@@ -10,12 +10,16 @@ import {
   transitionActionStatus,
   updateActionFields,
 } from "@/app/(platform)/platform/actions/actions";
-import { ActionEvidenceBlock } from "@/components/actions/action-evidence-block";
+import { ActionCardCoverThumb } from "@/components/actions/action-card-cover-thumb";
+import { ActionPlannerAttachments } from "@/components/actions/action-planner-attachments";
+import type { ActionPlannerComment } from "@/components/actions/action-planner-comments";
+import { ActionPlannerComments } from "@/components/actions/action-planner-comments";
+import { ActionPlannerChecklist } from "@/components/actions/action-planner-checklist";
+import { ActionPlannerLabelChips } from "@/components/actions/action-planner-label-chips";
+import { ActionPlannerLabelsField } from "@/components/actions/action-planner-labels-field";
+import { EvidenceGallery } from "@/components/attachments/evidence-gallery";
+import { PlatformMemberAvatar } from "@/components/platform/platform-member-avatar";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
-import {
-  ResourceComments,
-  type CommentRow,
-} from "@/components/comments/resource-comments";
 import { AppLink } from "@/components/ui/app-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,7 +39,17 @@ import {
   isActionEditable,
   toDateInputValue,
 } from "@/lib/actions/status";
-import type { ActionDetail, AssignablePerson } from "@/lib/actions/types";
+import {
+  linkActionToCiProject,
+  unlinkActionFromCiProject,
+} from "@/app/(platform)/platform/projects/linking-actions";
+import { ProjectLinkField } from "@/components/projects/project-link-field";
+import type {
+  ActionDetail,
+  ActionStatusHistoryEntry,
+  AssignablePerson,
+} from "@/lib/actions/types";
+import type { ProjectSelectorOption } from "@/lib/projects/types";
 
 function sourceLabel(source: ActionDetail["source"]): string {
   if (!source) return "";
@@ -45,51 +59,147 @@ function sourceLabel(source: ActionDetail["source"]): string {
   return reference || title || "Source record";
 }
 
-export function ActionWorkspace({
+type ActionWorkspaceProps = {
+  detail: ActionDetail;
+  comments: ActionPlannerComment[];
+  evidence: EvidenceItem[];
+  assignablePeople: AssignablePerson[];
+  canUploadEvidence: boolean;
+  canPostComments?: boolean;
+  currentCommentAuthor?: {
+    membership_id: string;
+    display_name: string;
+    avatar_url: string | null;
+  } | null;
+  assigneeAvatarUrl?: string | null;
+  fiveSQuestionPrompt?: string | null;
+  projectOptions?: ProjectSelectorOption[];
+  requiresSiteSelection?: boolean;
+  onMutated?: () => void;
+  showBackLink?: boolean;
+};
+
+export function ActionWorkspace(props: ActionWorkspaceProps) {
+  return <ActionWorkspaceContent key={props.detail.id} {...props} />;
+}
+
+function ActionWorkspaceContent({
   detail,
   comments,
   evidence,
   assignablePeople,
   canUploadEvidence,
-}: {
-  detail: ActionDetail;
-  comments: CommentRow[];
-  evidence: EvidenceItem[];
-  assignablePeople: AssignablePerson[];
-  canUploadEvidence: boolean;
-}) {
+  canPostComments = false,
+  currentCommentAuthor = null,
+  assigneeAvatarUrl = null,
+  fiveSQuestionPrompt = null,
+  projectOptions = [],
+  requiresSiteSelection = false,
+  onMutated,
+  showBackLink = true,
+}: ActionWorkspaceProps) {
   const router = useRouter();
-  const [title, setTitle] = useState(detail.title);
-  const [description, setDescription] = useState(detail.description ?? "");
-  const [priority, setPriority] = useState(detail.priority);
-  const [dueDate, setDueDate] = useState(toDateInputValue(detail.due_at));
-  const [assigneeId, setAssigneeId] = useState(
-    detail.assignees[0]?.membership_id ?? "",
-  );
+  const serverFields = {
+    title: detail.title,
+    description: detail.description ?? "",
+    priority: detail.priority,
+    dueDate: toDateInputValue(detail.due_at),
+    assigneeId: detail.assignees[0]?.membership_id ?? "",
+  };
+  const [fields, setFields] = useState(serverFields);
+  const savedFields = useRef(serverFields);
+  const { title, description, priority, dueDate, assigneeId } = fields;
+  const [liveStatus, setLiveStatus] = useState(detail.status);
+  const [history, setHistory] = useState(detail.status_history);
+  const liveVersion = useRef(detail.version);
+  useEffect(() => {
+    if (detail.version <= liveVersion.current) return;
+
+    liveVersion.current = detail.version;
+    setLiveStatus(detail.status);
+    setHistory(detail.status_history);
+
+    const previous = savedFields.current;
+    const next = {
+      title: detail.title,
+      description: detail.description ?? "",
+      priority: detail.priority,
+      dueDate: toDateInputValue(detail.due_at),
+      assigneeId: detail.assignees[0]?.membership_id ?? "",
+    };
+    savedFields.current = next;
+    setFields((current) => ({
+      title: current.title === previous.title ? next.title : current.title,
+      description:
+        current.description === previous.description
+          ? next.description
+          : current.description,
+      priority:
+        current.priority === previous.priority
+          ? next.priority
+          : current.priority,
+      dueDate:
+        current.dueDate === previous.dueDate ? next.dueDate : current.dueDate,
+      assigneeId:
+        current.assigneeId === previous.assigneeId
+          ? next.assigneeId
+          : current.assigneeId,
+    }));
+  }, [detail]);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
+  const [commentPostDelta, setCommentPostDelta] = useState(0);
+  const commentCount = comments.length + commentPostDelta;
 
-  const editable = isActionEditable(detail.status);
+  const editable = isActionEditable(liveStatus);
   const permissions = detail.permissions;
   const reference = formatActionReference(detail.action_number, detail.title);
   const source = detail.source;
   const currentAssignee = detail.assignees[0];
+  const coverEvidence = detail.card_cover_attachment
+    ? evidence.find((item) => item.id === detail.card_cover_attachment?.id)
+    : null;
 
   async function run(
     key: string,
-    task: () => Promise<{ error?: string; ok?: true }>,
+    task: (expectedVersion: number) => Promise<{ error?: string; ok?: true }>,
+    onSuccess?: (nextVersion: number) => void,
   ) {
     setPending(key);
     setError(null);
     setMessage(null);
-    const result = await task();
+    const expectedVersion = liveVersion.current;
+    const result = await task(expectedVersion);
     setPending(null);
     if (result.error) {
       setError(result.error);
       return;
     }
-    router.refresh();
+    const nextVersion = expectedVersion + 1;
+    if (nextVersion > liveVersion.current) {
+      liveVersion.current = nextVersion;
+      onSuccess?.(nextVersion);
+    }
+    void router.refresh();
+  }
+
+  function applyTransition(
+    fromStatus: string,
+    toStatus: string,
+    nextVersion: number,
+  ) {
+    setLiveStatus(toStatus);
+    const entry: ActionStatusHistoryEntry = {
+      id: `local-${fromStatus}-${toStatus}-${nextVersion}`,
+      from_status: fromStatus,
+      to_status: toStatus,
+      reason: null,
+      created_at: new Date().toISOString(),
+      actor_membership_id: currentCommentAuthor?.membership_id ?? "",
+      actor_display_name: currentCommentAuthor?.display_name ?? "",
+    };
+    setHistory((current) => [...current, entry]);
   }
 
   return (
@@ -101,13 +211,24 @@ export function ActionWorkspace({
         >
           {reference}
         </p>
-        <h1 className="typography-page-title mt-1">{detail.title}</h1>
+        <div className="mt-1 flex items-start gap-3">
+          {detail.card_cover_attachment ? (
+            <ActionCardCoverThumb
+              mimeType={detail.card_cover_attachment.mime_type}
+              storagePath={detail.card_cover_attachment.storage_object_path}
+              alt={`${detail.title} cover`}
+            />
+          ) : null}
+          <h1 className="typography-page-title min-w-0 flex-1">
+            {detail.title}
+          </h1>
+        </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Badge
-            variant={actionStatusBadgeVariant(detail.status)}
+            variant={actionStatusBadgeVariant(liveStatus)}
             data-testid="action-status"
           >
-            {actionStatusLabel(detail.status)}
+            {actionStatusLabel(liveStatus)}
           </Badge>
           <Badge variant="secondary" data-testid="action-priority">
             {actionPriorityLabel(detail.priority)}
@@ -123,13 +244,42 @@ export function ActionWorkspace({
             </span>
           ) : null}
         </div>
-        {currentAssignee ? (
-          <p className="mt-2 text-sm text-muted-foreground">
-            Assigned to {currentAssignee.display_name}
+        <div className="mt-2 flex items-center gap-2">
+          <PlatformMemberAvatar
+            displayName={currentAssignee?.display_name ?? "Unassigned"}
+            avatarUrl={assigneeAvatarUrl}
+            unassigned={!currentAssignee}
+            showHoverTitle={Boolean(currentAssignee)}
+            size="sm"
+          />
+          <p className="text-sm text-muted-foreground">
+            {currentAssignee
+              ? `Assigned to ${currentAssignee.display_name}`
+              : "Unassigned"}
           </p>
-        ) : (
-          <p className="mt-2 text-sm text-muted-foreground">Unassigned</p>
-        )}
+        </div>
+        {(detail.labels?.length ?? 0) > 0 ? (
+          <div className="mt-3">
+            <ActionPlannerLabelChips labels={detail.labels ?? []} />
+          </div>
+        ) : null}
+        {detail.card_cover_attachment ? (
+          <div className="mt-4" data-testid="action-card-cover-preview">
+            <EvidenceGallery
+              items={[
+                {
+                  id: detail.card_cover_attachment.id,
+                  filename: detail.card_cover_attachment.filename,
+                  mime_type: detail.card_cover_attachment.mime_type,
+                  byte_size: coverEvidence?.byte_size ?? 0,
+                  storage_object_path:
+                    detail.card_cover_attachment.storage_object_path,
+                },
+              ]}
+              heading="Card cover"
+            />
+          </div>
+        ) : null}
       </div>
 
       {source ? (
@@ -149,6 +299,15 @@ export function ActionWorkspace({
                 {sourceLabel(source)}
               </p>
             )}
+            {fiveSQuestionPrompt && source.href ? (
+              <AppLink
+                href={source.href}
+                className="mt-2 block text-sm text-muted-foreground hover:text-primary"
+                data-testid="action-five-s-question-link"
+              >
+                Question: {fiveSQuestionPrompt}
+              </AppLink>
+            ) : null}
           </CardContent>
         </Card>
       ) : null}
@@ -157,18 +316,22 @@ export function ActionWorkspace({
         className="flex flex-wrap gap-2"
         data-testid="action-lifecycle-actions"
       >
-        {permissions.can_start && detail.status === "open" ? (
+        {permissions.can_start && liveStatus === "open" ? (
           <Button
             size="sm"
             variant="outline"
             disabled={pending !== null}
             onClick={() =>
-              run("start", () =>
-                transitionActionStatus({
-                  actionId: detail.id,
-                  toStatus: "in_progress",
-                  expectedVersion: detail.version,
-                }),
+              run(
+                "start",
+                (expectedVersion) =>
+                  transitionActionStatus({
+                    actionId: detail.id,
+                    toStatus: "in_progress",
+                    expectedVersion,
+                  }),
+                (nextVersion) =>
+                  applyTransition(liveStatus, "in_progress", nextVersion),
               )
             }
             data-testid="action-start-button"
@@ -177,16 +340,20 @@ export function ActionWorkspace({
           </Button>
         ) : null}
         {permissions.can_complete &&
-        (detail.status === "open" || detail.status === "in_progress") ? (
+        (liveStatus === "open" || liveStatus === "in_progress") ? (
           <Button
             size="sm"
             disabled={pending !== null}
             onClick={() =>
-              run("complete", () =>
-                completeAction({
-                  actionId: detail.id,
-                  expectedVersion: detail.version,
-                }),
+              run(
+                "complete",
+                (expectedVersion) =>
+                  completeAction({
+                    actionId: detail.id,
+                    expectedVersion,
+                  }),
+                (nextVersion) =>
+                  applyTransition(liveStatus, "completed", nextVersion),
               )
             }
             data-testid="action-complete-button"
@@ -195,18 +362,22 @@ export function ActionWorkspace({
           </Button>
         ) : null}
         {permissions.can_cancel &&
-        (detail.status === "open" || detail.status === "in_progress") ? (
+        (liveStatus === "open" || liveStatus === "in_progress") ? (
           <Button
             size="sm"
             variant="outline"
             disabled={pending !== null}
             onClick={() =>
-              run("cancel", () =>
-                transitionActionStatus({
-                  actionId: detail.id,
-                  toStatus: "cancelled",
-                  expectedVersion: detail.version,
-                }),
+              run(
+                "cancel",
+                (expectedVersion) =>
+                  transitionActionStatus({
+                    actionId: detail.id,
+                    toStatus: "cancelled",
+                    expectedVersion,
+                  }),
+                (nextVersion) =>
+                  applyTransition(liveStatus, "cancelled", nextVersion),
               )
             }
             data-testid="action-cancel-button"
@@ -215,17 +386,21 @@ export function ActionWorkspace({
           </Button>
         ) : null}
         {permissions.can_reopen &&
-        (detail.status === "completed" || detail.status === "cancelled") ? (
+        (liveStatus === "completed" || liveStatus === "cancelled") ? (
           <Button
             size="sm"
             variant="outline"
             disabled={pending !== null}
             onClick={() =>
-              run("reopen", () =>
-                reopenAction({
-                  actionId: detail.id,
-                  expectedVersion: detail.version,
-                }),
+              run(
+                "reopen",
+                (expectedVersion) =>
+                  reopenAction({
+                    actionId: detail.id,
+                    expectedVersion,
+                  }),
+                (nextVersion) =>
+                  applyTransition(liveStatus, "open", nextVersion),
               )
             }
             data-testid="action-reopen-button"
@@ -238,7 +413,9 @@ export function ActionWorkspace({
       <Tabs defaultValue="overview" className="min-w-0">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="discussion">Discussion</TabsTrigger>
+          <TabsTrigger value="discussion" data-testid="action-tab-discussion">
+            Discussion{commentCount > 0 ? ` (${commentCount})` : ""}
+          </TabsTrigger>
           <TabsTrigger value="evidence">Evidence</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
         </TabsList>
@@ -249,22 +426,72 @@ export function ActionWorkspace({
               <CardTitle>Details</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
+              <ActionPlannerLabelsField
+                key={`planner-labels-${detail.id}-${detail.version}`}
+                actionId={detail.id}
+                assigned={detail.labels ?? []}
+                canEdit={permissions.can_update && editable}
+                canManageCatalog={permissions.can_update}
+                showWhenEmpty={permissions.can_update}
+              />
+              <ActionPlannerChecklist
+                key={`planner-checklist-${detail.id}-${detail.version}`}
+                actionId={detail.id}
+                items={detail.checklist_items ?? []}
+                canEdit={permissions.can_update && editable}
+                showWhenEmpty={permissions.can_update}
+              />
+              <ProjectLinkField
+                forAction
+                linked={detail.linked_project ?? null}
+                options={projectOptions}
+                canEdit={permissions.can_update && editable}
+                requiresSiteSelection={requiresSiteSelection}
+                testId="action-project-link"
+                onLink={(projectId) =>
+                  linkActionToCiProject(detail.id, projectId).then((result) => {
+                    if (!result.error) {
+                      router.refresh();
+                      onMutated?.();
+                    }
+                    return result;
+                  })
+                }
+                onUnlink={() =>
+                  unlinkActionFromCiProject(detail.id).then((result) => {
+                    if (!result.error) {
+                      router.refresh();
+                      onMutated?.();
+                    }
+                    return result;
+                  })
+                }
+              />
               {permissions.can_update && editable ? (
                 <form
                   className="flex flex-col gap-4"
                   data-testid="action-edit-form"
                   onSubmit={(event) => {
                     event.preventDefault();
-                    void run("save", async () => {
+                    void run("save", async (expectedVersion) => {
                       const result = await updateActionFields({
                         actionId: detail.id,
                         title,
                         description,
                         priority,
                         dueAt: dateInputToDueAt(dueDate),
-                        expectedVersion: detail.version,
+                        expectedVersion,
                       });
                       if (!result.error) {
+                        if (liveVersion.current === expectedVersion) {
+                          savedFields.current = {
+                            ...savedFields.current,
+                            title,
+                            description,
+                            priority,
+                            dueDate,
+                          };
+                        }
                         setMessage("Changes saved.");
                       }
                       return result;
@@ -276,7 +503,10 @@ export function ActionWorkspace({
                     <Input
                       id="action-title"
                       value={title}
-                      onChange={(event) => setTitle(event.target.value)}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setFields((current) => ({ ...current, title: value }));
+                      }}
                       required
                       data-testid="action-title-input"
                     />
@@ -287,7 +517,13 @@ export function ActionWorkspace({
                       id="action-description"
                       rows={4}
                       value={description}
-                      onChange={(event) => setDescription(event.target.value)}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setFields((current) => ({
+                          ...current,
+                          description: value,
+                        }));
+                      }}
                       data-testid="action-description-input"
                     />
                   </div>
@@ -298,7 +534,13 @@ export function ActionWorkspace({
                         id="action-priority"
                         className="flex min-h-11 w-full rounded-md border border-border bg-elevated px-3 py-2 text-sm"
                         value={priority}
-                        onChange={(event) => setPriority(event.target.value)}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setFields((current) => ({
+                            ...current,
+                            priority: value,
+                          }));
+                        }}
                         data-testid="action-priority-input"
                       >
                         {ACTION_PRIORITIES.map((option) => (
@@ -314,7 +556,13 @@ export function ActionWorkspace({
                         id="action-due"
                         type="date"
                         value={dueDate}
-                        onChange={(event) => setDueDate(event.target.value)}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setFields((current) => ({
+                            ...current,
+                            dueDate: value,
+                          }));
+                        }}
                         data-testid="action-due-input"
                       />
                     </div>
@@ -344,18 +592,33 @@ export function ActionWorkspace({
                 </div>
               )}
 
+              {detail.expected_result ? (
+                <div className="flex flex-col gap-1 text-sm">
+                  <h3 className="font-medium">Expected result</h3>
+                  <p className="whitespace-pre-wrap text-muted-foreground">
+                    {detail.expected_result}
+                  </p>
+                </div>
+              ) : null}
+
               {permissions.can_assign && editable ? (
                 <form
                   className="flex flex-col gap-3 border-t border-border pt-4"
                   data-testid="action-assign-form"
                   onSubmit={(event) => {
                     event.preventDefault();
-                    void run("assign", async () => {
+                    void run("assign", async (expectedVersion) => {
                       const result = await setActionAssignee({
                         actionId: detail.id,
                         membershipId: assigneeId || null,
                       });
                       if (!result.error) {
+                        if (liveVersion.current === expectedVersion) {
+                          savedFields.current = {
+                            ...savedFields.current,
+                            assigneeId,
+                          };
+                        }
                         setMessage(
                           assigneeId
                             ? "Assignee updated."
@@ -371,7 +634,13 @@ export function ActionWorkspace({
                     id="action-assignee"
                     className="flex min-h-11 w-full rounded-md border border-border bg-elevated px-3 py-2 text-sm"
                     value={assigneeId}
-                    onChange={(event) => setAssigneeId(event.target.value)}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setFields((current) => ({
+                        ...current,
+                        assigneeId: value,
+                      }));
+                    }}
                     data-testid="action-assignee-input"
                   >
                     <option value="">Unassigned</option>
@@ -399,22 +668,26 @@ export function ActionWorkspace({
         </TabsContent>
 
         <TabsContent value="discussion">
-          <ResourceComments resourceId={detail.id} comments={comments} />
+          <ActionPlannerComments
+            key={`planner-comments-discussion-${detail.id}-${detail.version}-${comments.length}`}
+            actionId={detail.id}
+            comments={comments}
+            canPost={canPostComments}
+            postAsAuthor={currentCommentAuthor}
+            onPosted={() => setCommentPostDelta((count) => count + 1)}
+          />
         </TabsContent>
 
         <TabsContent value="evidence">
-          <Card>
-            <CardHeader>
-              <CardTitle>Evidence</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ActionEvidenceBlock
-                actionId={detail.id}
-                evidence={evidence}
-                canEdit={canUploadEvidence && editable}
-              />
-            </CardContent>
-          </Card>
+          <ActionPlannerAttachments
+            key={`planner-attachments-${detail.id}-${detail.version}`}
+            actionId={detail.id}
+            evidence={evidence}
+            canUpload={canUploadEvidence && editable}
+            canSetCover={permissions.can_update && editable}
+            coverAttachmentId={detail.card_cover_attachment?.id ?? null}
+            {...(onMutated ? { onMutated } : {})}
+          />
         </TabsContent>
 
         <TabsContent value="history">
@@ -423,10 +696,10 @@ export function ActionWorkspace({
               <CardTitle>History</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2 text-sm">
-              {detail.status_history.length === 0 ? (
+              {history.length === 0 ? (
                 <p className="text-muted-foreground">No status history yet.</p>
               ) : (
-                detail.status_history.map((entry) => (
+                history.map((entry) => (
                   <div
                     key={entry.id}
                     className="flex flex-col gap-1 rounded-lg border border-border px-3 py-3 sm:flex-row sm:items-start sm:justify-between"
@@ -469,12 +742,14 @@ export function ActionWorkspace({
         </p>
       ) : null}
 
-      <AppLink
-        href="/platform/actions"
-        className="text-sm text-muted-foreground hover:underline"
-      >
-        Back to actions
-      </AppLink>
+      {showBackLink ? (
+        <AppLink
+          href="/platform/actions"
+          className="text-sm text-muted-foreground hover:underline"
+        >
+          Back to actions
+        </AppLink>
+      ) : null}
     </div>
   );
 }

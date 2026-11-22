@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="CONNECT agent mark">
+  <rect width="512" height="512" fill="#0a0a0a"/>
+
+  <circle cx="120" cy="256" r="36" fill="#06B6D4"/>
+  <circle cx="256" cy="120" r="36" fill="#0284C7"/>
+  <circle cx="392" cy="256" r="36" fill="#06B6D4"/>
+  <circle cx="256" cy="392" r="36" fill="#0284C7"/>
+  <circle cx="256" cy="256" r="44" fill="#0284C7" stroke="#06B6D4" stroke-width="6"/>
+  <line x1="150" y1="256" x2="212" y2="256" stroke="#06B6D4" stroke-width="8"/>
+  <line x1="300" y1="256" x2="362" y2="256" stroke="#06B6D4" stroke-width="8"/>
+  <line x1="256" y1="150" x2="256" y2="212" stroke="#0284C7" stroke-width="8"/>
+  <line x1="256" y1="300" x2="256" y2="362" stroke="#0284C7" stroke-width="8"/>
+
+</svg>

@@ -8,21 +8,33 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 import { MarketingAppearanceMenu } from "./appearance-menu";
+import { LEH_BRAND_HOME_LABEL } from "@/components/brand/brand-assets";
+
 import {
   MarketingContainer,
   MarketingWordmark,
   RequestDemoControl,
+  RequestFreeAccessControl,
 } from "./primitives";
 
 const NAV_LINKS = [
   { href: "/#platform", label: "Platform" },
   { href: "/#why", label: "Why LEH" },
   { href: "/#leanai", label: "LeanAI" },
+  { href: "/#faq", label: "FAQ" },
 ] as const;
 
 export function MarketingHeader() {
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const panelId = useId();
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     if (!open) {
@@ -40,15 +52,15 @@ export function MarketingHeader() {
   }, [open]);
 
   return (
-    <header className="marketing-header">
+    <header className="marketing-header" data-scrolled={scrolled}>
       <div className="marketing-header-bar">
-        <MarketingContainer className="flex items-center gap-3 py-3 sm:gap-4">
+        <div className="v6-container">
           <Link
             href="/"
-            className="rounded-md"
-            aria-label="Lean Excellence Hub home"
+            className="leh-brand-link shrink-0"
+            aria-label={LEH_BRAND_HOME_LABEL}
           >
-            <MarketingWordmark />
+            <MarketingWordmark decorative priority />
           </Link>
 
           <nav
@@ -66,14 +78,17 @@ export function MarketingHeader() {
             ))}
           </nav>
 
-          <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-            <MarketingAppearanceMenu />
+          <div className="ml-auto flex items-center gap-2">
+            <div className="hidden lg:block">
+              <MarketingAppearanceMenu />
+            </div>
             <div className="hidden items-center gap-2 lg:flex">
               <Button asChild variant="ghost" size="sm">
                 <Link href="/login">Sign in</Link>
               </Button>
-              <RequestDemoControl size="sm" />
+              <RequestFreeAccessControl size="sm" />
             </div>
+            <RequestDemoControl size="sm" />
             <Button
               type="button"
               variant="outline"
@@ -91,7 +106,7 @@ export function MarketingHeader() {
               )}
             </Button>
           </div>
-        </MarketingContainer>
+        </div>
 
         <div
           id={panelId}
@@ -117,7 +132,7 @@ export function MarketingHeader() {
             <div className="flex flex-col gap-3">
               <p className="marketing-footer-heading">Appearance</p>
               <MarketingAppearanceMenu variant="labeled" />
-              <RequestDemoControl />
+              <RequestFreeAccessControl />
               <Button asChild variant="outline">
                 <Link href="/login">Sign in</Link>
               </Button>

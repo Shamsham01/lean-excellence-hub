@@ -15,3 +15,11 @@ if (typeof HTMLElement !== "undefined") {
 if (typeof Element !== "undefined" && !Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => undefined;
 }
+
+if (typeof globalThis.ResizeObserver === "undefined") {
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as typeof ResizeObserver;
+}

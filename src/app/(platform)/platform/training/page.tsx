@@ -1,19 +1,41 @@
 import { GraduationCap } from "lucide-react";
 
-import { MetricCard } from "@/components/platform/metric-card";
+import { EmptyState } from "@/components/platform/empty-state";
+import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
+import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { PageHeader } from "@/components/platform/page-header";
+import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
+import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
+import { ModulePortfolioNewLink } from "@/components/billing/module-portfolio-actions";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TRAINING_PERMISSIONS } from "@/modules/operational/permissions";
 import { loadActiveSiteContext } from "@/modules/organisation/site-context-server";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { TrainingCatalogueScopeNote } from "@/components/training/training-catalogue-scope-note";
 import { resolveTrainingCatalogListResult } from "@/modules/training/resolve-catalog-load";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
-export default async function TrainingOverviewPage() {
+export default async function TrainingOverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: TRAINING_PERMISSIONS.read,
+    module: "training",
+    title: "Training",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
+  const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
+    parseAnalyticsRangeDays(params.range),
+  );
   const [canManageCatalog, { context }] = await Promise.all([
     currentMemberHasPermission(TRAINING_PERMISSIONS.catalogManage),
     loadActiveSiteContext(),
@@ -31,8 +53,6 @@ export default async function TrainingOverviewPage() {
 
   const compliance = summaryObj?.compliance_percent ?? null;
   const outstanding = summaryObj?.outstanding_required ?? 0;
-  const expiring = summaryObj?.expiring_in_30_days ?? 0;
-
   const courses = await resolveTrainingCatalogListResult(
     await supabase
       .from("training_courses")
@@ -53,18 +73,25 @@ export default async function TrainingOverviewPage() {
     <div className="flex flex-col gap-8" data-testid="training-overview">
       <PageHeader
         title="Training"
-        description="Catalogue, curriculum, sessions, and compliance tracking."
         actions={
           <div className="flex flex-wrap gap-2">
             {canManageCatalog ? (
               <Button size="sm" asChild>
                 <AppLink
-                  href="/platform/training/courses?new=1"
-                  data-testid="training-hub-new-course-link"
+                  href="/platform/training/setup"
+                  data-testid="training-setup-link"
                 >
-                  New course
+                  Set up training
                 </AppLink>
               </Button>
+            ) : null}
+            {canManageCatalog ? (
+              <ModulePortfolioNewLink
+                href="/platform/training/courses?new=1"
+                testId="training-hub-new-course-link"
+              >
+                New course
+              </ModulePortfolioNewLink>
             ) : null}
             <Button variant="outline" size="sm" asChild>
               <AppLink
@@ -82,30 +109,18 @@ export default async function TrainingOverviewPage() {
         <TrainingCatalogueScopeNote siteName={activeSiteName} />
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <MetricCard
-          label="Training compliance"
-          value={
-            <span data-testid="training-compliance-percent">
-              {compliance != null ? `${compliance}%` : "—"}
-            </span>
-          }
+      {canManageCatalog &&
+      courses.length === 0 &&
+      (compliance === 0 || compliance === null) &&
+      outstanding === 0 ? (
+        <EmptyState
+          title="Training compliance starts with your catalogue"
+          description="Add courses and curriculum in training setup."
+          actionLabel="Set up training"
+          actionHref="/platform/training/setup"
+          icon={<GraduationCap className="size-5 text-primary" aria-hidden />}
         />
-        <MetricCard
-          label="Outstanding required"
-          value={
-            <span data-testid="training-outstanding-required">
-              {outstanding}
-            </span>
-          }
-        />
-        <MetricCard
-          label="Expiring in 30 days"
-          value={
-            <span data-testid="training-expiring-required">{expiring}</span>
-          }
-        />
-      </div>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
@@ -120,11 +135,15 @@ export default async function TrainingOverviewPage() {
               >
                 <GraduationCap className="size-5 text-muted-foreground" />
                 <div className="flex flex-col gap-1">
-                  <p className="text-sm font-medium">No courses yet</p>
+                  <p className="text-sm font-medium">
+                    {canManageCatalog
+                      ? "No courses yet"
+                      : "No courses are available with your access"}
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     {canManageCatalog
                       ? "Create the first course in the organisation catalogue."
-                      : "No courses are available in the organisation catalogue yet."}
+                      : "No courses are available with your access."}
                   </p>
                 </div>
                 {canManageCatalog ? (
@@ -178,6 +197,12 @@ export default async function TrainingOverviewPage() {
           </CardContent>
         </Card>
       </div>
+      <ModulePageInsightsDeferred
+        module="training"
+        rangeDays={analyticsRange.days}
+        testId="training-analytics"
+      />
+      <WorkplaceSharedRecords module="training" />
     </div>
   );
 }

@@ -131,10 +131,12 @@ export default async function MemberAdministrationPage({ params }: PageProps) {
   }
 
   return (
-    <div className="flex flex-col gap-8" data-testid="member-admin-page">
+    <div
+      className="flex w-full max-w-full min-w-0 flex-col gap-8"
+      data-testid="member-admin-page"
+    >
       <PageHeader
         title={displayName}
-        description="Manage organisation membership, assignments, and access."
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" asChild>
@@ -157,7 +159,10 @@ export default async function MemberAdministrationPage({ params }: PageProps) {
         }
       />
 
-      <Card>
+      <Card
+        className="w-full max-w-full min-w-0"
+        data-testid="member-admin-card"
+      >
         <CardContent className="pt-6">
           <MemberAdministrationPanel
             profile={profile}

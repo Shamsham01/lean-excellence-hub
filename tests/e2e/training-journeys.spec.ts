@@ -2,6 +2,10 @@ import { expect, test } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
+  expectExactHeading,
+  expectModulePageHeading,
+} from "./helpers/module-page-heading";
+import {
   DEMO_TRAINING_COURSES,
   DEMO_USERS,
 } from "../../scripts/demo-seed/constants";
@@ -23,9 +27,14 @@ test.describe("Milestone 7 training journeys", () => {
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/training");
 
-    await expect(page.getByRole("heading", { name: "Training" })).toBeVisible();
-    await expect(page.getByText("Training compliance")).toBeVisible();
-    await expect(page.getByText(DEMO_TRAINING_COURSES[0].name)).toBeVisible();
+    await expectModulePageHeading(page, "Training");
+    await page.getByTestId("training-analytics-insights-toggle").click();
+    await expect(page.getByTestId("training-compliance-percent")).toBeVisible();
+    await expect(
+      page
+        .getByTestId(/^training-hub-course-link-/)
+        .filter({ hasText: DEMO_TRAINING_COURSES[0].name }),
+    ).toBeVisible();
 
     await page.getByRole("link", { name: "Training matrix" }).click();
     await expect(page).toHaveURL(/\/platform\/training\/matrix/);
@@ -37,7 +46,7 @@ test.describe("Milestone 7 training journeys", () => {
   test("admin: people directory and capability profile", async ({ page }) => {
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/people");
-    await expect(page.getByRole("heading", { name: "People" })).toBeVisible();
+    await expectExactHeading(page, "People");
 
     await page
       .getByRole("link", { name: DEMO_USERS.operator.displayName })
@@ -45,8 +54,8 @@ test.describe("Milestone 7 training journeys", () => {
     await expect(
       page.getByRole("heading", { name: DEMO_USERS.operator.displayName }),
     ).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Training" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Skills" })).toBeVisible();
+    await expectExactHeading(page, "Training");
+    await expectExactHeading(page, "Skills");
   });
 });
 

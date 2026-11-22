@@ -7,11 +7,19 @@ export function SetupChecklist({
   title,
   description,
   items,
+  supplementalTitle,
+  supplementalDescription,
+  supplementalItems,
 }: {
   title: string;
   description?: string;
   items: SetupItem[];
+  supplementalTitle?: string;
+  supplementalDescription?: string;
+  supplementalItems?: SetupItem[];
 }) {
+  const secondary = supplementalItems ?? [];
+
   return (
     <Card data-testid="setup-checklist">
       <CardHeader>
@@ -24,6 +32,25 @@ export function SetupChecklist({
         {items.map((item) => (
           <SetupChecklistItem key={item.id} item={item} />
         ))}
+        {secondary.length > 0 ? (
+          <div className="flex flex-col gap-3 border-t border-border pt-4">
+            {supplementalTitle ? (
+              <div className="flex flex-col gap-1">
+                <h3 className="text-sm font-semibold text-foreground">
+                  {supplementalTitle}
+                </h3>
+                {supplementalDescription ? (
+                  <p className="text-sm text-muted-foreground">
+                    {supplementalDescription}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+            {secondary.map((item) => (
+              <SetupChecklistItem key={item.id} item={item} />
+            ))}
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );

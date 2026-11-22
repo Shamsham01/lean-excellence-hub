@@ -2,6 +2,8 @@
 
 import { randomUUID } from "node:crypto";
 
+import { assertPlanModuleWrite } from "@/modules/billing/assert-module-write";
+import { planModuleForLeanAiCoachModule } from "@/modules/billing/leanai-coach-plan-gate";
 import { assembleCoachExplainContext } from "@/modules/leanai-context/coach/context-assembly";
 import { readTrustedCoachConversation } from "@/modules/leanai-context/coach/session-validation";
 import {
@@ -95,6 +97,21 @@ export async function explainLeanAiCoachIntervention(input: {
         reason: "provider_error",
         message: "That setup recommendation is no longer available.",
       };
+    }
+
+    const coachPlanModule = planModuleForLeanAiCoachModule(
+      definition.moduleKey,
+    );
+    if (coachPlanModule) {
+      const moduleGate = await assertPlanModuleWrite(coachPlanModule);
+      if (!moduleGate.ok) {
+        return {
+          ok: false,
+          source: "static",
+          reason: "permission_denied",
+          message: moduleGate.error,
+        };
+      }
     }
 
     const [snapshot, permissions, organisation] = await Promise.all([

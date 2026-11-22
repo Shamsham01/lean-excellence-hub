@@ -71,6 +71,51 @@ export function formatAssessmentNavPosition(
 export type AssessmentScrollIntent =
   { kind: "criterion-top" } | { kind: "question"; questionId: string };
 
+function resolvePlatformMainViewport(
+  node: HTMLElement | null,
+): HTMLElement | null {
+  if (node) {
+    const closest = node.closest(
+      ".platform-main-viewport",
+    ) as HTMLElement | null;
+    if (closest) {
+      return closest;
+    }
+  }
+  return document.querySelector(
+    ".platform-main-viewport",
+  ) as HTMLElement | null;
+}
+
+function scrollWithinPlatformViewport(
+  element: HTMLElement,
+  block: "start" | "center",
+) {
+  const viewport = resolvePlatformMainViewport(element);
+  if (!viewport) {
+    element.scrollIntoView({
+      behavior: ASSESSMENT_NAV_SCROLL_BEHAVIOR,
+      block,
+    });
+    return;
+  }
+
+  const viewportRect = viewport.getBoundingClientRect();
+  const elementRect = element.getBoundingClientRect();
+  const offset =
+    block === "center"
+      ? elementRect.top -
+        viewportRect.top -
+        (viewportRect.height - elementRect.height) / 2
+      : elementRect.top - viewportRect.top;
+
+  const maxScroll = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
+  viewport.scrollTop = Math.max(
+    0,
+    Math.min(maxScroll, viewport.scrollTop + offset),
+  );
+}
+
 export function scrollAssessmentTarget(
   intent: AssessmentScrollIntent,
   criterionTop: HTMLElement | null,
@@ -78,16 +123,14 @@ export function scrollAssessmentTarget(
   if (intent.kind === "question") {
     const node = document.querySelector(
       `[data-question-id="${intent.questionId}"]`,
-    );
-    node?.scrollIntoView({
-      behavior: ASSESSMENT_NAV_SCROLL_BEHAVIOR,
-      block: "center",
-    });
+    ) as HTMLElement | null;
+    if (node) {
+      scrollWithinPlatformViewport(node, "center");
+    }
     return;
   }
 
-  criterionTop?.scrollIntoView({
-    behavior: ASSESSMENT_NAV_SCROLL_BEHAVIOR,
-    block: "start",
-  });
+  if (criterionTop) {
+    scrollWithinPlatformViewport(criterionTop, "start");
+  }
 }

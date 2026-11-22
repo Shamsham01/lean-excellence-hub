@@ -7,7 +7,11 @@ import {
 type TrainingMatrixProps = {
   memberships: Array<{ id: string; display_name: string | null }>;
   courses: Array<{ id: string; name: string }>;
-  requirements: Array<{ id: string; course_id: string; mandatory: boolean }>;
+  requirements: Array<{
+    membership_id: string;
+    course_id: string;
+    mandatory: boolean;
+  }>;
   completions: Array<{
     membership_id: string;
     course_id: string;
@@ -22,12 +26,17 @@ export function TrainingMatrix({
   requirements,
   completions,
 }: TrainingMatrixProps) {
-  const requiredCourseIds = new Set(
-    requirements.filter((r) => r.mandatory).map((r) => r.course_id),
+  const mandatoryCells = new Set(
+    requirements
+      .filter((requirement) => requirement.mandatory)
+      .map(
+        (requirement) =>
+          `${requirement.membership_id}:${requirement.course_id}`,
+      ),
   );
 
   function cellFor(membershipId: string, courseId: string) {
-    const isRequired = requiredCourseIds.has(courseId);
+    const isRequired = mandatoryCells.has(`${membershipId}:${courseId}`);
     const completion = completions.find(
       (c) => c.membership_id === membershipId && c.course_id === courseId,
     );
@@ -125,7 +134,9 @@ export function TrainingMatrix({
               </AppLink>
               <ul className="mt-2 space-y-1 text-sm">
                 {courses
-                  .filter((c) => requiredCourseIds.has(c.id))
+                  .filter(
+                    (course) => cellFor(membership.id, course.id).isRequired,
+                  )
                   .map((course) => {
                     const cell = cellFor(membership.id, course.id);
                     return (

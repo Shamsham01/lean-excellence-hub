@@ -345,7 +345,10 @@ select 'validation', public.record_skill_validation(
   (select id from capability_ids where key = 'owner_membership'),
   (select id from capability_ids where key = 'skill'),
   (select id from capability_ids where key = 'scale_version'),
-  (select id from capability_ids where key = 'level_two')
+  (select id from capability_ids where key = 'level_two'),
+  statement_timestamp(),
+  null,
+  'manager_assessment'
 );
 
 select cmp_ok(

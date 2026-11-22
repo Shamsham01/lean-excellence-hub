@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -12,31 +12,70 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppLink } from "@/components/ui/app-link";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
+  EFFECTIVENESS_RESULTS,
   effectivenessResultBadgeVariant,
   effectivenessResultLabel,
+  type EffectivenessResult,
 } from "@/lib/problem-solving/effectiveness";
+import { SustainPlanPanel } from "@/components/problem-solving/sustain-plan-panel";
 import type { ProblemSolvingCaseDetail } from "@/lib/problem-solving/types";
 
 type VerificationPanelProps = {
   caseId: string;
   detail: ProblemSolvingCaseDetail;
   canManage: boolean;
+  membershipNameById?: Record<string, string>;
 };
+
+type RecordDraft = {
+  actualNumeric: string;
+  note: string;
+  result: EffectivenessResult;
+};
+
+const defaultRecordDraft = (): RecordDraft => ({
+  actualNumeric: "",
+  note: "",
+  result: "pass",
+});
 
 export function VerificationPanel({
   caseId,
   detail,
   canManage,
+  membershipNameById = {},
 }: VerificationPanelProps) {
   const router = useRouter();
   const [criterion, setCriterion] = useState("");
   const [baselineNumeric, setBaselineNumeric] = useState("");
   const [targetNumeric, setTargetNumeric] = useState("");
-  const [actualNumeric, setActualNumeric] = useState("");
   const [unit, setUnit] = useState("ppm");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [recordDrafts, setRecordDrafts] = useState<Record<string, RecordDraft>>(
+    {},
+  );
+
+  const pendingFail = useMemo(
+    () =>
+      detail.effectiveness_checks.some(
+        (check) => check.result === "fail" || check.result === "inconclusive",
+      ),
+    [detail.effectiveness_checks],
+  );
+
+  function draftFor(checkId: string): RecordDraft {
+    return recordDrafts[checkId] ?? defaultRecordDraft();
+  }
+
+  function patchDraft(checkId: string, patch: Partial<RecordDraft>) {
+    setRecordDrafts((current) => ({
+      ...current,
+      [checkId]: { ...draftFor(checkId), ...patch },
+    }));
+  }
 
   async function handleCreateCheck(event: React.FormEvent) {
     event.preventDefault();
@@ -56,20 +95,35 @@ export function VerificationPanel({
     router.refresh();
   }
 
-  async function handleRecordPass(checkId: string) {
-    if (!actualNumeric.trim()) {
-      setMessage("Actual value is required to record effectiveness");
+  async function handleRecord(checkId: string) {
+    const draft = draftFor(checkId);
+    if (
+      (draft.result === "fail" || draft.result === "inconclusive") &&
+      !draft.note.trim()
+    ) {
+      setMessage("A note is required for Fail and Inconclusive.");
+      return;
+    }
+    if (draft.result === "pass" && !draft.actualNumeric.trim()) {
+      setMessage("Actual value is required to record Pass.");
       return;
     }
     setLoading(true);
     const result = await recordEffectivenessResult({
       effectivenessCheckId: checkId,
       caseId,
-      result: "pass",
-      actualNumeric: Number(actualNumeric),
-      verificationRationale: "Effectiveness verified from workspace",
+      result: draft.result,
+      ...(draft.actualNumeric.trim()
+        ? { actualNumeric: Number(draft.actualNumeric) }
+        : {}),
+      ...(draft.note.trim()
+        ? { verificationRationale: draft.note.trim() }
+        : {}),
     });
-    setMessage(result.error ?? "Effectiveness PASS recorded");
+    setMessage(
+      result.error ??
+        `Effectiveness ${effectivenessResultLabel(draft.result)} recorded`,
+    );
     setLoading(false);
     router.refresh();
   }
@@ -79,6 +133,23 @@ export function VerificationPanel({
       className="flex flex-col gap-4"
       data-testid="problem-solving-verification-panel"
     >
+      <SustainPlanPanel
+        caseId={caseId}
+        detail={detail}
+        membershipNameById={membershipNameById}
+        canManage={canManage}
+      />
+      {pendingFail ? (
+        <div
+          className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-950 dark:text-amber-100"
+          data-testid="effectiveness-fail-warning"
+        >
+          One or more checks failed or were inconclusive. Re-open root cause
+          analysis or add countermeasures before closing as Resolved (verified
+          cause). Schedule a re-check for inconclusive items.
+        </div>
+      ) : null}
+
       {canManage ? (
         <Card>
           <CardHeader>
@@ -188,24 +259,71 @@ export function VerificationPanel({
                     <dd>{check.due_date ?? "—"}</dd>
                   </div>
                 </dl>
-                {canManage && !check.result ? (
-                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
-                    <label className="flex flex-1 flex-col gap-1 text-xs">
-                      <span>Actual result for PASS decision</span>
+                {check.result_rationale ? (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Note: {check.result_rationale}
+                  </p>
+                ) : null}
+                {canManage ? (
+                  <div
+                    className="mt-3 flex flex-col gap-2 border-t border-border pt-3"
+                    data-testid={`effectiveness-record-form-${check.id}`}
+                  >
+                    <label className="flex flex-col gap-1 text-xs font-medium">
+                      Outcome
+                      <select
+                        className="border-input min-h-11 rounded-md border bg-background px-3 py-2 text-sm"
+                        value={draftFor(check.id).result}
+                        onChange={(event) =>
+                          patchDraft(check.id, {
+                            result: event.target.value as EffectivenessResult,
+                          })
+                        }
+                        data-testid={`effectiveness-result-${check.id}`}
+                      >
+                        {EFFECTIVENESS_RESULTS.map((value) => (
+                          <option key={value} value={value}>
+                            {effectivenessResultLabel(value)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="flex flex-col gap-1 text-xs font-medium">
+                      Actual value
                       <Input
                         type="number"
-                        value={actualNumeric}
-                        onChange={(e) => setActualNumeric(e.target.value)}
+                        value={draftFor(check.id).actualNumeric}
+                        onChange={(event) =>
+                          patchDraft(check.id, {
+                            actualNumeric: event.target.value,
+                          })
+                        }
                         data-testid={`effectiveness-actual-${check.id}`}
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1 text-xs font-medium">
+                      Note
+                      <Textarea
+                        rows={2}
+                        value={draftFor(check.id).note}
+                        onChange={(event) =>
+                          patchDraft(check.id, { note: event.target.value })
+                        }
+                        placeholder={
+                          draftFor(check.id).result === "pass"
+                            ? "Optional context for the team"
+                            : "Required — what failed or why inconclusive"
+                        }
+                        data-testid={`effectiveness-note-${check.id}`}
                       />
                     </label>
                     <Button
                       size="sm"
                       disabled={loading}
-                      onClick={() => handleRecordPass(check.id)}
-                      data-testid={`record-effectiveness-pass-${check.id}`}
+                      onClick={() => handleRecord(check.id)}
+                      data-testid={`record-effectiveness-${check.id}`}
                     >
-                      Record PASS
+                      Record result
                     </Button>
                   </div>
                 ) : null}
@@ -230,7 +348,14 @@ export function VerificationPanel({
                 className="flex items-center justify-between rounded-md border border-border px-3 py-2 hover:bg-muted/40"
                 data-testid={`related-action-${action.id}`}
               >
-                <span>{action.title}</span>
+                <span>
+                  {action.title}
+                  {action.expected_result ? (
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      Expected: {action.expected_result}
+                    </span>
+                  ) : null}
+                </span>
                 <Badge variant="outline">{action.status}</Badge>
               </AppLink>
             ))

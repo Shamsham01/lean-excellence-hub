@@ -2,7 +2,7 @@ export const MODULE_SETUP_MODES = ["manual", "quick_start", "leanai"] as const;
 
 export type ModuleSetupMode = (typeof MODULE_SETUP_MODES)[number];
 
-export type ModuleSetupModuleKey = "five_s" | "gemba";
+export type ModuleSetupModuleKey = "five_s" | "gemba" | "skills" | "training";
 
 /** Presentation contract. Domain modules keep their own rules and routes. */
 export type ModuleSetupDescriptor = {
@@ -16,5 +16,5 @@ export type ModuleSetupDescriptor = {
   quickStartAvailable: boolean;
   leanAiAvailable: boolean;
   existingConfigurationCount: number;
-  configurationNoun: "standard" | "definition";
+  configurationNoun: "standard" | "definition" | "framework" | "catalogue";
 };

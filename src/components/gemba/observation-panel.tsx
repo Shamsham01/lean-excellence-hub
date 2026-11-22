@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { InlineAlert } from "@/components/ui/alert";
+
 import {
   createGembaObservation,
   deleteGembaObservation,
@@ -10,6 +12,16 @@ import {
 } from "@/app/(platform)/platform/gemba/actions";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
 import { GembaEvidenceBlock } from "@/components/gemba/gemba-evidence-block";
+import { GembaAuditRaiseAction } from "@/components/gemba/gemba-audit-raise-action";
+import {
+  linkGembaObservationToCiProject,
+  unlinkGembaObservationFromCiProject,
+} from "@/app/(platform)/platform/projects/linking-actions";
+import { ProjectLinkField } from "@/components/projects/project-link-field";
+import type {
+  ProjectLinkSummary,
+  ProjectSelectorOption,
+} from "@/lib/projects/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -21,6 +33,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ResponsiveFormDialog } from "@/components/ui/responsive-form-dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -46,11 +59,17 @@ type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 type GembaObservationPanelProps = {
   walkId: string;
+  siteUnitId?: string | null;
   observations: WalkObservation[];
   evidence: EvidenceItem[];
   canEdit: boolean;
+  projectOptions?: ProjectSelectorOption[];
+  requiresSiteSelection?: boolean;
+  linkedProjectsByObservationId?: Record<string, ProjectLinkSummary | null>;
+  actionCountsByObservation?: Record<string, number>;
   onIntegrityChange?: (integrity: ObservationIntegrity) => void;
   onObservationsChange?: (observations: WalkObservation[]) => void;
+  onActionCountsChange?: () => void;
 };
 
 const CREATE_ERROR_MESSAGE = "Couldn't save this observation. Try again.";
@@ -71,11 +90,17 @@ function isMutationSuccess(result: unknown) {
 
 export function GembaObservationPanel({
   walkId,
+  siteUnitId = null,
   observations,
   evidence,
   canEdit,
+  projectOptions = [],
+  requiresSiteSelection = false,
+  linkedProjectsByObservationId = {},
+  actionCountsByObservation = {},
   onIntegrityChange,
   onObservationsChange,
+  onActionCountsChange,
 }: GembaObservationPanelProps) {
   const [items, setItems] = useState(observations);
   const [captureOpen, setCaptureOpen] = useState(false);
@@ -369,13 +394,7 @@ export function GembaObservationPanel({
       className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4 sm:p-6"
       data-testid="gemba-observation-panel"
     >
-      <div className="flex flex-col gap-1">
-        <h2 className="typography-section-title">Observations</h2>
-        <p className="text-sm text-muted-foreground">
-          Capture what you see on the floor. Choosing a type does not save until
-          you press Save.
-        </p>
-      </div>
+      <h2 className="typography-section-title">Observations</h2>
 
       {notice ? (
         <p
@@ -387,119 +406,119 @@ export function GembaObservationPanel({
       ) : null}
 
       {canEdit ? (
-        <div className="flex flex-col gap-3">
-          {!captureOpen ? (
-            <Button
-              type="button"
-              variant="outline"
-              className="min-h-11 w-full sm:w-auto"
-              onClick={openCapture}
-              data-testid="gemba-capture-observation"
-            >
-              Capture observation
-            </Button>
-          ) : null}
-
-          {captureOpen ? (
-            <div
-              className="flex flex-col gap-4 rounded-md border border-border bg-background p-4"
-              data-testid="gemba-observation-editor"
-            >
-              <fieldset className="flex flex-col gap-2">
-                <legend className="text-sm font-medium">
-                  Observation type
-                </legend>
-                <div className="grid gap-2 sm:grid-cols-3">
-                  {typeOptions.map((option) => (
-                    <Button
-                      key={option.value}
-                      type="button"
-                      variant={
-                        selectedType === option.value ? "default" : "outline"
-                      }
-                      className="min-h-11 w-full justify-center text-center"
-                      aria-pressed={selectedType === option.value}
-                      onClick={() => chooseType(option.value)}
-                      data-testid={`gemba-observation-type-${option.value}`}
-                    >
-                      {option.label}
-                    </Button>
-                  ))}
-                </div>
-              </fieldset>
-
-              {selectedType ? (
-                <>
-                  <div>
-                    <Label htmlFor="gemba-observation-text">Observation</Label>
-                    <Textarea
-                      id="gemba-observation-text"
-                      className="mt-2 min-h-24"
-                      value={draftText}
-                      onChange={(event) => {
-                        setDraftText(event.target.value);
-                        if (saveStatus === "saved") {
-                          setSaveStatus("idle");
-                        }
-                      }}
-                      data-testid="gemba-observation-text"
-                    />
-                  </div>
-                  <div
-                    className="flex min-h-6 flex-wrap items-center gap-2"
-                    aria-live="polite"
-                    data-testid="gemba-observation-save-status"
-                  >
-                    {saveStatus === "saving" ? (
-                      <p className="text-sm text-muted-foreground">Saving…</p>
-                    ) : null}
-                    {saveStatus === "saved" ? (
-                      <p className="text-sm text-success">Saved</p>
-                    ) : null}
-                    {saveStatus === "error" ? (
-                      <p className="text-sm text-destructive" role="alert">
-                        {saveError ?? CREATE_ERROR_MESSAGE}
-                      </p>
-                    ) : null}
-                  </div>
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Select a type, then enter what you observed.
-                </p>
-              )}
-
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Button
-                  type="button"
-                  className="min-h-11 flex-1"
-                  disabled={
-                    !selectedType ||
-                    saveStatus === "saving" ||
-                    !draftText.trim()
-                  }
-                  onClick={() => {
-                    void handleCreate();
-                  }}
-                  data-testid="gemba-observation-save"
-                >
-                  {saveStatus === "saving" ? "Saving…" : "Save"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="min-h-11 flex-1"
-                  disabled={saveStatus === "saving"}
-                  onClick={resetCapture}
-                  data-testid="gemba-observation-cancel"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          ) : null}
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11 w-full sm:w-auto"
+            onClick={openCapture}
+            data-testid="gemba-capture-observation"
+          >
+            Capture observation
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            {items.length} observation{items.length === 1 ? "" : "s"}
+          </p>
         </div>
       ) : null}
+
+      <ResponsiveFormDialog
+        open={captureOpen}
+        onOpenChange={(next) => {
+          if (!next) resetCapture();
+          else setCaptureOpen(true);
+        }}
+        title="Capture observation"
+        testId="gemba-observation-editor"
+
+        enableGuard
+      >
+        <fieldset className="flex flex-col gap-2">
+          <legend className="text-sm font-medium">Observation type</legend>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {typeOptions.map((option) => (
+              <Button
+                key={option.value}
+                type="button"
+                variant={selectedType === option.value ? "default" : "outline"}
+                className="min-h-11 w-full justify-center text-center"
+                aria-pressed={selectedType === option.value}
+                onClick={() => chooseType(option.value)}
+                data-testid={`gemba-observation-type-${option.value}`}
+              >
+                {option.label}
+              </Button>
+            ))}
+          </div>
+        </fieldset>
+
+        {selectedType ? (
+          <>
+            <div className="mt-4">
+              <Label htmlFor="gemba-observation-text">Observation</Label>
+              <Textarea
+                id="gemba-observation-text"
+                className="mt-2 min-h-24"
+                value={draftText}
+                onChange={(event) => {
+                  setDraftText(event.target.value);
+                  if (saveStatus === "saved") {
+                    setSaveStatus("idle");
+                  }
+                }}
+                data-testid="gemba-observation-text"
+              />
+            </div>
+            <div
+              className="mt-2 flex min-h-6 flex-wrap items-center gap-2"
+              aria-live="polite"
+              data-testid="gemba-observation-save-status"
+            >
+              {saveStatus === "saving" ? (
+                <p className="text-sm text-muted-foreground">Saving…</p>
+              ) : null}
+              {saveStatus === "saved" ? (
+                <p className="text-sm text-success">Saved</p>
+              ) : null}
+              {saveStatus === "error" ? (
+                <InlineAlert tone="error">
+                  {saveError ?? CREATE_ERROR_MESSAGE}
+                </InlineAlert>
+              ) : null}
+            </div>
+          </>
+        ) : (
+          <p className="mt-4 text-sm text-muted-foreground">
+            Select a type, then enter what you observed.
+          </p>
+        )}
+
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+          <Button
+            type="button"
+            className="min-h-11 flex-1"
+            disabled={
+              !selectedType || saveStatus === "saving" || !draftText.trim()
+            }
+            onClick={() => {
+              void handleCreate();
+            }}
+            data-testid="gemba-observation-save"
+          >
+            {saveStatus === "saving" ? "Saving…" : "Save"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11 flex-1"
+            disabled={saveStatus === "saving"}
+            onClick={resetCapture}
+            data-testid="gemba-observation-cancel"
+          >
+            Cancel
+          </Button>
+        </div>
+      </ResponsiveFormDialog>
 
       {canEdit && selectedIds.length > 0 ? (
         <Button
@@ -662,6 +681,49 @@ export function GembaObservationPanel({
                           Delete
                         </Button>
                       </div>
+                    ) : null}
+
+                    <ProjectLinkField
+                      linked={
+                        linkedProjectsByObservationId[observation.id] ?? null
+                      }
+                      options={projectOptions}
+                      canEdit={canEdit}
+                      requiresSiteSelection={requiresSiteSelection}
+                      testId={`gemba-observation-project-link-${observation.id}`}
+                      onLink={(projectId) =>
+                        linkGembaObservationToCiProject(
+                          observation.id,
+                          projectId,
+                          walkId,
+                        )
+                      }
+                      onUnlink={() =>
+                        unlinkGembaObservationFromCiProject(
+                          observation.id,
+                          walkId,
+                        )
+                      }
+                    />
+
+                    {canEdit ? (
+                      <GembaAuditRaiseAction
+                        linkContext={{
+                          walkId,
+                          siteUnitId,
+                          observationId: observation.id,
+                          defaultTitle: observation.observation_text.slice(
+                            0,
+                            120,
+                          ),
+                        }}
+                        actionCount={
+                          actionCountsByObservation[observation.id] ?? 0
+                        }
+                        {...(onActionCountsChange
+                          ? { onActionCreated: onActionCountsChange }
+                          : {})}
+                      />
                     ) : null}
 
                     <GembaEvidenceBlock

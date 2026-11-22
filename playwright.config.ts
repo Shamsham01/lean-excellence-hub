@@ -19,10 +19,16 @@ function loadLocalSupabaseEnv(): Record<string, string> {
       API_URL?: string;
       ANON_KEY?: string;
       SERVICE_ROLE_KEY?: string;
+      DB_URL?: string;
     };
+
+    if (status.DB_URL && !process.env.SUPABASE_DB_URL) {
+      process.env.SUPABASE_DB_URL = status.DB_URL;
+    }
 
     return {
       ...(status.API_URL ? { NEXT_PUBLIC_SUPABASE_URL: status.API_URL } : {}),
+      ...(status.DB_URL ? { SUPABASE_DB_URL: status.DB_URL } : {}),
       ...(status.ANON_KEY
         ? { NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: status.ANON_KEY }
         : {}),
@@ -41,6 +47,54 @@ const webServerCommand = isCi
   ? `npm run build && npm run start -- --hostname 127.0.0.1 --port ${port}`
   : `npm run dev -- --hostname 127.0.0.1 --port ${port}`;
 
+const webServerEnvOverrides: Record<string, string> = {
+  APP_ORIGIN: baseURL,
+  AUTH_RATE_LIMIT_PEPPER:
+    process.env.AUTH_RATE_LIMIT_PEPPER ??
+    "playwright-only-pepper-that-is-at-least-32-characters",
+  E2E_WITH_SUPABASE: process.env.E2E_WITH_SUPABASE ?? "",
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+    localSupabaseEnv.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+    "sb_publishable_playwright_placeholder",
+  NEXT_PUBLIC_SUPABASE_URL:
+    process.env.NEXT_PUBLIC_SUPABASE_URL ??
+    localSupabaseEnv.NEXT_PUBLIC_SUPABASE_URL ??
+    "http://127.0.0.1:54321",
+  SUPABASE_SECRET_KEY:
+    process.env.SUPABASE_SECRET_KEY ??
+    localSupabaseEnv.SUPABASE_SECRET_KEY ??
+    "sb_secret_playwright_placeholder",
+  SUPABASE_DB_URL:
+    process.env.SUPABASE_DB_URL ?? localSupabaseEnv.SUPABASE_DB_URL ?? "",
+  AI_ENABLED:
+    process.env.AI_ENABLED ??
+    (process.env.E2E_WITH_SUPABASE === "1" ? "1" : "0"),
+  AI_PROVIDER:
+    process.env.E2E_WITH_SUPABASE === "1"
+      ? "fake"
+      : (process.env.AI_PROVIDER ?? "openai"),
+  AI_ALLOW_FAKE_PROVIDER: process.env.E2E_WITH_SUPABASE === "1" ? "1" : "0",
+  AI_E2E_INTERRUPT_HARNESS: process.env.E2E_WITH_SUPABASE === "1" ? "1" : "0",
+  AI_TURN_WALL_CLOCK_MS:
+    process.env.E2E_WITH_SUPABASE === "1"
+      ? "2000"
+      : (process.env.AI_TURN_WALL_CLOCK_MS ?? ""),
+  BILLING_PROVIDER: process.env.BILLING_PROVIDER ?? "fake",
+  // Lets /demo read x-leh-e2e-demo-booking-url. Never set this in production.
+  DEMO_BOOKING_E2E: "1",
+  INVITATION_DELIVERY_MAILPIT_URL:
+    process.env.INVITATION_DELIVERY_MAILPIT_URL ??
+    (process.env.E2E_WITH_SUPABASE === "1" ? "http://172.17.0.1:54324" : ""),
+};
+
+/** Playwright replaces child env; merge parent env so exports (e.g. E2E_WITH_SUPABASE) reach next start. */
+const webServerEnv: Record<string, string> = Object.fromEntries(
+  Object.entries({ ...process.env, ...webServerEnvOverrides }).filter(
+    (entry): entry is [string, string] => typeof entry[1] === "string",
+  ),
+);
+
 export default defineConfig({
   forbidOnly: isCi,
   fullyParallel: true,
@@ -54,36 +108,7 @@ export default defineConfig({
   webServer: {
     command: webServerCommand,
     timeout: isCi ? 180_000 : 60_000,
-    env: {
-      APP_ORIGIN: baseURL,
-      AUTH_RATE_LIMIT_PEPPER:
-        process.env.AUTH_RATE_LIMIT_PEPPER ??
-        "playwright-only-pepper-that-is-at-least-32-characters",
-      E2E_WITH_SUPABASE: process.env.E2E_WITH_SUPABASE ?? "",
-      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
-        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-        localSupabaseEnv.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-        "sb_publishable_playwright_placeholder",
-      NEXT_PUBLIC_SUPABASE_URL:
-        process.env.NEXT_PUBLIC_SUPABASE_URL ??
-        localSupabaseEnv.NEXT_PUBLIC_SUPABASE_URL ??
-        "http://127.0.0.1:54321",
-      SUPABASE_SECRET_KEY:
-        process.env.SUPABASE_SECRET_KEY ??
-        localSupabaseEnv.SUPABASE_SECRET_KEY ??
-        "sb_secret_playwright_placeholder",
-      AI_ENABLED:
-        process.env.AI_ENABLED ??
-        (process.env.E2E_WITH_SUPABASE === "1" ? "1" : "0"),
-      AI_PROVIDER:
-        process.env.E2E_WITH_SUPABASE === "1"
-          ? "fake"
-          : (process.env.AI_PROVIDER ?? "openai"),
-      AI_ALLOW_FAKE_PROVIDER: process.env.E2E_WITH_SUPABASE === "1" ? "1" : "0",
-      BILLING_PROVIDER: process.env.BILLING_PROVIDER ?? "fake",
-      // Lets /demo read x-leh-e2e-demo-booking-url. Never set this in production.
-      DEMO_BOOKING_E2E: "1",
-    },
+    env: webServerEnv,
     reuseExistingServer: !isCi,
     url: baseURL,
   },
@@ -91,6 +116,19 @@ export default defineConfig({
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+      testIgnore: /platform-android-scroll\.spec\.ts$/,
+    },
+    {
+      name: "chromium-pixel7",
+      testMatch: /platform-android-scroll\.spec\.ts$/,
+      grep: /Pixel 7 platform scrolling/,
+      use: { ...devices["Pixel 7"], hasTouch: true },
+    },
+    {
+      name: "webkit-iphone",
+      testMatch: /platform-android-scroll\.spec\.ts$/,
+      grep: /iPhone 13 platform scrolling/,
+      use: { ...devices["iPhone 13"], hasTouch: true },
     },
   ],
 });

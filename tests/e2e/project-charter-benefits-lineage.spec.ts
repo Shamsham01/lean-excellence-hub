@@ -132,7 +132,13 @@ test.describe("Project charter lifecycle and benefits lineage", () => {
   }) => {
     await signInAsDemoUser(page, "manager");
     await page.goto(projectPath);
+    await expect(page.getByTestId("project-status")).toHaveText("Submitted");
     await page.getByRole("tab", { name: "Actions" }).click();
+    await expect(
+      page.getByText(
+        "Linked actions count towards project progress once the project is Active.",
+      ),
+    ).toBeVisible();
     await page.getByTestId("project-action-title").fill(actionTitle);
     await page.getByTestId("project-add-action").click();
     await expect(page.getByTestId("project-workspace-message")).toContainText(
@@ -171,12 +177,16 @@ test.describe("Project charter lifecycle and benefits lineage", () => {
     await signInAsDemoUser(page, "manager");
     await page.goto("/platform/benefits/new");
     await expect(page.getByTestId("create-benefit-wizard")).toBeVisible();
-    await page.getByRole("button", { name: "5. Source" }).click();
+    await page.getByTestId("wizard-step-mobile-4").click();
     await expect(page.getByTestId("project-select")).toBeVisible();
-    await expect(page.getByTestId("project-select-input")).toBeVisible();
+    await expect(page.getByTestId("project-link-picker")).toBeVisible();
+    await page.getByRole("combobox", { name: /Select a project/i }).click();
     await expect(
-      page.locator("#project-source-select option").nth(1),
-    ).toHaveText(/PROJ-/);
+      page.getByPlaceholder("Search code, title, or status"),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("option", { name: /PROJ-/ }).first(),
+    ).toBeVisible();
     await expect(page.getByText("Primary source resource ID")).toHaveCount(0);
   });
 

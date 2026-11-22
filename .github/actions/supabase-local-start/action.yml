@@ -39,8 +39,35 @@ runs:
           done
         }
 
+        release_local_supabase_ports() {
+          local ports=(54321 54322 54320 54323 54324 54327 54329)
+          docker ps -aq --filter "name=supabase" | xargs -r docker stop 2>/dev/null || true
+          docker ps -aq --filter "name=supabase" | xargs -r docker rm -f 2>/dev/null || true
+          if command -v fuser >/dev/null 2>&1; then
+            for port in "${ports[@]}"; do
+              fuser -k "${port}/tcp" 2>/dev/null || true
+            done
+          fi
+          if command -v ss >/dev/null 2>&1; then
+            for port in "${ports[@]}"; do
+              local waited=0
+              while ss -ltn | grep -q ":${port} "; do
+                if [ "${waited}" -ge 30 ]; then
+                  echo "Port ${port} still listening after cleanup; forcing release." >&2
+                  ss -ltnp | grep ":${port} " || true
+                  fuser -k "${port}/tcp" 2>/dev/null || true
+                  break
+                fi
+                sleep 1
+                waited=$((waited + 1))
+              done
+            done
+          fi
+        }
+
         stop_partial_stack() {
           npm run db:stop || true
+          release_local_supabase_ports
         }
 
         exclude_flags=()
@@ -54,9 +81,18 @@ runs:
           done
         fi
 
+        release_local_supabase_ports
+
+        # Edge functions read these via supabase/config.toml [edge_runtime.secrets]; jobs that
+        # omit them in workflow env still need safe local defaults at stack boot.
+        export APP_ORIGIN="${APP_ORIGIN:-http://127.0.0.1:3000}"
+        export AUTH_EMAIL_FROM="${AUTH_EMAIL_FROM:-onboarding@test.test}"
+        export AUTH_EMAIL_FROM_NAME="${AUTH_EMAIL_FROM_NAME:-Lean Excellence Hub}"
+
         attempt=1
         while [ "${attempt}" -le "${MAX_ATTEMPTS}" ]; do
           echo "Supabase startup attempt ${attempt}/${MAX_ATTEMPTS} (timeout ${STARTUP_TIMEOUT_MINUTES}m)"
+          release_local_supabase_ports
           start_epoch="$(date +%s)"
           if timeout "${STARTUP_TIMEOUT_MINUTES}m" npx supabase start "${exclude_flags[@]}"; then
             end_epoch="$(date +%s)"

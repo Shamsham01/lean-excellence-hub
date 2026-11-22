@@ -69,7 +69,6 @@ export default async function TrainingCurriculaPage({
     <div className="flex flex-col gap-8" data-testid="training-curriculum-page">
       <PageHeader
         title="Training curricula"
-        description="Organisation-wide training requirements that say who needs which courses and when."
         actions={
           <div className="flex flex-wrap gap-2">
             {canManageCurriculum && !showCreateForm ? (

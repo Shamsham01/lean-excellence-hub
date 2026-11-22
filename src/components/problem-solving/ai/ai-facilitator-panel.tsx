@@ -1,42 +1,85 @@
 "use client";
 
-import { useState } from "react";
+import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
-  acceptProblemSolvingAiProposal,
   createProblemSolvingAiSession,
-  rejectProblemSolvingAiProposal,
+  reconcileProblemSolvingAiTurn,
   sendProblemSolvingAiMessage,
 } from "@/app/(platform)/platform/problem-solving/ai/actions";
+import { invokeProblemSolvingTurnAction } from "@/lib/problem-solving/problem-solving-ai-turn-client";
+import { resolveFacilitatorTurnPayload } from "@/lib/problem-solving/resolve-facilitator-turn";
+import type { InlineAiProposal } from "@/components/problem-solving/inline-ai-proposals";
+import { LeanAiMarkdown } from "@/components/leanai/leanai-markdown";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  problemSolvingClientTurnError,
+  retainProblemSolvingTurnKey,
+} from "@/platform/ai/ai-turn-messages";
 import type { AiSessionMode, FacilitatorEnvelope } from "@/platform/ai/types";
+import { isProblemSolvingCaseOpenForAiDraft } from "@/lib/problem-solving/status";
+import { cn } from "@/lib/utils";
 
-type PendingProposal = {
-  id: string;
-  proposal_type: string;
-  payload_json: Record<string, unknown>;
-  human_explanation: string;
-  status: string;
-};
+export type PendingProposal = InlineAiProposal;
 
 type AiFacilitatorPanelProps = {
   caseId: string;
+  caseTitle?: string;
   stageKey?: string | null;
+  viewStageKey?: string | null;
+  currentStageKey?: string | null;
+  stageTitle?: string | null;
+  caseStatus?: string;
   canUseAi: boolean;
+  /** When false, case is terminal: show copilot read-only but block sends. */
+  caseDraftingEnabled?: boolean;
   providerAvailable: boolean;
+  layout?: "card" | "dock";
+  collapsed?: boolean;
+  onCollapsedChange?: (collapsed: boolean) => void;
+  pendingProposals: PendingProposal[];
+  /** Stage-scoped count shown in canvas (server + chat); aligns footer with pending list. */
+  visibleStagePendingCount?: number;
+  onPendingProposalsChange: (proposals: PendingProposal[]) => void;
+  draftOverride?: string;
+  onDraftOverrideConsumed?: () => void;
 };
 
 const MODES: AiSessionMode[] = ["facilitate", "challenge", "review", "ask"];
 
+function buildGreeting(
+  caseTitle: string,
+  stageTitle: string | null | undefined,
+  stageKey: string | null | undefined,
+): string {
+  const stage = stageTitle ?? stageKey ?? "this stage";
+  return `I'm facilitating **${caseTitle}** at **${stage}**. What should we capture or clarify next? I'll turn your answers into proposals you can accept before anything is saved.`;
+}
+
 export function AiFacilitatorPanel({
   caseId,
+  caseTitle = "this case",
   stageKey,
+  viewStageKey,
+  currentStageKey,
+  stageTitle,
+  caseStatus,
   canUseAi,
+  caseDraftingEnabled,
   providerAvailable,
+  layout = "dock",
+  collapsed = false,
+  onCollapsedChange,
+  pendingProposals,
+  visibleStagePendingCount,
+  onPendingProposalsChange,
+  draftOverride,
+  onDraftOverrideConsumed,
 }: AiFacilitatorPanelProps) {
   const router = useRouter();
   const [mode, setMode] = useState<AiSessionMode>("facilitate");
@@ -48,19 +91,125 @@ export function AiFacilitatorPanel({
       envelope?: FacilitatorEnvelope;
     }>
   >([]);
-  const [pendingProposals, setPendingProposals] = useState<PendingProposal[]>(
-    [],
-  );
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const draftInputRef = useRef<HTMLTextAreaElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const pendingTurnRef = useRef<{
+    message: string;
+    idempotencyKey: string;
+  } | null>(null);
+  const [reconciling, setReconciling] = useState(false);
+  const [hasPendingTurn, setHasPendingTurn] = useState(false);
+  const activeGreeting = useMemo(
+    () =>
+      caseStatus === "active"
+        ? buildGreeting(caseTitle, stageTitle, stageKey ?? viewStageKey ?? null)
+        : null,
+    [caseStatus, caseTitle, stageKey, stageTitle, viewStageKey],
+  );
+
+  const visibleMessages = useMemo(() => {
+    if (!activeGreeting) {
+      return messages;
+    }
+    if (messages.some((row) => row.role === "user")) {
+      return messages;
+    }
+    if (messages.length === 0) {
+      return [{ role: "assistant" as const, content: activeGreeting }];
+    }
+    const [first, ...rest] = messages;
+    if (
+      first?.role === "assistant" &&
+      rest.every((row) => row.role !== "user")
+    ) {
+      return [{ role: "assistant" as const, content: activeGreeting }, ...rest];
+    }
+    return messages;
+  }, [messages, activeGreeting]);
+
+  useEffect(() => {
+    // block: "nearest" keeps scroll inside the copilot transcript; the default "start"
+    // can scroll outer platform ancestors and hide the case header / stage rail on load.
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "nearest",
+    });
+  }, [visibleMessages, loading]);
+
+  async function applyCompletedTurn(data: {
+    envelope: FacilitatorEnvelope;
+    pendingProposals: PendingProposal[];
+  }) {
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content: data.envelope.message,
+        envelope: data.envelope,
+      },
+    ]);
+    onPendingProposalsChange(data.pendingProposals ?? []);
+    pendingTurnRef.current = null;
+    setHasPendingTurn(false);
+    setDraft("");
+    setError(null);
+    router.refresh();
+  }
+
+  async function attemptReconcileTurn(userMessage: string): Promise<boolean> {
+    const pending = pendingTurnRef.current;
+    if (!pending || pending.message !== userMessage) {
+      return false;
+    }
+    setReconciling(true);
+    try {
+      const activeSessionId = sessionId ?? (await ensureSession());
+      const result = await reconcileProblemSolvingAiTurn({
+        caseId,
+        sessionId: activeSessionId,
+        idempotencyKey: pending.idempotencyKey,
+      });
+      if (result.error || !result.data) {
+        return false;
+      }
+      const resolved = resolveFacilitatorTurnPayload(result.data);
+      if (resolved.status === "completed") {
+        await applyCompletedTurn({
+          envelope: resolved.envelope,
+          pendingProposals: resolved.pendingProposals,
+        });
+        return true;
+      }
+      if (resolved.status === "failed") {
+        setError(resolved.message);
+        pendingTurnRef.current = null;
+        setHasPendingTurn(false);
+        return true;
+      }
+      if (resolved.status === "in_progress") {
+        setError(resolved.message);
+        return true;
+      }
+      return false;
+    } finally {
+      setReconciling(false);
+    }
+  }
+
+  const draftingEnabled =
+    caseDraftingEnabled ?? isProblemSolvingCaseOpenForAiDraft(caseStatus ?? "");
 
   const disabledReason = !canUseAi
     ? "You do not have permission to use Lean AI on this case."
     : !providerAvailable
       ? "Lean AI is not enabled or configured for this environment."
-      : null;
+      : !draftingEnabled
+        ? "This case is closed or cancelled; Lean AI is not available."
+        : null;
 
   async function ensureSession(): Promise<string> {
     if (sessionId) return sessionId;
@@ -73,182 +222,322 @@ export function AiFacilitatorPanel({
   }
 
   async function handleSend() {
-    if (!draft.trim() || disabledReason) return;
+    const userMessage = (draftInputRef.current?.value ?? draft).trim();
+    if (!userMessage || disabledReason || loading) return;
     setLoading(true);
     setError(null);
     try {
       const activeSessionId = await ensureSession();
-      const userMessage = draft.trim();
-      setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
-      setDraft("");
+      if (
+        !pendingTurnRef.current ||
+        pendingTurnRef.current.message !== userMessage
+      ) {
+        pendingTurnRef.current = {
+          message: userMessage,
+          idempotencyKey: `${activeSessionId}-${crypto.randomUUID()}`,
+        };
+        setHasPendingTurn(true);
+      }
+      const idempotencyKey = pendingTurnRef.current.idempotencyKey;
 
-      const result = await sendProblemSolvingAiMessage({
-        caseId,
-        sessionId: activeSessionId,
-        mode,
-        stageKey: stageKey ?? null,
-        message: userMessage,
-        idempotencyKey: `${activeSessionId}-${Date.now()}`,
-        conversationHistory: messages.map((message) => ({
-          role: message.role,
-          content: message.content,
-        })),
+      setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+
+      const result = await invokeProblemSolvingTurnAction({
+        invoke: () =>
+          sendProblemSolvingAiMessage({
+            caseId,
+            sessionId: activeSessionId,
+            mode,
+            stageKey: stageKey ?? viewStageKey ?? null,
+            viewStageKey: viewStageKey ?? stageKey ?? null,
+            currentStageKey: currentStageKey ?? null,
+            message: userMessage,
+            idempotencyKey,
+            conversationHistory: messages.map((message) => ({
+              role: message.role,
+              content: message.content,
+            })),
+          }),
+        reconcile: () =>
+          reconcileProblemSolvingAiTurn({
+            caseId,
+            sessionId: activeSessionId,
+            idempotencyKey,
+          }),
       });
 
       if (result.error || !result.data) {
         throw new Error(result.error ?? "Lean AI failed");
       }
 
-      const data = result.data;
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: data.envelope.message,
-          envelope: data.envelope,
-        },
-      ]);
-      if (data.pendingProposals) {
-        setPendingProposals(data.pendingProposals);
+      const resolved = resolveFacilitatorTurnPayload(result.data);
+      if (resolved.status === "completed") {
+        await applyCompletedTurn({
+          envelope: resolved.envelope,
+          pendingProposals: resolved.pendingProposals,
+        });
+        return;
       }
-      router.refresh();
-    } catch (sendError) {
-      setError(
-        sendError instanceof Error ? sendError.message : "Lean AI failed",
+      if (resolved.status === "in_progress") {
+        throw new Error(resolved.message);
+      }
+      if (resolved.status === "failed") {
+        throw new Error(resolved.message);
+      }
+
+      const collected = await attemptReconcileTurn(userMessage);
+      if (collected) {
+        return;
+      }
+
+      throw new Error(
+        "Lean AI did not return a completed turn. Wait a moment and send again to collect the result.",
       );
+    } catch (sendError) {
+      const message =
+        sendError instanceof Error ? sendError.message : "Lean AI failed";
+      const displayMessage = problemSolvingClientTurnError(message);
+      setError(displayMessage);
+      if (userMessage && retainProblemSolvingTurnKey(message)) {
+        const collected = await attemptReconcileTurn(userMessage);
+        if (collected) {
+          return;
+        }
+      }
+      if (userMessage) {
+        setMessages((previous) => {
+          const last = previous.at(-1);
+          if (last?.role === "user" && last.content === userMessage) {
+            return previous.slice(0, -1);
+          }
+          return previous;
+        });
+        setDraft(userMessage);
+      }
+      if (!retainProblemSolvingTurnKey(message)) {
+        pendingTurnRef.current = null;
+        setHasPendingTurn(false);
+      }
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleAccept(proposal: PendingProposal) {
-    setActionMessage(null);
-    const result = await acceptProblemSolvingAiProposal({
-      caseId,
-      proposalId: proposal.id,
-      payload: proposal.payload_json,
-    });
-    if (result.error) {
-      setActionMessage(result.error);
-      return;
-    }
-    setActionMessage("Proposal accepted.");
-    setPendingProposals((prev) =>
-      prev.filter((item) => item.id !== proposal.id),
-    );
-    router.refresh();
-  }
+  const shellClass =
+    layout === "dock"
+      ? cn(
+          "pps-lean-ai-copilot flex min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-x-hidden bg-copilot-surface shadow-[var(--shadow-theme-sm)] lg:border-l lg:border-primary/20",
+          collapsed
+            ? "lg:w-12 lg:max-w-12 lg:flex-none"
+            : "w-full max-w-full lg:w-[380px] lg:max-w-[380px] lg:shrink-0",
+        )
+      : "rounded-xl border border-border bg-card shadow-sm";
 
-  async function handleReject(proposalId: string) {
-    setActionMessage(null);
-    const result = await rejectProblemSolvingAiProposal({ caseId, proposalId });
-    if (result.error) {
-      setActionMessage(result.error);
-      return;
-    }
-    setActionMessage("Proposal rejected.");
-    setPendingProposals((prev) =>
-      prev.filter((item) => item.id !== proposalId),
+  if (layout === "dock" && collapsed) {
+    return (
+      <aside
+        className={shellClass}
+        data-testid="lean-ai-panel"
+        aria-label="Lean AI copilot"
+      >
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="m-2"
+          aria-label="Expand Lean AI"
+          data-testid="lean-ai-expand"
+          onClick={() => onCollapsedChange?.(false)}
+        >
+          <ChevronLeft className="size-4" aria-hidden />
+        </Button>
+      </aside>
     );
-    router.refresh();
   }
 
   return (
-    <Card data-testid="lean-ai-panel">
-      <CardHeader className="flex flex-row items-center justify-between gap-4">
-        <CardTitle>Lean AI</CardTitle>
-        <div className="flex items-center gap-2">
-          <Label
-            htmlFor="lean-ai-mode"
-            className="text-xs text-muted-foreground"
-          >
-            Mode
-          </Label>
-          <select
-            id="lean-ai-mode"
-            data-testid="lean-ai-mode"
-            className="h-9 rounded-md border bg-background px-2 text-sm"
-            value={mode}
-            onChange={(event) => setMode(event.target.value as AiSessionMode)}
-          >
-            {MODES.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
+    <aside
+      className={shellClass}
+      data-testid="lean-ai-panel"
+      aria-label="Lean AI copilot"
+    >
+      <div className="flex max-w-full min-w-0 shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-3">
+        <div className="flex min-w-0 items-center gap-2">
+          {layout === "card" ? (
+            <Sparkles className="size-4 shrink-0 text-primary" aria-hidden />
+          ) : null}
+          <span className="truncate text-sm font-semibold">Lean AI</span>
         </div>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        {stageKey ? (
-          <p className="text-xs text-muted-foreground">
-            Case stage: {stageKey}
+        <div className="flex items-center gap-2">
+          {layout === "dock" ? (
+            <>
+              <Badge
+                variant="secondary"
+                className="font-mono-data rounded-md bg-primary/15 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-primary uppercase"
+              >
+                {mode}
+              </Badge>
+              <Label htmlFor="lean-ai-mode" className="sr-only">
+                Mode
+              </Label>
+              <select
+                id="lean-ai-mode"
+                data-testid="lean-ai-mode"
+                className="sr-only"
+                value={mode}
+                onChange={(event) =>
+                  setMode(event.target.value as AiSessionMode)
+                }
+              >
+                {MODES.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </>
+          ) : (
+            <>
+              <Label htmlFor="lean-ai-mode" className="sr-only">
+                Mode
+              </Label>
+              <select
+                id="lean-ai-mode"
+                data-testid="lean-ai-mode"
+                className="border-input h-8 max-w-[7rem] rounded-md border bg-background px-2 text-xs"
+                value={mode}
+                onChange={(event) =>
+                  setMode(event.target.value as AiSessionMode)
+                }
+              >
+                {MODES.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
+          {layout === "dock" ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              aria-label="Collapse Lean AI"
+              onClick={() => onCollapsedChange?.(true)}
+            >
+              <ChevronRight className="size-4" aria-hidden />
+            </Button>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col">
+        {disabledReason ? (
+          <p className="px-4 py-3 text-sm text-muted-foreground">
+            {disabledReason}
           </p>
         ) : null}
-        {disabledReason ? (
-          <p className="text-sm text-muted-foreground">{disabledReason}</p>
-        ) : null}
-        <div className="flex max-h-80 flex-col gap-3 overflow-y-auto rounded-md border p-3">
-          {messages.map((message, index) => (
-            <div key={`${message.role}-${index}`} className="text-sm">
-              <p className="font-medium capitalize">{message.role}</p>
-              <p>{message.content}</p>
-            </div>
-          ))}
-        </div>
-        <Textarea
-          data-testid="lean-ai-input"
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          placeholder="Ask Lean AI..."
-          disabled={Boolean(disabledReason) || loading}
-        />
-        <Button
-          data-testid="lean-ai-send"
-          onClick={() => handleSend()}
-          disabled={Boolean(disabledReason) || loading || !draft.trim()}
+        <div
+          className={cn(
+            "min-h-0 flex-1 overflow-y-auto px-4 py-3",
+            layout === "card" && "max-h-80",
+          )}
         >
-          {loading ? "Thinking..." : "Send"}
-        </Button>
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
-        {actionMessage ? (
-          <p className="text-xs text-muted-foreground">{actionMessage}</p>
-        ) : null}
-        <div className="flex flex-col gap-3" data-testid="lean-ai-proposals">
-          {pendingProposals.map((proposal) => (
-            <Card key={proposal.id} data-testid="ai-proposal-card">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">
-                  {proposal.proposal_type}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-2 text-sm">
-                <p>{proposal.human_explanation}</p>
-                <pre className="overflow-x-auto rounded bg-muted p-2 text-xs">
-                  {JSON.stringify(proposal.payload_json, null, 2)}
-                </pre>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    data-testid="ai-proposal-accept"
-                    onClick={() => handleAccept(proposal)}
-                  >
-                    Accept
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    data-testid="ai-proposal-reject"
-                    onClick={() => handleReject(proposal.id)}
-                  >
-                    Reject
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          <div className="flex flex-col gap-3 text-sm">
+            {visibleMessages.map((message, index) => (
+              <div
+                key={`${message.role}-${index}`}
+                className={cn(
+                  "rounded-xl px-3 py-2.5 leading-relaxed",
+                  message.role === "user"
+                    ? "ml-2 max-w-full border border-border/60 bg-card sm:ml-6"
+                    : "mr-0 max-w-full bg-muted/70 sm:mr-2",
+                )}
+              >
+                {message.role === "user" ? (
+                  <p className="break-words whitespace-pre-wrap">
+                    {message.content}
+                  </p>
+                ) : (
+                  <LeanAiMarkdown text={message.content} />
+                )}
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+          {(visibleStagePendingCount ?? pendingProposals.length) > 0 ? (
+            <p
+              className="mt-3 text-xs text-muted-foreground"
+              data-testid="lean-ai-proposals"
+            >
+              {visibleStagePendingCount ?? pendingProposals.length} proposal(s)
+              waiting in the stage canvas.
+            </p>
+          ) : null}
         </div>
-      </CardContent>
-    </Card>
+
+        <div className="max-w-full min-w-0 shrink-0 border-t border-border bg-card p-3">
+          <Textarea
+            ref={draftInputRef}
+            data-testid="lean-ai-input"
+            value={draftOverride ?? draft}
+            onChange={(event) => {
+              setDraft(event.target.value);
+              if (draftOverride) {
+                onDraftOverrideConsumed?.();
+              }
+            }}
+            placeholder="Reply to Lean AI…"
+            className="min-h-[72px] max-w-full resize-none bg-background"
+            disabled={Boolean(disabledReason) || loading}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                void handleSend();
+              }
+            }}
+          />
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Button
+              className="flex-1"
+              data-testid="lean-ai-send"
+              onClick={() => handleSend()}
+              disabled={Boolean(disabledReason) || loading || reconciling}
+            >
+              {loading ? "Thinking…" : "Send"}
+            </Button>
+            {error && hasPendingTurn ? (
+              <Button
+                type="button"
+                variant="outline"
+                data-testid="lean-ai-retry-turn"
+                disabled={Boolean(disabledReason) || loading || reconciling}
+                onClick={() => {
+                  const pending = pendingTurnRef.current;
+                  if (!pending) return;
+                  void (async () => {
+                    const collected = await attemptReconcileTurn(
+                      pending.message,
+                    );
+                    if (!collected) {
+                      void handleSend();
+                    }
+                  })();
+                }}
+              >
+                {reconciling ? "Checking…" : "Retry"}
+              </Button>
+            ) : null}
+          </div>
+          {error ? (
+            <p className="mt-2 text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          ) : null}
+        </div>
+      </div>
+    </aside>
   );
 }

@@ -2,9 +2,16 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
+  clickExecutionStartSubmit,
   expectExecutionHeaderLayout,
   selectFirstExecutionUnit,
 } from "./helpers/execution-unit-select";
+import {
+  openGembaAddPrompt,
+  openGembaAddSection,
+} from "./helpers/form-dialogs";
+import { navigateGembaPrompt } from "./helpers/gemba-walk-navigation";
+import { chooseFirstApplicableUnit } from "./helpers/applicable-units";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -31,11 +38,8 @@ async function moveGembaPromptWithRecovery(
   direction: "Next" | "Previous",
   expectedPrompt: string,
 ) {
-  const expectedHeading = page.getByRole("heading", { name: expectedPrompt });
-  await page.getByRole("button", { name: direction, exact: true }).click();
-
   try {
-    await expect(expectedHeading).toBeVisible({ timeout: 5_000 });
+    await navigateGembaPrompt(page, direction, expectedPrompt);
     return;
   } catch {
     // A compiled-server Server Action can persist the mutation while its RSC
@@ -46,14 +50,8 @@ async function moveGembaPromptWithRecovery(
       timeout: 15_000,
     });
     await expectWorkspaceHealthy(page);
+    await navigateGembaPrompt(page, direction, expectedPrompt);
   }
-
-  if (await expectedHeading.isVisible().catch(() => false)) {
-    return;
-  }
-
-  await page.getByRole("button", { name: direction, exact: true }).click();
-  await expect(expectedHeading).toBeVisible({ timeout: 15_000 });
 }
 
 test.describe("platform reliability after shared RSC refresh", () => {
@@ -94,22 +92,34 @@ test.describe("platform reliability after shared RSC refresh", () => {
     const secondPrompt = `Reliability prompt B ${Date.now()}`;
 
     await page.getByLabel("Name").fill(name);
-    await page.getByTestId("applicable-unit-checkbox").first().check();
+    await chooseFirstApplicableUnit(page);
     await page.getByRole("button", { name: "Create draft" }).click();
     await expect(page.getByRole("heading", { name })).toBeVisible();
 
+    await openGembaAddSection(page);
     await page.getByLabel("Section title").fill("Reliability");
     await page.getByRole("button", { name: "Add section" }).click();
+    await expect(page.getByTestId("gemba-add-section-dialog")).toBeHidden({
+      timeout: 15_000,
+    });
     await expect(page.getByTestId("authoring-section")).toContainText(
       "Reliability",
     );
 
+    await openGembaAddPrompt(page);
     await page.getByTestId("gemba-question-prompt").fill(firstPrompt);
     await page.getByRole("button", { name: "Add prompt" }).click();
+    await expect(page.getByTestId("gemba-add-prompt-dialog")).toBeHidden({
+      timeout: 15_000,
+    });
     await expect(page.getByTestId("authoring-question")).toHaveCount(1);
 
+    await openGembaAddPrompt(page);
     await page.getByTestId("gemba-question-prompt").fill(secondPrompt);
     await page.getByRole("button", { name: "Add prompt" }).click();
+    await expect(page.getByTestId("gemba-add-prompt-dialog")).toBeHidden({
+      timeout: 15_000,
+    });
     await expect(page.getByTestId("authoring-question")).toHaveCount(2);
 
     await page.getByTestId("publish-gemba-definition").click();
@@ -122,7 +132,7 @@ test.describe("platform reliability after shared RSC refresh", () => {
       unitSelectTestId: "gemba-unit-select",
       submitTestId: "gemba-start-walk",
     });
-    await page.getByRole("button", { name: "Start walk" }).click();
+    await clickExecutionStartSubmit(page, "gemba-start-walk");
     await expect(page).toHaveURL(/\/platform\/gemba\/walks\//);
     await expect(page.getByTestId("gemba-walk-workspace")).toBeVisible();
     await expectWorkspaceHealthy(page);

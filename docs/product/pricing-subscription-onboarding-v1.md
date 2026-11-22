@@ -9,12 +9,13 @@ This document is the commercial and product baseline for Lean Excellence Hub (LE
 ## 1. Commercial principles
 
 1. **Organisation = customer / tenant.**
-2. **Site = primary billable unit.**
-3. **Do not charge per user.** LEH should encourage broad frontline participation in Continuous Improvement rather than penalise adoption.
-4. Core Operational Excellence functionality should remain coherent across plans. Higher tiers primarily add **analytics, financial governance, integration, AI capacity, security/governance and service level**, not arbitrary removal of essential Lean workflows.
-5. Pricing and feature access must be represented through a **plan + entitlement layer**, not hard-coded plan names throughout application code.
-6. Stripe is the billing provider; LEH remains the source of truth for tenant access and entitlements.
-7. Enterprise is **sales-managed / Contact Sales**, not a requirement to build every future enterprise feature before launch.
+2. **Site = primary billable unit** (number of subscribed sites/locations). Price is **per site**, not per person.
+3. **Unlimited employees (memberships) per site on every plan.** No seat caps, headcount bands, or per-user fees. Invitations and onboarding must not be gated by employee count.
+4. **Do not charge per user.** LEH should encourage broad frontline participation in Continuous Improvement rather than penalise adoption.
+5. Core Operational Excellence functionality should remain coherent across plans. Higher tiers primarily add **analytics, financial governance, integration, AI capacity, security/governance and service level**, not arbitrary removal of essential Lean workflows.
+6. Pricing and feature access must be represented through a **plan + entitlement layer**, not hard-coded plan names throughout application code.
+7. Stripe is the billing provider; LEH remains the source of truth for tenant access and entitlements.
+8. Enterprise is **sales-managed / Contact Sales**, not a requirement to build every future enterprise feature before launch.
 
 All prices below are working commercial prices and should be treated as market hypotheses until validated with paying customers. Prices exclude VAT where applicable.
 
@@ -35,18 +36,15 @@ Includes:
 - Gemba
 - Suggestions
 - Actions
-- Projects
-- Problem Solving
-- Training
-- Skills
-- Recognition
-- basic Benefits / Savings tracking
-- standard dashboards and exports
-- standard Lean AI allowance
-- standard support
-- unlimited/generous users
+- Schedule and Templates utilities for entitled modules
+- Standard dashboards and exports **within included modules**
+- LeanAI included at no extra charge, subject to reasonable fair use (lower pooled allowance than Professional — see `leanai-credit-policy-estimates.md`)
+- Standard support
+- Unlimited/generous users (no per-user fee)
 
-Essentials must still allow an organisation to **Assess → Improve → Develop → Prove**. Benefits are therefore not removed from this tier; advanced financial governance is the differentiator.
+Does **not** include Professional modules: Projects, Problem Solving, Training, Skills, Recognition, Benefits / savings portfolio, **paid People HR** (workforce provisioning, job-function HR admin, bulk workforce import).
+
+**Does include (all plans):** colleague invitations, membership/access administration at `/platform/settings/people`, and unlimited users per site.
 
 ### Professional — Run an Operational Excellence system
 
@@ -59,7 +57,7 @@ Everything in Essentials, plus:
 - advanced analytics
 - API and webhooks
 - standard business integrations such as Microsoft 365 / Power Automate / Make.com where available
-- enhanced Lean AI allowance
+- LeanAI included at no extra charge, subject to reasonable fair use
 - richer administration and reporting
 - priority support
 
@@ -77,7 +75,7 @@ Everything in Professional, plus enterprise capabilities as they become availabl
 - advanced / custom integrations
 - enterprise audit and data-governance controls
 - custom retention requirements
-- larger/custom Lean AI allowance
+- LeanAI included at no extra charge, subject to reasonable fair use, with no separate published token quota
 - organisation-wide AI knowledge and pattern detection
 - SLA / named support / onboarding programme
 
@@ -96,7 +94,7 @@ Suggested baseline:
 - direct founder/product support
 - expectation of structured feedback and, where mutually agreed, reference/case-study participation
 
-This plan does not need to appear on the public pricing page.
+This plan does not need to appear on the public pricing page. LeanAI follows the same included fair-use terms as the other paid plans. Founder Pilot does not add a separate token quota or an overage invoice.
 
 ---
 
@@ -110,14 +108,13 @@ Do not introduce complicated volume tiers in v1. Site quantity can initially be 
 
 ### Onboarding / implementation fee
 
-Working baseline:
+**No mandatory setup or deployment fee** in self-service Checkout. Optional bespoke onboarding consultancy may be quoted separately and is never auto-charged.
 
-| Plan | Implementation / onboarding |
-| --- | ---: |
-| Essentials | £1,500 |
-| Professional | £2,500 |
-| Enterprise | Custom |
-| Founder Pilot | Waived or reduced |
+| Plan | Optional consultancy |
+| --- | --- |
+| Essentials / Professional | Quoted separately |
+| Enterprise | Custom programme |
+| Founder Pilot | As agreed in founder offer |
 
 Implementation can include organisation setup, initial hierarchy, framework configuration, training, imports and launch support.
 
@@ -150,7 +147,7 @@ Suggested entitlement categories:
 - advanced analytics
 - API access
 - integration access
-- Lean AI tier / allowance
+- LeanAI inclusion, subject to reasonable fair use
 - enterprise SSO
 - enterprise governance
 - cross-site benchmarking
@@ -161,9 +158,15 @@ Only enforce entitlements for features that actually exist. Future Enterprise fl
 
 ### Lean AI
 
-Do not build metered AI overage billing in v1.
+LeanAI is included in a paid LEH subscription. There is no token overage invoice. Do not advertise unconditional unlimited use. The customer statement is: “Included at no extra charge, subject to reasonable fair use.”
 
-Start with configurable plan allowances and record actual consumption through the existing `ai_usage_events` infrastructure. Use the first customer data to set sensible commercial quotas later.
+The organisation is the shared usage and governance boundary. Site quantity scales the subscription. It does not create a per-person price or a hard quota for each site.
+
+Catalogue fields such as `leanAiMonthlyTokenAllowance` are historical metadata. They are not customer hard quotas, and `start_ai_run` does not read them. Do not activate 500,000 or 2,000,000 token figures as limits without an explicit approved product policy. A null Enterprise value is not a promise of unlimited use.
+
+Record consumption through `ai_usage_events`. An optional monthly token ceiling exists only as organisation governance. It is unset by default. When an authorised administrator sets one, reaching it pauses new LeanAI interactions and leaves other LEH workflows running. Customers do not see provider prices, margins, or internal profitability.
+
+Internal cost monitoring is a later slice, described in [leanai-internal-cost-governance.md](../architecture/leanai-internal-cost-governance.md).
 
 ---
 

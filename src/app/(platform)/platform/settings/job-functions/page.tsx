@@ -32,7 +32,6 @@ export default async function JobFunctionsSettingsPage() {
     >
       <PageHeader
         title="Job functions"
-        description="Define what people do at work. Job functions support training and capability — they do not control application permissions."
         actions={
           <Button variant="outline" size="sm" asChild>
             <AppLink href="/platform/settings" data-testid="settings-back-link">

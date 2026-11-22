@@ -1,9 +1,13 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+
 import {
   groupPlatformNavigation,
   type PlatformNavItem,
 } from "@/modules/platform-shell/navigation";
 
-import { PlatformNavGroup } from "./platform-nav-group";
+import { PlatformNavGroupCollapsible } from "./platform-nav-group-collapsible";
 
 type PlatformNavigationProps = {
   items: PlatformNavItem[];
@@ -14,22 +18,21 @@ export function PlatformNavigation({
   items,
   onNavigate,
 }: PlatformNavigationProps) {
+  const pathname = usePathname();
   const groups = groupPlatformNavigation(items);
 
   return (
-    <nav
-      className="sidebar-scroll flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain px-2 py-2"
-      aria-label="Platform"
-    >
+    <div className="flex flex-col gap-2 px-2 py-2">
       {groups.map((group) => (
-        <PlatformNavGroup
+        <PlatformNavGroupCollapsible
           key={group.section}
           section={group.section}
           label={group.label}
           items={group.items}
+          activePathname={pathname}
           {...(onNavigate ? { onNavigate } : {})}
         />
       ))}
-    </nav>
+    </div>
   );
 }

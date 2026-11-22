@@ -9,13 +9,43 @@ export function CoreSetupBanner({
   nextActionHref,
   nextActionLabel,
   compact = false,
+  operationalSetupIncomplete = false,
 }: {
   core: CoreSetupState;
   nextActionHref: string | null;
   nextActionLabel: string | null;
   compact?: boolean;
+  operationalSetupIncomplete?: boolean;
 }) {
   if (core.readyLabel === "ready" && compact) {
+    if (operationalSetupIncomplete) {
+      return (
+        <Card
+          className="border-primary/20 bg-surface"
+          data-testid="core-setup-banner"
+        >
+          <CardContent className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                Core setup complete
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Skills, recognition, schedules, or training still need content.
+                Continue from Setup when you are ready.
+              </p>
+            </div>
+            <Button variant="outline" size="sm" asChild>
+              <AppLink
+                href="/platform/setup"
+                data-testid="core-setup-next-action"
+              >
+                View operational setup
+              </AppLink>
+            </Button>
+          </CardContent>
+        </Card>
+      );
+    }
     return (
       <Card
         className="border-border bg-surface"
@@ -73,11 +103,17 @@ export function CoreSetupBanner({
       <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-1">
           <p className="text-sm font-medium text-foreground">
-            {core.readyLabel === "ready" ? "Ready to start" : "Core setup"}
+            {core.readyLabel === "ready"
+              ? operationalSetupIncomplete
+                ? "Core setup complete"
+                : "Ready to start"
+              : "Core setup"}
           </p>
           <p className="text-sm text-muted-foreground">
             {core.readyLabel === "ready"
-              ? "Your organisation is ready to use Lean Excellence Hub."
+              ? operationalSetupIncomplete
+                ? "Skills, recognition, schedules, or training still need at least one published item. Open Setup for the next step."
+                : "Your organisation is ready to use Lean Excellence Hub."
               : `${incompleteCount} core ${incompleteCount === 1 ? "step" : "steps"} remaining before you are ready to start.`}
           </p>
         </div>

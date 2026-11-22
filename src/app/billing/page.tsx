@@ -15,6 +15,10 @@ import {
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { redirect } from "next/navigation";
 
+import {
+  billingRecoveryDescription,
+  billingRecoveryTitle,
+} from "@/modules/billing/billing-operational-notices";
 import { createCustomerPortalSession } from "./actions";
 
 export default async function BillingRecoveryPage() {
@@ -57,8 +61,12 @@ export default async function BillingRecoveryPage() {
     <div className="flex min-h-dvh flex-col items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
         <AuthCard
-          title="Subscription paused"
-          description={`${current.organisation_name} is suspended. Operational modules are unavailable. Billing administrators can reactivate from here. Tenant data is retained.`}
+          title={billingRecoveryTitle(snapshot?.billing_state ?? null)}
+          description={billingRecoveryDescription({
+            organisationName: current.organisation_name,
+            billingState: snapshot?.billing_state ?? null,
+            periodEnd: snapshot?.current_period_end ?? null,
+          })}
         >
           <dl className="grid gap-2 text-sm">
             <div className="flex justify-between gap-4">

@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 const getClaims = vi.fn();
+const signOut = vi.fn(async () => ({ error: null }));
 const rpc = vi.fn();
 const redirect = vi.fn((path: string) => {
   throw Object.assign(new Error(`REDIRECT:${path}`), {
@@ -33,13 +34,21 @@ vi.mock("@/platform/http/request-path", () => ({
   readRequestPathname: async () => "/platform/gemba",
 }));
 
+vi.mock("@/platform/env", () => ({
+  getServerEnvironment: () => ({ APP_ORIGIN: "http://127.0.0.1:3000" }),
+  getPublicEnvironment: () => ({
+    NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "test-key",
+  }),
+}));
+
 vi.mock("@/modules/organisations/context", () => ({
   listEligibleOrganisations: async () => [],
 }));
 
 vi.mock("@/platform/supabase/server", () => ({
   createServerSupabaseClient: async () => ({
-    auth: { getClaims },
+    auth: { getClaims, signOut },
     rpc,
   }),
 }));
@@ -60,13 +69,25 @@ describe("requirePlatformAccess", () => {
   it("does not treat a current_identity_state failure as no-access", async () => {
     rpc.mockResolvedValueOnce({
       data: null,
-      error: { code: "PGRST301", message: "JWT expired" },
+      error: { code: "57014", message: "canceling statement" },
     });
 
     await expect(requirePlatformAccess()).rejects.toBeInstanceOf(
       PlatformBoundaryError,
     );
     expect(redirect).not.toHaveBeenCalled();
+  });
+
+  it("redirects to login when current_identity_state fails with a stale session", async () => {
+    rpc.mockResolvedValueOnce({
+      data: null,
+      error: { code: "PGRST301", message: "JWT expired" },
+    });
+
+    await expect(requirePlatformAccess()).rejects.toThrow(
+      "REDIRECT:/login?next=%2Fplatform%2Fgemba",
+    );
+    expect(signOut).toHaveBeenCalledWith({ scope: "local" });
   });
 
   it("redirects to no-access when identity is genuinely missing", async () => {
@@ -83,16 +104,16 @@ describe("requirePlatformAccess", () => {
     await expect(requirePlatformAccess()).rejects.toThrow("REDIRECT:/login");
   });
 
-  it("does not redirect to login when getClaims returns a Supabase error", async () => {
+  it("redirects to login when getClaims returns a recoverable auth error", async () => {
     getClaims.mockResolvedValueOnce({
       data: null,
       error: { code: "PGRST301", message: "JWT expired" },
     });
 
-    await expect(requirePlatformAccess()).rejects.toBeInstanceOf(
-      PlatformBoundaryError,
+    await expect(requirePlatformAccess()).rejects.toThrow(
+      "REDIRECT:/login?next=%2Fplatform%2Fgemba",
     );
-    expect(redirect).not.toHaveBeenCalled();
+    expect(signOut).toHaveBeenCalledWith({ scope: "local" });
   });
 
   it("does not swallow Next.js dynamic-rendering control errors", async () => {

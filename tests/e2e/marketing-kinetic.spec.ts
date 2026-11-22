@@ -41,21 +41,33 @@ test("homepage story is reachable from the header and has no playground", async 
   expect(errors).toEqual([]);
 });
 
-test("hero actions reach the platform and account creation", async ({
+test("hero actions reach demo booking, early access, sign-in and platform sections", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
 
-  await page.getByRole("link", { name: "Explore the platform" }).click();
+  const hero = page.locator("#connect");
+  await hero.getByRole("link", { name: "Book a demo" }).click();
+  await expect(page).toHaveURL(/\/demo/);
+
+  await page.goto("/");
+  await hero.getByRole("link", { name: "Get free access" }).click();
+  await expect(page).toHaveURL(/\/early-access/);
+
+  await page.goto("/");
+  await page.getByRole("link", { name: "Sign in" }).first().click();
+  await expect(page).toHaveURL(/\/login/);
+
+  await page.goto("/");
+  await page
+    .getByRole("link", { name: "Explore the platform" })
+    .first()
+    .click();
   await expect(page).toHaveURL(/#platform/);
   await expect(
     page.getByRole("heading", { name: "One connected improvement system." }),
   ).toBeVisible();
-
-  await page.goto("/");
-  await page.getByRole("link", { name: "Create an account" }).first().click();
-  await expect(page).toHaveURL(/\/signup/);
 });
 
 test("mobile homepage keeps native vertical flow without horizontal overflow", async ({
@@ -130,23 +142,21 @@ test("reduced motion lays the story out in normal document flow", async ({
   ).toBeTruthy();
 });
 
-test("vertical wheel over the skills matrix continues the page", async ({
+test("vertical wheel over the finding story continues the page", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/#training-skills");
-  const matrix = page.locator("#training-skills .marketing-matrix-scroll");
-  await expect(matrix).toBeVisible();
-  const box = await matrix.boundingBox();
+  await page.goto("/#why");
+  // Scroll story: the finding story is pinned and wheel input moves the page.
+  const stage = page.locator(".v6-why .v6-hviewport");
+  await expect(stage).toBeVisible();
+  const box = await stage.boundingBox();
 
   if (!box) {
-    throw new Error("Training skills matrix has no box");
+    throw new Error("Finding story stage has no box");
   }
 
-  await page.mouse.move(
-    box.x + box.width / 2,
-    box.y + Math.min(box.height / 2, 48),
-  );
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   const before = await page.evaluate(() => window.scrollY);
   await page.mouse.wheel(0, 480);
   await expect
@@ -166,9 +176,12 @@ test("LeanAI governance is visible without a scroll-scrubbed stage", async ({
     }),
   ).toBeVisible();
   await expect(
-    page.getByText(
-      "LeanAI does not publish frameworks, close actions, grant access or purchase site capacity.",
-    ),
+    page
+      .locator("#leanai")
+      .getByText(
+        "Publishing, closure, access and purchasing stay with a person.",
+        { exact: true },
+      ),
   ).toBeVisible();
   await expect(page.locator("#leanai")).not.toHaveAttribute("data-beat", /.+/);
 
@@ -182,13 +195,17 @@ test("LeanAI governance is visible without a scroll-scrubbed stage", async ({
 test("selecting a connected step shows that record", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/#why");
-  await page.getByRole("button", { name: /Solve/ }).click();
+  const solve = page
+    .getByRole("tablist", { name: "From one finding" })
+    .getByRole("tab", { name: /Solve/ });
+  await solve.click();
+  await expect(solve).toHaveAttribute("aria-selected", "true");
   await expect(
-    page.getByRole("heading", {
-      name: "Recurring film wander on Packing Line 1",
-    }),
-  ).toBeVisible();
-  await expect(page.getByText("PS-077").first()).toBeVisible();
+    page.locator(".v6-hpanel.is-active .v6-hpanel-body img:visible"),
+  ).toHaveAttribute("src", /step-solve-(light|dark)\.webp$/);
+  await expect(page.locator("#v6-panel-solve")).toBeInViewport({
+    ratio: 0.6,
+  });
 });
 
 test("tablet width keeps the headline, preview and platform reachable", async ({
@@ -198,8 +215,9 @@ test("tablet width keeps the headline, preview and platform reachable", async ({
   await page.goto("/");
   await expect(page.getByRole("heading", { name: HERO })).toBeVisible();
   await expect(
-    page.getByText("Harbourfield Foods Group").first(),
+    page.locator(".v6-hero-composite img:visible").first(),
   ).toBeVisible();
+  await expect(page.getByText(/Harbourfield/)).toHaveCount(0);
   const overflow = await page.evaluate(
     () =>
       document.documentElement.scrollWidth -

@@ -9,6 +9,7 @@ import {
   parkCurrentReview,
   reviewWorkspace,
 } from "./helpers/suggestion-review";
+import { openSuggestionsNewDialog } from "./helpers/form-dialogs";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 const uniqueSuffix = Date.now().toString(36);
@@ -57,14 +58,8 @@ test.describe("NAV-CLICK-001 Suggestions navigation", () => {
     await openSuggestionsHub(page);
 
     const newSuggestion = page.getByTestId("suggestions-new-link");
-    await expect(newSuggestion).toHaveAttribute(
-      "href",
-      "/platform/suggestions/new",
-    );
-    await newSuggestion.click();
-    await expect(page).toHaveURL(/\/platform\/suggestions\/new(?:\?|$)/);
-    await expect(page.getByTestId("new-suggestion-page")).toBeVisible();
-    await expect(page.getByTestId("new-suggestion-form")).toBeVisible();
+    await expect(newSuggestion).toBeVisible();
+    await openSuggestionsNewDialog(page);
 
     await openSuggestionsHub(page);
     const programmes = page.getByTestId("suggestions-programmes-link");
@@ -129,8 +124,8 @@ test.describe("NAV-CLICK-001 Suggestions navigation", () => {
     await newSuggestion.focus();
     await expect(newSuggestion).toBeFocused();
     await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(/\/platform\/suggestions\/new(?:\?|$)/);
-    await expect(page.getByTestId("new-suggestion-page")).toBeVisible();
+    await expect(page.getByTestId("suggestions-new-dialog")).toBeVisible();
+    await expect(page.getByTestId("new-suggestion-form")).toBeVisible();
   });
 
   test("modified click on Programmes keeps the current document", async ({

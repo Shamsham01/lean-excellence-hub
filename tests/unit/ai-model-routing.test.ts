@@ -9,6 +9,7 @@ import {
   problemSolvingModelId,
   resolveLogicalModelId,
   selectCoachTaskModelClass,
+  selectProblemSolvingModelId,
 } from "@/platform/ai/model-routing";
 
 describe("logical model routing", () => {
@@ -54,6 +55,22 @@ describe("logical model routing", () => {
     expect(resolveLogicalModelId("standard", env)).toBe("operator-standard");
     expect(resolveLogicalModelId("deep", env)).toBe("operator-deep");
     expect(AI_MODEL_CLASS_DEFAULTS.economy).toBe("gpt-6-luna");
+  });
+
+  it("routes facilitate and ask to standard while review and challenge stay deep", () => {
+    const env = parseAiEnvironment({
+      AI_MODEL_DEFAULT: "gpt-6.1-sol",
+      AI_MODEL_STANDARD: "operator-standard",
+    });
+    expect(selectProblemSolvingModelId("facilitate", env)).toBe(
+      "operator-standard",
+    );
+    expect(selectProblemSolvingModelId("ask", env)).toBe("operator-standard");
+    expect(selectProblemSolvingModelId("review", env)).toBe("gpt-6.1-sol");
+    expect(selectProblemSolvingModelId("challenge", env)).toBe("gpt-6.1-sol");
+    expect(
+      selectProblemSolvingModelId("facilitate", parseAiEnvironment({})),
+    ).toBe("gpt-6.1-terra");
   });
 
   it("keeps Problem Solving on AI_MODEL_DEFAULT rather than class routing", () => {

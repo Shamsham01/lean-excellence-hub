@@ -1,6 +1,7 @@
 import { MATURITY_FRAMEWORK_BUILDER_FORMAT_NAME } from "@/platform/ai/prompts/maturity-framework-builder";
 import { fakeMaturityBuilderResponse } from "@/platform/ai/providers/fake-maturity-builder";
 import { fakeModuleSetupBuilderResponse } from "@/platform/ai/providers/fake-module-setup-builder";
+import { fakeStageDraftToolResponse } from "@/platform/ai/providers/fake-stage-draft";
 import type {
   AIProvider,
   CreateResponseInput,
@@ -20,6 +21,13 @@ export class FakeAIProvider implements AIProvider {
   ): Promise<CreateResponseResult> {
     const lastUser =
       input.messages.filter((m) => m.role === "user").at(-1)?.content ?? "";
+
+    if (
+      process.env.AI_E2E_INTERRUPT_HARNESS === "1" &&
+      lastUser.includes("leanai-e2e-interrupt-turn")
+    ) {
+      await new Promise((resolve) => setTimeout(resolve, 5_000));
+    }
 
     if (input.structuredOutputFormat?.name === "coach_envelope") {
       return this.coachResponse(lastUser, input.tools);
@@ -102,6 +110,27 @@ export class FakeAIProvider implements AIProvider {
       };
     }
 
+    const stageDraft = fakeStageDraftToolResponse(lastUser, input.tools);
+    if (stageDraft) {
+      return stageDraft;
+    }
+
+    if (lastUser.toLowerCase().includes("propose fishbone")) {
+      return this.envelopeResponse(
+        "A fishbone machine cause is queued for your review.",
+        {
+          proposal_type: "fishbone_cause",
+          payload: {
+            analysis_title: "Film wander fishbone",
+            label: "Guide roller wear after heat soak",
+            category: "machine",
+          },
+          explanation:
+            "Machine branch cause for the 6M fishbone — accept to add it to the diagram.",
+        },
+      );
+    }
+
     if (lastUser.toLowerCase().includes("propose hypothesis")) {
       return this.envelopeResponse(
         "A technical hypothesis remains unverified until tested.",
@@ -168,6 +197,47 @@ export class FakeAIProvider implements AIProvider {
       );
     }
 
+    if (lastUser.toLowerCase().includes("draft proposals")) {
+      return {
+        outputText: "Stage draft proposals are ready for your review.",
+        structuredOutput: {
+          message: "Stage draft proposals are ready for your review.",
+          observations: [],
+          questions: [],
+          warnings: [],
+          source_refs: [],
+          proposals: [
+            {
+              proposal_type: "problem_statement",
+              payload: {
+                statement:
+                  "Film wander on Packing Line 1 after splice events causes misaligned packs.",
+              },
+              explanation:
+                "DEFINE-stage problem statement draft for acceptance.",
+            },
+            {
+              proposal_type: "current_condition_item",
+              payload: {
+                category: "observation",
+                statement:
+                  "Misalignment is reported after splice events on Line 1.",
+              },
+              explanation:
+                "Current-condition observation draft for acceptance.",
+            },
+          ],
+        },
+        toolCalls: [],
+        usage: {
+          inputTokens: 40,
+          outputTokens: 120,
+          cachedInputTokens: 0,
+          reasoningTokens: 0,
+        },
+      };
+    }
+
     if (lastUser.toLowerCase().includes("hypothesis test")) {
       return this.envelopeResponse(
         "Consider a controlled test under hot-running conditions.",
@@ -219,6 +289,22 @@ export class FakeAIProvider implements AIProvider {
     lastUser: string,
     tools: Array<Record<string, unknown>>,
   ): CreateResponseResult {
+    if (extractUserRequest(lastUser).toLowerCase().includes("format sample")) {
+      return this.coachJson(
+        [
+          "## Next step",
+          "",
+          "Publish one **shared** standard.",
+          "",
+          "- Confirm the owner",
+          "- Record the gap",
+          "",
+          "Details are in [the public note](https://example.com/setup).",
+        ].join("\n"),
+        "/platform",
+      );
+    }
+
     if (
       lastUser.includes("IGNORE PREVIOUS INSTRUCTIONS") ||
       lastUser.includes("delete all cases")

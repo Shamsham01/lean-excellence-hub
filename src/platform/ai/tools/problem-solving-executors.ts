@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { parseAuthorisedProblemSolvingHistory } from "@/modules/problem-solving/authorised-history";
 import { addToAllowlist } from "@/platform/ai/source-allowlist";
+import type { ProblemSolvingProposalBuffer } from "@/platform/ai/tools/proposal-tool-buffer";
 import type { ProblemSolvingToolName } from "@/platform/ai/tools/problem-solving-schemas";
 import { parseToolArgs } from "@/platform/ai/tools/problem-solving-schemas";
 import type { ToolExecutionResult, TypedSourceRef } from "@/platform/ai/types";
@@ -12,7 +14,43 @@ type ToolContext = {
   supabase: SupabaseClient;
   caseId: string;
   allowlist: SourceAllowlist;
+  proposalBuffer: ProblemSolvingProposalBuffer;
 };
+
+function queueFromToolArgs(
+  ctx: ToolContext,
+  proposalType:
+    | "problem_statement"
+    | "target_condition"
+    | "current_condition_item"
+    | "hypothesis"
+    | "containment"
+    | "countermeasure"
+    | "five_why_chain"
+    | "fishbone_cause"
+    | "universal_action"
+    | "effectiveness_check"
+    | "sustainment_item"
+    | "lessons_learned",
+  args: Record<string, unknown>,
+) {
+  const explanation = String(args.explanation ?? "");
+  const payload = { ...args };
+  delete payload.explanation;
+  const queued = ctx.proposalBuffer.queue(
+    proposalType,
+    payload as never,
+    explanation,
+  );
+  return {
+    status: "succeeded" as const,
+    resultMetadata: {
+      queued_proposal_type: queued.proposal_type,
+      status: "pending_human_approval",
+    },
+    sourceRefsAdded: [] as TypedSourceRef[],
+  };
+}
 
 async function loadCaseDetail(ctx: ToolContext): Promise<CaseDetail> {
   const { data, error } = await ctx.supabase.rpc("get_problem_solving_detail", {
@@ -227,6 +265,30 @@ export async function executeProblemSolvingTool(
           sourceRefsAdded,
         };
       }
+      case "propose_problem_statement":
+        return queueFromToolArgs(ctx, "problem_statement", args);
+      case "propose_target_condition":
+        return queueFromToolArgs(ctx, "target_condition", args);
+      case "propose_current_condition_item":
+        return queueFromToolArgs(ctx, "current_condition_item", args);
+      case "propose_hypothesis":
+        return queueFromToolArgs(ctx, "hypothesis", args);
+      case "propose_containment":
+        return queueFromToolArgs(ctx, "containment", args);
+      case "propose_countermeasure":
+        return queueFromToolArgs(ctx, "countermeasure", args);
+      case "propose_five_why_chain":
+        return queueFromToolArgs(ctx, "five_why_chain", args);
+      case "propose_fishbone_cause":
+        return queueFromToolArgs(ctx, "fishbone_cause", args);
+      case "propose_universal_action":
+        return queueFromToolArgs(ctx, "universal_action", args);
+      case "propose_effectiveness_check":
+        return queueFromToolArgs(ctx, "effectiveness_check", args);
+      case "propose_sustainment_item":
+        return queueFromToolArgs(ctx, "sustainment_item", args);
+      case "propose_lessons_learned":
+        return queueFromToolArgs(ctx, "lessons_learned", args);
       case "search_related_problem_solving_cases": {
         const limit = (args.limit as number | undefined) ?? 5;
         const { data, error } = await ctx.supabase.rpc(
@@ -236,14 +298,18 @@ export async function executeProblemSolvingTool(
             target_limit: limit,
           },
         );
-        if (error) throw error;
-        const cases = Array.isArray(data) ? data : [];
+        if (error) {
+          return {
+            status: "failed",
+            resultMetadata: { error: "problem_solving_history_unavailable" },
+            sourceRefsAdded: [],
+          };
+        }
+        const cases = parseAuthorisedProblemSolvingHistory(data);
         for (const item of cases) {
-          if (item.case_id) {
-            const ref = { problem_solving_case_id: String(item.case_id) };
-            addToAllowlist(ctx.allowlist, ref);
-            sourceRefsAdded.push(ref);
-          }
+          const ref = { problem_solving_case_id: item.caseId };
+          addToAllowlist(ctx.allowlist, ref);
+          sourceRefsAdded.push(ref);
         }
         return {
           status: "succeeded",

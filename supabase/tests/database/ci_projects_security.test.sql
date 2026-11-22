@@ -1,6 +1,6 @@
 begin;
 
-select plan(23);
+select plan(24);
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
   raw_app_meta_data, raw_user_meta_data, is_sso_user, is_anonymous
@@ -229,11 +229,15 @@ select 'project', public.create_improvement_project(
   'Lower downtime and scrap'
 );
 
-reset role;
+select ok(
+  public.update_ci_project_draft(
+    (select id from project_ids where key = 'project'),
+    target_methodology_version_id := (select id from project_ids where key = 'methodology_version')
+  ),
+  'draft edit RPC can set the published methodology version'
+);
 
-update public.ci_projects project_table
-set methodology_version_id = (select id from project_ids where key = 'methodology_version')
-where project_table.id = (select id from project_ids where key = 'project');
+reset role;
 
 insert into public.ci_project_team_assignments (
   organisation_id,

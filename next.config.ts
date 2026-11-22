@@ -2,6 +2,20 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   agentRules: false,
+  async redirects() {
+    return [
+      {
+        source: "/platform/scheduling",
+        destination: "/platform/schedule",
+        permanent: true,
+      },
+      {
+        source: "/platform/scheduling/:path*",
+        destination: "/platform/schedule/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {
@@ -15,6 +29,27 @@ const nextConfig: NextConfig = {
       {
         source: "/invitations/:path*",
         headers: [{ key: "Cache-Control", value: "private, no-store" }],
+      },
+      {
+        source: "/org_admin",
+        headers: [
+          { key: "Cache-Control", value: "private, no-store" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      },
+      {
+        source: "/org_admin/:path*",
+        headers: [
+          { key: "Cache-Control", value: "private, no-store" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      },
+      {
+        source: "/api/org-admin/:path*",
+        headers: [
+          { key: "Cache-Control", value: "private, no-store" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
       },
     ];
   },

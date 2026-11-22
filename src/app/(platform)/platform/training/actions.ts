@@ -16,6 +16,7 @@ import {
   toTrainingCatalogErrorMessage,
   trainingCatalogManageDeniedMessage,
 } from "@/modules/training/catalog-errors";
+import { assertPlanModuleWrite } from "@/modules/billing/assert-module-write";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 const CATALOGUE_PATHS = [
@@ -25,6 +26,10 @@ const CATALOGUE_PATHS = [
 ] as const;
 
 async function requireTrainingCatalogManage() {
+  const moduleGate = await assertPlanModuleWrite("training");
+  if (!moduleGate.ok) {
+    return { error: moduleGate.error };
+  }
   const canManage = await currentMemberHasPermission(
     TRAINING_PERMISSIONS.catalogManage,
   );

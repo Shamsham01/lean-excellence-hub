@@ -11,7 +11,7 @@ import {
   validateEvidenceFile,
 } from "@/lib/attachments/evidence-file-rules";
 import { isEvidenceImageMimeType } from "@/lib/attachments/evidence-preview";
-import { createBrowserSupabaseClient } from "@/platform/supabase/browser";
+import { uploadEvidenceFileClient } from "@/lib/attachments/upload-evidence-client";
 
 export type EvidenceItem = {
   id: string;
@@ -48,6 +48,7 @@ type EvidenceUploaderProps = {
   ) => Promise<{ error?: string; attachmentId?: string; storagePath?: string }>;
   onConfirm: (attachmentId: string) => Promise<{ error?: string }>;
   onLink: (attachmentId: string) => Promise<{ error?: string }>;
+  onUploadSuccess?: (item: EvidenceItem) => void;
 };
 
 export function evidenceMatchesQuestion(
@@ -74,6 +75,7 @@ export function EvidenceUploader({
   onInitiate,
   onConfirm,
   onLink,
+  onUploadSuccess,
 }: EvidenceUploaderProps) {
   const [state, setState] = useState<UploadState>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -104,50 +106,24 @@ export function EvidenceUploader({
         return;
       }
 
-      const init = await onInitiate(
-        validation.filename,
-        validation.mimeType,
-        validation.byteSize,
-      );
-      if (init.error || !init.attachmentId || !init.storagePath) {
+      const uploaded = await uploadEvidenceFileClient(file, {
+        onInitiate,
+        onConfirm,
+        onLink,
+      });
+      if (!uploaded.ok) {
         setState("error");
-        setError(init.error ?? "Could not start upload");
+        setError(uploaded.error);
         return;
       }
 
-      const supabase = createBrowserSupabaseClient();
-      const { error: storageError } = await supabase.storage
-        .from("organisation-evidence")
-        .upload(init.storagePath, file, { upsert: false });
-
-      if (storageError) {
-        setState("error");
-        setError(storageError.message);
-        return;
-      }
-
-      const confirm = await onConfirm(init.attachmentId);
-      if (confirm.error) {
-        setState("error");
-        setError(confirm.error);
-        return;
-      }
-
-      const link = await onLink(init.attachmentId);
-      if (link.error) {
-        setState("error");
-        setError(link.error);
-        return;
-      }
-
-      const attachmentId = init.attachmentId;
-      const storagePath = init.storagePath;
+      const attachmentId = uploaded.attachmentId;
       const pendingItem: EvidenceItem = {
         id: attachmentId,
         filename: validation.filename,
         mime_type: validation.mimeType,
         byte_size: validation.byteSize,
-        storage_object_path: storagePath,
+        storage_object_path: uploaded.storageObjectPath,
       };
       if (isEvidenceImageMimeType(validation.mimeType)) {
         pendingItem.preview_url = URL.createObjectURL(file);
@@ -172,13 +148,21 @@ export function EvidenceUploader({
         ...current.filter((item) => item.id !== attachmentId),
         pendingItem,
       ]);
+      onUploadSuccess?.(pendingItem);
       setState("success");
       // Do not router.refresh() here. Delayed refreshes collide with answer
       // saves (5S evidence race), and maturity evidence linking no longer
       // revalidates the assessment RSC tree after photo upload.
       setTimeout(() => setState("idle"), 2000);
     },
-    [canEdit, createdItemExtras, onInitiate, onConfirm, onLink],
+    [
+      canEdit,
+      createdItemExtras,
+      onInitiate,
+      onConfirm,
+      onLink,
+      onUploadSuccess,
+    ],
   );
 
   function onFileChange(files: FileList | null) {
@@ -217,7 +201,7 @@ export function EvidenceUploader({
               <input
                 type="file"
                 className="sr-only"
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/*"
                 capture="environment"
                 onChange={(e) => onFileChange(e.target.files)}
                 data-testid="evidence-camera-input"

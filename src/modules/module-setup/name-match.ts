@@ -19,7 +19,7 @@ export function findExactConfigurationNameMatch(
 }
 
 export function configurationNameWarning(input: {
-  noun: "5S standard" | "Gemba definition";
+  noun: "5S standard" | "Gemba definition" | "Training catalogue";
   existingName: string;
 }): string {
   return `A ${input.noun} named ‘${input.existingName}’ already exists. Review it before creating another.`;

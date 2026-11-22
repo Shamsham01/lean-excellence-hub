@@ -1,6 +1,6 @@
 begin;
 
-select plan(81);
+select plan(83);
 
 -- ---------------------------------------------------------------------------
 -- Users and organisations
@@ -681,11 +681,32 @@ select ok(
 );
 
 select ok(
+  public.grant_role_version(
+    (select id from s2b1_ids where key = 'organisation'),
+    (select id from s2b1_ids where key = 'outsider_membership'),
+    (select id from s2b1_ids where key = 'reviewer_role'),
+    'unit_subtree',
+    (select id from s2b1_ids where key = 'unit_root')
+  ) is not null,
+  'outsider receives review scope for reassignment fixture'
+);
+
+select ok(
+  public.assign_membership_job_function(
+    (select id from s2b1_ids where key = 'outsider_membership'),
+    (select id from s2b1_ids where key = 'job_function'),
+    true,
+    (select id from s2b1_ids where key = 'unit_root')
+  ) is not null,
+  'outsider primary job assignment for reassignment fixture'
+);
+
+select ok(
   public.assign_suggestion_reviewer(
     (select id from s2b1_ids where key = 'reassign_suggestion'),
-    (select id from s2b1_ids where key = 'owner_membership')
+    (select id from s2b1_ids where key = 'outsider_membership')
   ) is not null,
-  'owner initially assigned as reviewer'
+  'manager initially assigns non-author reviewer'
 );
 
 select ok(

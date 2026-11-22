@@ -7,7 +7,13 @@ import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { formatFiveSAuditScoreBand } from "@/modules/5s/audit-status";
 import { FIVE_S_PERMISSIONS } from "@/modules/operational/permissions";
+import {
+  loadWorkplaceRecordFallback,
+  loadWorkplaceRecordView,
+} from "@/modules/workplace/access";
+import { loadFiveSAuditLinkedActions } from "@/modules/5s/load-audit-linked-actions";
 import { resolveFiveSScoringScale } from "@/modules/5s/scoring-scale";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
@@ -18,6 +24,15 @@ export default async function FiveSAuditPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const workplaceView = await loadWorkplaceRecordView({
+    readPermission: FIVE_S_PERMISSIONS.read,
+    module: "five_s",
+    recordId: id,
+    title: "5S audit",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
   const canEdit = await currentMemberHasPermission(
     FIVE_S_PERMISSIONS.auditPerform,
@@ -26,12 +41,20 @@ export default async function FiveSAuditPage({
   const { data: audit } = await supabase
     .from("five_s_audits")
     .select(
-      "id, status, submission_id, standard_version_id, overall_score_percent, target_percent, result_status, standard_name_snapshot, unit_name_snapshot, completed_at",
+      "id, status, submission_id, standard_version_id, overall_score_percent, target_percent, result_status, standard_name_snapshot, unit_name_snapshot, completed_at, site_unit_id",
     )
     .eq("id", id)
     .maybeSingle();
 
-  if (!audit) notFound();
+  if (!audit) {
+    const workplaceRecord = await loadWorkplaceRecordFallback({
+      module: "five_s",
+      recordId: id,
+      title: "5S audit",
+    });
+    if (workplaceRecord) return workplaceRecord;
+    notFound();
+  }
 
   const { data: version } = await supabase
     .from("five_s_standard_versions")
@@ -115,6 +138,18 @@ export default async function FiveSAuditPage({
     }
   }
 
+  const { data: actionContextRows } = await supabase
+    .from("five_s_action_context")
+    .select("question_id")
+    .eq("audit_id", id);
+
+  const actionCountsByQuestion: Record<string, number> = {};
+  for (const row of actionContextRows ?? []) {
+    if (!row.question_id) continue;
+    actionCountsByQuestion[row.question_id] =
+      (actionCountsByQuestion[row.question_id] ?? 0) + 1;
+  }
+
   const evidence = [];
   for (const link of evidenceLinks ?? []) {
     const attachment = attachmentsById.get(link.attachment_id);
@@ -132,6 +167,9 @@ export default async function FiveSAuditPage({
     }
   }
 
+  const linkedActions =
+    audit.status === "completed" ? await loadFiveSAuditLinkedActions(id) : [];
+
   if (audit.status === "completed") {
     return (
       <div
@@ -148,8 +186,13 @@ export default async function FiveSAuditPage({
               {audit.overall_score_percent}%
             </p>
             <p className="text-sm text-muted-foreground">
-              Target {audit.target_percent}% · {audit.result_status} ·{" "}
-              {audit.unit_name_snapshot}
+              {[
+                `Target ${audit.target_percent}%`,
+                formatFiveSAuditScoreBand(audit.result_status),
+                audit.unit_name_snapshot,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             </p>
             <Button variant="outline" asChild className="mt-4">
               <AppLink
@@ -165,6 +208,7 @@ export default async function FiveSAuditPage({
           sections={sections}
           answers={answers}
           evidence={evidence}
+          linkedActions={linkedActions}
         />
       </div>
     );
@@ -177,6 +221,7 @@ export default async function FiveSAuditPage({
         description={audit.unit_name_snapshot ?? "In progress"}
       />
       <FiveSAuditWorkspace
+        siteUnitId={audit.site_unit_id}
         auditId={id}
         status={audit.status}
         sections={sections}
@@ -186,6 +231,7 @@ export default async function FiveSAuditPage({
         canComplete={canEdit && audit.status === "in_progress"}
         scoringScale={resolveFiveSScoringScale(version?.scoring_scale)}
         onComplete={completeFiveSAudit}
+        actionCountsByQuestion={actionCountsByQuestion}
       />
     </div>
   );

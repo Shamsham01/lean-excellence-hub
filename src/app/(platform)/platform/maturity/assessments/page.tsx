@@ -1,11 +1,31 @@
+import { StartAssessmentDialog } from "@/components/maturity/start-assessment-dialog";
 import { PageHeader } from "@/components/platform/page-header";
+import { loadStartAssessmentDialogProps } from "@/lib/maturity/load-start-assessment-props";
+import { MATURITY_PERMISSIONS } from "@/modules/maturity/scoring";
 import { AssessmentStatusBadge } from "@/modules/maturity/status-badges";
+import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 import { AppLink } from "@/components/ui/app-link";
-import { Button } from "@/components/ui/button";
 
 export default async function AssessmentsListPage() {
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: MATURITY_PERMISSIONS.read,
+    module: "maturity",
+    title: "Maturity",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
+  const [canAssessFormal, canAssessSelf] = await Promise.all([
+    currentMemberHasPermission(MATURITY_PERMISSIONS.assessFormal),
+    currentMemberHasPermission(MATURITY_PERMISSIONS.assessSelf),
+  ]);
+  const canStart = canAssessFormal || canAssessSelf;
+  const startAssessmentProps = canStart
+    ? await loadStartAssessmentDialogProps()
+    : null;
   const { data: assessments } = await supabase
     .from("maturity_assessments")
     .select("id, status, assessment_type, updated_at, unit_id")
@@ -34,16 +54,13 @@ export default async function AssessmentsListPage() {
     >
       <PageHeader
         title="Assessments"
-        description="Formal and self assessments across organisational units."
         actions={
-          <Button asChild>
-            <AppLink
-              href="/platform/maturity/assessments/new"
-              data-testid="maturity-start-assessment-link"
-            >
-              Start assessment
-            </AppLink>
-          </Button>
+          startAssessmentProps ? (
+            <StartAssessmentDialog
+              {...startAssessmentProps}
+              triggerTestId="maturity-start-assessment-link"
+            />
+          ) : null
         }
       />
 

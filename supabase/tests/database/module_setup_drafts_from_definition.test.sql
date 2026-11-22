@@ -247,6 +247,7 @@ select 'five_s_standard', public.create_five_s_standard_draft_from_definition(
     'name', 'LEH Workplace 5S Standard',
     'description', 'A starting point for the packing area.',
     'thresholdPercent', 80,
+    'scoringScale', jsonb_build_object('min', 1, 'max', 5, 'step', 1),
     'categories', jsonb_build_array(
       jsonb_build_object(
         'name', 'Sort',
@@ -257,8 +258,8 @@ select 'five_s_standard', public.create_five_s_standard_draft_from_definition(
             'helpText', 'Look at the area in use.'
           ),
           jsonb_build_object(
-            'prompt', 'What remains that is not needed?',
-            'questionType', 'short_text',
+            'prompt', 'How consistently is the area sorted?',
+            'questionType', 'score',
             'helpText', null
           )
         )
@@ -315,14 +316,14 @@ select is(
 
 select is(
   (
-    select scoring_row.contributes_to_score
+    select scoring_row.scoring_metadata
     from public.five_s_question_scoring scoring_row
     join public.template_questions question_row
       on question_row.id = scoring_row.question_id
-    where question_row.prompt = 'What remains that is not needed?'
+    where question_row.prompt = 'How consistently is the area sorted?'
   ),
-  false,
-  'text questions do not contribute to the score'
+  '{"type":"direct"}'::jsonb,
+  'score questions receive direct scoring metadata'
 );
 
 select throws_ok(

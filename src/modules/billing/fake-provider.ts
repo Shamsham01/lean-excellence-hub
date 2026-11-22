@@ -114,6 +114,13 @@ function periodWindow(now = Date.now()) {
   };
 }
 
+/** E2E-only: `trialing` simulates Stripe trial checkout without live keys. */
+function fakeCheckoutSubscriptionStatus() {
+  const configured =
+    process.env.BILLING_FAKE_INITIAL_SUBSCRIPTION_STATUS?.toLowerCase();
+  return configured === "trialing" ? "trialing" : "active";
+}
+
 function toProviderSubscription(
   subscription: FakeSubscription,
 ): ProviderSubscription {
@@ -434,6 +441,7 @@ export function createFakeBillingProvider(
         customerId,
         subscriptionId,
         snapshot,
+        stripeLivemode: null,
       };
     },
     hydrateCheckoutSession(input) {
@@ -517,7 +525,7 @@ export function createFakeBillingProvider(
         billingInterval: checkout.interval,
         siteQuantity: checkout.siteQuantity,
         priceId: `price_fake_${checkout.planCode}_${checkout.interval}`,
-        status: "active",
+        status: fakeCheckoutSubscriptionStatus(),
         cancelAtPeriodEnd: false,
         ...periods,
       };
@@ -531,6 +539,7 @@ export function createFakeBillingProvider(
         customerId: checkout.customerId,
         subscriptionId,
         snapshot: snapshotFromSubscription(subscription, createdAt),
+        stripeLivemode: null,
       };
     },
     simulateSubscriptionEvent(subscriptionId, eventType, createdAt) {
@@ -554,6 +563,7 @@ export function createFakeBillingProvider(
         customerId: subscription.customerId,
         subscriptionId,
         snapshot: snapshotFromSubscription(subscription, eventAt),
+        stripeLivemode: null,
       };
     },
     simulateInvoiceEvent(subscriptionId, eventType, createdAt) {
@@ -577,6 +587,7 @@ export function createFakeBillingProvider(
         organisationId: subscription.organisationId,
         customerId: subscription.customerId,
         subscriptionId,
+        stripeLivemode: null,
         snapshot: snapshotFromSubscription(subscription, eventAt, {
           billingState:
             eventType === "invoice.payment_failed"

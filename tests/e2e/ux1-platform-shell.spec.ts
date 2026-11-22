@@ -1,11 +1,14 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { DEMO_ORGANISATION } from "../../scripts/demo-seed/constants";
 import { expectPlatformOrganisationName } from "./helpers/platform-home";
 import { signInAsDemoUser } from "./helpers/demo-auth";
 import {
   ensurePlatformE2eUser,
   platformE2eCredentials,
 } from "./helpers/platform-auth";
+import { openMobileDrawer } from "./helpers/open-mobile-drawer";
+import { platformSidebarSignOut } from "./helpers/platform-sign-out";
 
 const hasSupabaseE2e = process.env.E2E_WITH_SUPABASE === "1";
 
@@ -13,8 +16,14 @@ async function loginPlatformE2e(page: Page) {
   await page.goto("/login");
   await page.getByLabel("Email").fill(platformE2eCredentials.email);
   await page.getByLabel("Password").fill(platformE2eCredentials.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/platform/);
+  await Promise.all([
+    page.waitForURL(/\/platform/, { timeout: 30_000 }),
+    page.getByRole("button", { name: /sign in/i }).click(),
+  ]);
+  await expectPlatformOrganisationName(
+    page,
+    platformE2eCredentials.organisationName,
+  );
 }
 
 test.describe("UX1 platform shell", () => {
@@ -40,7 +49,10 @@ test.describe("UX1 platform shell", () => {
       page,
       platformE2eCredentials.organisationName,
     );
-    await expect(page.getByText("Lean Excellence Hub")).toBeVisible();
+    const sidebar = page.getByTestId("platform-desktop-sidebar");
+    await expect(
+      sidebar.getByRole("link", { name: "Lean Excellence Hub" }),
+    ).toBeVisible();
     await expect(
       page.getByRole("navigation", { name: "Platform" }),
     ).toBeVisible();
@@ -51,11 +63,12 @@ test.describe("UX1 platform shell", () => {
       page.getByRole("link", { name: "Settings", exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Toggle theme" }),
+      page.getByTestId("platform-topbar").getByTestId("platform-theme-toggle"),
     ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Sign out", exact: true }),
-    ).toBeVisible();
+    await expect(platformSidebarSignOut(page)).toBeVisible();
+    await expect(page.getByTestId("platform-desktop-main-chrome")).toHaveCount(
+      0,
+    );
   });
 
   test("desktop navigation highlights active nested routes", async ({
@@ -83,12 +96,16 @@ test.describe("UX1 platform shell", () => {
     await page.setViewportSize({ width: 1280, height: 500 });
     await signInAsDemoUser(page, "admin");
 
-    const nav = page.getByRole("navigation", { name: "Platform" });
+    const sidebar = page.getByTestId("platform-desktop-sidebar");
+    const nav = sidebar.getByRole("navigation", { name: "Platform" });
     await expect(nav).toBeVisible();
-    await expect(page.getByText("Lean Excellence Hub")).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Sign out", exact: true }),
+      sidebar.getByRole("link", { name: "Lean Excellence Hub" }),
     ).toBeVisible();
+    await expect(sidebar.getByTestId("platform-sidebar-org-name")).toHaveText(
+      DEMO_ORGANISATION.name,
+    );
+    await expect(platformSidebarSignOut(page)).toBeVisible();
 
     const scrollMetrics = await nav.evaluate((element) => ({
       scrollHeight: element.scrollHeight,
@@ -101,10 +118,10 @@ test.describe("UX1 platform shell", () => {
       await nav.evaluate((element) => {
         element.scrollTop = element.scrollHeight;
       });
-      await expect(page.getByText("Lean Excellence Hub")).toBeVisible();
       await expect(
-        page.getByRole("button", { name: "Sign out", exact: true }),
+        sidebar.getByRole("link", { name: "Lean Excellence Hub" }),
       ).toBeVisible();
+      await expect(platformSidebarSignOut(page)).toBeVisible();
     }
   });
 
@@ -112,18 +129,14 @@ test.describe("UX1 platform shell", () => {
     await page.setViewportSize({ width: 375, height: 812 });
     await loginPlatformE2e(page);
 
-    await expect(
-      page.getByRole("navigation", { name: "Platform" }),
-    ).not.toBeVisible();
+    await expect(page.getByTestId("platform-desktop-sidebar")).toBeHidden();
     await expect(
       page.getByRole("button", { name: "Open navigation menu" }),
     ).toBeVisible();
 
-    await page.getByRole("button", { name: "Open navigation menu" }).click();
-    const nav = page.getByRole("navigation", { name: "Platform" });
-    await expect(nav).toBeVisible();
+    const { nav } = await openMobileDrawer(page);
 
-    await page.getByRole("link", { name: "Actions", exact: true }).click();
+    await nav.getByRole("link", { name: "Actions", exact: true }).click();
     await expect(page).toHaveURL(/\/platform\/actions/);
     await expect(nav).not.toBeVisible();
   });

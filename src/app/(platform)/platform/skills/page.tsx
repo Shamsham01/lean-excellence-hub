@@ -1,11 +1,18 @@
+import { EmptyState } from "@/components/platform/empty-state";
+import { ModulePageInsightsDeferred } from "@/components/platform/module-page-insights-deferred";
 import { SkillsFrameworkPath } from "@/components/skills/skills-framework-path";
-import { MetricCard } from "@/components/platform/metric-card";
+import { WorkplaceSharedRecords } from "@/components/workplace/workplace-shared-records";
 import { PageHeader } from "@/components/platform/page-header";
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
+import { parseAnalyticsRangeDays } from "@/modules/platform-analytics/date-range";
+import { buildAnalyticsDateRangeForOrganisation } from "@/modules/platform-analytics/date-range.server";
 import { SKILLS_PERMISSIONS } from "@/modules/operational/permissions";
 import { currentMemberHasPermission } from "@/modules/platform-shell/permissions";
+import { loadWorkplaceModuleView } from "@/modules/workplace/access";
 import type { SkillsSetupSnapshot } from "@/modules/skills/setup-path";
+import { Award } from "lucide-react";
+
 import { createServerSupabaseClient } from "@/platform/supabase/server";
 
 function latestDraftParentId(
@@ -23,7 +30,23 @@ function latestDraftParentId(
   );
 }
 
-export default async function SkillsOverviewPage() {
+export default async function SkillsOverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
+    parseAnalyticsRangeDays(params.range),
+  );
+  const workplaceView = await loadWorkplaceModuleView({
+    readPermission: SKILLS_PERMISSIONS.read,
+    module: "skills",
+    title: "Skills",
+    denyWithoutAccess: false,
+  });
+  if (workplaceView) return workplaceView;
+
   const supabase = await createServerSupabaseClient();
   const [canManageCatalog, canManageRequirements, dashboardResult] =
     await Promise.all([
@@ -41,6 +64,7 @@ export default async function SkillsOverviewPage() {
     { count: skillCount },
     { data: scaleVersions },
     { data: standardVersions },
+    { data: setupDrafts },
   ] = await Promise.all([
     supabase
       .from("skills")
@@ -52,6 +76,12 @@ export default async function SkillsOverviewPage() {
     supabase
       .from("skill_capability_set_versions")
       .select("id, capability_set_id, status, created_at"),
+    supabase
+      .from("skill_setup_bundles")
+      .select("id, title, source, status")
+      .eq("status", "draft")
+      .order("created_at", { ascending: false })
+      .limit(5),
   ]);
 
   const snapshot: SkillsSetupSnapshot = {
@@ -82,9 +112,18 @@ export default async function SkillsOverviewPage() {
     <div className="flex min-w-0 flex-col gap-8" data-testid="skills-overview">
       <PageHeader
         title="Skills"
-        description="Set up how capability is measured, which skills the organisation needs, and what each job function requires."
         actions={
           <div className="flex flex-wrap gap-2">
+            {canManageCatalog ? (
+              <Button size="sm" asChild>
+                <AppLink
+                  href="/platform/skills/setup"
+                  data-testid="skills-setup-link"
+                >
+                  Set up skills
+                </AppLink>
+              </Button>
+            ) : null}
             <Button variant="outline" size="sm" asChild>
               <AppLink
                 href="/platform/skills/catalog"
@@ -104,18 +143,51 @@ export default async function SkillsOverviewPage() {
           </div>
         }
       />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <MetricCard
-          label="Skill coverage"
-          value={coverage != null ? `${coverage}%` : "—"}
+      {canManageCatalog && (skillCount ?? 0) === 0 ? (
+        <EmptyState
+          title="Publish your first skills"
+          description="Open skills setup to publish your first capability set."
+          actionLabel="Open skills setup"
+          actionHref="/platform/skills/setup"
+          icon={<Award className="size-5 text-primary" aria-hidden />}
         />
-        <MetricCard label="Active skills" value={skillCount ?? 0} />
-      </div>
+      ) : null}
+      {(setupDrafts ?? []).length > 0 ? (
+        <section
+          className="flex flex-col gap-2"
+          data-testid="skills-setup-drafts"
+        >
+          <h2 className="text-base font-medium">Setup drafts</h2>
+          <ul className="flex flex-col gap-2">
+            {(setupDrafts ?? []).map((draft) => (
+              <li key={draft.id}>
+                <AppLink
+                  href={`/platform/skills/setup/drafts/${draft.id}`}
+                  className="text-sm underline"
+                >
+                  {draft.title}
+                </AppLink>
+                <span className="text-sm text-muted-foreground">
+                  {" "}
+                  · {draft.source} · not published
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
       <SkillsFrameworkPath
         snapshot={snapshot}
         canManageCatalog={canManageCatalog}
         canManageRequirements={canManageRequirements}
       />
+      <ModulePageInsightsDeferred
+        module="skills"
+        rangeDays={analyticsRange.days}
+        testId="skills-analytics"
+        showDateRange={false}
+      />
+      <WorkplaceSharedRecords module="skills" />
     </div>
   );
 }

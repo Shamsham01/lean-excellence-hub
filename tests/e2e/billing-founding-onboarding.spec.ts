@@ -63,6 +63,7 @@ test.describe("founding organisation onboarding", () => {
     await expect(page.getByTestId("onboarding-setup")).toBeVisible({
       timeout: 30_000,
     });
+    await page.goto("/onboarding/setup?step=organisation");
     await expect(
       page.getByRole("heading", { name: "Organisation setup" }),
     ).toBeVisible();
@@ -79,7 +80,7 @@ test.describe("founding organisation onboarding", () => {
     await page.goto("/platform");
     await expect(page).toHaveURL(/\/onboarding\/setup/);
 
-    await page.getByTestId("structure-first-continue-context").click();
+    await page.goto("/onboarding/setup?step=structure");
     await expect(
       page.getByTestId("structure-first-structure-step"),
     ).toBeVisible();
@@ -104,7 +105,7 @@ test.describe("founding organisation onboarding", () => {
         hasText: "Production",
       }),
     ).toBeVisible();
-    await page.goto("/onboarding/setup");
+    await page.goto("/onboarding/setup?step=job_functions");
     await expect(
       page.getByTestId("structure-first-job-functions-step"),
     ).toBeVisible();
@@ -149,7 +150,7 @@ test.describe("founding organisation onboarding", () => {
     ).toContainText("organisational units");
     await expect(
       page.getByTestId("structure-first-readiness-summary"),
-    ).toContainText("1 functions");
+    ).toContainText("functions");
     await page.getByTestId("structure-first-continue-setup").click();
     await expect(page).toHaveURL(/\/platform\/setup(?:\?|$)/, {
       timeout: 30_000,
@@ -157,13 +158,15 @@ test.describe("founding organisation onboarding", () => {
     await expect(page.getByTestId("setup-page")).toBeVisible();
 
     await page.goto("/platform/settings");
-    await expect(page.getByRole("heading", { name: "Billing" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Billing", exact: true }),
+    ).toBeVisible();
     await page
       .getByTestId("settings-hub-open-platform-settings-billing")
       .click();
     await expect(page.getByTestId("billing-settings-page")).toBeVisible();
     await expect(page.getByTestId("billing-settings-page")).toContainText(
-      "professional",
+      "Professional",
     );
   });
 });

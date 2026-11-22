@@ -1,3 +1,5 @@
+import { loadCurrentOrganisationEntitlements } from "@/modules/billing/load-current-entitlements";
+import { organisationHasModuleEntitlement } from "@/modules/billing/module-entitlements";
 import { platformHomeFallbackPermissions } from "@/modules/platform-shell/home-fallback";
 import {
   platformNavigation,
@@ -5,14 +7,13 @@ import {
   type PlatformNavItem,
 } from "@/modules/platform-shell/navigation";
 import {
+  currentMemberHasGrantPermission,
   currentMemberHasPermission,
   currentMemberHasScopedPermission,
-  prefetchMemberPermissions,
+  prefetchPlatformShellPermissionProbes,
 } from "@/modules/platform-shell/permissions";
-import {
-  collectPlatformShellPermissionKeys,
-  setupNavigationPermissions,
-} from "@/modules/platform-shell/shell-permission-keys";
+import { shouldShowSetupInNavigation } from "@/modules/organisation-setup/nav-setup-visibility";
+import { setupNavigationPermissions } from "@/modules/platform-shell/shell-permission-keys";
 
 const setupPermissions = setupNavigationPermissions;
 
@@ -26,13 +27,31 @@ export async function canAccessSetupNavigation() {
 }
 
 export async function buildVisibleNavigation() {
-  await prefetchMemberPermissions(collectPlatformShellPermissionKeys());
+  await prefetchPlatformShellPermissionProbes();
+  const entitlements = await loadCurrentOrganisationEntitlements();
 
   const access = await Promise.all(
     platformNavigation.map(async (item) => {
-      const canAccess = item.organisationScopeOnly
+      if (
+        item.planModule &&
+        !organisationHasModuleEntitlement(entitlements, item.planModule)
+      ) {
+        return { item, canAccess: false };
+      }
+      const alternateAccess = await Promise.all(
+        (item.alternatePermissions ?? []).map((permission) =>
+          currentMemberHasPermission(permission),
+        ),
+      );
+      const explicitModuleAccess = item.organisationScopeOnly
         ? await currentMemberHasScopedPermission(item.permission)
-        : await currentMemberHasPermission(item.permission);
+        : await currentMemberHasGrantPermission(item.permission);
+      const canAccess =
+        explicitModuleAccess ||
+        (item.viewPermission
+          ? await currentMemberHasPermission(item.viewPermission)
+          : false) ||
+        alternateAccess.some(Boolean);
       return { item, canAccess };
     }),
   );
@@ -68,7 +87,9 @@ export async function buildVisibleNavigation() {
   );
 
   if (await canAccessSetupNavigation()) {
-    navWithSetup.unshift(setupNavigationItem);
+    if (await shouldShowSetupInNavigation()) {
+      navWithSetup.unshift(setupNavigationItem);
+    }
   }
 
   return navWithSetup;

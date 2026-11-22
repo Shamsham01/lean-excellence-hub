@@ -21,5 +21,7 @@ export function coachPageContextFromView(
     relevantState: view.relevantState,
     allowedActions: view.allowedActions,
     starterPrompts: view.starterPrompts,
+    fieldGuidance: view.fieldGuidance,
+    guidanceFacts: view.guidanceFacts,
   };
 }
