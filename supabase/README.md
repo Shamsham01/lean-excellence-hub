@@ -2,8 +2,12 @@
 
 Since #421, changes to status, lifecycle dates, charter submission, methodology
 version, identity and scope columns, and `updated_at` require the
-`lean_hub_private_owner` role. For repairs through `postgres`, dashboard SQL,
-MCP `execute_sql`, or a repair migration, use
+`lean_hub_private_owner` role. Since #423, `authenticated` has no `UPDATE`
+privilege on `public.ci_projects`. All application writes go through the private
+`SECURITY DEFINER` RPCs owned by `lean_hub_private_owner`.
+
+For manual repairs through MCP `execute_sql`, dashboard SQL, or psql as
+`postgres`, or when writing a repair migration, use
 `set local role lean_hub_private_owner;` in the same transaction as the update.
 
 Postgres runs BEFORE UPDATE triggers in name order.
