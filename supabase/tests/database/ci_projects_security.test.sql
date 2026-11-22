@@ -1,15 +1,83 @@
 begin;
 
-select plan(35);
-select ok(
-  not has_table_privilege('authenticated', 'public.ci_projects', 'UPDATE'),
-  'authenticated has no table-wide UPDATE privilege'
-);
+select plan(65);
+
+select is(
+  relacl::text,
+  '{postgres=arwdDxtm/postgres,lean_hub_private_owner=arwd/postgres,authenticated=r/postgres}',
+  'ci_projects has the exact table ACL'
+)
+from pg_class
+where oid = 'public.ci_projects'::regclass;
 
 select ok(
-  not has_any_column_privilege('authenticated', 'public.ci_projects', 'UPDATE'),
-  'authenticated has no column UPDATE privileges'
-);
+  relrowsecurity and relforcerowsecurity,
+  'ci_projects has RLS enabled and forced'
+)
+from pg_class
+where oid = 'public.ci_projects'::regclass;
+
+select ok(
+  not has_table_privilege(role_name, 'public.ci_projects', 'UPDATE'),
+  role_name || ' has no table-wide UPDATE privilege'
+)
+from (values ('anon'), ('authenticated'), ('service_role')) roles(role_name)
+order by role_name;
+
+select ok(
+  not has_any_column_privilege(role_name, 'public.ci_projects', 'UPDATE'),
+  role_name || ' has no column UPDATE privileges'
+)
+from (values ('anon'), ('authenticated'), ('service_role')) roles(role_name)
+order by role_name;
+
+with writer_signatures(signature) as (
+  values
+    ('approve_project(uuid)'),
+    ('cancel_project(uuid, text)'),
+    ('complete_project(uuid, text, text, text)'),
+    ('hold_project(uuid, text)'),
+    ('resume_project(uuid)'),
+    ('return_project_to_draft(uuid, text)'),
+    ('start_project(uuid)'),
+    ('submit_project(uuid)'),
+    ('update_ci_project_draft(uuid, text, text, text, text, text, text, text, text, text, text, uuid, date, date, text)')
+), writer_checks as (
+  select
+    wrapper.proacl = '{postgres=X/postgres,authenticated=X/postgres}'::aclitem[]
+      and not has_function_privilege('anon', wrapper.oid, 'EXECUTE') as passes,
+    'public.' || signature || ' has EXECUTE for postgres and authenticated only' as description
+  from writer_signatures
+  join pg_proc wrapper on wrapper.oid = ('public.' || signature)::regprocedure
+  union all
+  select
+    writer.proacl = '{lean_hub_private_owner=X/lean_hub_private_owner}'::aclitem[]
+      and writer.prosecdef
+      and writer.proowner = 'lean_hub_private_owner'::regrole
+      and 'search_path=""' = any(writer.proconfig),
+    'private.' || signature || ' is an owner-only SECURITY DEFINER with an empty search_path'
+  from writer_signatures
+  join pg_proc writer on writer.oid = ('private.' || signature)::regprocedure
+)
+select ok(passes, description)
+from writer_checks
+order by description;
+
+with helpers(signature, expected_acl) as (
+  values
+    ('private.can_edit_ci_project(uuid, uuid)', '{lean_hub_private_owner=X/lean_hub_private_owner}'::aclitem[]),
+    ('private.can_read_ci_project(uuid, uuid)', '{lean_hub_private_owner=X/lean_hub_private_owner,authenticated=X/lean_hub_private_owner}'::aclitem[]),
+    ('private.guard_ci_project_child_completed_immutable()', '{lean_hub_private_owner=X/lean_hub_private_owner}'::aclitem[]),
+    ('private.instantiate_ci_project_phases(uuid, uuid)', '{lean_hub_private_owner=X/lean_hub_private_owner}'::aclitem[])
+)
+select ok(
+  helper.proacl = expected_acl
+    and not has_function_privilege('anon', helper.oid, 'EXECUTE'),
+  signature || ' has the expected EXECUTE ACL and excludes PUBLIC and anon'
+)
+from helpers
+join pg_proc helper on helper.oid = signature::regprocedure
+order by signature;
 
 select ok(
   not exists (
@@ -383,6 +451,41 @@ select set_config(
 select ok(
   public.switch_organisation((select id from project_ids where key = 'organisation')),
   'owner returns to primary organisation'
+);
+
+select ok(
+  public.grant_role_version(
+    (select id from project_ids where key = 'organisation'),
+    (select id from project_ids where key = 'team_member_membership'),
+    (
+      select version_row.id
+      from public.role_versions version_row
+      join public.roles role_row on role_row.id = version_row.role_id
+      where version_row.organisation_id = (select id from project_ids where key = 'organisation')
+        and role_row.module_responsibility_key = 'projects'
+        and version_row.status = 'published'
+    ),
+    'unit_subtree',
+    (select id from project_ids where key = 'unit_root')
+  ) is not null,
+  'team member receives the projects responsibility at the project site'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"c1000000-0000-0000-0000-000000000002","role":"authenticated","session_id":"c2000000-0000-0000-0000-000000000002","email":"ci-projects-member@example.test"}',
+  true
+);
+
+select ok(
+  exists (select 1 from public.ci_projects where id = (select id from project_ids where key = 'project')),
+  'a team member with scoped projects.read can select the project through RLS'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"c1000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"c2000000-0000-0000-0000-000000000001","email":"ci-projects-owner@example.test"}',
+  true
 );
 
 select ok(
