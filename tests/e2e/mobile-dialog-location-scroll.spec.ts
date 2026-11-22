@@ -86,7 +86,11 @@ async function captureMobileScreenshot(page: Page, path: string) {
 }
 
 async function expectTouchScroll(page: Page, list: Locator) {
-  await list.scrollIntoViewIfNeeded();
+  // The responsive form can switch from a dialog to a sheet while mounting.
+  // Resolve the list again if that switch detaches it during the stability check.
+  await expect(async () => {
+    await list.scrollIntoViewIfNeeded({ timeout: 2_000 });
+  }).toPass({ timeout: 10_000 });
   const readBackgroundScroll = () =>
     page.evaluate(() => ({
       window: window.scrollY,
