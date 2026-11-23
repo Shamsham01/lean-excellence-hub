@@ -12,8 +12,8 @@
 ## Pre-deploy checks (**Required**)
 
 1. **Git SHA** — record exact commit Netlify publishes (public HTML may not embed SHA; use Netlify UI/build logs).
-2. **Migration head** — hosted `supabase_migrations` must match code on that SHA (`docs/qa/PROJECT-CURRENT-STATE.md`, issue #324 baseline notes).
-3. **CI** — Fast + Database (if applicable) + Full Regression green on PR head before ready-for-review.
+2. **Migration head** — hosted `supabase_migrations` must match code on that SHA ([release snapshot](../qa/PROJECT-CURRENT-STATE.md)).
+3. **CI** — Fast + Database (if applicable) + Full Regression green on PR head before release.
 4. **Auth hook** — Send Email Hook deployed from **same revision** as app (`docs/deployment/auth-email-templates.md`, cutover checklists).
 
 ## Environment (**Implemented** pattern)
@@ -32,7 +32,6 @@
 
 - Confirm whether preview builds use production Supabase URL/keys. Until documented otherwise, assume previews could write production and **block unreviewed preview testing** (R0).
 
-## Post-incident deploy (#326 context)
+## Migration versions
 
-- Production cited at `34cb9a1860b6c628ae1073ec6824fe50a6627e0a` (2026-11-04 22:34 UTC) with migration `20261104193000_ai_run_execution_claim`.
-- PR #327 fixes turn settlement — **await merge + owner deploy**; do not deploy from agent branches without approval.
+Record the version from each repository filename in the hosted ledger. Compare the release SHA with the ledger before cutover. The [November version ledger](../operations/migration-version-ledger-nov-2026.md) records the parallel-branch renumbering history.

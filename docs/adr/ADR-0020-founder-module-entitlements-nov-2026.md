@@ -1,4 +1,4 @@
-# ADR-0018: Founder module entitlements (Nov 2026)
+# ADR-0020: Founder module entitlements (Nov 2026)
 
 Status: **Accepted (founder direction t115u, 8 Nov 2026)**
 

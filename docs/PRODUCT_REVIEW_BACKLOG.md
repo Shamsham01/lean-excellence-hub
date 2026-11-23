@@ -21,7 +21,7 @@ See `docs/DEVELOPMENT_QUALITY_WORKFLOW.md` for the finding → issue → PR → 
 - Richer organisation setup wizard (industry templates, default units, starter roles)
 - Organisation branding (logo, colours, email templates)
 - Profile and organisation avatar/image upload polish
-- User administration enhancements beyond active smoke defects (bulk invite, lifecycle dashboards, membership hygiene)
+- User administration enhancements beyond active smoke defects (lifecycle dashboards and membership hygiene)
 - Role administration enhancements (permission diff views, grant audit, delegation guidance)
 - Field formatting and locale display consistency (dates, numbers, currency, units)
 - Dedicated in-product documentation portal (help centre, contextual guides, release notes)
@@ -35,11 +35,15 @@ See `docs/DEVELOPMENT_QUALITY_WORKFLOW.md` for the finding → issue → PR → 
 
 ## AI and analytics (explicitly later)
 
-- AI facilitator / Copilot for problem-solving sessions (never authoritative verifier)
 - Semantic / vector search over lessons learned
 - Executive dashboard and enterprise BI connectors
 
 ## Implemented / promoted history
+
+- **Done — Problem Solving facilitator.** LeanAI proposes stage drafts for human review. The case lifecycle gates drafting, and practitioners verify causes. [#352](https://github.com/Shamsham01/lean-excellence-hub/pull/352), [#402](https://github.com/Shamsham01/lean-excellence-hub/pull/402), [#407](https://github.com/Shamsham01/lean-excellence-hub/pull/407), [#418](https://github.com/Shamsham01/lean-excellence-hub/pull/418)
+- **Done — bulk colleague invitations and profile avatars.** CSV import uses the invitation pipeline, and profile avatars are available. Organisation branding remains deferred. [#357](https://github.com/Shamsham01/lean-excellence-hub/pull/357), [#367](https://github.com/Shamsham01/lean-excellence-hub/pull/367), [#376](https://github.com/Shamsham01/lean-excellence-hub/pull/376)
+- **Done — notification entry point and record navigation.** A single bell opens authorised records. Further activity surfacing remains deferred. [#383](https://github.com/Shamsham01/lean-excellence-hub/pull/383)
+- **Delivered within the fishbone scope.** Manual cause editing and promotion to hypotheses shipped. Drag-and-drop and diagram export remain deferred. [#403](https://github.com/Shamsham01/lean-excellence-hub/pull/403)
 
 - RBAC2, site isolation, and Organisation Structure V2 were promoted from the old backlog into pre-smoke **Issue #57**, implemented, and the issue is now closed as completed.
 - Active CookieWorks manual-smoke findings are tracked in **Issue #67** and must not be duplicated here.

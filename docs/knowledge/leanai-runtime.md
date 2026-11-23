@@ -17,7 +17,7 @@ Entry points:
 
 Prompts: e.g. `src/platform/ai/prompts/problem-solving-facilitator.ts` (`PROMPT_KEY`, `PROMPT_VERSION`).
 
-## Time budgets (**Implemented** on `main`; fix **Proposed** PR #327)
+## Time budgets
 
 | Constant | Value | File |
 | --- | --- | --- |
@@ -31,7 +31,7 @@ Mechanisms:
 - `createAiRunDeadline` / `runWithinAiTurnBudget` race work against remaining wall clock.
 - Stale recovery: `recoverStaleAiRunsForSession` → `fail_ai_run` category `timeout` (`src/platform/ai/stale-ai-run-recovery.ts`).
 
-**Gap on deployed `main` (2026-11-04):** OpenAI SDK default `maxRetries: 2` can exceed Netlify kill window before `fail_ai_run`, leaving `ai_runs.status=running` (#326). PR #327 sets `maxRetries: 0` for Problem Solving and improves client idempotency retention — **not merged** at index time.
+Problem Solving disables SDK retries and budgets provider work to leave time for settlement (#327, #356, #372). The shared multiline composer and safe Markdown renderer ship on main (#417).
 
 ## Provider & models (**Implemented**)
 

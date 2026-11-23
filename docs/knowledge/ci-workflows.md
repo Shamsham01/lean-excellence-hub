@@ -21,7 +21,7 @@ Source of truth: `docs/development/ci-strategy.md` and `.github/workflows/`.
 - Workflow: `.github/workflows/ci-full.yml`
 - **Draft PRs:** expensive jobs skipped
 - **Ready PR / `main` / manual:** Full Regression (parallel E2E shards, full pgTAP, demo seed on merge boundary)
-- Quality gate on PRs may reuse successful Fast CI on same SHA.
+- The ready-PR quality gate requires successful Fast CI on the same head. Required gates check failed prerequisites explicitly (#381). Customer go-live coverage includes the clean-organisation browser journey and database assertions (#385).
 
 ## Local parity commands
 

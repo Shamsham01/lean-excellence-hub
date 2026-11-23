@@ -7,7 +7,7 @@
 | Claim | Where |
 | --- | --- |
 | Unlimited employees/users **per site**, not seat-priced | `pricing-subscription-onboarding-v1.md`, `billing-entitlements-admin.md`, `commercial-principles.ts`, onboarding/founding copy |
-| Essentials = Maturity, 5S, Gemba, Actions, Suggestions + utilities | `module-entitlements.ts`, ADR-0018 |
+| Essentials = Maturity, 5S, Gemba, Actions, Suggestions + utilities | `module-entitlements.ts`, [ADR-0020](../adr/ADR-0020-founder-module-entitlements-nov-2026.md) |
 | People invitations on all plans; paid HR for workforce import/create | `people-product-surfaces.ts`, admin doc |
 | Job functions / structure on all plans | Admin doc, tests |
 | `credit_policy_enforced` off by default; no fabricated rates | AI settings panel, `leanai-credit-policy.ts`, admin checklist |

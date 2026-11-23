@@ -1,18 +1,12 @@
 # Lean Excellence Hub
 
-Lean Excellence Hub is a greenfield platform for running and improving an
-organisation's Lean management system.
+Lean Excellence Hub is a multi-tenant application for running and improving an organisation's Lean management system.
 
-## Current status
+## Current modules
 
-- **Implemented:** the Milestone 1 architecture baseline and Milestone 2
-  application/tooling baseline.
-- **Deferred:** authentication, organisations, memberships, domain migrations,
-  RLS, shared capabilities, Lean modules, Benefits, integrations, and all other
-  product features require explicit approval for Milestone 3 or later.
+Teams can run Maturity assessments, 5S audits and Gemba walks, schedule activities, and raise actions from findings. Actions, CI Projects, Suggestions, Benefits and Problem Solving track improvement work. People, Training and Skills support workforce development. LeanAI supports setup and facilitation, with human approval for proposed changes.
 
-Architecture documents describe approved future design as well as implemented
-foundations. They are not evidence that deferred controls or features exist.
+Go-live and customer onboarding are targeted for January 2027. See the [release snapshot](docs/qa/PROJECT-CURRENT-STATE.md) and [module map](docs/knowledge/modules.md).
 
 ## Prerequisites
 
@@ -28,16 +22,17 @@ npm run db:start
 npm run db:status
 ```
 
-Replace the publishable-key placeholder in `.env.local` with the local
-publishable key reported by Supabase, then start the application:
+In `.env.local`, use the local API URL and publishable key from `db:status`.
+Set the server-only `SUPABASE_SECRET_KEY` to the local secret key and replace
+`AUTH_RATE_LIMIT_PEPPER` with a random value of at least 32 characters.
+The example uses the fake billing provider and disables AI. See
+[the environment template](.env.example) for optional integrations.
 
 ```powershell
 npm run dev
 ```
 
-The application is available at `http://127.0.0.1:3000`. Environment validation
-fails early when either required publishable Supabase value is missing or
-malformed. Never put a secret or service-role key in a `NEXT_PUBLIC_` variable.
+Open `http://127.0.0.1:3000`. Keep secret keys out of `NEXT_PUBLIC_` variables.
 
 ## Development commands
 
@@ -47,10 +42,10 @@ malformed. Never put a secret or service-role key in a `NEXT_PUBLIC_` variable.
 - `npm run format` / `npm run format:check` — write or check Prettier formatting.
 - `npm run typecheck` — run strict TypeScript without emitting files.
 - `npm test` / `npm run test:watch` — run or watch Vitest unit tests.
-- `npm run test:e2e` — run the Playwright application-shell smoke test.
+- `npm run test:e2e` — run the Playwright suite (use `test:e2e:smoke` for the smoke subset).
 - `npm run db:start`, `db:status`, `db:stop`, `db:reset` — manage local Supabase.
 - `npm run db:lint` — lint the local PostgreSQL schema.
-- `npm run test:db` — run pgTAP database baseline tests.
+- `npm run test:db` — run pgTAP database tests.
 - `npm run db:types` — generate local database types into
   `src/platform/supabase/database.types.ts`.
 - `npm run db:seed-demo` — seed the local-only Apex Manufacturing demo tenant
@@ -58,8 +53,7 @@ malformed. Never put a secret or service-role key in a `NEXT_PUBLIC_` variable.
 - `npm run validate` — run formatting, lint, types, units, and production build.
 
 Run `npm run test:e2e:install` once if Chromium is not already installed.
-Supabase commands require Docker. The generated database types are intentionally
-untracked until an approved milestone adds application schema.
+Supabase commands require Docker. Commit generated database types alongside schema changes. Database CI checks for drift.
 
 ## Architecture baseline
 
@@ -77,37 +71,33 @@ untracked until an approved milestone adds application schema.
 .github/workflows/    Non-secret continuous integration
 .cursor/agents/       Read-only specialist definitions
 docs/                 Product, architecture, and ADR source of truth
-src/app/              Thin Next.js App Router shell
+src/app/              Marketing, authentication and platform routes
+src/modules/          Domain logic and module setup
 src/platform/         Cross-domain tooling and platform boundaries
 supabase/             Local configuration, migrations, and database tests
 tests/unit/           Vitest unit tests
-tests/e2e/            Playwright smoke tests
+tests/e2e/            Playwright browser journeys
 ```
 
-Business domains under `src/modules/` remain absent until their milestones are
-approved.
+Shared components live under `src/components/`.
 
 ## Deliberate dependencies
 
 - Next.js, React, and React DOM provide the approved App Router runtime.
 - Tailwind CSS and its PostCSS integration provide token-driven styling.
-- `next-themes` supplies light, dark, and system-theme state without product UI.
+- `next-themes` supplies light, dark, and system-theme state.
 - Zod validates explicit public and server environment boundaries.
 - ESLint, Prettier, and strict TypeScript enforce source quality.
 - Vitest, Testing Library, jsdom, and Playwright establish unit and E2E testing.
 - The Supabase CLI provides reproducible local PostgreSQL, migrations, pgTAP
   tests, schema linting, and database type generation.
 
-No Supabase application client is introduced yet because Milestone 2 has no
-database-backed business behaviour.
+The app uses Supabase SSR and JavaScript clients for authentication and data access.
 
 ## Deployment
 
-The application uses standard Next.js build and runtime behaviour. Netlify
-detects supported Next.js applications and supplies its OpenNext adapter without
-repository-specific runtime code, so no Netlify package or configuration file is
-required. Configure the two publishable environment variables in the deployment
-environment. This keeps deployment configuration minimal and replaceable.
+[netlify.toml](netlify.toml) configures the Next.js adapter and build command.
+See the [release procedure](docs/knowledge/deploy-release.md) for environment and migration checks.
 
 ## Contributing
 

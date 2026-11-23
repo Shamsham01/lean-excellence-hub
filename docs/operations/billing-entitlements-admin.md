@@ -11,7 +11,7 @@ Product source of truth: [pricing-subscription-onboarding-v1.md](../product/pric
 | `founder` | Private price IDs | Professional-level modules + Founder price |
 | `enterprise` | Contact sales only | Negotiated |
 
-**Membership:** unlimited employees/users **per site** on every plan. Billing counts **subscribed sites** only (`site_quantity`), not headcount. See ADR-0018 and `commercial-principles.ts`.
+**Membership:** unlimited employees/users **per site** on every plan. Billing counts **subscribed sites** only (`site_quantity`), not headcount. See [ADR-0020](../adr/ADR-0020-founder-module-entitlements-nov-2026.md) and `commercial-principles.ts`.
 
 Legacy tenants with **no** subscription row (for example CookieWorks) keep Professional-level module access until a subscription is attached.
 
