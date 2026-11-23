@@ -1,5 +1,9 @@
 # Milestone scope and acceptance
 
+## Delivery status on main
+
+Milestones 1–12 have implementations on main. M5 delivered Maturity (`5d45b2a2`), and M7 delivered People and capability (`407b854e`). The sections below preserve the original scope, acceptance checklists and evidence at each milestone. For November changes and release gates, see the [current state](../qa/PROJECT-CURRENT-STATE.md).
+
 ## Delivery rule
 
 A milestone may document later seams but may not implement later scope. Completion evidence must describe what exists, not what is intended. The next milestone starts only after explicit approval.
@@ -61,9 +65,7 @@ Docker was unavailable for the local completion run. Local Supabase start reache
 
 ## Milestone 3 — secure tenant foundation
 
-Milestone 3 is approved. Documentation and architecture decisions are its first
-gate; this documentation change does not claim that the controls are
-implemented.
+Milestone 3 shipped the secure tenant foundation (`b87301e8`). The checklist below records its original acceptance criteria.
 
 ### In scope
 
@@ -127,7 +129,7 @@ Those capabilities and their evidence remain with their owning milestones.
 
 ## Milestone 4 — shared platform foundation
 
-Milestone 4 is approved. It builds on the Milestone 3 tenant foundation without
+Milestone 4 shipped. It builds on the Milestone 3 tenant foundation without
 redesigning authorisation architecture.
 
 ### In scope
@@ -539,7 +541,7 @@ Hosted Supabase changes, pgvector, autonomous provider tool execution, forbidden
 | Eval | `npm run eval:ai:fake` (2 fixtures); live smoke via `eval:ai:live` when `AI_ENABLED=1` + `OPENAI_API_KEY` |
 | Live OpenAI | **READY FOR LIVE PROVIDER VALIDATION** (not run in this closure pass) |
 
-## Later milestones
+## Original forward scope
 
 1. Core Lean domains: training/skills, projects, suggestions, problem-solving,
    and additional form experiences as thin vertical slices. Maturity (Milestone 5),
@@ -553,7 +555,7 @@ Later verification includes published-version immutability, append-only audit, e
 
 Visual workflow designer, enterprise BI, AI summaries/agents, full Hoshin Kanri, TPM, daily management/tier meetings, advanced Kaizen, coaching/recognition, enterprise SSO beyond the Microsoft seam, billing, Slack/Teams/push, and general offline synchronisation must not influence V1 complexity without new evidence and approval.
 
-## Hard stop
+## Original Milestone 3 approval boundary
 
 Milestone 3 ends at the secure tenant foundation above. Remote Supabase changes
 and every explicitly excluded capability require separate approval. Completion

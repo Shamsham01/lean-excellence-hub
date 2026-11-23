@@ -1,6 +1,6 @@
 # LEH master plan (R0–R6)
 
-Living roadmap aligned to **open GitHub issues** and `docs/knowledge/`. P0 reliability work (#324–#326, PR #327) is owned by **separate Cursor implementation workstreams** — this document coordinates, does not duplicate their PRs.
+January 2027 is the go-live and onboarding target. The [release snapshot](../qa/PROJECT-CURRENT-STATE.md) records what is implemented at `efcfc952`. Pilot acceptance still requires smoke and owner sign-off on the release candidate.
 
 **Legend:** **Gate** = must pass before phase exit. **Human approval** = platform owner explicit sign-off. **Pilot** = required for founder pilot cohort; **Post-pilot** = after first 1–3 month early-supporter tranche.
 
@@ -8,7 +8,7 @@ Living roadmap aligned to **open GitHub issues** and `docs/knowledge/`. P0 relia
 
 ## Pilot programme (founder direction)
 
-**Horizon:** **1–3 months** to first pilot cohort on production (after Pilot Readiness cut line below).
+**Horizon:** First production onboarding starts in **January 2027**, subject to the pilot readiness gates below.
 
 **Cohort shape (choose one per tranche):**
 
@@ -43,7 +43,7 @@ Everything **not listed here** is **post-pilot** unless the founder explicitly p
 | P7 | R1 | **E1.1** Template / Quick Start setup (pilot modules) | **Yes** | Maturity, Gemba, 5S, Skills (and Problem Solving manual path) setup to **published** usable state in **≤1 working session** per module on a fresh org (founder timed smoke) |
 | P8 | R1 | **E1.2** Invitation / signup (#292) | **Yes** | Pilot invitees complete signup without dead-end confirmation |
 | P9 | R1 | **E1.3** Onboarding org hint (#264) | **Yes** | Safe hint behaviour; no tenant enumeration |
-| P10 | R1 | **E1.5** LeanAI composer UX (#318) | **Stretch** | Multiline + safe Markdown if ready; not a pilot blocker if S0–S1 facilitator usable |
+| P10 | R1 | **E1.5** LeanAI composer UX (#318) | **Stretch** | Multiline composer and safe Markdown shipped (#417); retain in pilot smoke |
 | P11 | R1 | **E1.4** CookieWorks register (#67) | **Post-pilot** | Internal QA only |
 | P12 | R2 | **S0** Guardrails | **Yes** | Forbidden proposals rejected; source labels on claims; 8D/DMAIC honesty |
 | P13 | R2 | **S1** Intelligent capture | **Yes** | Win criterion (2): brief + typed proposals + visible gaps → human accept |
@@ -61,9 +61,20 @@ Everything **not listed here** is **post-pilot** unless the founder explicitly p
 
 **Pilot entry gate:** P1–P9, P12–P15, P19–P21 green on the **same published SHA**; P5 documented; founder signs cohort option A or B.
 
-**Explicitly post-pilot (non-exhaustive):** R2 S4–S5 full canvas P0, R4 cross-module intelligence (#314 learning graph, vector search), R5 premium UX programme, R6 production billing & public GTM (#170, #283 live booking), LEH Lite (#235), platform owner console (#303), native 8D/DMAIC method records.
+**Explicitly post-pilot (non-exhaustive):** R2 S4–S5 full canvas P0, R4 cross-module intelligence (#314 learning graph, vector search), R5 premium UX programme, R6 production billing & public GTM (#170, #283 live booking), LEH Lite (#235), further platform owner console work (in-app alerts shipped in #349), native 8D/DMAIC method records.
 
 ---
+
+## November delivery against the pilot gates
+
+| Gate | Delivered on main |
+| --- | --- |
+| R0 reliability and security | Project lifecycle guards, removal of 13 direct column grants, and private helper ACLs (#421, #423, #424). Hosted migration versions must match repository filenames. |
+| R1 setup and onboarding | Branded invitations and single-step activation (#376, #379). Go-live journey coverage (#385). Score-only 5S Quick Start and site-scoped configuration (#389, #390). |
+| R2 Problem Solving | Human hypothesis verification, manual fishbone, closed-case guards, sustain and closure controls, read-only future stages (#402–#404, #407, #409, #418). Manual 5 Why entry awaits the December rebuild. |
+| R3 field execution | Planner actions (#394, #395), audit and Gemba actions (#399, #400, #405), schedule activity picker (#401), Draft and On hold action-project links (#419). One bell with authorised deep links (#383). The chase scheduler is built and stays off until the founder approves it (#378, #380). |
+| R4 retrieval | Permission-scoped related items and operational search shipped (#364, #366). |
+| R6 demo funnel | Demo-led landing page and subsequent Golden Thread redesign (#410, #415). Plan entitlements are on main (#374). |
 
 ## R0 — Production reliability
 
@@ -168,7 +179,7 @@ Ship in order. **S0 gates every R2 change** (prompt, tool, UI, knowledge bundle)
 - LeanAI **never** verifies a cause, closes a case, records effectiveness pass, or approves a benefit — proposals only; person accepts via existing RPCs (aligned with superpowers forbidden types).
 - Every factual/causal claim carries a **source class**: verified LEH product fact · current authorised site fact · historical verified outcome · unverified user statement · Lean methodology recommendation · AI hypothesis.
 - Historical closed-case matches are **evidence about that case only**, never proof for the open problem (`historical_verified_outcome` framing).
-- **Seeded methods today:** `five_why`, `a3_structured`, `rapid_rca`. **8D / DMAIC** may be recommended for **methodology fit** but must **not** be presented as selectable method records until seeded.
+- **Seeded methods:** `five_why`, `a3_structured`, `rapid_rca` and `rapid_improvement` (migration `20261105120000`). The original S2 recommendation scope below covers the first three. **8D / DMAIC** may be recommended for **methodology fit** but must **not** be presented as selectable method records until seeded.
 
 #### S1 — Intelligent capture (first feature slice)
 
@@ -212,7 +223,7 @@ Ship in order. **S0 gates every R2 change** (prompt, tool, UI, knowledge bundle)
 
 | Track | Owner | Notes |
 | --- | --- | --- |
-| Facilitator SLO / run lifecycle | NEXUS | #326 closed, ADR-0019 + PR #327 on deployed SHA |
+| Facilitator SLO / run lifecycle | NEXUS | ADR-0019 and #327/#356 on main; verify the release SHA |
 | Activation / session UX | PIXEL + SENTINEL | #324 — pinned draft method honesty |
 | Customer usage surfaces | LAUNCH / NEXUS | #316 |
 | Release-matched PS knowledge bundle | NEXUS | #311 extends superpowers first slice |
@@ -291,7 +302,7 @@ Owner approves sustainment content for customer-facing use.
 | Epic | Issues |
 | --- | --- |
 | E4.1 Superpowers platform | #310 |
-| E4.2 Operational knowledge search | #313 |
+| E4.2 Operational knowledge search | #313, delivered in #366 |
 | E4.3 Evidence-based advisory | #314 |
 | E4.4 Retrieval hardening | Threat model updates |
 
@@ -350,7 +361,7 @@ Owner design sign-off on marketing + platform chrome.
 | E6.1 Billing production | Stripe sandbox → production readiness | #170, ADR-0017 |
 | E6.2 LEH Lite path | Suggestions-first land-expand | #235 |
 | E6.3 Demo booking & privacy | Cal.com + notice | #283, `docs/sales/*` |
-| E6.4 Platform owner console | Cross-org ops dashboard | #303 |
+| E6.4 Platform owner console | In-app alerts and delivery scheduler on main | #303, #349 |
 | E6.5 Provider & AI commercial | OpenAI policy review per ADR-0013 | LAUNCH checklist |
 | E6.6 Early Supporter Programme | Privileges for pilot cohort + future early adopters | Founder direction (this doc) |
 
@@ -394,9 +405,9 @@ Founder commercial launch + live billing enablement; founder approves Early Supp
 
 | Issue | Phase | Notes |
 | --- | --- | --- |
-| #324, #325, #326 | R0 | Active implementation workstreams |
-| #327 | R0 | Merge/deploy decision by owner |
-| #318 | R1 / R5 | LeanAI UX |
+| #324, #325, #326 | R0 | Activation, settlement and Skills fixes on main (#331, #327, #356) |
+| #327 | R0 | Merged; release verification remains an owner gate |
+| #318 | R1 / R5 | Composer and safe Markdown delivered (#417) |
 | #316 | R2 | Usage governance (parallel track) |
 | #311, #310 | R2 / R4 | Knowledge bundle & superpowers programme |
 | #314 | R4 (not R2) | Learning graph — after R2 S0–S4 proven |

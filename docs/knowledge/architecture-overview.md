@@ -37,6 +37,6 @@
 | Seam | Status |
 | --- | --- |
 | Idempotency keys on AI turns | **Implemented** (`start_ai_run`, client keys) |
-| Generic transactional outbox for all domains | **Proposed** (ADR-0003; N1a notification outbox **Implemented**) |
-| Universal resource registry | **Proposed** |
+| Generic transactional outbox for all domains | **Implemented** (domain event outbox, ADR-0012; notification delivery ledger, ADR-0016) |
+| Universal resource registry | **Implemented** (`resource_records`, ADR-0012) |
 | Offline/PWA queues | **Proposed** |

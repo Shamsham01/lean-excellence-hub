@@ -1,6 +1,6 @@
 # LEH knowledge index (compact)
 
-Grounded in the repository as of **`main`** snapshot used by this branch. Labels:
+Grounded in the repository as of main at `efcfc952`. Labels:
 
 - **Implemented** — shipping code paths exist and are referenced in CI/docs.
 - **Proposed** — documented intent, issues, or partial stubs; not fully productised.

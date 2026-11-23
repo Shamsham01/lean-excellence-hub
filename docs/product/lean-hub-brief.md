@@ -8,7 +8,7 @@ This is the normalised architecture source of truth for the supplied greenfield 
 
 Lean Excellence Hub will help organisations establish, operate, assess, and continuously improve a Lean management system. It should provide one secure multi-tenant platform for corporate and frontline users, work across differing organisation structures, and grow by reusing trustworthy shared capabilities rather than building isolated module silos.
 
-The target platform is a Next.js App Router application using strict TypeScript and Supabase Auth, PostgreSQL, and Storage. It should be responsive and touch-first, with progressive-web-app and offline-ready design seams, but general offline synchronisation is not an initial feature.
+The platform is a Next.js App Router application using strict TypeScript and Supabase Auth, PostgreSQL, and Storage. It should be responsive and touch-first, with progressive-web-app and offline-ready design seams, but general offline synchronisation is not an initial feature.
 
 ## People, tenancy, and access
 
@@ -16,13 +16,13 @@ The target platform is a Next.js App Router application using strict TypeScript 
 - Each organisation can model company, site, department, area, team, or customer-specific structures without fixed hierarchy depth.
 - Organisation-owned roles grant stable permissions at self, unit-subtree, or whole-organisation scope.
 - Every request selects an organisation for context, but every query and mutation independently proves access using current database membership and row tenancy.
-- Corporate users will eventually use Microsoft identity or email/password. Frontline users without corporate email will use organisation code, workforce ID or username, and password.
+- Corporate users can use email/password. Frontline users without corporate email use organisation code, workforce ID or username, and password.
 - Supabase Auth remains the sole authority for identities, credentials, and passwords. Tenant membership disabling, administrator reset, forced initial password change, throttling, revocation, audit, and future MFA are required seams.
-- Commercial entitlements may later control product availability, but never replace permissions or row-level security.
+- Commercial entitlements control product availability, but never replace permissions or row-level security.
 
 ## Lean management capabilities
 
-Planned core domains include:
+Core product requirements include:
 
 - organisation maturity assessments;
 - training curricula, learning progress, skills, and competence;
@@ -51,7 +51,7 @@ Future public `/api/v1` endpoints, imports, and workers must adapt the same appl
 
 ## Benefits requirements
 
-One Benefits domain will serve projects, suggestions, problem-solving, and later Kaizen capabilities:
+One Benefits domain serves projects, suggestions, problem-solving, and later Kaizen capabilities:
 
 - organisation-configurable benefit types seeded from defaults;
 - a single authoritative benefit with one originating resource and non-sensitive descriptive lifecycle data;
@@ -66,7 +66,9 @@ One Benefits domain will serve projects, suggestions, problem-solving, and later
 
 Exchange-rate conversion, configurable calculators, and BI cubes are deferred.
 
-## Delivery classification
+## Original delivery classification
+
+These headings record the Milestone 1 sequence. The [current release snapshot](../qa/PROJECT-CURRENT-STATE.md) tracks implementation. LeanAI facilitation and sandbox billing subsequently shipped.
 
 ### Initial foundation — Milestone 1
 
