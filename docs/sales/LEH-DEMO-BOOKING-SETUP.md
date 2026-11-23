@@ -28,7 +28,7 @@ Until the notice is approved and linked, leave `NEXT_PUBLIC_DEMO_BOOKING_URL` em
 4. Open **Settings → My account → Conferencing**. Add **Google Meet** and set it as the default. The meeting link is created by Cal.com and sent in the booking email and calendar invitation.
 5. Create a booking link:
    - Name: **Lean Excellence Hub — Product Demonstration**
-   - Duration: **45 minutes**
+   - Duration: **30 minutes**
    - Location: the Google Meet conferencing app, not a phone number and not a physical address
    - Availability: the organiser's own schedule. Do not copy hours into the LEH codebase.
 6. Open the booking link's **Limits & buffers** tab. Set the buffer after the meeting to **15 minutes**. Set the minimum booking notice to **24 hours**. Limit how far ahead a visitor can book to **30 days**. Limit concurrent and daily bookings to the number of demonstrations the organiser can actually host. See [Event buffers](https://cal.com/help/event-types/event-buffer) and [Limit future bookings](https://cal.com/help/event-types/limit-future-bookings).
@@ -56,7 +56,7 @@ Approved hosts are `cal.com`, `cal.eu` and their subdomains. A custom booking do
 
 Do this once, with the organiser's approval, before sending customers to the page:
 
-1. Book a 45-minute slot as a test attendee.
+1. Book a 30-minute slot as a test attendee.
 2. Confirm the Cal.com email, the calendar invitation on the connected calendar, and a Google Meet link.
 3. Reschedule from the link in that email, then cancel it.
 4. Confirm Lean Excellence Hub did not gain a booking row of its own. There is no LEH success screen. The confirmation inside Cal.com is the confirmation.
