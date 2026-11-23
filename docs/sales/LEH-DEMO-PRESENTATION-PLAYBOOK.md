@@ -1,6 +1,6 @@
 # LEH product demonstration playbook
 
-Default format: a 45-minute live online meeting booked through Cal.com.
+Default format: a 30-minute live online meeting booked through Cal.com.
 
 Audience: Continuous Improvement and Operational Excellence managers, operations directors, site directors, manufacturing leaders, and business improvement or transformation leaders.
 
@@ -16,9 +16,9 @@ Show only capabilities that are healthy in the demo environment. If a module fai
 
 ## Before the meeting
 
-Follow [LEH-DEMO-PRESENTER-CHECKLIST.md](./LEH-DEMO-PRESENTER-CHECKLIST.md). Read the answers the attendee actually submitted in Cal.com. Those answers set the first five minutes. Do not treat a recommended question as asked unless it is on the published event. The answers are not a script to repeat back as if they were LEH claims.
+Follow [LEH-DEMO-PRESENTER-CHECKLIST.md](./LEH-DEMO-PRESENTER-CHECKLIST.md). Read the answers the attendee actually submitted in Cal.com. Those answers set the first few minutes. Do not treat a recommended question as asked unless it is on the published event. The answers are not a script to repeat back as if they were LEH claims.
 
-## 0–5 minutes: Understand the customer
+## 0–4 minutes: Understand the customer
 
 Ask what they use today for Gemba, 5S, actions, projects and performance improvement.
 
@@ -26,7 +26,7 @@ Ask where information is disconnected: spreadsheets, shared drives, email, slide
 
 Listen. Write their words down in their language. The follow-up email uses those words, not a generic problem statement.
 
-## 5–8 minutes: Introduce LEH
+## 4–6 minutes: Introduce LEH
 
 Lean Excellence Hub is a multi-tenant Operational Excellence and Continuous Improvement platform.
 
@@ -34,7 +34,7 @@ One organisation can run its own framework and standards. Sites, areas and roles
 
 Say explicitly: LEH supplies the engine. It does not replace the customer's doctrine.
 
-## 8–25 minutes: One connected improvement story
+## 6–17 minutes: One connected improvement story
 
 Tell the story as Harbourfield Foods Group — Bodmin Bakery. The case is fictional: packaging film misalignment on Packing Line 1.
 
@@ -51,7 +51,7 @@ Marketing illustrations use reference labels such as GEM-214, ACT-318, PS-077, P
 
 If that fictional chain is not already loaded in the approved demo organisation, do not create it during the call, and do not create it in a real customer organisation. Use the prepared fallback screenshots, say they are fallback, and continue the conversation. Loading Harbourfield, or resetting CookieWorks or any hosted organisation, is a separate approved data task. It is not part of booking setup and it is not something to run before a meeting.
 
-## 25–35 minutes: Adaptability and intelligence
+## 17–24 minutes: Adaptability and intelligence
 
 Show the items that match what the customer described, and only if that area is healthy:
 
@@ -70,11 +70,11 @@ LeanAI, if shown:
 
 Do not demonstrate a module that has not passed QA in the environment you are using. The release smoke notes are the place to check status, not this playbook.
 
-## 35–45 minutes: Customer fit and next steps
+## 24–30 minutes: Customer fit and next steps
 
 Discuss only what they raised:
 
-- The business outcome they named in the first five minutes
+- The business outcome they named in the first few minutes
 - What a first site would need to start
 - What would later extend to further sites
 - Subscription shape, taken from the product rather than from memory
