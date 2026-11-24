@@ -21,7 +21,7 @@ type Section = {
 type WalkObservation = {
   id: string;
   observation_text: string;
-  observation_type: string;
+  observation_type: string | null;
 };
 
 export function GembaWalkSummary({

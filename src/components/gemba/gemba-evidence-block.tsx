@@ -29,12 +29,13 @@ export function GembaEvidenceBlock({
 }: GembaEvidenceBlockProps) {
   return (
     <EvidenceUploader
+      photoOnly
       existingEvidence={evidence}
       canEdit={canEdit}
       filter={(item) =>
         observationId
           ? item.observation_id === observationId
-          : item.question_id === questionId
+          : !item.observation_id && item.question_id === questionId
       }
       createdItemExtras={{
         ...(sectionId ? { section_id: sectionId } : {}),

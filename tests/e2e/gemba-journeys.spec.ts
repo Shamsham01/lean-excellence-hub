@@ -86,6 +86,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/gemba/definitions");
+    await page.getByRole("link", { name: "Manual", exact: true }).click();
 
     const name = `E2E Gemba Notes ${Date.now()}`;
     const firstPrompt = `What abnormal condition is visible? ${Date.now()}`;
@@ -210,6 +211,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/gemba/definitions");
+    await page.getByRole("link", { name: "Manual", exact: true }).click();
 
     const name = `E2E Gemba Observations ${Date.now()}`;
     const firstPrompt = `What abnormal condition is visible? ${Date.now()}`;
@@ -287,6 +289,12 @@ test.describe("Milestone 6 Gemba journeys", () => {
       { timeout: 15_000 },
     );
 
+    const issuePill = page.getByRole("button", { name: "Issue", exact: true });
+    await issuePill.click();
+    await expect(issuePill).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByText("No action raised")).toBeVisible();
+    await issuePill.click();
+    await expect(issuePill).toHaveAttribute("aria-pressed", "false");
     await page.getByTestId("gemba-capture-observation").click();
     await page
       .getByTestId("gemba-observation-type-improvement_opportunity")
@@ -301,7 +309,11 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await expect(page.getByTestId("gemba-observation-list")).toContainText(
       observationText,
     );
-    await expect(page.getByText("Improvement opportunity")).toBeVisible();
+    await expect(
+      page
+        .getByTestId("gemba-observation-list")
+        .getByText("Improvement opportunity", { exact: true }),
+    ).toBeVisible();
 
     await clickGembaCompleteWalk(page);
     await expect(
@@ -453,6 +465,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/gemba/definitions");
+    await page.getByRole("link", { name: "Manual", exact: true }).click();
 
     const name = `E2E Gemba Prompt Complete ${Date.now()}`;
     const firstPrompt = `What abnormal condition is visible? ${Date.now()}`;

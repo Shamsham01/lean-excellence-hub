@@ -1,4 +1,5 @@
 export type OperationalEmailMessage = {
+  attachments?: { filename: string; content: string }[];
   from: string;
   to: string;
   subject: string;

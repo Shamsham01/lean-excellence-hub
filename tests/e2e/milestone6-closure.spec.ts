@@ -36,7 +36,12 @@ test.describe("Milestone 6 closure journeys", () => {
     const scheduleTitle = `E2E Weekly 5S Schedule ${Date.now()}`;
     await page.getByTestId("schedule-title").fill(scheduleTitle);
     await page.getByTestId("schedule-unit-select").selectOption({ index: 1 });
-    await page.getByTestId("schedule-owner-select").selectOption({ index: 1 });
+    await page.getByLabel("Owner", { exact: true }).focus();
+    await page
+      .getByRole("group", { name: "Owner options" })
+      .getByRole("button")
+      .first()
+      .click();
     await page.getByTestId("schedule-frequency").selectOption("weekly");
     await page.getByTestId("schedule-submit").click();
 

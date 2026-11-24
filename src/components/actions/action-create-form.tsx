@@ -54,6 +54,8 @@ export type FiveSActionLinkContext = {
 };
 
 export type GembaActionLinkContext = {
+  defaultDescription?: string;
+  evidenceNames?: string[];
   walkId: string;
   sectionId?: string | null;
   questionId?: string | null;
@@ -555,6 +557,7 @@ export function ActionCreateDialog({
               <Textarea
                 id="action-create-description"
                 name="description"
+                defaultValue={gembaLinkContext?.defaultDescription}
                 rows={3}
                 disabled={pending || Boolean(createdActionId)}
               />
@@ -667,6 +670,11 @@ export function ActionCreateDialog({
                     </div>
                   )}
                 </div>
+                {gembaLinkContext?.evidenceNames?.map((name, index) => (
+                  <p key={index} className="text-sm text-muted-foreground">
+                    Observation evidence: {name}
+                  </p>
+                ))}
                 <ActionCreateEvidencePicker
                   drafts={evidenceDrafts}
                   disabled={pending}

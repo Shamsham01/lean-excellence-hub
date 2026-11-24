@@ -1,6 +1,6 @@
 begin;
 
-select plan(24);
+select plan(25);
 
 insert into auth.users (
   id, email, email_confirmed_at, created_at, updated_at,
@@ -374,8 +374,8 @@ select is(
         select id from schedule_lifecycle_ids where key = 'once_schedule'
       )
   ),
-  1::bigint,
-  'morning-of reminder is enqueued once for today''s open occurrence'
+  0::bigint,
+  'occurrence sweep no longer enqueues reminder emails'
 );
 
 select lives_ok(
@@ -395,9 +395,12 @@ select is(
         select id from schedule_lifecycle_ids where key = 'once_schedule'
       )
   ),
-  1::bigint,
-  'reminder sweep does not duplicate morning-of events'
+  0::bigint,
+  'repeat sweep leaves the reminder outbox empty'
 );
 
+select ok(exists(select 1 from private.domain_event_outbox where event_type='ScheduleCalendarConfirmed'
+  and resource_record_id=(select id from schedule_lifecycle_ids where key='once_schedule') and payload ? 'timezone' and payload ? 'participants'),
+  'schedule creation queues a calendar snapshot');
 select * from finish();
 rollback;

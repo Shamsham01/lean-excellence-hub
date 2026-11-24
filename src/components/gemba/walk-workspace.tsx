@@ -20,8 +20,10 @@ import { InlineAlert } from "@/components/ui/alert";
 import {
   completeGembaWalk,
   saveGembaWalkAnswer,
+  savePromptCapture,
 } from "@/app/(platform)/platform/gemba/actions";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
+import { GembaAuditRaiseAction } from "@/components/gemba/gemba-audit-raise-action";
 import { GembaEvidenceBlock } from "@/components/gemba/gemba-evidence-block";
 import {
   GembaObservationPanel,
@@ -55,6 +57,7 @@ import {
   countGembaObservationsByType,
   formatGembaObservationType,
   formatGembaWalkStatus,
+  gembaObservationTypeOptions,
 } from "@/modules/operational/gemba-display";
 import {
   countUnansweredRequiredGembaPrompts,
@@ -257,6 +260,22 @@ export function GembaWalkWorkspace({
     },
     [],
   );
+  const [types, setTypes] = useState<Record<string, string | null>>(() =>
+    Object.fromEntries(
+      observations
+        .filter((o) => o.question_id && o.question_id === o.client_request_id)
+        .map((o) => [o.question_id!, o.observation_type]),
+    ),
+  );
+  const [primaryIds, setPrimaryIds] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      observations
+        .filter((o) => o.question_id && o.question_id === o.client_request_id)
+        .map((o) => [o.question_id!, o.id]),
+    ),
+  );
+  const [typeBusy, setTypeBusy] = useState(false);
+  const [captureError, setCaptureError] = useState<string | null>(null);
   const [liveObservations, setLiveObservations] = useState(observations);
   const handleObservationsChange = useCallback((next: WalkObservation[]) => {
     setLiveObservations(next);
@@ -280,7 +299,23 @@ export function GembaWalkWorkspace({
     walkId,
     answers,
     canEdit,
-    saveAnswer: saveGembaWalkAnswer,
+    saveAnswer: async (id, questionId, payload) => {
+      if (!types[questionId] && !primaryIds[questionId])
+        return saveGembaWalkAnswer(id, questionId, payload);
+      const result = await savePromptCapture(
+        id,
+        questionId,
+        payload.textValue ?? "",
+        !!payload.isNotApplicable,
+        types[questionId] ?? null,
+      );
+      if (result.observationId)
+        setPrimaryIds((previous) => ({
+          ...previous,
+          [questionId]: result.observationId!,
+        }));
+      return result;
+    },
   });
 
   const answeredCount = flatQuestions.filter((item) =>
@@ -390,7 +425,14 @@ export function GembaWalkWorkspace({
 
   async function moveTo(nextIndex: number) {
     if (!current) return;
-    if (nextIndex === safeIndex) return;
+    if (nextIndex === safeIndex || typeBusy) return;
+    if (
+      observationIntegrityRef.current.dirty ||
+      observationIntegrityRef.current.busy
+    ) {
+      setCompleteError(DIRTY_OBSERVATION_COMPLETE_MESSAGE);
+      return;
+    }
     const target = flatQuestions[nextIndex];
     if (!target) return;
     setNavigating(true);
@@ -513,7 +555,16 @@ export function GembaWalkWorkspace({
     flatQuestions.map((item) => item.question),
     getAnswer,
   );
-  const observationCounts = countGembaObservationsByType(liveObservations);
+  const summaryObservations = [
+    ...liveObservations.filter(
+      (item) =>
+        !item.question_id || item.client_request_id !== item.question_id,
+    ),
+    ...Object.keys(primaryIds).map((questionId) => ({
+      observation_type: types[questionId] ?? null,
+    })),
+  ];
+  const observationCounts = countGembaObservationsByType(summaryObservations);
 
   return (
     <div
@@ -580,21 +631,6 @@ export function GembaWalkWorkspace({
           </p>
         ) : null}
 
-        <GembaObservationPanel
-          siteUnitId={siteUnitId}
-          walkId={walkId}
-          observations={observations}
-          evidence={evidence}
-          canEdit={canEdit}
-          projectOptions={projectOptions}
-          requiresSiteSelection={requiresSiteSelection}
-          linkedProjectsByObservationId={linkedProjectsByObservationId}
-          actionCountsByObservation={actionCountsByObservation}
-          onIntegrityChange={handleObservationIntegrity}
-          onObservationsChange={handleObservationsChange}
-          onActionCountsChange={() => router.refresh()}
-        />
-
         <div className="rounded-lg border border-border bg-surface p-4 sm:p-6">
           <p className="text-sm text-muted-foreground">
             {current.section.title}
@@ -618,6 +654,60 @@ export function GembaWalkWorkspace({
               {current.question.is_required ? " (required)" : " (optional)"}
             </span>
           </h2>
+          {canEdit && (
+            <div
+              className="mt-3 flex flex-wrap gap-2"
+              aria-label="Observation type"
+            >
+              {gembaObservationTypeOptions().map((option) => (
+                <Button
+                  type="button"
+                  key={option.value}
+                  variant={
+                    types[current.question.id] === option.value
+                      ? "default"
+                      : "outline"
+                  }
+                  aria-pressed={types[current.question.id] === option.value}
+                  disabled={typeBusy}
+                  className="h-auto min-h-11 max-w-full whitespace-normal"
+                  onClick={async () => {
+                    const q = current.question.id;
+                    const next =
+                      types[q] === option.value ? null : option.value;
+                    setTypeBusy(true);
+                    try {
+                      if (!(await flushQuestion(q))) return;
+                      if (answer.text_value?.trim()) {
+                        const result = await savePromptCapture(
+                          walkId,
+                          q,
+                          answer.text_value,
+                          false,
+                          next,
+                        );
+                        if (result.error) {
+                          setCaptureError(result.error);
+                          return;
+                        }
+                        if (result.observationId)
+                          setPrimaryIds((prev) => ({
+                            ...prev,
+                            [q]: result.observationId!,
+                          }));
+                      }
+                      setCaptureError(null);
+                      setTypes((prev) => ({ ...prev, [q]: next }));
+                    } finally {
+                      setTypeBusy(false);
+                    }
+                  }}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+          )}
           <div className="mt-6">
             <Label htmlFor="walk-notes">Notes</Label>
             <Textarea
@@ -655,11 +745,92 @@ export function GembaWalkWorkspace({
           </div>
 
           <GembaEvidenceBlock
+            key={current.question.id}
             walkId={walkId}
             sectionId={current.section.id}
             questionId={current.question.id}
             evidence={evidence}
             canEdit={canEdit}
+          />
+          {captureError && <p role="alert">{captureError}</p>}
+          {canEdit && (
+            <GembaAuditRaiseAction
+              actionCount={
+                actionCountsByObservation[
+                  primaryIds[current.question.id] ?? ""
+                ] ?? 0
+              }
+              disabled={typeBusy}
+              linkContext={{
+                walkId,
+                defaultTitle: current.question.prompt,
+                siteUnitId,
+              }}
+              prepare={async () => {
+                const q = current.question.id;
+                if (!(await flushQuestion(q))) return null;
+                const notes = answer.text_value?.trim() ?? "";
+                let observationId = primaryIds[q] ?? null;
+                if (notes) {
+                  const result = await savePromptCapture(
+                    walkId,
+                    q,
+                    notes,
+                    false,
+                    types[q] ?? null,
+                    true,
+                  );
+                  if (result.error) {
+                    setCaptureError(result.error);
+                    return null;
+                  }
+                  if (result.observationId) {
+                    observationId = result.observationId;
+                    setPrimaryIds((prev) => ({
+                      ...prev,
+                      [q]: result.observationId!,
+                    }));
+                  }
+                }
+                return {
+                  walkId,
+                  sectionId: current.section.id,
+                  questionId: q,
+                  observationId,
+                  siteUnitId,
+                  defaultTitle: (notes || current.question.prompt).slice(
+                    0,
+                    120,
+                  ),
+                  defaultDescription: notes,
+                  evidenceNames: evidence
+                    .filter((e) => !e.observation_id && e.question_id === q)
+                    .map((e) => e.filename),
+                };
+              }}
+              onActionCreated={() => router.refresh()}
+            />
+          )}
+          {types[current.question.id] === "issue" &&
+            !actionCountsByObservation[
+              primaryIds[current.question.id] ?? ""
+            ] && (
+              <p className="text-xs text-muted-foreground">No action raised</p>
+            )}
+          <GembaObservationPanel
+            siteUnitId={siteUnitId}
+            questionId={current.question.id}
+            walkId={walkId}
+            observations={observations}
+            evidence={evidence}
+            canEdit={canEdit}
+            projectOptions={projectOptions}
+            requiresSiteSelection={requiresSiteSelection}
+            linkedProjectsByObservationId={linkedProjectsByObservationId}
+            actionCountsByObservation={actionCountsByObservation}
+            onIntegrityChange={handleObservationIntegrity}
+            onObservationsChange={handleObservationsChange}
+            onActionCountsChange={() => router.refresh()}
           />
         </div>
 
@@ -722,7 +893,7 @@ export function GembaWalkWorkspace({
                 Required prompts unanswered: {unansweredRequiredCount}
               </p>
               <p data-testid="gemba-completion-observation-count">
-                Observations: {liveObservations.length} (
+                Observations: {summaryObservations.length} (
                 {formatGembaObservationType("positive_practice")}{" "}
                 {observationCounts.positive_practice},{" "}
                 {formatGembaObservationType("improvement_opportunity")}{" "}

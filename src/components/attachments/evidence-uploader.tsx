@@ -37,6 +37,7 @@ type EvidenceAssociation = Pick<
 >;
 
 type EvidenceUploaderProps = {
+  photoOnly?: boolean;
   existingEvidence: EvidenceItem[];
   canEdit: boolean;
   filter?: (item: EvidenceItem) => boolean;
@@ -68,6 +69,7 @@ export function evidenceMatchesQuestion(
 type UploadState = "idle" | "uploading" | "success" | "error";
 
 export function EvidenceUploader({
+  photoOnly = false,
   existingEvidence,
   canEdit,
   filter,
@@ -176,7 +178,7 @@ export function EvidenceUploader({
 
   return (
     <div className="mt-4 flex flex-col gap-3" data-testid="evidence-uploader">
-      <p className="text-sm font-medium">Evidence</p>
+      {!photoOnly && <p className="text-sm font-medium">Evidence</p>}
 
       <EvidenceGallery
         items={visibleEvidence}
@@ -188,72 +190,92 @@ export function EvidenceUploader({
 
       {canEdit ? (
         <>
-          <input
-            id={fileInputId}
-            type="file"
-            className="sr-only"
-            accept={EVIDENCE_ACCEPT}
-            onChange={(e) => onFileChange(e.target.files)}
-            data-testid="evidence-file-input"
-          />
-          <div className="flex flex-col gap-2 sm:hidden">
-            <label className="cursor-pointer">
+          {photoOnly ? (
+            <label className="relative inline-flex min-h-11 w-fit cursor-pointer items-center rounded-md border px-3 text-sm focus-within:ring-2">
+              Add photo
               <input
                 type="file"
-                className="sr-only"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 capture="environment"
-                onChange={(e) => onFileChange(e.target.files)}
-                data-testid="evidence-camera-input"
+                disabled={state === "uploading"}
+                className="absolute inset-0 w-full cursor-pointer opacity-0"
+                data-testid="evidence-file-input"
+                onChange={(event) => {
+                  onFileChange(event.target.files);
+                  event.target.value = "";
+                }}
               />
-              <Button type="button" className="min-h-11 w-full" asChild>
-                <span>Take / add photo</span>
-              </Button>
             </label>
-            <Button
-              type="button"
-              variant="outline"
-              className="min-h-11 w-full"
-              asChild
-            >
-              <label htmlFor={fileInputId}>Choose file</label>
-            </Button>
-            <p className="text-xs text-muted-foreground">
-              {EVIDENCE_FILE_HELP}
-            </p>
-          </div>
-          <div
-            className={`hidden rounded-lg border border-dashed p-4 transition-colors sm:block ${
-              dragOver ? "border-primary bg-accent/50" : "border-border"
-            }`}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragOver(true);
-            }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setDragOver(false);
-              onFileChange(e.dataTransfer.files);
-            }}
-          >
-            <div className="flex flex-col items-center gap-2 text-center text-sm">
-              <Upload className="size-5 text-muted-foreground" />
-              <p>Drag and drop a photo or file, or select one to upload.</p>
-              <p className="text-xs text-muted-foreground">
-                {EVIDENCE_FILE_HELP}
-              </p>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="min-h-11"
-                asChild
+          ) : (
+            <>
+              <input
+                id={fileInputId}
+                type="file"
+                className="sr-only"
+                accept={EVIDENCE_ACCEPT}
+                onChange={(e) => onFileChange(e.target.files)}
+                data-testid="evidence-file-input"
+              />
+              <div className="flex flex-col gap-2 sm:hidden">
+                <label className="cursor-pointer">
+                  <input
+                    type="file"
+                    className="sr-only"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={(e) => onFileChange(e.target.files)}
+                    data-testid="evidence-camera-input"
+                  />
+                  <Button type="button" className="min-h-11 w-full" asChild>
+                    <span>Take / add photo</span>
+                  </Button>
+                </label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-11 w-full"
+                  asChild
+                >
+                  <label htmlFor={fileInputId}>Choose file</label>
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  {EVIDENCE_FILE_HELP}
+                </p>
+              </div>
+              <div
+                className={`hidden rounded-lg border border-dashed p-4 transition-colors sm:block ${
+                  dragOver ? "border-primary bg-accent/50" : "border-border"
+                }`}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOver(true);
+                }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOver(false);
+                  onFileChange(e.dataTransfer.files);
+                }}
               >
-                <label htmlFor={fileInputId}>Select file</label>
-              </Button>
-            </div>
-          </div>
+                <div className="flex flex-col items-center gap-2 text-center text-sm">
+                  <Upload className="size-5 text-muted-foreground" />
+                  <p>Drag and drop a photo or file, or select one to upload.</p>
+                  <p className="text-xs text-muted-foreground">
+                    {EVIDENCE_FILE_HELP}
+                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="min-h-11"
+                    asChild
+                  >
+                    <label htmlFor={fileInputId}>Select file</label>
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
           {state === "uploading" ? (
             <p className="mt-2 text-center text-sm text-muted-foreground">
               Uploading…

@@ -158,7 +158,7 @@ export default async function GembaWalkPage({
       loadProjectPickerOptions(),
       untypedFrom(supabase, "gemba_walk_observations")
         .select(
-          "id, observation_text, observation_type, created_at, linked_project_id",
+          "id, question_id, client_request_id, observation_text, observation_type, created_at, linked_project_id",
         )
         .eq("walk_id", id)
         .order("created_at", { ascending: true }),

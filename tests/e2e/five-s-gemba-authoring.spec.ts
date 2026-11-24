@@ -90,6 +90,7 @@ test.describe("5S and Gemba draft authoring persistence", () => {
   }) => {
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/gemba/definitions");
+    await page.getByRole("link", { name: "Manual", exact: true }).click();
 
     const name = `E2E Gemba Authoring ${Date.now()}`;
     const firstPrompt = `What abnormal condition is visible? ${Date.now()}`;

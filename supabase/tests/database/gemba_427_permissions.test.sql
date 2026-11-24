@@ -1,0 +1,11 @@
+begin;
+select plan(7);
+select ok(c.relrowsecurity and c.relforcerowsecurity, 'Gemba action evidence enforces RLS') from pg_class c where c.oid='public.gemba_action_evidence'::regclass;
+select ok(not has_table_privilege('authenticated','public.gemba_action_evidence','INSERT'),'clients cannot forge action evidence links');
+select ok(not has_function_privilege('anon','public.remove_gemba_definition(uuid)','EXECUTE'),'anonymous users cannot remove definitions');
+select ok(not has_function_privilege('anon','public.save_gemba_prompt_capture(uuid,uuid,text,boolean,text,boolean)','EXECUTE'),'anonymous users cannot capture observations');
+select ok(not has_function_privilege('anon','private.capture_gemba_action_evidence()','EXECUTE'),'attachment trigger is private');
+select ok(not has_function_privilege('anon','private.enqueue_schedule_calendar_confirmation()','EXECUTE'),'confirmation trigger is private');
+select ok(not has_function_privilege('anon','private.schedule_calendar_state(public.schedule_definitions)','EXECUTE'),'schedule snapshot is private');
+select * from finish();
+rollback;

@@ -28,6 +28,9 @@ export function createResendOperationalEmailProvider(
       try {
         response = await resend.emails.send(
           {
+            ...(message.attachments
+              ? { attachments: message.attachments }
+              : {}),
             from: message.from,
             to: [message.to],
             subject: message.subject,

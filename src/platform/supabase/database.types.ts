@@ -4017,6 +4017,19 @@ export type Database = {
           },
         ]
       }
+      gemba_action_evidence: {
+        Row: { organisation_id: string; action_id: string; attachment_id: string }
+        Insert: { organisation_id: string; action_id: string; attachment_id: string }
+        Update: { organisation_id?: string; action_id?: string; attachment_id?: string }
+        Relationships: [
+          { foreignKeyName: "gemba_action_evidence_organisation_id_attachment_id_fkey"
+            columns: ["organisation_id","attachment_id"]; isOneToOne: false
+            referencedRelation: "attachments"; referencedColumns:["organisation_id","id"] },
+          { foreignKeyName: "gemba_action_evidence_organisation_id_action_id_fkey"
+            columns: ["organisation_id","action_id"]; isOneToOne: false
+            referencedRelation: "actions"; referencedColumns:["organisation_id","id"] }
+        ]
+      }
       gemba_definition_applicable_units: {
         Row: {
           created_at: string
@@ -4125,6 +4138,7 @@ export type Database = {
       }
       gemba_definitions: {
         Row: {
+          archived_at: string | null
           created_at: string
           created_by_membership_id: string
           description: string | null
@@ -4135,6 +4149,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived_at?: string | null
           created_at?: string
           created_by_membership_id: string
           description?: string | null
@@ -4145,6 +4160,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived_at?: string | null
           created_at?: string
           created_by_membership_id?: string
           description?: string | null
@@ -4265,7 +4281,7 @@ export type Database = {
           id: string
           linked_project_id: string | null
           observation_text: string
-          observation_type: string
+          observation_type: string | null
           organisation_id: string
           priority: string | null
           question_id: string | null
@@ -4280,7 +4296,7 @@ export type Database = {
           id?: string
           linked_project_id?: string | null
           observation_text: string
-          observation_type: string
+          observation_type: string | null
           organisation_id: string
           priority?: string | null
           question_id?: string | null
@@ -4295,7 +4311,7 @@ export type Database = {
           id?: string
           linked_project_id?: string | null
           observation_text?: string
-          observation_type?: string
+          observation_type?: string | null
           organisation_id?: string
           priority?: string | null
           question_id?: string | null
@@ -9874,6 +9890,7 @@ export type Database = {
       }
       schedule_definitions: {
         Row: {
+          calendar_state: Json | null
           activity_resource_id: string
           created_at: string
           created_by_membership_id: string
@@ -9895,6 +9912,7 @@ export type Database = {
           version_number: number
         }
         Insert: {
+          calendar_state?: Json | null
           activity_resource_id: string
           created_at?: string
           created_by_membership_id: string
@@ -9916,6 +9934,7 @@ export type Database = {
           version_number?: number
         }
         Update: {
+          calendar_state?: Json | null
           activity_resource_id?: string
           created_at?: string
           created_by_membership_id?: string
@@ -14007,6 +14026,11 @@ export type Database = {
         Args: { target_definition_id: string }
         Returns: string
       }
+      remove_gemba_definition: { Args: {target_definition_id: string}; Returns:string }
+      save_gemba_prompt_capture: {
+        Args: { target_walk_id:string; target_question_id:string; target_observation_type:string|null; target_create_observation:boolean; target_text_value:string; target_is_not_applicable:boolean }
+        Returns: string | null
+      }
       create_gemba_observation: {
         Args: {
           target_client_request_id?: string
@@ -16894,4 +16918,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-

@@ -42,7 +42,7 @@ export default async function GembaSetupPage() {
         moduleLabel="Gemba"
         configurationNoun="definition"
         existingCount={count ?? 0}
-        manualHref="/platform/gemba/definitions#create-definition"
+        manualHref="/platform/gemba/definitions?create=manual#create-definition"
         quickStartHref="/platform/gemba/setup/quick-start"
         leanAiHref="/platform/gemba/setup/leanai"
         canManage={canManage}

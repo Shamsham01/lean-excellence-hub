@@ -1,3 +1,4 @@
+import { scheduleInvitationCalendar } from "./schedule-calendar.ts";
 import { authenticateNotificationWorkerRequest } from "./worker-auth.ts";
 import { DeliveryCompletionError } from "./completion-error.ts";
 import { computeProviderPayloadHash } from "./envelope-payload.ts";
@@ -388,6 +389,15 @@ export async function processClaimedNotificationDelivery(
   config: NotificationDeliveryRuntimeConfig,
   delivery: ClaimedNotificationDelivery,
 ): Promise<ProcessedDeliverySummary> {
+  if (delivery.notificationKind === "schedule.occurrence_reminder") {
+    await markDeliveryTerminal(client, delivery, "schedule_reminder_retired");
+    return {
+      deliveryId: delivery.deliveryId,
+      notificationKind: delivery.notificationKind,
+      outcome: "failed_terminal",
+      errorCode: "schedule_reminder_retired",
+    };
+  }
   const resolved = await resolveProviderMessage(client, delivery, config);
   if (resolved.error) {
     logDeliveryResult({
@@ -404,6 +414,45 @@ export async function processClaimedNotificationDelivery(
 
   const providerMessage = resolved.message;
 
+  if (delivery.notificationKind === "schedule.calendar_confirmation") {
+    const { context, error } = await client.getDeliveryContext({
+      organisationId: delivery.organisationId,
+      deliveryId: delivery.deliveryId,
+      sourceDomainEventId: delivery.sourceDomainEventId,
+    });
+    if (error || !context) {
+      await markDeliveryRetryable(client, delivery, "context_lookup_retryable");
+      return {
+        deliveryId: delivery.deliveryId,
+        notificationKind: delivery.notificationKind,
+        outcome: "failed_retryable",
+        errorCode: "context_lookup_retryable",
+      };
+    }
+    if (
+      context.recipientResolutionStatus !== "deliverable" ||
+      context.deliverableEmail !== providerMessage.to
+    ) {
+      await markDeliveryTerminal(client, delivery, "recipient_unavailable");
+      return {
+        deliveryId: delivery.deliveryId,
+        notificationKind: delivery.notificationKind,
+        outcome: "failed_terminal",
+        errorCode: "recipient_unavailable",
+      };
+    }
+    const calendar = scheduleInvitationCalendar(
+      context.eventPayload,
+      providerMessage.from,
+      providerMessage.to,
+    );
+    const content = btoa(
+      Array.from(new TextEncoder().encode(calendar), (byte) =>
+        String.fromCharCode(byte),
+      ).join(""),
+    );
+    providerMessage.attachments = [{ filename: "schedule.ics", content }];
+  }
   let providerResult;
   try {
     providerResult = await provider.send(providerMessage, delivery.deliveryKey);

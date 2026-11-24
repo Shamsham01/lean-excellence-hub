@@ -4,6 +4,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -1315,7 +1316,12 @@ describe("GembaWalkWorkspace answer state", () => {
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
     fireEvent.click(screen.getByTestId("gemba-observation-edit-obs-new"));
-    fireEvent.click(screen.getByRole("button", { name: "Issue" }));
+    fireEvent.click(
+      within(screen.getByTestId("gemba-observation-card-obs-new")).getByRole(
+        "button",
+        { name: "Issue" },
+      ),
+    );
     fireEvent.click(screen.getByTestId("gemba-observation-edit-save"));
     await waitFor(() => {
       expect(screen.getByText("Observation updated.")).toBeVisible();
