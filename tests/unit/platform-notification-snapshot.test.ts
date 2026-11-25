@@ -57,7 +57,7 @@ describe("loadPlatformNotificationSnapshot", () => {
       })
       .mockResolvedValueOnce({ data: 0, error: null });
 
-    await loadPlatformNotificationSnapshot("membership-1");
+    await loadPlatformNotificationSnapshot("membership-2");
 
     expect(rpc).toHaveBeenNthCalledWith(
       1,
@@ -67,5 +67,28 @@ describe("loadPlatformNotificationSnapshot", () => {
       2,
       "sync_overdue_action_chase_notifications",
     );
+  });
+
+  it("throttles concurrent and repeated syncs without caching notification rows", async () => {
+    const now = vi.spyOn(Date, "now");
+    now.mockReturnValue(1_000_000);
+    try {
+      await Promise.all([
+        loadPlatformNotificationSnapshot("membership-throttle"),
+        loadPlatformNotificationSnapshot("membership-throttle"),
+      ]);
+      expect(rpc).toHaveBeenCalledTimes(1);
+      expect(from).toHaveBeenCalledTimes(4);
+
+      now.mockReturnValue(1_599_999);
+      await loadPlatformNotificationSnapshot("membership-throttle");
+      expect(rpc).toHaveBeenCalledTimes(1);
+
+      now.mockReturnValue(1_600_000);
+      await loadPlatformNotificationSnapshot("membership-throttle");
+      expect(rpc).toHaveBeenCalledTimes(2);
+    } finally {
+      now.mockRestore();
+    }
   });
 });
