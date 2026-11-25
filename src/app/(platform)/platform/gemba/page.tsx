@@ -37,12 +37,18 @@ export default async function GembaOverviewPage({
   if (workplaceView) return workplaceView;
 
   const supabase = await createServerSupabaseClient();
-  const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
-    parseAnalyticsRangeDays(params.range),
-  );
-  const canManage = await currentMemberHasPermission(
-    GEMBA_PERMISSIONS.definitionsManage,
-  );
+  const [
+    analyticsRange,
+    canManage,
+  ] = await Promise.all([
+    buildAnalyticsDateRangeForOrganisation(
+      parseAnalyticsRangeDays(params.range),
+    ),
+    currentMemberHasPermission(
+      GEMBA_PERMISSIONS.definitionsManage,
+    ),
+  ]);
+
   let topRows;
   let startableCount;
   try {
@@ -63,24 +69,33 @@ export default async function GembaOverviewPage({
     failed: false,
     visibleCount: startableCount,
   });
-  const { count: walkCount } = await supabase
-    .from("gemba_walks")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "completed");
-  const { count: activeWalkCount } = await supabase
-    .from("gemba_walks")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "in_progress");
-  const { data: activeWalkRows } = await supabase
-    .from("gemba_walks")
-    .select(GEMBA_ACTIVE_WALK_LIVE_SELECT)
-    .eq("status", "in_progress")
-    .order("started_at", { ascending: false })
-    .limit(20);
+  const [
+    { count: walkCount },
+    { count: activeWalkCount },
+    { data: activeWalkRows },
+    { count: observationCount },
+  ] = await Promise.all([
+    supabase
+      .from("gemba_walks")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "completed"),
+    supabase
+      .from("gemba_walks")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "in_progress"),
+    supabase
+      .from("gemba_walks")
+      .select(GEMBA_ACTIVE_WALK_LIVE_SELECT)
+      .eq("status", "in_progress")
+      .order("started_at", { ascending: false })
+      .limit(20),
+    supabase
+      .from("gemba_walk_observations")
+      .select("id", { count: "exact", head: true }),
+  ]);
+
   const activeWalks = (activeWalkRows ?? []).map(mapActiveWalkRow);
-  const { count: observationCount } = await supabase
-    .from("gemba_walk_observations")
-    .select("id", { count: "exact", head: true });
+
   if (catalog === "empty") {
     return (
       <div className="flex flex-col gap-8" data-testid="gemba-empty-state">
