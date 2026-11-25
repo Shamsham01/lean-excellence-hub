@@ -124,12 +124,13 @@ export function MobilePlatformNavigation({
             <Search className="size-4" aria-hidden />
           </Button>
           <ThemeToggleIcon />
-          {notificationSlot ?? (notifications ? (
-            <PlatformNotificationBell
-              initialUnreadCount={notifications.unreadCount}
-              initialItems={notifications.items}
-            />
-          ) : null)}
+          {notificationSlot ??
+            (notifications ? (
+              <PlatformNotificationBell
+                initialUnreadCount={notifications.unreadCount}
+                initialItems={notifications.items}
+              />
+            ) : null)}
           <PlatformUserMenu member={member} showSettings={showSettings} />
         </div>
       </div>
