@@ -8,7 +8,7 @@ import {
   type AuthoringSavedKey,
 } from "@/lib/authoring/authoring-query";
 
-export function useAuthoringSavedFlash() {
+export function useAuthoringSavedFlash(shallow = false) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -17,11 +17,17 @@ export function useAuthoringSavedFlash() {
     (key: AuthoringSavedKey) => {
       const query = searchParams?.toString() ?? "";
       const existingSearch = query ? `?${query}` : "";
-      router.replace(
-        buildAuthoringSavedRedirectPath(pathname ?? "", key, existingSearch),
-        { scroll: false },
+      const path = buildAuthoringSavedRedirectPath(
+        pathname ?? "",
+        key,
+        existingSearch,
       );
+      if (shallow) {
+        window.history.replaceState(null, "", path);
+      } else {
+        router.replace(path, { scroll: false });
+      }
     },
-    [pathname, router, searchParams],
+    [pathname, router, searchParams, shallow],
   );
 }
