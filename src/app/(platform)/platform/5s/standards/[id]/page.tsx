@@ -89,18 +89,20 @@ export default async function FiveSStandardDetailPage({
     Array.isArray(query.saved) ? query.saved[0] : query.saved,
   );
   const supabase = await createServerSupabaseClient();
-  const canManage = await currentMemberHasPermission(
-    FIVE_S_PERMISSIONS.standardsManage,
-  );
-  const canSchedule = await currentMemberHasPermission(
-    SCHEDULE_PERMISSIONS.manage,
-  );
-
-  const { data: standard, error: standardError } = await supabase
-    .from("five_s_standards")
-    .select("id, display_name, description")
-    .eq("id", id)
-    .maybeSingle();
+  const [canManage, canSchedule, { data: standard, error: standardError }] =
+    await Promise.all([
+      currentMemberHasPermission(
+      FIVE_S_PERMISSIONS.standardsManage,
+    ),
+      currentMemberHasPermission(
+      SCHEDULE_PERMISSIONS.manage,
+    ),
+      supabase
+        .from("five_s_standards")
+        .select("id, display_name, description")
+        .eq("id", id)
+        .maybeSingle(),
+    ]);
 
   requireQuerySuccess(standardError, standard, "Failed to load 5S standard");
   if (!standard) {
@@ -113,13 +115,24 @@ export default async function FiveSStandardDetailPage({
     notFound();
   }
 
-  const { data: versions, error: versionsError } = await supabase
-    .from("five_s_standard_versions")
-    .select(
-      "id, version_number, status, template_version_id, scoring_scale, target_threshold_percent",
-    )
-    .eq("standard_id", id)
-    .order("version_number", { ascending: false });
+  const [
+    { data: versions, error: versionsError },
+    { data: applicabilityRows, error: applicabilityError },
+    { units, context },
+  ] = await Promise.all([
+    supabase
+      .from("five_s_standard_versions")
+      .select(
+        "id, version_number, status, template_version_id, scoring_scale, target_threshold_percent",
+      )
+      .eq("standard_id", id)
+      .order("version_number", { ascending: false }),
+    supabase
+      .from("five_s_standard_applicable_units")
+      .select("unit_id")
+      .eq("standard_id", id),
+    loadActiveSiteContext(),
+  ]);
 
   const loadedVersions = requireQuerySuccess(
     versionsError,
@@ -131,23 +144,24 @@ export default async function FiveSStandardDetailPage({
   const publishedVersion = loadedVersions.find((v) => v.status === "published");
   const editorVersion = draftVersion ?? publishedVersion;
 
-  const { data: applicabilityRows, error: applicabilityError } = await supabase
-    .from("five_s_standard_applicable_units")
-    .select("unit_id")
-    .eq("standard_id", id);
-
   const applicableIds = requireApplicableUnitIds(
     applicabilityError,
     applicabilityRows,
   );
   const mappedUnitIds = [...applicableIds];
-  const { data: mappedUnits, error: mappedUnitsError } =
-    mappedUnitIds.length > 0
-      ? await supabase
-          .from("organisation_units")
-          .select("id, status")
-          .in("id", mappedUnitIds)
-      : { data: [], error: null };
+  const [{ data: mappedUnits, error: mappedUnitsError }, authoring] =
+    await Promise.all([
+      mappedUnitIds.length > 0
+        ? supabase
+            .from("organisation_units")
+            .select("id, status")
+            .in("id", mappedUnitIds)
+        : { data: [], error: null },
+      loadTemplateAuthoringChildren(
+        supabase,
+        editorVersion?.template_version_id,
+      ),
+    ]);
 
   const unitStatusById = collectUnitStatuses(
     requireQuerySuccess(
@@ -156,7 +170,6 @@ export default async function FiveSStandardDetailPage({
       "Failed to load applicable organisational units",
     ),
   );
-  const { units, context } = await loadActiveSiteContext();
   const configurationUnits = {
     ...buildSiteScopedUnitOptions(units, context, {
       requireConcreteSite: true,
@@ -184,10 +197,6 @@ export default async function FiveSStandardDetailPage({
     applicabilitySelection.staleInactiveIds.length,
   );
 
-  const authoring = await loadTemplateAuthoringChildren(
-    supabase,
-    editorVersion?.template_version_id,
-  );
   const canPublishQuestions = isTemplateAuthoringPublishReady(authoring);
   const hasApplicableUnits = applicabilitySelection.confirmedActiveIds.size > 0;
   const draftScale = parseFiveSScoringScale(draftVersion?.scoring_scale);
