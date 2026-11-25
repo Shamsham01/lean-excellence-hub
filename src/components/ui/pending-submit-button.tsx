@@ -14,7 +14,7 @@ export const PendingSubmitButton = forwardRef<
       {...props}
       ref={ref}
       disabled={disabled || pending}
-      aria-busy={pending || undefined}
+      aria-busy={pending || props["aria-busy"]}
     >
       {pending ? (
         <>
