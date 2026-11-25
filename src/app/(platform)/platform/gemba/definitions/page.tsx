@@ -327,7 +327,7 @@ export default async function GembaDefinitionsPage({
                 {definitions.map((d) => {
                   const versions = d.gemba_definition_versions;
 
-                  const latest = versions.toSorted(
+                  const latest = [...versions].sort(
                     (a, b) => b.version_number - a.version_number,
                   )[0];
 
@@ -356,7 +356,7 @@ export default async function GembaDefinitionsPage({
                         </span>
                       </td>
 
-                      <td>{areas.join(", ") || "—"}</td>
+                      <td>{areas.join(", ") || "-"}</td>
                       <td>
                         <Button variant="ghost" className="min-h-11" asChild>
                           <AppLink
