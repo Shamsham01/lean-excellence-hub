@@ -1,7 +1,7 @@
 "use client";
 
 import { Search } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 
 import { PlatformCommandMenu } from "@/components/platform/platform-command-menu";
 import { PlatformNotificationBell } from "@/components/platform/platform-notification-bell";
@@ -20,6 +20,7 @@ type PlatformTopbarProps = {
   member: PlatformShellMember;
   organisationName: string;
   showSettings?: boolean;
+  notificationSlot?: ReactNode;
   notifications: {
     unreadCount: number;
     items: PlatformInAppNotification[];
@@ -31,6 +32,7 @@ export function PlatformTopbar({
   organisationName,
   showSettings = true,
   notifications,
+  notificationSlot,
 }: PlatformTopbarProps) {
   const [commandOpen, setCommandOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -69,12 +71,12 @@ export function PlatformTopbar({
         </div>
         <div className="ml-auto flex items-center gap-1.5 ps-2">
           <ThemeToggleIcon />
-          {notifications ? (
+          {notificationSlot ?? (notifications ? (
             <PlatformNotificationBell
               initialUnreadCount={notifications.unreadCount}
               initialItems={notifications.items}
             />
-          ) : null}
+          ) : null)}
           <PlatformUserMenu member={member} showSettings={showSettings} />
         </div>
       </header>
