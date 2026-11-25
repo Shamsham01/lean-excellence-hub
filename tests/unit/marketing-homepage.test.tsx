@@ -45,6 +45,7 @@ vi.mock("@/modules/identity/session", () => ({
 }));
 
 import Home, { metadata } from "@/app/page";
+import { GET as continueAuthentication } from "@/app/auth/continue/route";
 import { ThemeProvider } from "@/app/theme-provider";
 import { MarketingHome } from "@/components/marketing/home";
 import { restingPosition } from "@/components/marketing/v6/thread-carousel";
@@ -604,8 +605,8 @@ describe("homepage authentication routing", () => {
     cleanup();
   });
 
-  it("renders the public homepage when the visitor is not authenticated", async () => {
-    const view = await Home();
+  it("renders the public homepage without a session lookup", () => {
+    const view = Home();
     render(view);
 
     expect(
@@ -613,6 +614,7 @@ describe("homepage authentication routing", () => {
         name: "Make continuous improvement visible, accountable and measurable.",
       }),
     ).toBeInTheDocument();
+    expect(getClaims).not.toHaveBeenCalled();
     expect(routeAfterAuthentication).not.toHaveBeenCalled();
   });
 
@@ -622,7 +624,7 @@ describe("homepage authentication routing", () => {
       error: null,
     });
 
-    await expect(Home()).rejects.toThrow("REDIRECT:/platform");
+    await expect(continueAuthentication()).rejects.toThrow("REDIRECT:/platform");
     expect(routeAfterAuthentication).toHaveBeenCalledTimes(1);
   });
 
