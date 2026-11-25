@@ -1,12 +1,13 @@
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 
 import { LeanAiAssistantShell } from "@/components/leanai/leanai-assistant-shell";
 import { MobilePlatformNavigation } from "@/components/platform/mobile-platform-navigation";
 import { PlatformSidebar } from "@/components/platform/platform-sidebar";
+import { PlatformNotificationBell } from "@/components/platform/platform-notification-bell";
 import { PlatformTopbar } from "@/components/platform/platform-topbar";
 import { settingsNavigationItem } from "@/modules/platform-shell/navigation";
 import { buildVisibleNavigation } from "@/modules/platform-shell/visible-navigation";
-import type { PlatformInAppNotification } from "@/modules/platform-shell/notifications";
+import type { PlatformNotificationSnapshot } from "@/modules/platform-shell/notifications";
 import type { EligibleOrganisation } from "@/modules/organisations/context";
 import type { ActiveSiteContext } from "@/modules/organisation/site-context";
 import type { PlatformShellMember } from "@/modules/platform-shell/member-context";
@@ -18,10 +19,8 @@ type PlatformShellProps = {
   organisations: EligibleOrganisation[];
   siteContext: ActiveSiteContext;
   member: PlatformShellMember;
-  notifications: {
-    unreadCount: number;
-    items: PlatformInAppNotification[];
-  } | null;
+  notifications: PlatformNotificationSnapshot | null;
+  notificationsPromise?: Promise<PlatformNotificationSnapshot | null>;
 };
 
 export async function PlatformShell({
@@ -32,12 +31,19 @@ export async function PlatformShell({
   siteContext,
   member,
   notifications,
+  notificationsPromise,
 }: PlatformShellProps) {
   const navWithSetup = await buildVisibleNavigation();
 
   const showSettings =
     settingsNavigationItem.universalAccess === true &&
     !navWithSetup.some((item) => item.href === settingsNavigationItem.href);
+
+  const notificationSlot = notificationsPromise ? (
+    <Suspense fallback={null}>
+      <DeferredNotificationBell snapshot={notificationsPromise} />
+    </Suspense>
+  ) : undefined;
 
   return (
     <div
@@ -62,12 +68,14 @@ export async function PlatformShell({
             member={member}
             showSettings={showSettings}
             notifications={notifications}
+            notificationSlot={notificationSlot}
           />
           <PlatformTopbar
             member={member}
             organisationName={organisationName}
             showSettings={showSettings}
             notifications={notifications}
+            notificationSlot={notificationSlot}
           />
           <main
             data-testid="platform-main"
@@ -83,4 +91,18 @@ export async function PlatformShell({
       </LeanAiAssistantShell>
     </div>
   );
+}
+
+async function DeferredNotificationBell({
+  snapshot,
+}: {
+  snapshot: Promise<PlatformNotificationSnapshot | null>;
+}) {
+  const notifications = await snapshot;
+  return notifications ? (
+    <PlatformNotificationBell
+      initialUnreadCount={notifications.unreadCount}
+      initialItems={notifications.items}
+    />
+  ) : null;
 }
