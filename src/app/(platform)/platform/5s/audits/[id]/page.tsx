@@ -34,17 +34,22 @@ export default async function FiveSAuditPage({
   if (workplaceView) return workplaceView;
 
   const supabase = await createServerSupabaseClient();
-  const canEdit = await currentMemberHasPermission(
-    FIVE_S_PERMISSIONS.auditPerform,
-  );
+  const [
+    canEdit,
+    { data: audit },
+  ] = await Promise.all([
+    currentMemberHasPermission(
+      FIVE_S_PERMISSIONS.auditPerform,
+    ),
+    supabase
+      .from("five_s_audits")
+      .select(
+        "id, status, submission_id, standard_version_id, overall_score_percent, target_percent, result_status, standard_name_snapshot, unit_name_snapshot, completed_at, site_unit_id",
+      )
+      .eq("id", id)
+      .maybeSingle(),
+  ]);
 
-  const { data: audit } = await supabase
-    .from("five_s_audits")
-    .select(
-      "id, status, submission_id, standard_version_id, overall_score_percent, target_percent, result_status, standard_name_snapshot, unit_name_snapshot, completed_at, site_unit_id",
-    )
-    .eq("id", id)
-    .maybeSingle();
 
   if (!audit) {
     const workplaceRecord = await loadWorkplaceRecordFallback({
@@ -56,25 +61,51 @@ export default async function FiveSAuditPage({
     notFound();
   }
 
-  const { data: version } = await supabase
-    .from("five_s_standard_versions")
-    .select("template_version_id, scoring_scale")
-    .eq("id", audit.standard_version_id)
-    .maybeSingle();
+  const [
+    { data: version },
+    { data: answersRaw },
+    { data: evidenceLinks },
+    { data: actionContextRows },
+    linkedActions,
+  ] = await Promise.all([
+    supabase
+      .from("five_s_standard_versions")
+      .select("template_version_id, scoring_scale")
+      .eq("id", audit.standard_version_id)
+      .maybeSingle(),
+    supabase
+      .from("template_answers")
+      .select("question_id, text_value, number_value, is_not_applicable")
+      .eq("submission_id", audit.submission_id),
+    supabase
+      .from("five_s_evidence_links")
+      .select("section_id, question_id, finding_id, attachment_id")
+      .eq("audit_id", id),
+    supabase
+      .from("five_s_action_context")
+      .select("question_id")
+      .eq("audit_id", id),
+    audit.status === "completed" ? loadFiveSAuditLinkedActions(id) : [],
+  ]);
 
-  const { data: sectionsRaw } = await supabase
-    .from("template_sections")
-    .select("id, title, position")
-    .eq("template_version_id", version?.template_version_id ?? "")
-    .order("position");
+  const [
+    { data: sectionsRaw },
+    { data: questionsRaw },
+  ] = await Promise.all([
+    supabase
+      .from("template_sections")
+      .select("id, title, position")
+      .eq("template_version_id", version?.template_version_id ?? "")
+      .order("position"),
+    supabase
+      .from("template_questions")
+      .select(
+        "id, section_id, prompt, question_type, is_required, allows_not_applicable, help_text, position",
+      )
+      .eq("template_version_id", version?.template_version_id ?? "")
+      .order("position"),
+  ]);
 
-  const { data: questionsRaw } = await supabase
-    .from("template_questions")
-    .select(
-      "id, section_id, prompt, question_type, is_required, allows_not_applicable, help_text, position",
-    )
-    .eq("template_version_id", version?.template_version_id ?? "")
-    .order("position");
 
   const sections =
     sectionsRaw?.map((section) => ({
@@ -93,10 +124,6 @@ export default async function FiveSAuditPage({
           })) ?? [],
     })) ?? [];
 
-  const { data: answersRaw } = await supabase
-    .from("template_answers")
-    .select("question_id, text_value, number_value, is_not_applicable")
-    .eq("submission_id", audit.submission_id);
 
   const answers: Record<
     string,
@@ -110,10 +137,6 @@ export default async function FiveSAuditPage({
     answers[a.question_id] = a;
   }
 
-  const { data: evidenceLinks } = await supabase
-    .from("five_s_evidence_links")
-    .select("section_id, question_id, finding_id, attachment_id")
-    .eq("audit_id", id);
 
   const attachmentIds = [
     ...new Set((evidenceLinks ?? []).map((link) => link.attachment_id)),
@@ -138,10 +161,6 @@ export default async function FiveSAuditPage({
     }
   }
 
-  const { data: actionContextRows } = await supabase
-    .from("five_s_action_context")
-    .select("question_id")
-    .eq("audit_id", id);
 
   const actionCountsByQuestion: Record<string, number> = {};
   for (const row of actionContextRows ?? []) {
@@ -167,8 +186,6 @@ export default async function FiveSAuditPage({
     }
   }
 
-  const linkedActions =
-    audit.status === "completed" ? await loadFiveSAuditLinkedActions(id) : [];
 
   if (audit.status === "completed") {
     return (
