@@ -519,6 +519,12 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await expect(page.getByText("Evidence attached")).toBeVisible();
     await expect(page.getByText("sample.webp")).toBeVisible();
     await expect(page.getByTestId("evidence-gallery")).toBeVisible();
+    const photo = page
+      .getByTestId(/^evidence-item-/)
+      .filter({ hasText: "sample.webp" });
+    const photoTestId = await photo.getAttribute("data-testid");
+    if (!photoTestId)
+      throw new Error("The uploaded photo has no attachment ID.");
     await page.getByTestId("gemba-raise-action").click();
     const dialog = page.getByTestId("actions-create-dialog");
     await expect(
@@ -551,6 +557,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
       await expect(
         planner
           .getByTestId("action-detail-sheet-body")
+          .getByTestId(photoTestId)
           .getByText("sample.webp", { exact: true }),
       ).toBeVisible();
     } finally {
