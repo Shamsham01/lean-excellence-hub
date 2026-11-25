@@ -68,35 +68,30 @@ export default async function BenefitDetailPage({
     currentMemberHasPermission("benefits.validate.finance"),
     currentMemberHasPermission("benefits.realisation.record"),
     currentMemberHasPermission("benefits.realisation.validate"),
-    callBenefitRpc<{
-      items: BenefitForecastVersion[],
-    callBenefitRpc<{
-      items: BenefitRealisationEntry[],
+    callBenefitRpc<{ items: BenefitForecastVersion[] }>(
+      supabase,
+      "get_benefit_forecast_history",
+      { target_benefit_id: benefitId },
+    ),
+    callBenefitRpc<{ items: BenefitRealisationEntry[] }>(
+      supabase,
+      "get_benefit_realisation_history",
+      { target_benefit_id: benefitId },
+    ),
     callBenefitRpc<BenefitRealisationSummary>(
-        supabase,
-        "get_benefit_realisation_summary",
-        { target_benefit_id: benefitId },
-      ),
+      supabase,
+      "get_benefit_realisation_summary",
+      { target_benefit_id: benefitId },
+    ),
     supabase
       .from("comments")
       .select("id, body, created_at, author_membership_id")
       .eq("target_resource_id", benefitId)
       .order("created_at"),
-    untypedFrom(
-      supabase,
-      "benefit_evidence_links",
-    )
+    untypedFrom(supabase, "benefit_evidence_links")
       .select("attachment_id")
       .eq("benefit_id", benefitId),
   ]);
-
-  }>(supabase, "get_benefit_forecast_history", {
-    target_benefit_id: benefitId,
-  });
-
-  }>(supabase, "get_benefit_realisation_history", {
-    target_benefit_id: benefitId,
-  });
 
   const attachmentIds =
     (evidenceLinks as Array<{ attachment_id: string }> | null)?.map(
