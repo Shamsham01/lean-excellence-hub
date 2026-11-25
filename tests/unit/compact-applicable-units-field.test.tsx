@@ -32,9 +32,7 @@ const initialIds = new Set(options.map((option) => option.id));
 
 function selectOnlyWarehouse() {
   fireEvent.click(screen.getByTestId("applicable-units-edit-locations"));
-  const clearSite = screen.getByTestId(
-    "applicable-units-select-all-site-site",
-  );
+  const clearSite = screen.getByTestId("applicable-units-select-all-site-site");
   expect(clearSite).toHaveTextContent("Clear site");
   fireEvent.click(clearSite);
   fireEvent.click(screen.getByRole("checkbox", { name: "Warehouse" }));
