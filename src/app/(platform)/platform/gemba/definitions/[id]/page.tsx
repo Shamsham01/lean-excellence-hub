@@ -80,18 +80,20 @@ export default async function GembaDefinitionPage({
     Array.isArray(query.saved) ? query.saved[0] : query.saved,
   );
   const supabase = await createServerSupabaseClient();
-  const canManage = await currentMemberHasPermission(
-    GEMBA_PERMISSIONS.definitionsManage,
-  );
-  const canSchedule = await currentMemberHasPermission(
-    SCHEDULE_PERMISSIONS.manage,
-  );
-
-  const { data: definition, error: definitionError } = await supabase
-    .from("gemba_definitions")
-    .select("id, display_name, description")
-    .eq("id", id)
-    .maybeSingle();
+  const [canManage, canSchedule, { data: definition, error: definitionError }] =
+    await Promise.all([
+      currentMemberHasPermission(
+      GEMBA_PERMISSIONS.definitionsManage,
+    ),
+      currentMemberHasPermission(
+      SCHEDULE_PERMISSIONS.manage,
+    ),
+      supabase
+        .from("gemba_definitions")
+        .select("id, display_name, description")
+        .eq("id", id)
+        .maybeSingle(),
+    ]);
 
   requireQuerySuccess(
     definitionError,
@@ -108,11 +110,22 @@ export default async function GembaDefinitionPage({
     notFound();
   }
 
-  const { data: versions, error: versionsError } = await supabase
-    .from("gemba_definition_versions")
-    .select("id, version_number, status, template_version_id")
-    .eq("definition_id", id)
-    .order("version_number", { ascending: false });
+  const [
+    { data: versions, error: versionsError },
+    { data: applicabilityRows, error: applicabilityError },
+    { units, context },
+  ] = await Promise.all([
+    supabase
+      .from("gemba_definition_versions")
+      .select("id, version_number, status, template_version_id")
+      .eq("definition_id", id)
+      .order("version_number", { ascending: false }),
+    supabase
+      .from("gemba_definition_applicable_units")
+      .select("unit_id")
+      .eq("definition_id", id),
+    loadActiveSiteContext(),
+  ]);
 
   const loadedVersions = requireQuerySuccess(
     versionsError,
@@ -124,23 +137,28 @@ export default async function GembaDefinitionPage({
   const publishedVersion = loadedVersions.find((v) => v.status === "published");
   const editorVersion = draftVersion ?? publishedVersion;
 
-  const { data: applicabilityRows, error: applicabilityError } = await supabase
-    .from("gemba_definition_applicable_units")
-    .select("unit_id")
-    .eq("definition_id", id);
-
   const applicableIds = requireGembaApplicableUnitIds(
     applicabilityError,
     applicabilityRows,
   );
   const mappedUnitIds = [...applicableIds];
-  const { data: mappedUnits, error: mappedUnitsError } =
-    mappedUnitIds.length > 0
-      ? await supabase
-          .from("organisation_units")
-          .select("id, status")
-          .in("id", mappedUnitIds)
-      : { data: [], error: null };
+  const [{ data: mappedUnits, error: mappedUnitsError }, authoring, activeWalks] =
+    await Promise.all([
+      mappedUnitIds.length > 0
+        ? supabase
+            .from("organisation_units")
+            .select("id, status")
+            .in("id", mappedUnitIds)
+        : { data: [], error: null },
+      loadTemplateAuthoringChildren(
+        supabase,
+        editorVersion?.template_version_id,
+      ),
+      loadActiveGembaWalksForDefinitionVersions(
+        supabase,
+        loadedVersions.map((version) => version.id),
+      ),
+    ]);
 
   const unitStatusById = collectUnitStatuses(
     requireQuerySuccess(
@@ -149,7 +167,6 @@ export default async function GembaDefinitionPage({
       "Failed to load applicable organisational units",
     ),
   );
-  const { units, context } = await loadActiveSiteContext();
   const configurationUnits = {
     ...buildSiteScopedUnitOptions(units, context, {
       requireConcreteSite: true,
@@ -177,17 +194,9 @@ export default async function GembaDefinitionPage({
     applicabilitySelection.staleInactiveIds.length,
   );
 
-  const authoring = await loadTemplateAuthoringChildren(
-    supabase,
-    editorVersion?.template_version_id,
-  );
   const canPublishQuestions = isTemplateAuthoringPublishReady(authoring);
   const hasApplicableUnits = applicabilitySelection.confirmedActiveIds.size > 0;
   const canPublish = canPublishQuestions && hasApplicableUnits;
-  const activeWalks = await loadActiveGembaWalksForDefinitionVersions(
-    supabase,
-    loadedVersions.map((version) => version.id),
-  );
 
   const managementActions =
     (publishedVersion && !draftVersion && canManage) ||
