@@ -122,73 +122,72 @@ export default async function PlatformHomePage({
     homeAnalytics,
   ] = await Promise.all([
     home.maturityMetric
-  ? supabase
-      .from("maturity_official_results")
-      .select("overall_score, published_at")
-      .order("published_at", { ascending: false })
-      .limit(1)
-      .maybeSingle()
-  : { data: null },
+      ? supabase
+          .from("maturity_official_results")
+          .select("overall_score, published_at")
+          .order("published_at", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : { data: null },
     home.actionsMetric
-  ? supabase
-      .from("actions")
-      .select("id", { count: "exact", head: true })
-      .in("status", ["open", "in_progress"])
-  : { count: null },
+      ? supabase
+          .from("actions")
+          .select("id", { count: "exact", head: true })
+          .in("status", ["open", "in_progress"])
+      : { count: null },
     home.actionsMetric
-  ? supabase
-      .from("actions")
-      .select("id", { count: "exact", head: true })
-      .in("status", ["open", "in_progress"])
-      .lt("due_at", new Date().toISOString())
-  : { count: null },
+      ? supabase
+          .from("actions")
+          .select("id", { count: "exact", head: true })
+          .in("status", ["open", "in_progress"])
+          .lt("due_at", new Date().toISOString())
+      : { count: null },
     home.recentAssessments
-  ? supabase
-      .from("maturity_assessments")
-      .select("id, status, assessment_type")
-      .order("updated_at", { ascending: false })
-      .limit(3)
-  : { data: null },
+      ? supabase
+          .from("maturity_assessments")
+          .select("id, status, assessment_type")
+          .order("updated_at", { ascending: false })
+          .limit(3)
+      : { data: null },
     home.templates
-  ? supabase
-      .from("templates")
-      .select("id", { count: "exact", head: true })
-  : { count: null },
+      ? supabase
+          .from("templates")
+          .select("id", { count: "exact", head: true })
+      : { count: null },
     home.fiveSMetric
-  ? supabase
-      .from("five_s_audits")
-      .select("overall_score_percent")
-      .eq("status", "completed")
-      .order("completed_at", { ascending: false })
-      .limit(1)
-      .maybeSingle()
-  : { data: null },
+      ? supabase
+          .from("five_s_audits")
+          .select("overall_score_percent")
+          .eq("status", "completed")
+          .order("completed_at", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : { data: null },
     home.gembaMetric
-  ? supabase
-      .from("gemba_walks")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "completed")
-  : { count: null },
+      ? supabase
+          .from("gemba_walks")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "completed")
+      : { count: null },
     home.capability && canReadCapabilityDashboard
-    ? supabase.rpc("get_capability_dashboard")
-    : { data: null },
+      ? supabase.rpc("get_capability_dashboard")
+      : { data: null },
     canReadSuggestions
-    ? supabase.rpc("get_suggestions_overview")
-    : { data: null },
+      ? supabase.rpc("get_suggestions_overview")
+      : { data: null },
     canReadBenefits
-    ? supabase.rpc("get_benefits_overview")
-    : { data: null },
-    loadPlatformHomeAnalytics(
-  supabase,
-  analyticsRange,
-  home,
-  ),
+      ? supabase.rpc("get_benefits_overview")
+      : { data: null },
+    loadPlatformHomeAnalytics(supabase, analyticsRange, home),
   ]);
   const capabilityObj = capabilityDashboard as {
     training_compliance_percent?: number | null;
     skill_coverage_percent?: number | null;
   } | null;
-  const suggestionsOverview = suggestionsData as Record<string, unknown> | null;
+  const suggestionsOverview = suggestionsData as Record<
+    string,
+    unknown
+  > | null;
   const benefitsOverview = benefitsData as BenefitsOverview | null;
   const benefitsAwaitingValidation =
     (benefitsOverview?.awaiting_validation?.benefits ?? 0) +
