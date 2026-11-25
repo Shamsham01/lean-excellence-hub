@@ -23,22 +23,54 @@ export type PlatformNotificationSnapshot = {
   items: PlatformInAppNotification[];
 };
 
+const CHASE_SYNC_INTERVAL_MS = 10 * 60 * 1000;
+const chaseSyncByMembership = new Map<
+  string,
+  { startedAt: number; promise: Promise<void> }
+>();
+
+// Process-local throttle: only the sync attempt is shared, never notification
+// data. Keep the membership key so an organisation switch cannot reuse a
+// different membership's sync state.
+function syncChaseNotifications(
+  membershipId: string,
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+): Promise<void> {
+  const now = Date.now();
+  const existing = chaseSyncByMembership.get(membershipId);
+  if (existing && now - existing.startedAt < CHASE_SYNC_INTERVAL_MS) {
+    return existing.promise;
+  }
+
+  for (const [key, entry] of chaseSyncByMembership) {
+    if (now - entry.startedAt >= CHASE_SYNC_INTERVAL_MS) {
+      chaseSyncByMembership.delete(key);
+    }
+  }
+
+  const promise = (async () => {
+    const syncResult = await supabase.rpc(
+      "sync_leanai_operational_chase_notifications",
+    );
+    if (syncResult.error) {
+      const legacySync = await supabase.rpc(
+        "sync_overdue_action_chase_notifications",
+      );
+      if (legacySync.error) {
+        /* Migration may not be applied on older databases; ignore and continue. */
+      }
+    }
+  })();
+  chaseSyncByMembership.set(membershipId, { startedAt: now, promise });
+  return promise;
+}
+
 export async function loadPlatformNotificationSnapshot(
   membershipId: string,
 ): Promise<PlatformNotificationSnapshot | null> {
   const supabase = await createServerSupabaseClient();
 
-  const syncResult = await supabase.rpc(
-    "sync_leanai_operational_chase_notifications",
-  );
-  if (syncResult.error) {
-    const legacySync = await supabase.rpc(
-      "sync_overdue_action_chase_notifications",
-    );
-    if (legacySync.error) {
-      /* Migration may not be applied on older databases; ignore and continue. */
-    }
-  }
+  await syncChaseNotifications(membershipId, supabase);
 
   const [{ count, error: countError }, { data: rows, error: listError }] =
     await Promise.all([
