@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { OrganisationalUnitSelect } from "@/components/organisation/organisational-unit-select";
-import { PersonSelect } from "@/components/people/person-select";
+import { SchedulePeoplePicker } from "./schedule-people-picker";
 import type { ScheduleFormState } from "@/app/(platform)/platform/schedule/actions";
 import {
   type ScheduleRecurrence,
@@ -179,18 +179,12 @@ export function ScheduleForm({
           testId="schedule-unit-select"
           scrollOnMobile={!isEdit}
         />
-        <PersonSelect
-          id="ownerMembershipId"
+        <SchedulePeoplePicker
+          requiresSiteSelection={requiresSiteSelection}
           name="ownerMembershipId"
           label="Owner"
           options={memberships}
-          defaultValue={defaultOwnerId}
-          {...(initialValues?.ownerMembershipId
-            ? { preferredValue: initialValues.ownerMembershipId }
-            : {})}
-          required
-          requiresSiteSelection={requiresSiteSelection}
-          testId="schedule-owner-select"
+          initialIds={defaultOwnerId ? [defaultOwnerId] : []}
         />
       </div>
 
@@ -315,25 +309,14 @@ export function ScheduleForm({
         </div>
       </div>
 
-      <div>
-        <Label htmlFor="participantMembershipIds">Participants</Label>
-        <select
-          id="participantMembershipIds"
-          name="participantMembershipIds"
-          multiple
-          defaultValue={initialValues?.participantMembershipIds ?? []}
-          className="mt-2 min-h-24 w-full rounded-md border border-border bg-background px-3 py-2"
-        >
-          {memberships.map((member) => (
-            <option key={member.id} value={member.id}>
-              {member.label}
-            </option>
-          ))}
-        </select>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Hold Ctrl or Cmd to select multiple participants.
-        </p>
-      </div>
+      <SchedulePeoplePicker
+        requiresSiteSelection={requiresSiteSelection}
+        name="participantMembershipIds"
+        label="Participants"
+        options={memberships}
+        initialIds={initialValues?.participantMembershipIds ?? []}
+        multiple
+      />
 
       <Button
         type="submit"

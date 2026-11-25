@@ -623,6 +623,7 @@ test.describe("mobile location dialog scrolling", () => {
     await loginAndSelectOrganisation(page, user, user.organisationAName);
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto("/platform/gemba/definitions");
+    await page.getByRole("link", { name: "Manual", exact: true }).click();
     await page.getByLabel("Name").fill("Manual location walk");
     await chooseApplicableUnit(page, { pickLast: true });
     await page.getByRole("button", { name: "Create draft" }).click();

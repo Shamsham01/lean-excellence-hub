@@ -438,3 +438,31 @@ export function renderSuggestionImplementedEmail(
     ),
   };
 }
+
+export function renderScheduleConfirmation(
+  context: NotificationDeliveryContext,
+  appOrigin: string,
+): RenderedOperationalEmail {
+  const title = String(context.eventPayload.title);
+  const ctaUrl = buildOperationalCtaUrl(
+    appOrigin,
+    String(context.eventPayload.context_link_path),
+  );
+  const intro =
+    "Your schedule has been confirmed. Open the attached calendar invitation to add or update it.";
+  return {
+    subject: "Schedule confirmation: " + title.replace(/[\r\n]+/g, " "),
+    text: title + "\n" + intro + "\n" + ctaUrl,
+    html: renderBrandedOperationalEmail(
+      {
+        eyebrow: context.organisationName,
+        title,
+        intro,
+        ctaLabel: "View schedule",
+        ctaUrl,
+        footer: "You received this email as a schedule participant.",
+      },
+      appOrigin,
+    ),
+  };
+}

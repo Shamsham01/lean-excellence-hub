@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 type GembaAuditRaiseActionProps = {
   linkContext: GembaActionLinkContext;
   actionCount: number;
+  prepare?: () => Promise<GembaActionLinkContext | null>;
   disabled?: boolean;
   onActionCreated?: () => void;
 };
@@ -19,12 +20,16 @@ type GembaAuditRaiseActionProps = {
 export function GembaAuditRaiseAction({
   linkContext,
   actionCount,
+  prepare,
   disabled = false,
   onActionCreated,
 }: GembaAuditRaiseActionProps) {
   const [createOpen, setCreateOpen] = useState(false);
 
-  function handleActionPersisted(_actionId: string) {
+  const [prepared, setPrepared] = useState<GembaActionLinkContext | null>(null);
+  const [preparing, setPreparing] = useState(false);
+
+  function handleActionPersisted() {
     onActionCreated?.();
   }
 
@@ -35,9 +40,24 @@ export function GembaAuditRaiseAction({
           type="button"
           variant="outline"
           className="min-h-11"
-          disabled={disabled}
+          disabled={disabled || preparing}
           data-testid="gemba-raise-action"
-          onClick={() => setCreateOpen(true)}
+          onClick={async () => {
+            if (!prepare) {
+              setCreateOpen(true);
+              return;
+            }
+            setPreparing(true);
+            try {
+              const context = await prepare();
+              if (context) {
+                setPrepared(context);
+                setCreateOpen(true);
+              }
+            } finally {
+              setPreparing(false);
+            }
+          }}
         >
           Create action
         </Button>
@@ -53,7 +73,7 @@ export function GembaAuditRaiseAction({
       <ActionCreateDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
-        gembaLinkContext={linkContext}
+        gembaLinkContext={prepared ?? linkContext}
         onActionPersisted={handleActionPersisted}
       />
     </>

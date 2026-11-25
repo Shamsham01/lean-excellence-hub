@@ -34,16 +34,16 @@ function titleCaseWords(value: string) {
 }
 
 export function isGembaObservationType(
-  value: string,
+  value: string | null,
 ): value is GembaObservationType {
-  return (GEMBA_OBSERVATION_TYPES as readonly string[]).includes(value);
+  return (GEMBA_OBSERVATION_TYPES as readonly string[]).includes(value ?? "");
 }
 
-export function formatGembaObservationType(value: string) {
+export function formatGembaObservationType(value: string | null) {
   if (isGembaObservationType(value)) {
     return OBSERVATION_TYPE_LABELS[value];
   }
-  return titleCaseWords(value);
+  return value ? titleCaseWords(value) : "Observation";
 }
 
 export function formatGembaWalkStatus(value: string) {
@@ -62,7 +62,7 @@ export function gembaObservationTypeOptions() {
 }
 
 export function countGembaObservationsByType(
-  observations: Array<{ observation_type: string }>,
+  observations: Array<{ observation_type: string | null }>,
 ) {
   const counts: Record<GembaObservationType, number> = {
     positive_practice: 0,

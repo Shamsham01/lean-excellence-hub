@@ -19,7 +19,8 @@ export default async function GembaSetupPage() {
   const [{ count }, access] = await Promise.all([
     supabase
       .from("gemba_definitions")
-      .select("id", { count: "exact", head: true }),
+      .select("id", { count: "exact", head: true })
+      .is("archived_at", null),
     canManage
       ? loadModuleSetupBuilderAccess({
           managePermission: GEMBA_PERMISSIONS.definitionsManage,
@@ -42,7 +43,7 @@ export default async function GembaSetupPage() {
         moduleLabel="Gemba"
         configurationNoun="definition"
         existingCount={count ?? 0}
-        manualHref="/platform/gemba/definitions#create-definition"
+        manualHref="/platform/gemba/definitions?create=manual#create-definition"
         quickStartHref="/platform/gemba/setup/quick-start"
         leanAiHref="/platform/gemba/setup/leanai"
         canManage={canManage}

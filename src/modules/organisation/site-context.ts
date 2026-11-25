@@ -27,6 +27,7 @@ export type ActiveSiteContext = {
 };
 
 export type SelectablePerson = {
+  avatarUrl?: string | null;
   id: string;
   displayName: string;
   jobTitle: string | null;
@@ -36,6 +37,7 @@ export type SelectablePerson = {
 };
 
 export type PersonSelectOption = {
+  avatarUrl?: string | null;
   id: string;
   label: string;
   name: string;
@@ -247,6 +249,7 @@ export function toPersonSelectOption(
   return {
     id: person.id,
     name: person.displayName,
+    ...(person.avatarUrl ? { avatarUrl: person.avatarUrl } : {}),
     label: formatPersonOptionLabel(person),
     placementUnitId: person.placementUnitId,
   };
@@ -320,6 +323,7 @@ export function mergeSelectablePeople(input: {
     job_title: string | null;
   }>;
   directoryPeople?: Array<{
+    avatar_url?: string | null;
     membership_id: string;
     display_name: string | null;
     job_title?: string | null;
@@ -357,6 +361,7 @@ export function mergeSelectablePeople(input: {
 
     people.push({
       id: membership.id,
+      ...(directory?.avatar_url ? { avatarUrl: directory.avatar_url } : {}),
       displayName: resolvePersonDisplayName(
         directory?.display_name,
         membership.display_name,

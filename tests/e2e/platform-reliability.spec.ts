@@ -86,6 +86,7 @@ test.describe("platform reliability after shared RSC refresh", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/gemba/definitions");
+    await page.getByRole("link", { name: "Manual", exact: true }).click();
 
     const name = `Reliability Gemba ${Date.now()}`;
     const firstPrompt = `Reliability prompt A ${Date.now()}`;

@@ -13,6 +13,7 @@ import {
   SUGGESTION_REVIEWER_REASSIGNED_KIND,
   TRAINING_COMPLETED_KIND,
   renderJobFunctionAssignedEmail,
+  renderScheduleConfirmation,
   renderRecognitionAwardedEmail,
   renderScheduleOccurrenceReminderEmail,
   renderSkillProficiencyValidatedEmail,
@@ -37,6 +38,7 @@ type NotificationRenderer = (
 ) => RenderedOperationalEmail;
 
 const RENDERERS: Record<string, NotificationRenderer> = {
+  "schedule.calendar_confirmation": renderScheduleConfirmation,
   [JOB_FUNCTION_ASSIGNED_KIND]: renderJobFunctionAssignedEmail,
   [TRAINING_COMPLETED_KIND]: renderTrainingCompletedEmail,
   [SKILL_PROFICIENCY_VALIDATED_KIND]: renderSkillProficiencyValidatedEmail,

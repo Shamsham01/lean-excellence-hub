@@ -1,5 +1,6 @@
 "use server";
 
+import { callActionRpc } from "@/lib/actions/supabase-untyped";
 import { revalidatePath } from "next/cache";
 import { redirect, RedirectType } from "next/navigation";
 
@@ -225,11 +226,36 @@ export async function saveGembaWalkAnswer(
   return { ok: true };
 }
 
+export async function savePromptCapture(
+  walkId: string,
+  questionId: string,
+  notes: string,
+  na: boolean,
+  type: string | null,
+  createObservation = false,
+) {
+  const db = await createServerSupabaseClient();
+  const { data, error } = await callActionRpc<string>(
+    db,
+    "save_gemba_prompt_capture",
+    {
+      target_walk_id: walkId,
+      target_question_id: questionId,
+      target_text_value: notes,
+      target_is_not_applicable: na,
+      target_observation_type: type,
+      target_create_observation: createObservation,
+    },
+  );
+  return error ? { error: error.message } : { ok: true, observationId: data };
+}
+
 export async function createGembaObservation(
   walkId: string,
   text: string,
-  observationType: string,
+  observationType: string | null,
   clientRequestId?: string,
+  questionId?: string,
 ) {
   const trimmed = text.trim();
   if (!trimmed) {
@@ -240,10 +266,12 @@ export async function createGembaObservation(
   const rpcArgs: {
     target_walk_id: string;
     target_observation_text: string;
-    target_observation_type: string;
+    target_observation_type: string | null;
+    target_question_id?: string;
     target_client_request_id?: string;
   } = {
     target_walk_id: walkId,
+    ...(questionId ? { target_question_id: questionId } : {}),
     target_observation_text: trimmed,
     target_observation_type: observationType,
   };
@@ -251,7 +279,8 @@ export async function createGembaObservation(
     rpcArgs.target_client_request_id = clientRequestId;
   }
 
-  const { data, error } = await supabase.rpc(
+  const { data, error } = await callActionRpc(
+    supabase,
     "create_gemba_observation",
     rpcArgs,
   );
@@ -264,7 +293,7 @@ export async function updateGembaObservation(
   walkId: string,
   observationId: string,
   text: string,
-  observationType: string,
+  observationType: string | null,
 ) {
   const trimmed = text.trim();
   if (!trimmed) {
@@ -272,7 +301,7 @@ export async function updateGembaObservation(
   }
 
   const supabase = await createServerSupabaseClient();
-  const { error } = await supabase.rpc("update_gemba_observation", {
+  const { error } = await callActionRpc(supabase, "update_gemba_observation", {
     target_walk_id: walkId,
     target_observation_id: observationId,
     target_observation_text: trimmed,

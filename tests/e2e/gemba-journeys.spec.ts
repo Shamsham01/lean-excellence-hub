@@ -86,6 +86,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/gemba/definitions");
+    await page.getByRole("link", { name: "Manual", exact: true }).click();
 
     const name = `E2E Gemba Notes ${Date.now()}`;
     const firstPrompt = `What abnormal condition is visible? ${Date.now()}`;
@@ -210,6 +211,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/gemba/definitions");
+    await page.getByRole("link", { name: "Manual", exact: true }).click();
 
     const name = `E2E Gemba Observations ${Date.now()}`;
     const firstPrompt = `What abnormal condition is visible? ${Date.now()}`;
@@ -287,6 +289,12 @@ test.describe("Milestone 6 Gemba journeys", () => {
       { timeout: 15_000 },
     );
 
+    const issuePill = page.getByRole("button", { name: "Issue", exact: true });
+    await issuePill.click();
+    await expect(issuePill).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByText("No action raised")).toBeVisible();
+    await issuePill.click();
+    await expect(issuePill).toHaveAttribute("aria-pressed", "false");
     await page.getByTestId("gemba-capture-observation").click();
     await page
       .getByTestId("gemba-observation-type-improvement_opportunity")
@@ -301,7 +309,11 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await expect(page.getByTestId("gemba-observation-list")).toContainText(
       observationText,
     );
-    await expect(page.getByText("Improvement opportunity")).toBeVisible();
+    await expect(
+      page
+        .getByTestId("gemba-observation-list")
+        .getByText("Improvement opportunity", { exact: true }),
+    ).toBeVisible();
 
     await clickGembaCompleteWalk(page);
     await expect(
@@ -453,6 +465,7 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await signInAsDemoUser(page, "admin");
     await page.goto("/platform/gemba/definitions");
+    await page.getByRole("link", { name: "Manual", exact: true }).click();
 
     const name = `E2E Gemba Prompt Complete ${Date.now()}`;
     const firstPrompt = `What abnormal condition is visible? ${Date.now()}`;
@@ -500,11 +513,56 @@ test.describe("Milestone 6 Gemba journeys", () => {
     await fillGembaWalkNotesExpectSaved(page, "First prompt notes.");
     await navigateGembaPrompt(page, "Next", secondPrompt);
 
-    await fillGembaWalkNotesExpectSaved(page, "Second prompt notes.");
+    const actionNotes = `Inspect the photographed obstruction ${Date.now()}`;
+    await fillGembaWalkNotesExpectSaved(page, actionNotes);
     await page.getByTestId("evidence-file-input").setInputFiles(imagePath);
     await expect(page.getByText("Evidence attached")).toBeVisible();
     await expect(page.getByText("sample.webp")).toBeVisible();
     await expect(page.getByTestId("evidence-gallery")).toBeVisible();
+    const photo = page
+      .getByTestId(/^evidence-item-/)
+      .filter({ hasText: "sample.webp" });
+    const photoTestId = await photo.getAttribute("data-testid");
+    if (!photoTestId)
+      throw new Error("The uploaded photo has no attachment ID.");
+    await page.getByTestId("gemba-raise-action").click();
+    const dialog = page.getByTestId("actions-create-dialog");
+    await expect(
+      dialog.getByLabel("Title", { exact: false }).first(),
+    ).toHaveValue(actionNotes);
+    await expect(dialog.getByLabel("Description", { exact: true })).toHaveValue(
+      actionNotes,
+    );
+    await expect(
+      dialog.getByText("Observation evidence: sample.webp"),
+    ).toBeVisible();
+    await dialog
+      .getByTestId("action-create-assignee")
+      .selectOption({ index: 1 });
+    await dialog.getByTestId("action-create-due").fill("2030-01-01");
+    await dialog.getByTestId("actions-create-submit").click();
+    await expect(dialog).toBeHidden();
+    await expect(page.getByTestId("gemba-observation-action-count")).toHaveText(
+      "1 action",
+    );
+
+    const planner = await page.context().newPage();
+    try {
+      await planner.goto("/platform/actions");
+      await planner
+        .getByTestId(/^action-planner-card-/)
+        .filter({ hasText: actionNotes })
+        .click();
+      await planner.getByRole("tab", { name: "Evidence" }).click();
+      await expect(
+        planner
+          .getByTestId("action-detail-sheet-body")
+          .getByTestId(photoTestId)
+          .getByText("sample.webp", { exact: true }),
+      ).toBeVisible();
+    } finally {
+      await planner.close();
+    }
 
     await page.getByTestId("gemba-capture-observation").click();
     await page

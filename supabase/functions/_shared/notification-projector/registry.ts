@@ -1,3 +1,4 @@
+import { buildDeliveryKey } from "./delivery-key.ts";
 import {
   JOB_FUNCTION_ASSIGNED_EVENT,
   projectJobFunctionAssigned,
@@ -114,6 +115,34 @@ export const NOTIFICATION_EVENT_PROJECTORS: DomainEventProjector[] = [
   {
     eventType: SUGGESTION_IMPLEMENTED_EVENT,
     project: projectSuggestionImplemented,
+  },
+  {
+    eventType: "ScheduleCalendarConfirmed",
+    project: (event) => {
+      const { owner, participants } = event.payload;
+      if (
+        typeof owner !== "string" ||
+        !Array.isArray(participants) ||
+        !participants.every((id) => typeof id === "string")
+      ) {
+        throw new Error("Invalid calendar recipients");
+      }
+      const kind = "schedule.calendar_confirmation";
+      return {
+        kind: "project",
+        intents: [...new Set([owner, ...participants])].map(
+          (recipientMembershipId) => ({
+            recipientMembershipId,
+            notificationKind: kind,
+            deliveryKey: buildDeliveryKey(
+              kind,
+              event.eventId,
+              recipientMembershipId,
+            ),
+          }),
+        ),
+      };
+    },
   },
   {
     eventType: SCHEDULE_OCCURRENCE_REMINDER_EVENT,

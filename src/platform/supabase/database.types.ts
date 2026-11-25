@@ -4017,6 +4017,39 @@ export type Database = {
           },
         ]
       }
+      gemba_action_evidence: {
+        Row: {
+          action_id: string
+          attachment_id: string
+          organisation_id: string
+        }
+        Insert: {
+          action_id: string
+          attachment_id: string
+          organisation_id: string
+        }
+        Update: {
+          action_id?: string
+          attachment_id?: string
+          organisation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gemba_action_evidence_organisation_id_action_id_fkey"
+            columns: ["organisation_id", "action_id"]
+            isOneToOne: false
+            referencedRelation: "actions"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "gemba_action_evidence_organisation_id_attachment_id_fkey"
+            columns: ["organisation_id", "attachment_id"]
+            isOneToOne: false
+            referencedRelation: "attachments"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
       gemba_definition_applicable_units: {
         Row: {
           created_at: string
@@ -4125,6 +4158,7 @@ export type Database = {
       }
       gemba_definitions: {
         Row: {
+          archived_at: string | null
           created_at: string
           created_by_membership_id: string
           description: string | null
@@ -4135,6 +4169,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived_at?: string | null
           created_at?: string
           created_by_membership_id: string
           description?: string | null
@@ -4145,6 +4180,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived_at?: string | null
           created_at?: string
           created_by_membership_id?: string
           description?: string | null
@@ -4265,7 +4301,7 @@ export type Database = {
           id: string
           linked_project_id: string | null
           observation_text: string
-          observation_type: string
+          observation_type: string | null
           organisation_id: string
           priority: string | null
           question_id: string | null
@@ -4280,7 +4316,7 @@ export type Database = {
           id?: string
           linked_project_id?: string | null
           observation_text: string
-          observation_type: string
+          observation_type?: string | null
           organisation_id: string
           priority?: string | null
           question_id?: string | null
@@ -4295,7 +4331,7 @@ export type Database = {
           id?: string
           linked_project_id?: string | null
           observation_text?: string
-          observation_type?: string
+          observation_type?: string | null
           organisation_id?: string
           priority?: string | null
           question_id?: string | null
@@ -9875,6 +9911,7 @@ export type Database = {
       schedule_definitions: {
         Row: {
           activity_resource_id: string
+          calendar_state: Json | null
           created_at: string
           created_by_membership_id: string
           description: string | null
@@ -9896,6 +9933,7 @@ export type Database = {
         }
         Insert: {
           activity_resource_id: string
+          calendar_state?: Json | null
           created_at?: string
           created_by_membership_id: string
           description?: string | null
@@ -9917,6 +9955,7 @@ export type Database = {
         }
         Update: {
           activity_resource_id?: string
+          calendar_state?: Json | null
           created_at?: string
           created_by_membership_id?: string
           description?: string | null
@@ -15899,6 +15938,10 @@ export type Database = {
         Args: { target_section_id: string }
         Returns: boolean
       }
+      remove_gemba_definition: {
+        Args: { target_definition_id: string }
+        Returns: string
+      }
       remove_problem_solving_source_link: {
         Args: { target_link_id: string }
         Returns: boolean
@@ -16018,6 +16061,17 @@ export type Database = {
       revoke_training_completion: {
         Args: { target_completion_id: string; target_notes?: string }
         Returns: boolean
+      }
+      save_gemba_prompt_capture: {
+        Args: {
+          target_create_observation: boolean
+          target_is_not_applicable: boolean
+          target_observation_type: string
+          target_question_id: string
+          target_text_value: string
+          target_walk_id: string
+        }
+        Returns: string
       }
       save_skill_setup_preparation: {
         Args: {

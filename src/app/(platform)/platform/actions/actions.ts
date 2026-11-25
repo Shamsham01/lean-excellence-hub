@@ -737,6 +737,19 @@ export async function loadActionSheetPayload(
     .eq("target_resource_id", actionId)
     .eq("lifecycle", "active")
     .order("created_at");
+  const { data: inherited, error: inheritedError } = await supabase
+    .from("gemba_action_evidence")
+    .select(
+      "attachments(id, filename, mime_type, byte_size, storage_object_path, lifecycle)",
+    )
+    .eq("action_id", actionId);
+  if (inheritedError) return { error: "Action evidence could not be loaded." };
+  const actionEvidence = [
+    ...(evidence ?? []),
+    ...(inherited ?? []).flatMap((row) =>
+      row.attachments?.lifecycle === "active" ? [row.attachments] : [],
+    ),
+  ];
 
   let assignablePeople: AssignablePerson[] = [];
   if (canAssign && detail.permissions.can_assign) {
@@ -864,7 +877,7 @@ export async function loadActionSheetPayload(
       ...(projectPicker ? { projectPicker } : {}),
       comments: enrichedComments,
       legacyComments: (comments ?? []) as CommentRow[],
-      evidence: (evidence ?? [])
+      evidence: actionEvidence
         .filter((item) => item.byte_size != null)
         .map((item): ActionSheetPayload["evidence"][number] => ({
           id: item.id,

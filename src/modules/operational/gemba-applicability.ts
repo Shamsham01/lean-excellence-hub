@@ -30,3 +30,10 @@ export function requireGembaApplicableUnitIds(
   }
   return collectApplicableUnitIds(rows);
 }
+
+export function definitionRemovalLabel(
+  hasWalks: boolean,
+  hasSchedules: boolean,
+) {
+  return hasWalks || hasSchedules ? "Archive" : "Delete";
+}

@@ -54,6 +54,8 @@ export type FiveSActionLinkContext = {
 };
 
 export type GembaActionLinkContext = {
+  defaultDescription?: string;
+  evidenceNames?: string[];
   walkId: string;
   sectionId?: string | null;
   questionId?: string | null;
@@ -180,8 +182,18 @@ export function ActionCreateDialog({
     ) as HTMLInputElement | null;
     if (titleInput && !titleInput.value.trim()) {
       titleInput.value = linkContext.defaultTitle;
-      syncQueryFromForm();
     }
+    const descriptionInput = formRef.current.elements.namedItem(
+      "description",
+    ) as HTMLTextAreaElement | null;
+    if (
+      descriptionInput &&
+      !descriptionInput.value.trim() &&
+      gembaLinkContext?.defaultDescription
+    ) {
+      descriptionInput.value = gembaLinkContext.defaultDescription;
+    }
+    syncQueryFromForm();
   }, [open, fiveSLinkContext, gembaLinkContext]);
 
   function syncQueryFromForm() {
@@ -555,6 +567,13 @@ export function ActionCreateDialog({
               <Textarea
                 id="action-create-description"
                 name="description"
+                key={JSON.stringify([
+                  gembaLinkContext?.questionId,
+                  gembaLinkContext?.observationId,
+                  open,
+                  gembaLinkContext?.defaultDescription,
+                ])}
+                defaultValue={gembaLinkContext?.defaultDescription}
                 rows={3}
                 disabled={pending || Boolean(createdActionId)}
               />
@@ -667,6 +686,11 @@ export function ActionCreateDialog({
                     </div>
                   )}
                 </div>
+                {gembaLinkContext?.evidenceNames?.map((name, index) => (
+                  <p key={index} className="text-sm text-muted-foreground">
+                    Observation evidence: {name}
+                  </p>
+                ))}
                 <ActionCreateEvidencePicker
                   drafts={evidenceDrafts}
                   disabled={pending}
