@@ -10,10 +10,10 @@ export default async function PlatformLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const { current, organisations, siteContext } =
     await loadPlatformWorkspaceContext();
-  const [member, notifications] = await Promise.all([
-    loadPlatformShellMember(current.membership_id),
-    loadPlatformNotificationSnapshot(current.membership_id),
-  ]);
+  const notificationsPromise = loadPlatformNotificationSnapshot(
+    current.membership_id,
+  );
+  const member = await loadPlatformShellMember(current.membership_id);
 
   return (
     <PlatformShell
@@ -22,7 +22,8 @@ export default async function PlatformLayout({
       organisations={organisations}
       siteContext={siteContext}
       member={member}
-      notifications={notifications}
+      notifications={null}
+      notificationsPromise={notificationsPromise}
     >
       {children}
     </PlatformShell>
