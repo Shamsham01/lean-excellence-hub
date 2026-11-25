@@ -38,17 +38,20 @@ export default async function GembaWalkPage({
 
   const { prompt } = await searchParams;
   const supabase = await createServerSupabaseClient();
-  const canEdit = await currentMemberHasPermission(
-    GEMBA_PERMISSIONS.walkPerform,
-  );
+  const [
+    canEdit,
+    { data: walk },
+  ] = await Promise.all([
+    currentMemberHasPermission(GEMBA_PERMISSIONS.walkPerform),
+    supabase
+      .from("gemba_walks")
+      .select(
+        "id, status, submission_id, definition_version_id, summary_notes, definition_name_snapshot, unit_name_snapshot, completed_at, site_unit_id",
+      )
+      .eq("id", id)
+      .maybeSingle(),
+  ]);
 
-  const { data: walk } = await supabase
-    .from("gemba_walks")
-    .select(
-      "id, status, submission_id, definition_version_id, summary_notes, definition_name_snapshot, unit_name_snapshot, completed_at, site_unit_id",
-    )
-    .eq("id", id)
-    .maybeSingle();
   if (!walk) {
     const workplaceRecord = await loadWorkplaceRecordFallback({
       module: "gemba",
@@ -59,25 +62,43 @@ export default async function GembaWalkPage({
     notFound();
   }
 
-  const { data: version } = await supabase
-    .from("gemba_definition_versions")
-    .select("template_version_id")
-    .eq("id", walk.definition_version_id)
-    .maybeSingle();
+  const [
+    { data: version },
+    { data: answersRaw },
+    { data: evidenceLinks },
+  ] = await Promise.all([
+    supabase
+      .from("gemba_definition_versions")
+      .select("template_version_id")
+      .eq("id", walk.definition_version_id)
+      .maybeSingle(),
+    supabase
+      .from("template_answers")
+      .select("question_id, text_value, is_not_applicable")
+      .eq("submission_id", walk.submission_id),
+    supabase
+      .from("gemba_evidence_links")
+      .select("section_id, question_id, observation_id, attachment_id")
+      .eq("walk_id", id),
+  ]);
 
-  const { data: sectionsRaw } = await supabase
-    .from("template_sections")
-    .select("id, title, position")
-    .eq("template_version_id", version?.template_version_id ?? "")
-    .order("position", { ascending: true });
-
-  const { data: questionsRaw } = await supabase
-    .from("template_questions")
-    .select(
-      "id, section_id, position, prompt, question_type, help_text, is_required, allows_not_applicable",
-    )
-    .eq("template_version_id", version?.template_version_id ?? "")
-    .order("position", { ascending: true });
+  const [
+    { data: sectionsRaw },
+    { data: questionsRaw },
+  ] = await Promise.all([
+    supabase
+      .from("template_sections")
+      .select("id, title, position")
+      .eq("template_version_id", version?.template_version_id ?? "")
+      .order("position", { ascending: true }),
+    supabase
+      .from("template_questions")
+      .select(
+        "id, section_id, position, prompt, question_type, help_text, is_required, allows_not_applicable",
+      )
+      .eq("template_version_id", version?.template_version_id ?? "")
+      .order("position", { ascending: true }),
+  ]);
 
   const sections =
     sectionsRaw?.map((s) => ({
@@ -97,21 +118,11 @@ export default async function GembaWalkPage({
           })) ?? [],
     })) ?? [];
 
-  const { data: answersRaw } = await supabase
-    .from("template_answers")
-    .select("question_id, text_value, is_not_applicable")
-    .eq("submission_id", walk.submission_id);
-
   const answers: Record<
     string,
     { text_value?: string | null; is_not_applicable?: boolean }
   > = {};
   for (const a of answersRaw ?? []) answers[a.question_id] = a;
-
-  const { data: evidenceLinks } = await supabase
-    .from("gemba_evidence_links")
-    .select("section_id, question_id, observation_id, attachment_id")
-    .eq("walk_id", id);
 
   const attachmentIds = [
     ...new Set((evidenceLinks ?? []).map((link) => link.attachment_id)),
