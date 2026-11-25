@@ -54,7 +54,6 @@ export async function setFiveSStandardApplicableUnits(
     target_unit_ids: unitIds,
   });
   if (error) return { error: error.message };
-  revalidatePath("/platform/5s");
   revalidatePath(`/platform/5s/standards/${standardId}`);
   return { ok: true };
 }
@@ -131,8 +130,6 @@ export async function setFiveSStandardApplicableUnitsFromForm(
   if (result.error) {
     throw new Error(result.error);
   }
-  revalidatePath("/platform/5s");
-  revalidatePath(`/platform/5s/standards/${standardId}`);
 }
 
 export async function addFiveSSection(
