@@ -17,6 +17,7 @@ type GembaEvidenceBlockProps = {
   observationId?: string;
   evidence: EvidenceItem[];
   canEdit: boolean;
+  onUploadSuccess?: (item: EvidenceItem) => void;
 };
 
 export function GembaEvidenceBlock({
@@ -26,10 +27,12 @@ export function GembaEvidenceBlock({
   observationId,
   evidence,
   canEdit,
+  onUploadSuccess,
 }: GembaEvidenceBlockProps) {
   return (
     <EvidenceUploader
       photoOnly
+      {...(onUploadSuccess ? { onUploadSuccess } : {})}
       existingEvidence={evidence}
       canEdit={canEdit}
       filter={(item) =>

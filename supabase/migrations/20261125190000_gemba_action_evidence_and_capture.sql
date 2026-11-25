@@ -52,6 +52,7 @@ declare
   observation uuid;
   capture_text text := nullif(btrim(target_text_value), '');
   has_photo boolean;
+  prompt_section uuid;
 begin
   perform private.upsert_gemba_walk_answer(target_walk_id, target_question_id, target_is_not_applicable, target_text_value);
   select o.id into observation from public.gemba_walk_observations o
@@ -69,8 +70,10 @@ begin
   end if;
   if capture_text is not null then
     if observation is null and (target_observation_type is not null or target_create_observation) then
+      select q.section_id into strict prompt_section from public.template_questions q
+        where q.organisation_id = org and q.id = target_question_id;
       observation := private.create_gemba_observation(target_walk_id, capture_text, target_observation_type,
-        null, target_question_id, null, null, target_question_id);
+        prompt_section, target_question_id, null, null, target_question_id);
     elsif observation is not null then
       perform private.update_gemba_observation(target_walk_id, observation, capture_text, target_observation_type);
     end if;

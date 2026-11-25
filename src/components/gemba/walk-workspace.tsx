@@ -204,7 +204,7 @@ export function GembaWalkWorkspace({
   status,
   sections,
   answers,
-  evidence,
+  evidence: storedEvidence,
   observations = [],
   canEdit,
   canComplete = false,
@@ -215,6 +215,15 @@ export function GembaWalkWorkspace({
   linkedProjectsByObservationId = {},
   actionCountsByObservation = {},
 }: GembaWalkWorkspaceProps) {
+  const [uploadedEvidence, setUploadedEvidence] = useState<EvidenceItem[]>([]);
+  const evidence = [
+    ...storedEvidence,
+    ...uploadedEvidence.filter(
+      (item) => !storedEvidence.some((stored) => stored.id === item.id),
+    ),
+  ];
+  const rememberUpload = (item: EvidenceItem) =>
+    setUploadedEvidence((previous) => [...previous, item]);
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const searchParams = useSearchParams();
@@ -747,6 +756,7 @@ export function GembaWalkWorkspace({
           </div>
 
           <GembaEvidenceBlock
+            onUploadSuccess={rememberUpload}
             key={current.question.id}
             walkId={walkId}
             sectionId={current.section.id}
@@ -793,7 +803,8 @@ export function GembaWalkWorkspace({
                 }
                 return {
                   walkId,
-                  sectionId: current.section.id,
+                  // The RPC resolves the observation's stored section, including older sectionless rows.
+                  sectionId: observationId ? null : current.section.id,
                   questionId: q,
                   observationId,
                   siteUnitId,
@@ -817,6 +828,7 @@ export function GembaWalkWorkspace({
               <p className="text-xs text-muted-foreground">No action raised</p>
             )}
           <GembaObservationPanel
+            onUploadSuccess={rememberUpload}
             includeWalkObservations={safeIndex === 0}
             siteUnitId={siteUnitId}
             questionId={current.question.id}

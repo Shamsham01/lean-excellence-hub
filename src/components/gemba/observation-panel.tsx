@@ -57,6 +57,7 @@ type SaveStatus = "idle" | "saving" | "saved" | "error";
 type GembaObservationPanelProps = {
   questionId?: string;
   includeWalkObservations?: boolean;
+  onUploadSuccess?: (item: EvidenceItem) => void;
   walkId: string;
   siteUnitId?: string | null;
   observations: WalkObservation[];
@@ -95,6 +96,7 @@ export function GembaObservationPanel({
   canEdit,
   questionId,
   includeWalkObservations = false,
+  onUploadSuccess,
   actionCountsByObservation = {},
   onIntegrityChange,
   onObservationsChange,
@@ -679,6 +681,7 @@ export function GembaObservationPanel({
                     ) : null}
 
                     <GembaEvidenceBlock
+                      {...(onUploadSuccess ? { onUploadSuccess } : {})}
                       walkId={walkId}
                       observationId={observation.id}
                       evidence={evidence}
