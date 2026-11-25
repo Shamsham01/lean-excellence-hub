@@ -76,27 +76,36 @@ export default async function ActionsPage({
     actions = data ?? [];
   }
 
-  const { data: assessmentRows } = await supabase
-    .from("maturity_assessments")
-    .select("id, assessment_type, status")
-    .order("updated_at", { ascending: false });
-  const { data: pillarRows } = await supabase
-    .from("maturity_pillars")
-    .select("id, name")
-    .order("name");
-  const { data: criterionRows } = await supabase
-    .from("maturity_criteria")
-    .select("id, name")
-    .order("name");
-  const { data: auditRows } = await supabase
-    .from("five_s_audits")
-    .select(
-      "id, status, standard_name_snapshot, unit_name_snapshot, completed_at, created_at",
-    )
-    .order("created_at", { ascending: false })
-    .limit(200);
+  const [
+    { data: assessmentRows },
+    { data: pillarRows },
+    { data: criterionRows },
+    { data: auditRows },
+    plannerActions,
+  ] = await Promise.all([
+    supabase
+      .from("maturity_assessments")
+      .select("id, assessment_type, status")
+      .order("updated_at", { ascending: false }),
+    supabase
+      .from("maturity_pillars")
+      .select("id, name")
+      .order("name"),
+    supabase
+      .from("maturity_criteria")
+      .select("id, name")
+      .order("name"),
+    supabase
+      .from("five_s_audits")
+      .select(
+        "id, status, standard_name_snapshot, unit_name_snapshot, completed_at, created_at",
+      )
+      .order("created_at", { ascending: false })
+      .limit(200),
+    loadActionPlannerSummaries(actions),
+  ]);
 
-  const plannerActions = await loadActionPlannerSummaries(actions);
+
   const openActionParam =
     typeof rawParams.action === "string"
       ? rawParams.action
