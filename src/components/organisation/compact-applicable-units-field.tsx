@@ -38,14 +38,16 @@ export function CompactApplicableUnitsField({
   inputName = "applicableUnitIds",
 }: CompactApplicableUnitsFieldProps) {
   const selectableIds = new Set(options.map((option) => option.id));
+  const isControlled =
+    controlledSelectedIds !== undefined && onSelectedIdsChange !== undefined;
   const [uncontrolled, setUncontrolled] = useState<Set<string>>(
-    () => new Set(defaultSelectedIds ?? []),
+    () => new Set(controlledSelectedIds ?? defaultSelectedIds ?? []),
   );
-  const selectedIds = controlledSelectedIds ?? uncontrolled;
+  const selectedIds = isControlled ? controlledSelectedIds : uncontrolled;
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const setSelectedIds = (next: Set<string>) => {
-    if (controlledSelectedIds === undefined) {
+    if (!isControlled) {
       setUncontrolled(next);
     }
     onSelectedIdsChange?.(next);
