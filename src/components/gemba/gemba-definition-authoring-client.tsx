@@ -40,7 +40,7 @@ export function GembaApplicabilityEditor({
   staleWarning: string | null;
 }) {
   const [open, setOpen] = useState(false);
-  const flashSaved = useAuthoringSavedFlash();
+  const flashSaved = useAuthoringSavedFlash(true);
 
   return (
     <>
@@ -112,7 +112,7 @@ export function GembaDraftAuthoringPanels({
 }) {
   const [sectionOpen, setSectionOpen] = useState(false);
   const [promptSectionId, setPromptSectionId] = useState<string | null>(null);
-  const flashSaved = useAuthoringSavedFlash();
+  const flashSaved = useAuthoringSavedFlash(true);
 
   return (
     <>
