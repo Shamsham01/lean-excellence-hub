@@ -2,6 +2,7 @@ import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { type ButtonHTMLAttributes, forwardRef } from "react";
 
+import { PendingSubmitButton } from "@/components/ui/pending-submit-button";
 import { cn } from "@/lib/utils";
 
 /** Button variants adapted from TailAdmin (MIT — third-party/TAILADMIN-MIT.txt). */
@@ -40,7 +41,11 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button";
+    const Comp = asChild
+      ? Slot
+      : props.type === "submit"
+        ? PendingSubmitButton
+        : "button";
     return (
       <Comp
         ref={ref}
