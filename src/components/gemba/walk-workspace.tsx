@@ -309,11 +309,13 @@ export function GembaWalkWorkspace({
         !!payload.isNotApplicable,
         types[questionId] ?? null,
       );
-      if (result.observationId)
-        setPrimaryIds((previous) => ({
-          ...previous,
-          [questionId]: result.observationId!,
-        }));
+      if (!result.error)
+        setPrimaryIds((previous) => {
+          const next = { ...previous };
+          if (result.observationId) next[questionId] = result.observationId;
+          else delete next[questionId];
+          return next;
+        });
       return result;
     },
   });
@@ -770,27 +772,24 @@ export function GembaWalkWorkspace({
                 const q = current.question.id;
                 if (!(await flushQuestion(q))) return null;
                 const notes = answer.text_value?.trim() ?? "";
-                let observationId = primaryIds[q] ?? null;
-                if (notes) {
-                  const result = await savePromptCapture(
-                    walkId,
-                    q,
-                    notes,
-                    false,
-                    types[q] ?? null,
-                    true,
-                  );
-                  if (result.error) {
-                    setCaptureError(result.error);
-                    return null;
-                  }
-                  if (result.observationId) {
-                    observationId = result.observationId;
-                    setPrimaryIds((prev) => ({
-                      ...prev,
-                      [q]: result.observationId!,
-                    }));
-                  }
+                const result = await savePromptCapture(
+                  walkId,
+                  q,
+                  notes,
+                  !!answer.is_not_applicable,
+                  types[q] ?? null,
+                  true,
+                );
+                if (result.error) {
+                  setCaptureError(result.error);
+                  return null;
+                }
+                const observationId = result.observationId ?? null;
+                if (observationId) {
+                  setPrimaryIds((previous) => ({
+                    ...previous,
+                    [q]: observationId,
+                  }));
                 }
                 return {
                   walkId,
@@ -818,6 +817,7 @@ export function GembaWalkWorkspace({
               <p className="text-xs text-muted-foreground">No action raised</p>
             )}
           <GembaObservationPanel
+            includeWalkObservations={safeIndex === 0}
             siteUnitId={siteUnitId}
             questionId={current.question.id}
             walkId={walkId}

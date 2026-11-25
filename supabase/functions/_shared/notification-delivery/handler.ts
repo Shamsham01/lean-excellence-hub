@@ -451,7 +451,13 @@ export async function processClaimedNotificationDelivery(
         String.fromCharCode(byte),
       ).join(""),
     );
-    providerMessage.attachments = [{ filename: "schedule.ics", content }];
+    providerMessage.attachments = [
+      {
+        filename: "schedule.ics",
+        content,
+        contentType: "text/calendar; method=REQUEST; charset=UTF-8",
+      },
+    ];
   }
   let providerResult;
   try {

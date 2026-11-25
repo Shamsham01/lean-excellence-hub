@@ -29,7 +29,15 @@ export function createResendOperationalEmailProvider(
         response = await resend.emails.send(
           {
             ...(message.attachments
-              ? { attachments: message.attachments }
+              ? {
+                  attachments: message.attachments.map(
+                    ({ filename, content, contentType }) => ({
+                      filename,
+                      content,
+                      ...(contentType ? { contentType } : {}),
+                    }),
+                  ),
+                }
               : {}),
             from: message.from,
             to: [message.to],

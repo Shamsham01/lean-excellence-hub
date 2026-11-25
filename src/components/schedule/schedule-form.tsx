@@ -180,6 +180,7 @@ export function ScheduleForm({
           scrollOnMobile={!isEdit}
         />
         <SchedulePeoplePicker
+          requiresSiteSelection={requiresSiteSelection}
           name="ownerMembershipId"
           label="Owner"
           options={memberships}
@@ -309,6 +310,7 @@ export function ScheduleForm({
       </div>
 
       <SchedulePeoplePicker
+        requiresSiteSelection={requiresSiteSelection}
         name="participantMembershipIds"
         label="Participants"
         options={memberships}

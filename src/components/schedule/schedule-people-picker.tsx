@@ -13,12 +13,14 @@ export function SchedulePeoplePicker({
   options,
   initialIds,
   multiple = false,
+  requiresSiteSelection = false,
 }: {
   name: string;
   label: string;
   options: PersonSelectOption[];
   initialIds: string[];
   multiple?: boolean;
+  requiresSiteSelection?: boolean;
 }) {
   const [ids, setIds] = useState(initialIds);
   const [expanded, setExpanded] = useState(false);
@@ -66,7 +68,13 @@ export function SchedulePeoplePicker({
       {selected.map((person) => (
         <input key={person.id} type="hidden" name={name} value={person.id} />
       ))}
+      {requiresSiteSelection && (
+        <p className="text-sm text-muted-foreground">
+          Select an active site in the sidebar before choosing a person.
+        </p>
+      )}
       <Input
+        disabled={requiresSiteSelection}
         id={name}
         className="min-h-11"
         placeholder="Search by name"

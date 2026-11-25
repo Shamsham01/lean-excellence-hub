@@ -1,3 +1,4 @@
+import { DefinitionForm } from "@/components/gemba/definition-form";
 import { revalidatePath } from "next/cache";
 
 import { deployGembaQuickStart } from "../setup/actions";
@@ -144,7 +145,14 @@ export default async function GembaDefinitionsPage({
     : { data: [], error: null };
 
   if (scheduleError)
-    throw new Error("Schedule references could not be loaded.");
+    return (
+      <ModuleReadError
+        title="Gemba definitions"
+        description="Templates for structured walks."
+        message="Schedule references could not be loaded. Refresh the page and try again."
+        module="gemba"
+      />
+    );
 
   const scheduled = new Set(schedules?.map((s) => s.activity_resource_id));
 
@@ -157,11 +165,12 @@ export default async function GembaDefinitionsPage({
       target_definition_id: id,
     });
 
-    if (error) throw new Error(error.message);
+    if (error) return error.message;
 
     revalidatePath("/platform/gemba");
 
     revalidatePath("/platform/gemba/definitions");
+    return null;
   }
 
   async function deploy(form: FormData) {
@@ -169,7 +178,7 @@ export default async function GembaDefinitionsPage({
 
     const result = await deployGembaQuickStart(form);
 
-    if (result?.error) throw new Error(result.error);
+    return result?.error ?? null;
   }
 
   async function createAction(formData: FormData) {
@@ -180,6 +189,7 @@ export default async function GembaDefinitionsPage({
     if (result.definitionId) {
       redirect(`/platform/gemba/definitions/${result.definitionId}`);
     }
+    return result.error ?? "The definition could not be created.";
   }
 
   return (
@@ -204,7 +214,7 @@ export default async function GembaDefinitionsPage({
 
       {canManage && (
         <div className="flex flex-wrap gap-2">
-          <form action={deploy}>
+          <DefinitionForm action={deploy}>
             <input
               name="templateKey"
               type="hidden"
@@ -220,7 +230,13 @@ export default async function GembaDefinitionsPage({
             <Button className="min-h-11" disabled={!context.activeSiteId}>
               Deploy standard template
             </Button>
-          </form>
+            {!context.activeSiteId && (
+              <p className="text-sm text-muted-foreground">
+                Select an active site in the sidebar to deploy the standard
+                template.
+              </p>
+            )}
+          </DefinitionForm>
 
           <Button variant="outline" className="min-h-11" asChild>
             <AppLink href="/platform/gemba/setup/leanai">
@@ -243,7 +259,7 @@ export default async function GembaDefinitionsPage({
           </CardHeader>
 
           <CardContent>
-            <form
+            <DefinitionForm
               action={createAction}
 
               className="flex max-w-lg flex-col gap-4"
@@ -293,7 +309,7 @@ export default async function GembaDefinitionsPage({
               >
                 Create draft
               </Button>
-            </form>
+            </DefinitionForm>
           </CardContent>
         </Card>
       ) : null}
@@ -356,7 +372,7 @@ export default async function GembaDefinitionsPage({
                         </span>
                       </td>
 
-                      <td>{areas.join(", ") || "-"}</td>
+                      <td>{areas.join(", ") || "—"}</td>
                       <td>
                         <Button variant="ghost" className="min-h-11" asChild>
                           <AppLink
@@ -370,11 +386,14 @@ export default async function GembaDefinitionsPage({
 
                       {canManage && (
                         <td>
-                          <form action={remove.bind(null, d.id)}>
+                          <DefinitionForm
+                            action={remove.bind(null, d.id)}
+                            confirmation={`${removal} "${d.display_name}"?`}
+                          >
                             <Button variant="outline" className="min-h-11">
                               {removal}
                             </Button>
-                          </form>
+                          </DefinitionForm>
                         </td>
                       )}
                     </tr>

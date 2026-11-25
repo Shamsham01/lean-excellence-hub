@@ -1,5 +1,5 @@
 export type OperationalEmailMessage = {
-  attachments?: { filename: string; content: string }[];
+  attachments?: { filename: string; content: string; contentType?: string }[];
   from: string;
   to: string;
   subject: string;

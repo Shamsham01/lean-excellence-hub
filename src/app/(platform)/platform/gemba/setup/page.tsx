@@ -19,7 +19,8 @@ export default async function GembaSetupPage() {
   const [{ count }, access] = await Promise.all([
     supabase
       .from("gemba_definitions")
-      .select("id", { count: "exact", head: true }),
+      .select("id", { count: "exact", head: true })
+      .is("archived_at", null),
     canManage
       ? loadModuleSetupBuilderAccess({
           managePermission: GEMBA_PERMISSIONS.definitionsManage,

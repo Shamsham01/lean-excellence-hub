@@ -451,7 +451,7 @@ export function renderScheduleConfirmation(
   const intro =
     "Your schedule has been confirmed. Open the attached calendar invitation to add or update it.";
   return {
-    subject: "Schedule confirmation: " + title,
+    subject: "Schedule confirmation: " + title.replace(/[\r\n]+/g, " "),
     text: title + "\n" + intro + "\n" + ctaUrl,
     html: renderBrandedOperationalEmail(
       {

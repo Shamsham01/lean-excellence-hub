@@ -182,8 +182,18 @@ export function ActionCreateDialog({
     ) as HTMLInputElement | null;
     if (titleInput && !titleInput.value.trim()) {
       titleInput.value = linkContext.defaultTitle;
-      syncQueryFromForm();
     }
+    const descriptionInput = formRef.current.elements.namedItem(
+      "description",
+    ) as HTMLTextAreaElement | null;
+    if (
+      descriptionInput &&
+      !descriptionInput.value.trim() &&
+      gembaLinkContext?.defaultDescription
+    ) {
+      descriptionInput.value = gembaLinkContext.defaultDescription;
+    }
+    syncQueryFromForm();
   }, [open, fiveSLinkContext, gembaLinkContext]);
 
   function syncQueryFromForm() {
@@ -557,6 +567,12 @@ export function ActionCreateDialog({
               <Textarea
                 id="action-create-description"
                 name="description"
+                key={JSON.stringify([
+                  gembaLinkContext?.questionId,
+                  gembaLinkContext?.observationId,
+                  open,
+                  gembaLinkContext?.defaultDescription,
+                ])}
                 defaultValue={gembaLinkContext?.defaultDescription}
                 rows={3}
                 disabled={pending || Boolean(createdActionId)}
