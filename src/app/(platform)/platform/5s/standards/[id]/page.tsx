@@ -13,7 +13,7 @@ import {
   FiveSScoringScaleFields,
   FiveSScoringScaleSummary,
 } from "@/components/five-s/scoring-scale-fields";
-import { AuthoringSaveFeedback } from "@/components/authoring/authoring-save-feedback";
+import { LiveAuthoringSaveFeedback } from "@/components/authoring/authoring-save-feedback";
 import { ApplicableUnitsField } from "@/components/organisation/applicable-units-field";
 import { parseAuthoringSavedKey } from "@/lib/authoring/authoring-query";
 import {
@@ -91,12 +91,8 @@ export default async function FiveSStandardDetailPage({
   const supabase = await createServerSupabaseClient();
   const [canManage, canSchedule, { data: standard, error: standardError }] =
     await Promise.all([
-      currentMemberHasPermission(
-      FIVE_S_PERMISSIONS.standardsManage,
-    ),
-      currentMemberHasPermission(
-      SCHEDULE_PERMISSIONS.manage,
-    ),
+      currentMemberHasPermission(FIVE_S_PERMISSIONS.standardsManage),
+      currentMemberHasPermission(SCHEDULE_PERMISSIONS.manage),
       supabase
         .from("five_s_standards")
         .select("id, display_name, description")
@@ -246,7 +242,7 @@ export default async function FiveSStandardDetailPage({
 
   return (
     <div className="flex flex-col gap-8">
-      <AuthoringSaveFeedback savedKey={savedKey} />
+      <LiveAuthoringSaveFeedback savedKey={savedKey} />
       <PublishedExecutionHeader
         title={standard.display_name}
         description={standard.description ?? "5S standard configuration"}
