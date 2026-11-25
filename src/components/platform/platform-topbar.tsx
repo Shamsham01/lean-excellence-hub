@@ -71,12 +71,13 @@ export function PlatformTopbar({
         </div>
         <div className="ml-auto flex items-center gap-1.5 ps-2">
           <ThemeToggleIcon />
-          {notificationSlot ?? (notifications ? (
-            <PlatformNotificationBell
-              initialUnreadCount={notifications.unreadCount}
-              initialItems={notifications.items}
-            />
-          ) : null)}
+          {notificationSlot ??
+            (notifications ? (
+              <PlatformNotificationBell
+                initialUnreadCount={notifications.unreadCount}
+                initialItems={notifications.items}
+              />
+            ) : null)}
           <PlatformUserMenu member={member} showSettings={showSettings} />
         </div>
       </header>
