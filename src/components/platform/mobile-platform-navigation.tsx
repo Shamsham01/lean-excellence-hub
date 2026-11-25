@@ -1,7 +1,7 @@
 "use client";
 
 import { Search } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { LEH_BRAND } from "@/components/brand/brand-assets";
 import { LehBrand } from "@/components/brand/leh-brand";
@@ -33,6 +33,7 @@ type MobilePlatformNavigationProps = {
   siteContext: ActiveSiteContext;
   member: PlatformShellMember;
   showSettings: boolean;
+  notificationSlot?: ReactNode;
   notifications: {
     unreadCount: number;
     items: PlatformInAppNotification[];
@@ -47,6 +48,7 @@ export function MobilePlatformNavigation({
   member,
   showSettings,
   notifications,
+  notificationSlot,
 }: MobilePlatformNavigationProps) {
   const [open, setOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
@@ -122,12 +124,12 @@ export function MobilePlatformNavigation({
             <Search className="size-4" aria-hidden />
           </Button>
           <ThemeToggleIcon />
-          {notifications ? (
+          {notificationSlot ?? (notifications ? (
             <PlatformNotificationBell
               initialUnreadCount={notifications.unreadCount}
               initialItems={notifications.items}
             />
-          ) : null}
+          ) : null)}
           <PlatformUserMenu member={member} showSettings={showSettings} />
         </div>
       </div>
