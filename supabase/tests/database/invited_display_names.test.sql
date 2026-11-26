@@ -156,9 +156,6 @@ select ok(
   'invited name role publishes'
 );
 
--- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
-reset role;
-
 insert into name_ids (key, id)
 select
   'new_invitation',
@@ -166,14 +163,12 @@ select
     'email',
     'invited-name-new@example.test',
     decode(repeat('a1', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl(),
+    statement_timestamp() + interval '7 days',
     (select id from name_ids where key = 'role_version_a'),
     'organisation',
     null,
     'Invited Operator'
   );
-
-set local role authenticated;
 
 select is(
   public.preview_organisation_invitation(decode(repeat('a1', 32), 'hex'))
@@ -188,9 +183,6 @@ select ok(
   'invalid invitation preview omits the invited name'
 );
 
--- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
-reset role;
-
 insert into name_ids (key, id)
 select
   'binding_invitation',
@@ -198,14 +190,12 @@ select
     'email',
     'invited-name-binding@example.test',
     decode(repeat('a2', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl(),
+    statement_timestamp() + interval '7 days',
     (select id from name_ids where key = 'role_version_a'),
     'organisation',
     null,
     'Binding Intended'
   );
-
-set local role authenticated;
 
 reset role;
 
@@ -383,9 +373,6 @@ select ok(
   'owner returns to organisation A'
 );
 
--- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
-reset role;
-
 insert into name_ids (key, id)
 select
   'preserved_invitation',
@@ -393,17 +380,12 @@ select
     'email',
     'invited-name-preserved@example.test',
     decode(repeat('a3', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl(),
+    statement_timestamp() + interval '7 days',
     (select id from name_ids where key = 'role_version_a'),
     'organisation',
     null,
     'Replacement Name'
   );
-
-set local role authenticated;
-
--- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
-reset role;
 
 insert into name_ids (key, id)
 select
@@ -412,17 +394,12 @@ select
     'email',
     'invited-name-existing@example.test',
     decode(repeat('a4', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl(),
+    statement_timestamp() + interval '7 days',
     (select id from name_ids where key = 'role_version_a'),
     'organisation',
     null,
     'Org A Name'
   );
-
-set local role authenticated;
-
--- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
-reset role;
 
 insert into name_ids (key, id)
 select
@@ -431,14 +408,12 @@ select
     'email',
     'invited-name-new@example.test',
     decode(repeat('a5', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl(),
+    statement_timestamp() + interval '7 days',
     (select id from name_ids where key = 'role_version_a'),
     'organisation',
     null,
     'Reissue Name'
   );
-
-set local role authenticated;
 
 select set_config(
   'request.jwt.claims',
@@ -467,19 +442,14 @@ select ok(
   'owner selects organisation A before reissue'
 );
 
--- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
-reset role;
-
 insert into name_ids (key, id)
 select
   'reissue_replacement',
   public.reissue_organisation_member_invitation(
     (select id from name_ids where key = 'reissue_source'),
     decode(repeat('a6', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl()
+    statement_timestamp() + interval '7 days'
   );
-
-set local role authenticated;
 
 select is(
   (
@@ -597,9 +567,6 @@ select ok(
   'second organisation role publishes'
 );
 
--- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
-reset role;
-
 insert into name_ids (key, id)
 select
   'org_b_invitation',
@@ -607,14 +574,12 @@ select
     'email',
     'invited-name-existing@example.test',
     decode(repeat('a7', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl(),
+    statement_timestamp() + interval '7 days',
     (select id from name_ids where key = 'role_version_b'),
     'organisation',
     null,
     'Org B Name'
   );
-
-set local role authenticated;
 
 select set_config(
   'request.jwt.claims',

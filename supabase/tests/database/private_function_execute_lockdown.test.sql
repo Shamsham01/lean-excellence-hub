@@ -1,6 +1,6 @@
 begin;
 
-select plan(22);
+select plan(23);
 
 -- Private function EXECUTE lockdown (20261126093000).
 -- Nothing in schema private is executable by PUBLIC or anon; required roles
@@ -192,9 +192,17 @@ select throws_ok(
   'authenticated cannot call private.schedule_weekday_matches directly'
 );
 
+-- 21. authenticated can still reach a private-backed public INVOKER RPC.
+-- current_organisation_id is granted to authenticated and calls
+-- private.current_organisation_id; with no session it returns null.
+select lives_ok(
+  $$select public.current_organisation_id()$$,
+  'authenticated can execute public.current_organisation_id (private-backed RPC)'
+);
+
 reset role;
 
--- 21. service_role gets 42501 on a private helper it does not need.
+-- 22. service_role gets 42501 on a private helper it does not need.
 set local role service_role;
 
 select throws_ok(
@@ -206,7 +214,7 @@ select throws_ok(
 
 reset role;
 
--- 22. postgres (cron run-as) still reaches lhpo-owned functions via membership.
+-- 23. postgres (cron run-as) still reaches lhpo-owned functions via membership.
 select ok(
   pg_catalog.has_function_privilege(
     'postgres',

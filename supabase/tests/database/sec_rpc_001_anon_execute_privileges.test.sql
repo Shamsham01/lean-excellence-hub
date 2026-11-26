@@ -599,9 +599,6 @@ select 'member_role_version', id
 from sec_rpc_ids
 where key = 'member_role_draft';
 
--- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
-reset role;
-
 insert into sec_rpc_ids (key, id)
 select
   'invitation',
@@ -609,7 +606,7 @@ select
     'email',
     'sec-rpc-invitee@example.test',
     decode(repeat('ab', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl(),
+    statement_timestamp() + interval '7 days',
     (select id from sec_rpc_ids where key = 'member_role_version'),
     'organisation',
     null,
@@ -617,8 +614,6 @@ select
     (select id from sec_rpc_ids where key = 'job_function'),
     (select id from sec_rpc_ids where key = 'root_unit')
   );
-
-set local role authenticated;
 
 select ok(
   (select id is not null from sec_rpc_ids where key = 'invitation'),
