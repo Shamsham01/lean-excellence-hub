@@ -37,21 +37,18 @@ export function ActionPlannerListView({
 
   // Keep a pending row in its original tab so the disabled optimistic
   // checkbox is visible until the mutation settles.
-  const tabbed = useMemo(
-    () => {
-      const matchingIds = new Set(
-        filterActionsByListTab(
-          actions.map((action) => ({
-            ...action,
-            status: pendingFromStatus.get(action.id) ?? action.status,
-          })),
-          tab,
-        ).map((action) => action.id),
-      );
-      return actions.filter((action) => matchingIds.has(action.id));
-    },
-    [actions, pendingFromStatus, tab],
-  );
+  const tabbed = useMemo(() => {
+    const matchingIds = new Set(
+      filterActionsByListTab(
+        actions.map((action) => ({
+          ...action,
+          status: pendingFromStatus.get(action.id) ?? action.status,
+        })),
+        tab,
+      ).map((action) => action.id),
+    );
+    return actions.filter((action) => matchingIds.has(action.id));
+  }, [actions, pendingFromStatus, tab]);
 
   const sorted = useMemo(() => {
     const copy = [...tabbed];

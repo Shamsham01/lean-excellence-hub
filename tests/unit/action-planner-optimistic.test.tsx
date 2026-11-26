@@ -129,7 +129,9 @@ it("rolls back a failed reopen and keeps the completed version", async () => {
   expect(checkbox).not.toBeChecked();
   expect(checkbox).toBeDisabled();
   resolve(Response.json({ error: "Unable to reopen." }, { status: 400 }));
-  expect(await screen.findByRole("alert")).toHaveTextContent("Unable to reopen.");
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Unable to reopen.",
+  );
   expect(checkbox).toBeChecked();
   expect(checkbox).not.toBeDisabled();
   fireEvent.click(checkbox);
@@ -172,10 +174,9 @@ it("moves a board card before the server replies and restores it on error", asyn
   const completed = screen.getByTestId("actions-board-column-completed");
   fireEvent.dragStart(within(open).getByTestId("action-planner-card-a"));
   fireEvent.drop(completed);
-  expect(within(completed).getByTestId("action-planner-card-a")).toHaveAttribute(
-    "draggable",
-    "false",
-  );
+  expect(
+    within(completed).getByTestId("action-planner-card-a"),
+  ).toHaveAttribute("draggable", "false");
   resolve(Response.json({ error: "Unable to complete." }, { status: 400 }));
   expect(await screen.findByRole("alert")).toHaveTextContent(
     "Unable to complete.",

@@ -80,25 +80,28 @@ export async function loadActionPlannerSummaries(
 
   if (canReadComments) {
     await Promise.all(
-      Array.from({ length: Math.ceil(ids.length / batchSize) }, async (_, i) => {
-        const batch = ids.slice(i * batchSize, (i + 1) * batchSize);
-        for (let offset = 0; ; offset += pageSize) {
-          const { data, error } = await supabase
-            .from("comments")
-            .select("id, target_resource_id")
-            .in("target_resource_id", batch)
-            .order("id")
-            .range(offset, offset + pageSize - 1);
-          if (error) throw new Error("Unable to load action comment counts.");
-          for (const comment of data ?? []) {
-            commentCounts.set(
-              comment.target_resource_id,
-              (commentCounts.get(comment.target_resource_id) ?? 0) + 1,
-            );
+      Array.from(
+        { length: Math.ceil(ids.length / batchSize) },
+        async (_, i) => {
+          const batch = ids.slice(i * batchSize, (i + 1) * batchSize);
+          for (let offset = 0; ; offset += pageSize) {
+            const { data, error } = await supabase
+              .from("comments")
+              .select("id, target_resource_id")
+              .in("target_resource_id", batch)
+              .order("id")
+              .range(offset, offset + pageSize - 1);
+            if (error) throw new Error("Unable to load action comment counts.");
+            for (const comment of data ?? []) {
+              commentCounts.set(
+                comment.target_resource_id,
+                (commentCounts.get(comment.target_resource_id) ?? 0) + 1,
+              );
+            }
+            if ((data?.length ?? 0) < pageSize) break;
           }
-          if ((data?.length ?? 0) < pageSize) break;
-        }
-      }),
+        },
+      ),
     );
   }
 
@@ -113,10 +116,7 @@ export async function loadActionPlannerSummaries(
         const { data } = await supabase
           .from("organisation_memberships")
           .select("id, display_name")
-          .in(
-            "id",
-            missingMemberIds.slice(i * batchSize, (i + 1) * batchSize),
-          );
+          .in("id", missingMemberIds.slice(i * batchSize, (i + 1) * batchSize));
         for (const member of data ?? []) {
           fallbackNames.set(member.id, member.display_name);
         }
@@ -135,7 +135,11 @@ export async function loadActionPlannerSummaries(
           currentMemberHasScopedPermission("actions.assign", unitId),
           currentMemberHasScopedPermission("actions.complete", unitId),
           ownId
-            ? currentMemberHasScopedPermission("actions.complete", unitId, ownId)
+            ? currentMemberHasScopedPermission(
+                "actions.complete",
+                unitId,
+                ownId,
+              )
             : Promise.resolve(false),
         ]);
         return [unitId, { update, assign, complete, completeOwn }] as const;
@@ -154,9 +158,9 @@ export async function loadActionPlannerSummaries(
       ...row,
       assignee_membership_id: membershipId,
       assignee_display_name: membershipId
-        ? (person?.display_name?.trim() ||
+        ? person?.display_name?.trim() ||
           fallbackNames.get(membershipId)?.trim() ||
-          "Team member")
+          "Team member"
         : null,
       assignee_avatar_url: person?.avatar_url ?? null,
       source: null,
