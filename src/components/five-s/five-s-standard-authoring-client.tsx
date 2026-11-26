@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useFormStatus } from "react-dom";
 
 import { useAuthoringSavedFlash } from "@/components/authoring/use-authoring-saved-flash";
 import { DialogServerActionForm } from "@/components/ui/dialog-server-action-form";
@@ -14,7 +15,7 @@ import {
   setFiveSStandardApplicableUnitsFromForm,
   setFiveSStandardScoringScaleFromForm,
 } from "@/app/(platform)/platform/5s/actions";
-import { Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 
 import { ModuleWriteButton } from "@/components/billing/module-write-button";
 import { FiveSScoringScaleFields } from "@/components/five-s/scoring-scale-fields";
@@ -33,6 +34,22 @@ type AuthoringSection = {
   title: string;
   questions: Array<{ id: string; prompt: string; questionType: string }>;
 };
+
+function SaveApplicableAreasButton({ disabled }: { disabled: boolean }) {
+  const { pending } = useFormStatus();
+
+  return (
+    <Button
+      type="submit"
+      className="min-h-11"
+      disabled={disabled || pending}
+      data-testid="save-five-s-applicability"
+    >
+      {pending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
+      {pending ? "Saving…" : "Save applicable areas"}
+    </Button>
+  );
+}
 
 export function FiveSApplicabilityEditor({
   standardId,
@@ -86,22 +103,17 @@ export function FiveSApplicabilityEditor({
           <CompactApplicableUnitsField
             hierarchyUnits={configurationUnits.hierarchyUnits}
             options={configurationUnits.units}
-            selectedIds={applicabilitySelection.selectedIds}
+            defaultSelectedIds={applicabilitySelection.selectedIds}
             preservedIds={applicabilitySelection.preservedIds}
             staleWarning={staleWarning}
             requiresSiteSelection={configurationUnits.requiresSiteSelection}
           />
-          <Button
-            type="submit"
-            className="min-h-11"
+          <SaveApplicableAreasButton
             disabled={
               configurationUnits.units.length === 0 &&
               applicabilitySelection.preservedIds.length === 0
             }
-            data-testid="save-five-s-applicability"
-          >
-            Save applicable areas
-          </Button>
+          />
         </DialogServerActionForm>
       </ResponsiveFormDialog>
     </>

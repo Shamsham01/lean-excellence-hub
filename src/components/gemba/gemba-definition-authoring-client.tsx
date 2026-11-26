@@ -1,6 +1,8 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useFormStatus } from "react-dom";
 
 import { useAuthoringSavedFlash } from "@/components/authoring/use-authoring-saved-flash";
 import { DialogServerActionForm } from "@/components/ui/dialog-server-action-form";
@@ -20,6 +22,22 @@ import type { FlatOrganisationUnit } from "@/modules/organisation/unit-hierarchy
 
 const APPLICABILITY_DESCRIPTION =
   "Choose which organisational units can run walks from this definition.";
+
+function SaveApplicableAreasButton({ disabled }: { disabled: boolean }) {
+  const { pending } = useFormStatus();
+
+  return (
+    <Button
+      type="submit"
+      className="min-h-11"
+      disabled={disabled || pending}
+      data-testid="save-gemba-applicability"
+    >
+      {pending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
+      {pending ? "Saving…" : "Save applicable areas"}
+    </Button>
+  );
+}
 
 export function GembaApplicabilityEditor({
   definitionId,
@@ -73,24 +91,19 @@ export function GembaApplicabilityEditor({
           <CompactApplicableUnitsField
             hierarchyUnits={configurationUnits.hierarchyUnits}
             options={configurationUnits.units}
-            selectedIds={applicabilitySelection.selectedIds}
+            defaultSelectedIds={applicabilitySelection.selectedIds}
             preservedIds={applicabilitySelection.preservedIds}
             staleWarning={staleWarning}
             staleWarningTestId="gemba-stale-applicability-warning"
             requiresSiteSelection={configurationUnits.requiresSiteSelection}
             description={APPLICABILITY_DESCRIPTION}
           />
-          <Button
-            type="submit"
-            className="min-h-11"
+          <SaveApplicableAreasButton
             disabled={
               configurationUnits.units.length === 0 &&
               applicabilitySelection.preservedIds.length === 0
             }
-            data-testid="save-gemba-applicability"
-          >
-            Save applicable areas
-          </Button>
+          />
         </DialogServerActionForm>
       </ResponsiveFormDialog>
     </>
