@@ -662,17 +662,27 @@ select ok(
   'delegation picker includes module responsibility offers'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 select is(
   private.role_responsibility_kind('organisation-administrator', 'admin', false),
   'admin',
   'organisation-administrator with admin module tag classifies as admin'
 );
 
+set local role authenticated;
+
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 select is(
   private.role_responsibility_kind('responsibility-suggestions', 'suggestions', false),
   'module',
   'responsibility-suggestions classifies as module'
 );
+
+set local role authenticated;
 
 select * from finish();
 rollback;

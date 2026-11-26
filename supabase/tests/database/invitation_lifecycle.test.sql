@@ -176,6 +176,9 @@ select 'member_role_version', id
 from lifecycle_ids
 where key = 'member_role_draft';
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 insert into lifecycle_ids (key, id)
 select
   'invitation',
@@ -191,6 +194,8 @@ select
     (select id from lifecycle_ids where key = 'job_function'),
     (select id from lifecycle_ids where key = 'root_unit')
   );
+
+set local role authenticated;
 
 select is(
   public.preview_organisation_invitation(decode(repeat('aa', 32), 'hex')) ->> 'state',
@@ -243,6 +248,9 @@ select ok(
   'owner re-selects organisation A before case invitation'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 insert into lifecycle_ids (key, id)
 select
   'case_invitation',
@@ -255,6 +263,8 @@ select
     'organisation',
     null
   );
+
+set local role authenticated;
 
 select set_config(
   'request.jwt.claims',
@@ -331,6 +341,9 @@ select set_config(
   true
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 insert into lifecycle_ids (key, id)
 select
   'revoked_invitation',
@@ -343,6 +356,8 @@ select
     'organisation',
     null
   );
+
+set local role authenticated;
 
 select ok(
   public.revoke_organisation_invitation(
@@ -358,6 +373,9 @@ select is(
   'revoked',
   'revoked invitation preview is revoked'
 );
+
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
 
 insert into lifecycle_ids (key, id)
 select
@@ -375,6 +393,11 @@ select
     (select id from lifecycle_ids where key = 'root_unit')
   );
 
+set local role authenticated;
+
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 insert into lifecycle_ids (key, id)
 select
   'reissue_replacement',
@@ -383,6 +406,8 @@ select
     decode(repeat('ef', 32), 'hex'),
     statement_timestamp() + private.invitation_default_ttl()
   );
+
+set local role authenticated;
 
 select is(
   (
@@ -421,6 +446,9 @@ select ok(
   'reissued invitation preserves provisioning intent'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 insert into lifecycle_ids (key, id)
 select
   'duplicate_invitation',
@@ -434,13 +462,15 @@ select
     null
   );
 
+set local role authenticated;
+
 select throws_ok(
   $q$
     select public.issue_organisation_member_invitation(
       'email',
       'duplicate-invitee@example.test',
       decode(repeat('33', 32), 'hex'),
-      statement_timestamp() + private.invitation_default_ttl(),
+      statement_timestamp() + interval '7 days' /* = private.invitation_default_ttl(); not executable by authenticated */,
       (select id from lifecycle_ids where key = 'member_role_version'),
       'organisation',
       null
@@ -703,6 +733,9 @@ set local role authenticated;
 
 select public.switch_organisation((select id from lifecycle_ids where key = 'organisation_a'));
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 insert into lifecycle_ids (key, id)
 select
   'continuation_invitation',
@@ -716,12 +749,17 @@ select
     null
   );
 
+set local role authenticated;
+
 insert into lifecycle_ids (key, id)
 select
   'continuation_binding',
   public.prepare_organisation_invitation_signup_binding(
     decode(repeat('44', 32), 'hex')
   );
+
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
 
 insert into lifecycle_ids (key, id)
 select
@@ -735,6 +773,8 @@ select
     'organisation',
     null
   );
+
+set local role authenticated;
 
 insert into lifecycle_ids (key, id)
 select
@@ -752,6 +792,9 @@ select ok(
   'revoked continuation invitation is withdrawn by the owner'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 insert into lifecycle_ids (key, id)
 select
   'unconfirmed_continuation_invitation',
@@ -764,6 +807,8 @@ select
     'organisation',
     null
   );
+
+set local role authenticated;
 
 insert into lifecycle_ids (key, id)
 select

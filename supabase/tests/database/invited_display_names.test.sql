@@ -156,6 +156,9 @@ select ok(
   'invited name role publishes'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 insert into name_ids (key, id)
 select
   'new_invitation',
@@ -170,6 +173,8 @@ select
     'Invited Operator'
   );
 
+set local role authenticated;
+
 select is(
   public.preview_organisation_invitation(decode(repeat('a1', 32), 'hex'))
     ->> 'intended_display_name',
@@ -182,6 +187,9 @@ select ok(
     ? 'intended_display_name' = false,
   'invalid invitation preview omits the invited name'
 );
+
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
 
 insert into name_ids (key, id)
 select
@@ -196,6 +204,8 @@ select
     null,
     'Binding Intended'
   );
+
+set local role authenticated;
 
 reset role;
 
@@ -373,6 +383,9 @@ select ok(
   'owner returns to organisation A'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 insert into name_ids (key, id)
 select
   'preserved_invitation',
@@ -386,6 +399,11 @@ select
     null,
     'Replacement Name'
   );
+
+set local role authenticated;
+
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
 
 insert into name_ids (key, id)
 select
@@ -401,6 +419,11 @@ select
     'Org A Name'
   );
 
+set local role authenticated;
+
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 insert into name_ids (key, id)
 select
   'reissue_source',
@@ -414,6 +437,8 @@ select
     null,
     'Reissue Name'
   );
+
+set local role authenticated;
 
 select set_config(
   'request.jwt.claims',
@@ -442,6 +467,9 @@ select ok(
   'owner selects organisation A before reissue'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 insert into name_ids (key, id)
 select
   'reissue_replacement',
@@ -450,6 +478,8 @@ select
     decode(repeat('a6', 32), 'hex'),
     statement_timestamp() + private.invitation_default_ttl()
   );
+
+set local role authenticated;
 
 select is(
   (
@@ -567,6 +597,9 @@ select ok(
   'second organisation role publishes'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 insert into name_ids (key, id)
 select
   'org_b_invitation',
@@ -580,6 +613,8 @@ select
     null,
     'Org B Name'
   );
+
+set local role authenticated;
 
 select set_config(
   'request.jwt.claims',

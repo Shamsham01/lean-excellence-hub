@@ -160,6 +160,9 @@ select ok(
   'CookieWorks requires site boundary'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 select is(
   private.resolve_site_unit_id(
     (select id from site_ids where key = 'organisation'),
@@ -168,6 +171,11 @@ select is(
   (select id from site_ids where key = 'bodmin_site'),
   'descendant resolves to Bodmin site'
 );
+
+set local role authenticated;
+
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
 
 select is(
   private.resolve_site_unit_id(
@@ -178,6 +186,11 @@ select is(
   'descendant resolves to Exeter site'
 );
 
+set local role authenticated;
+
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 select ok(
   private.units_share_site_boundary(
     (select id from site_ids where key = 'organisation'),
@@ -187,6 +200,11 @@ select ok(
   'units within Bodmin share site boundary'
 );
 
+set local role authenticated;
+
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 select ok(
   not private.units_share_site_boundary(
     (select id from site_ids where key = 'organisation'),
@@ -195,6 +213,8 @@ select ok(
   ),
   'Bodmin and Exeter do not share site boundary'
 );
+
+set local role authenticated;
 
 insert into site_ids (key, id)
 select 'job_function', public.create_job_function('Operator', 'operator');
@@ -235,6 +255,9 @@ select ok(
   'Exeter operator placed at Exeter Packing'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 select is(
   private.membership_home_site_unit_id(
     (select id from site_ids where key = 'organisation'),
@@ -244,6 +267,11 @@ select is(
   'Bodmin operator home site resolves to Bodmin'
 );
 
+set local role authenticated;
+
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 select is(
   private.membership_home_site_unit_id(
     (select id from site_ids where key = 'organisation'),
@@ -252,6 +280,8 @@ select is(
   (select id from site_ids where key = 'exeter_site'),
   'Exeter operator home site resolves to Exeter'
 );
+
+set local role authenticated;
 
 -- Maturity assessments in both sites
 insert into site_ids (key, id)
@@ -588,6 +618,9 @@ select throws_ok(
   'cross-site reparent blocked for PR3 handoff'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 select is(
   private.resolve_site_unit_id(
     (select id from site_ids where key = 'organisation'),
@@ -597,6 +630,11 @@ select is(
   'site unit resolves to itself'
 );
 
+set local role authenticated;
+
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 select is(
   private.resolve_site_unit_id(
     (select id from site_ids where key = 'organisation'),
@@ -605,6 +643,8 @@ select is(
   (select id from site_ids where key = 'bodmin_site'),
   'normal descendant resolves one site'
 );
+
+set local role authenticated;
 
 select throws_ok(
   format(
@@ -638,6 +678,9 @@ values (
 
 set local role authenticated;
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 select is(
   private.count_site_ancestors(
     (select id from site_ids where key = 'organisation'),
@@ -647,6 +690,11 @@ select is(
   'malformed hierarchy exposes multiple site ancestors'
 );
 
+set local role authenticated;
+
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 select is(
   private.resolve_site_unit_id(
     (select id from site_ids where key = 'organisation'),
@@ -655,6 +703,8 @@ select is(
   null,
   'ambiguous site ancestry fails closed'
 );
+
+set local role authenticated;
 
 set local role postgres;
 
@@ -675,6 +725,9 @@ select 'org_root_unit', public.create_organisation_unit(
   'department'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 select is(
   private.resolve_site_unit_id(
     (select id from site_ids where key = 'organisation'),
@@ -683,6 +736,8 @@ select is(
   null,
   'unit without site ancestry resolves null in boundary org'
 );
+
+set local role authenticated;
 
 select ok(
   not private.membership_can_access_unit_site(

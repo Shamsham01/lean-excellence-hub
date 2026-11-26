@@ -230,6 +230,9 @@ select 'validation_b', public.record_skill_validation(
   'manager_assessment'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 select is(
   private.derive_skill_gap(
     (select id from skills_history_ids where key = 'membership'),
@@ -238,6 +241,8 @@ select is(
   'incompatible_scale',
   'incompatible scale comparisons fail safely in gap derivation'
 );
+
+set local role authenticated;
 
 insert into skills_history_ids (key, id)
 select 'expired_validation', public.record_skill_validation(
@@ -251,6 +256,9 @@ select 'expired_validation', public.record_skill_validation(
   statement_timestamp() - interval '1 day'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 select is(
   private.derive_skill_gap(
     (select id from skills_history_ids where key = 'membership_expired'),
@@ -259,6 +267,8 @@ select is(
   'not_assessed',
   'expired skill validation excluded from current validated proficiency'
 );
+
+set local role authenticated;
 
 reset role;
 

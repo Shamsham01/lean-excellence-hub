@@ -265,6 +265,9 @@ select ok(
   'baseline manager scope policy allows unit subtree only'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 select lives_ok(
   $$
     select private.ensure_baseline_role_grant_scope_policies(
@@ -273,6 +276,8 @@ select lives_ok(
   $$,
   're-running scope policy ensure is idempotent'
 );
+
+set local role authenticated;
 
 select set_config(
   'request.jwt.claims',

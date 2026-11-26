@@ -283,6 +283,9 @@ select ok(
   'retiring viewer publishes'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 insert into multi_grant_ids (key, id)
 select 'invitation', public.issue_organisation_member_invitation_grants(
   'email',
@@ -303,6 +306,8 @@ select 'invitation', public.issue_organisation_member_invitation_grants(
   ),
   'Multi Grant Invitee'
 );
+
+set local role authenticated;
 
 select is(
   (
@@ -334,7 +339,7 @@ select throws_ok(
       'email',
       'multi-grant-duplicate@example.test',
       decode(repeat('22', 32), 'hex'),
-      statement_timestamp() + private.invitation_default_ttl(),
+      statement_timestamp() + interval '7 days' /* = private.invitation_default_ttl(); not executable by authenticated */,
       jsonb_build_array(
         jsonb_build_object(
           'role_version_id', (select id from multi_grant_ids where key = 'view_role_version'),
@@ -370,7 +375,7 @@ select throws_ok(
       'email',
       'multi-grant-invalid@example.test',
       decode(repeat('33', 32), 'hex'),
-      statement_timestamp() + private.invitation_default_ttl(),
+      statement_timestamp() + interval '7 days' /* = private.invitation_default_ttl(); not executable by authenticated */,
       jsonb_build_array(
         jsonb_build_object(
           'role_version_id', (select id from multi_grant_ids where key = 'team_member_role_version'),
@@ -400,12 +405,17 @@ select is(
   'invalid grant combination does not provision a partial invitation'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 insert into multi_grant_ids (key, id)
 select 'replacement', public.reissue_organisation_member_invitation(
   (select id from multi_grant_ids where key = 'invitation'),
   decode(repeat('44', 32), 'hex'),
   statement_timestamp() + private.invitation_default_ttl()
 );
+
+set local role authenticated;
 
 select is(
   (
@@ -437,6 +447,9 @@ select is(
   'reissue retires the source invitation'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 insert into multi_grant_ids (key, id)
 select 'single_invitation', public.issue_organisation_member_invitation(
   'email',
@@ -448,6 +461,8 @@ select 'single_invitation', public.issue_organisation_member_invitation(
   (select id from multi_grant_ids where key = 'site_a'),
   'Single Grant Invitee'
 );
+
+set local role authenticated;
 
 select is(
   (
@@ -535,6 +550,9 @@ select ok(
   'owner returns to the organisation'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 insert into multi_grant_ids (key, id)
 select 'retired_invitation', public.issue_organisation_member_invitation_grants(
   'email',
@@ -551,6 +569,8 @@ select 'retired_invitation', public.issue_organisation_member_invitation_grants(
   'Retired Role Invitee'
 );
 
+set local role authenticated;
+
 set local role postgres;
 
 update public.role_versions
@@ -566,7 +586,7 @@ select throws_ok(
     select public.reissue_organisation_member_invitation(
       (select id from multi_grant_ids where key = 'retired_invitation'),
       decode(repeat('77', 32), 'hex'),
-      statement_timestamp() + private.invitation_default_ttl()
+      statement_timestamp() + interval '7 days' /* = private.invitation_default_ttl(); not executable by authenticated */
     )
   $q$,
   '42501',
@@ -695,6 +715,9 @@ select ok(
   'administrator selects organisation'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 insert into multi_grant_ids (key, id)
 select 'authority_invitation', public.issue_organisation_member_invitation_grants(
   'email',
@@ -710,6 +733,8 @@ select 'authority_invitation', public.issue_organisation_member_invitation_grant
   ),
   'Authority Invitee'
 );
+
+set local role authenticated;
 
 select set_config(
   'request.jwt.claims',
@@ -742,7 +767,7 @@ select throws_ok(
     select public.reissue_organisation_member_invitation(
       (select id from multi_grant_ids where key = 'authority_invitation'),
       decode(repeat('aa', 32), 'hex'),
-      statement_timestamp() + private.invitation_default_ttl()
+      statement_timestamp() + interval '7 days' /* = private.invitation_default_ttl(); not executable by authenticated */
     )
   $q$,
   '42501',
