@@ -1,7 +1,10 @@
 import "server-only";
 
 import { safeInvitationContinuation } from "@/modules/identity/invitation-constants";
-import { safeRelativeRedirect } from "@/modules/identity/redirects";
+import {
+  postSignInRedirectPath,
+  safeRelativeRedirect,
+} from "@/modules/identity/redirects";
 import { resolvePostAuthenticationRedirectPath } from "@/modules/identity/session";
 import type { Database } from "@/platform/supabase/database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -24,5 +27,7 @@ export async function resolveEmailPasswordLoginRedirectPath(
     return invitationContinuation;
   }
 
-  return resolvePostAuthenticationRedirectPath(supabase);
+  return postSignInRedirectPath(
+    await resolvePostAuthenticationRedirectPath(supabase),
+  );
 }

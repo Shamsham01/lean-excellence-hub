@@ -1,7 +1,14 @@
 /**
  * @vitest-environment node
  */
+import { readFileSync } from "node:fs";
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import {
+  AUTH_CONTINUE_PATH,
+  postSignInRedirectPath,
+} from "@/modules/identity/redirects";
 
 import { POST } from "@/app/api/auth/workforce/route";
 
@@ -115,6 +122,38 @@ describe("workforce auth route redirects", () => {
 
     expect(response.headers.get("Location")).toBe(
       "http://127.0.0.1:3000/update-password",
+    );
+  });
+
+  it("sends successful enrolled logins through /auth/continue", async () => {
+    authenticateWorkforce.mockResolvedValue({
+      ok: true,
+      next: AUTH_CONTINUE_PATH,
+    });
+
+    const response = await POST(createTrustedWorkforceRequest());
+
+    expect(response.status).toBe(303);
+    expect(response.headers.get("Location")).toBe(
+      "https://leanexcellencehub.com/auth/continue",
+    );
+  });
+
+  it("maps a successful-auth homepage target to /auth/continue", () => {
+    expect(postSignInRedirectPath("/")).toBe("/auth/continue");
+    expect(postSignInRedirectPath("/update-password")).toBe("/update-password");
+    expect(postSignInRedirectPath("/platform")).toBe("/platform");
+  });
+
+  it("keeps workforce success redirects off the marketing homepage", () => {
+    const source = readFileSync(
+      "src/modules/identity/workforce-login.ts",
+      "utf8",
+    );
+    expect(source).toContain("AUTH_CONTINUE_PATH");
+    expect(source).toContain("account.password_change_required");
+    expect(source).not.toMatch(
+      /next:\s*account\.password_change_required\s*\?\s*"\/update-password"\s*:\s*"\/"/,
     );
   });
 });
