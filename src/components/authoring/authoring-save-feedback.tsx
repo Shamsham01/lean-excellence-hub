@@ -50,7 +50,7 @@ export function LiveAuthoringSaveFeedback({
       savedKey={
         searchParams
           ? parseAuthoringSavedKey(searchParams.get(AUTHORING_SAVED_PARAM))
-          : savedKey
+          : (savedKey ?? null)
       }
     />
   );
