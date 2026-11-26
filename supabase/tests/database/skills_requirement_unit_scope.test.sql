@@ -210,6 +210,9 @@ select ok(
   'assign site-b operator'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 select is(
   private.derive_skill_gap(
     (select id from unit_scope_ids where key = 'membership_a'),
@@ -219,6 +222,11 @@ select is(
   'descendant unit inherits site override target'
 );
 
+set local role authenticated;
+
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 select is(
   private.derive_skill_gap(
     (select id from unit_scope_ids where key = 'membership_b'),
@@ -227,6 +235,8 @@ select is(
   '2',
   'sibling site keeps org-wide target only'
 );
+
+set local role authenticated;
 
 reset role;
 

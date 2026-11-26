@@ -400,6 +400,9 @@ select ok(
   'existing custom role is preserved'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 select lives_ok(
   $$
     select private.ensure_organisation_baseline_application_roles(
@@ -414,6 +417,8 @@ select lives_ok(
   $$,
   'baseline ensure routine is idempotent'
 );
+
+set local role authenticated;
 
 select is(
   (

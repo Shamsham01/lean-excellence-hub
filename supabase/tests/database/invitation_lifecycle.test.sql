@@ -183,7 +183,7 @@ select
     'email',
     'lifecycle-invitee@example.test',
     decode(repeat('aa', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl(),
+    statement_timestamp() + interval '7 days',
     (select id from lifecycle_ids where key = 'member_role_version'),
     'organisation',
     null,
@@ -250,7 +250,7 @@ select
     'email',
     'lifecycle.invitee@example.test',
     decode(repeat('bb', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl(),
+    statement_timestamp() + interval '7 days',
     (select id from lifecycle_ids where key = 'member_role_version'),
     'organisation',
     null
@@ -338,7 +338,7 @@ select
     'email',
     'revoked-invitee@example.test',
     decode(repeat('dd', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl(),
+    statement_timestamp() + interval '7 days',
     (select id from lifecycle_ids where key = 'member_role_version'),
     'organisation',
     null
@@ -366,7 +366,7 @@ select
     'email',
     'reissue-invitee@example.test',
     decode(repeat('ee', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl(),
+    statement_timestamp() + interval '7 days',
     (select id from lifecycle_ids where key = 'member_role_version'),
     'organisation',
     null,
@@ -381,7 +381,7 @@ select
   public.reissue_organisation_member_invitation(
     (select id from lifecycle_ids where key = 'reissue_source'),
     decode(repeat('ef', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl()
+    statement_timestamp() + interval '7 days'
   );
 
 select is(
@@ -428,7 +428,7 @@ select
     'email',
     'duplicate-invitee@example.test',
     decode(repeat('11', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl(),
+    statement_timestamp() + interval '7 days',
     (select id from lifecycle_ids where key = 'member_role_version'),
     'organisation',
     null
@@ -440,7 +440,7 @@ select throws_ok(
       'email',
       'duplicate-invitee@example.test',
       decode(repeat('33', 32), 'hex'),
-      statement_timestamp() + private.invitation_default_ttl(),
+      statement_timestamp() + interval '7 days',
       (select id from lifecycle_ids where key = 'member_role_version'),
       'organisation',
       null
@@ -710,7 +710,7 @@ select
     'email',
     'continuation-invitee@example.test',
     decode(repeat('44', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl(),
+    statement_timestamp() + interval '7 days',
     (select id from lifecycle_ids where key = 'member_role_version'),
     'organisation',
     null
@@ -730,7 +730,7 @@ select
     'email',
     'continuation-revoked@example.test',
     decode(repeat('55', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl(),
+    statement_timestamp() + interval '7 days',
     (select id from lifecycle_ids where key = 'member_role_version'),
     'organisation',
     null
@@ -759,7 +759,7 @@ select
     'email',
     'continuation-unconfirmed@example.test',
     decode(repeat('66', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl(),
+    statement_timestamp() + interval '7 days',
     (select id from lifecycle_ids where key = 'member_role_version'),
     'organisation',
     null

@@ -292,11 +292,16 @@ select is(
   'training requirement uses stable course identity'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 select is(
   private.derive_training_validity_days(180, 365),
   180,
   'validity precedence: requirement override wins'
 );
+
+set local role authenticated;
 
 insert into capability_ids (key, id)
 select 'successor_version', public.create_training_course_successor_version(
@@ -331,6 +336,9 @@ select is(
   'self assessment does not count as validated proficiency'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 select is(
   private.derive_skill_gap(
     (select id from capability_ids where key = 'owner_membership'),
@@ -339,6 +347,8 @@ select is(
   'not_assessed',
   'self assessment excluded from current validated proficiency'
 );
+
+set local role authenticated;
 
 insert into capability_ids (key, id)
 select 'validation', public.record_skill_validation(

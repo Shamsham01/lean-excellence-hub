@@ -163,7 +163,7 @@ select
     'email',
     'invited-name-new@example.test',
     decode(repeat('a1', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl(),
+    statement_timestamp() + interval '7 days',
     (select id from name_ids where key = 'role_version_a'),
     'organisation',
     null,
@@ -190,7 +190,7 @@ select
     'email',
     'invited-name-binding@example.test',
     decode(repeat('a2', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl(),
+    statement_timestamp() + interval '7 days',
     (select id from name_ids where key = 'role_version_a'),
     'organisation',
     null,
@@ -380,7 +380,7 @@ select
     'email',
     'invited-name-preserved@example.test',
     decode(repeat('a3', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl(),
+    statement_timestamp() + interval '7 days',
     (select id from name_ids where key = 'role_version_a'),
     'organisation',
     null,
@@ -394,7 +394,7 @@ select
     'email',
     'invited-name-existing@example.test',
     decode(repeat('a4', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl(),
+    statement_timestamp() + interval '7 days',
     (select id from name_ids where key = 'role_version_a'),
     'organisation',
     null,
@@ -408,7 +408,7 @@ select
     'email',
     'invited-name-new@example.test',
     decode(repeat('a5', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl(),
+    statement_timestamp() + interval '7 days',
     (select id from name_ids where key = 'role_version_a'),
     'organisation',
     null,
@@ -448,7 +448,7 @@ select
   public.reissue_organisation_member_invitation(
     (select id from name_ids where key = 'reissue_source'),
     decode(repeat('a6', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl()
+    statement_timestamp() + interval '7 days'
   );
 
 select is(
@@ -574,7 +574,7 @@ select
     'email',
     'invited-name-existing@example.test',
     decode(repeat('a7', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl(),
+    statement_timestamp() + interval '7 days',
     (select id from name_ids where key = 'role_version_b'),
     'organisation',
     null,

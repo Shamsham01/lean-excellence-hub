@@ -288,7 +288,7 @@ select 'invitation', public.issue_organisation_member_invitation_grants(
   'email',
   'multi-grant-invitee@example.test',
   decode(repeat('11', 32), 'hex'),
-  statement_timestamp() + private.invitation_default_ttl(),
+  statement_timestamp() + interval '7 days',
   jsonb_build_array(
     jsonb_build_object(
       'role_version_id', (select id from multi_grant_ids where key = 'team_member_role_version'),
@@ -334,7 +334,7 @@ select throws_ok(
       'email',
       'multi-grant-duplicate@example.test',
       decode(repeat('22', 32), 'hex'),
-      statement_timestamp() + private.invitation_default_ttl(),
+      statement_timestamp() + interval '7 days',
       jsonb_build_array(
         jsonb_build_object(
           'role_version_id', (select id from multi_grant_ids where key = 'view_role_version'),
@@ -370,7 +370,7 @@ select throws_ok(
       'email',
       'multi-grant-invalid@example.test',
       decode(repeat('33', 32), 'hex'),
-      statement_timestamp() + private.invitation_default_ttl(),
+      statement_timestamp() + interval '7 days',
       jsonb_build_array(
         jsonb_build_object(
           'role_version_id', (select id from multi_grant_ids where key = 'team_member_role_version'),
@@ -404,7 +404,7 @@ insert into multi_grant_ids (key, id)
 select 'replacement', public.reissue_organisation_member_invitation(
   (select id from multi_grant_ids where key = 'invitation'),
   decode(repeat('44', 32), 'hex'),
-  statement_timestamp() + private.invitation_default_ttl()
+  statement_timestamp() + interval '7 days'
 );
 
 select is(
@@ -442,7 +442,7 @@ select 'single_invitation', public.issue_organisation_member_invitation(
   'email',
   'multi-grant-single@example.test',
   decode(repeat('55', 32), 'hex'),
-  statement_timestamp() + private.invitation_default_ttl(),
+  statement_timestamp() + interval '7 days',
   (select id from multi_grant_ids where key = 'team_member_role_version'),
   'unit_subtree',
   (select id from multi_grant_ids where key = 'site_a'),
@@ -540,7 +540,7 @@ select 'retired_invitation', public.issue_organisation_member_invitation_grants(
   'email',
   'multi-grant-retired@example.test',
   decode(repeat('66', 32), 'hex'),
-  statement_timestamp() + private.invitation_default_ttl(),
+  statement_timestamp() + interval '7 days',
   jsonb_build_array(
     jsonb_build_object(
       'role_version_id', (select id from multi_grant_ids where key = 'retire_role_version'),
@@ -566,7 +566,7 @@ select throws_ok(
     select public.reissue_organisation_member_invitation(
       (select id from multi_grant_ids where key = 'retired_invitation'),
       decode(repeat('77', 32), 'hex'),
-      statement_timestamp() + private.invitation_default_ttl()
+      statement_timestamp() + interval '7 days'
     )
   $q$,
   '42501',
@@ -700,7 +700,7 @@ select 'authority_invitation', public.issue_organisation_member_invitation_grant
   'email',
   'multi-grant-authority@example.test',
   decode(repeat('99', 32), 'hex'),
-  statement_timestamp() + private.invitation_default_ttl(),
+  statement_timestamp() + interval '7 days',
   jsonb_build_array(
     jsonb_build_object(
       'role_version_id', (select id from multi_grant_ids where key = 'team_member_role_version'),
@@ -742,7 +742,7 @@ select throws_ok(
     select public.reissue_organisation_member_invitation(
       (select id from multi_grant_ids where key = 'authority_invitation'),
       decode(repeat('aa', 32), 'hex'),
-      statement_timestamp() + private.invitation_default_ttl()
+      statement_timestamp() + interval '7 days'
     )
   $q$,
   '42501',

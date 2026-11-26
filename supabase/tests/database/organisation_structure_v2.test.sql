@@ -386,6 +386,9 @@ select ok(
   'remaining scoped grant stays active'
 );
 
+-- private.* EXECUTE is restricted (20261126093000_private_function_execute_lockdown); evaluate as postgres.
+reset role;
+
 select ok(
   private.resolve_site_unit_id(
     (select id from orgv2_ids where key = 'organisation'),
@@ -397,6 +400,8 @@ select ok(
   ),
   'site containment remains intact for membership site access'
 );
+
+set local role authenticated;
 
 select throws_ok(
   format(

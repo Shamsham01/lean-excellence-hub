@@ -606,7 +606,7 @@ select
     'email',
     'sec-rpc-invitee@example.test',
     decode(repeat('ab', 32), 'hex'),
-    statement_timestamp() + private.invitation_default_ttl(),
+    statement_timestamp() + interval '7 days',
     (select id from sec_rpc_ids where key = 'member_role_version'),
     'organisation',
     null,
