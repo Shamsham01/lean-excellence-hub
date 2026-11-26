@@ -150,9 +150,7 @@ export default async function PlatformHomePage({
           .limit(3)
       : { data: null },
     home.templates
-      ? supabase
-          .from("templates")
-          .select("id", { count: "exact", head: true })
+      ? supabase.from("templates").select("id", { count: "exact", head: true })
       : { count: null },
     home.fiveSMetric
       ? supabase
