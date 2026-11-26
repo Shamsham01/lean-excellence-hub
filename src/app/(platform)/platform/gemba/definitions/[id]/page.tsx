@@ -80,11 +80,7 @@ export default async function GembaDefinitionPage({
     Array.isArray(query.saved) ? query.saved[0] : query.saved,
   );
   const supabase = await createServerSupabaseClient();
-  const [
-    canManage,
-    canSchedule,
-    { data: definition, error: definitionError },
-  ] = await Promise.all([
+  const [canManage, canSchedule, definitionResult] = await Promise.all([
     currentMemberHasPermission(GEMBA_PERMISSIONS.definitionsManage),
     currentMemberHasPermission(SCHEDULE_PERMISSIONS.manage),
     supabase
@@ -93,6 +89,7 @@ export default async function GembaDefinitionPage({
       .eq("id", id)
       .maybeSingle(),
   ]);
+  const { data: definition, error: definitionError } = definitionResult;
 
   requireQuerySuccess(
     definitionError,
@@ -141,11 +138,7 @@ export default async function GembaDefinitionPage({
     applicabilityRows,
   );
   const mappedUnitIds = [...applicableIds];
-  const [
-    { data: mappedUnits, error: mappedUnitsError },
-    authoring,
-    activeWalks,
-  ] = await Promise.all([
+  const [mappedUnitsResult, authoring, activeWalks] = await Promise.all([
     mappedUnitIds.length > 0
       ? supabase
           .from("organisation_units")
@@ -158,6 +151,7 @@ export default async function GembaDefinitionPage({
       loadedVersions.map((version) => version.id),
     ),
   ]);
+  const { data: mappedUnits, error: mappedUnitsError } = mappedUnitsResult;
 
   const unitStatusById = collectUnitStatuses(
     requireQuerySuccess(

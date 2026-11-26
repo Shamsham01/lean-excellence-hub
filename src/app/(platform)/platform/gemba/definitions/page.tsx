@@ -82,7 +82,8 @@ export default async function GembaDefinitionsPage({
 
       .order("created_at", { ascending: false }),
   ]);
-  const { data: loadedDefinitions, error: definitionsError } = definitionsResult;
+  const { data: loadedDefinitions, error: definitionsError } =
+    definitionsResult;
 
   if (definitionsError) {
     return (

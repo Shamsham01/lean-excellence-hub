@@ -175,9 +175,7 @@ export default async function PlatformHomePage({
     canReadSuggestions
       ? supabase.rpc("get_suggestions_overview")
       : { data: null },
-    canReadBenefits
-      ? supabase.rpc("get_benefits_overview")
-      : { data: null },
+    canReadBenefits ? supabase.rpc("get_benefits_overview") : { data: null },
     loadPlatformHomeAnalytics(supabase, analyticsRange, home),
   ]);
   const capabilityObj = capabilityDashboard as {

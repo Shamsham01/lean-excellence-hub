@@ -87,14 +87,8 @@ export default async function ActionsPage({
       .from("maturity_assessments")
       .select("id, assessment_type, status")
       .order("updated_at", { ascending: false }),
-    supabase
-      .from("maturity_pillars")
-      .select("id, name")
-      .order("name"),
-    supabase
-      .from("maturity_criteria")
-      .select("id, name")
-      .order("name"),
+    supabase.from("maturity_pillars").select("id, name").order("name"),
+    supabase.from("maturity_criteria").select("id, name").order("name"),
     supabase
       .from("five_s_audits")
       .select(

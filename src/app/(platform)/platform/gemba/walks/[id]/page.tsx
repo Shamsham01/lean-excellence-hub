@@ -59,11 +59,7 @@ export default async function GembaWalkPage({
     notFound();
   }
 
-  const [
-    { data: version },
-    { data: answersRaw },
-    { data: evidenceLinks },
-  ] = await Promise.all([
+  const [versionResult, answersResult, evidenceResult] = await Promise.all([
     supabase
       .from("gemba_definition_versions")
       .select("template_version_id")
@@ -78,6 +74,9 @@ export default async function GembaWalkPage({
       .select("section_id, question_id, observation_id, attachment_id")
       .eq("walk_id", id),
   ]);
+  const { data: version } = versionResult;
+  const { data: answersRaw } = answersResult;
+  const { data: evidenceLinks } = evidenceResult;
 
   const [{ data: sectionsRaw }, { data: questionsRaw }] = await Promise.all([
     supabase
