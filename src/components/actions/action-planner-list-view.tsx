@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { ActionTaskListRow } from "@/components/actions/action-task-list-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { PlannerTransition } from "@/lib/actions/use-planner-transitions";
 import type { ActionPlannerListItem } from "@/lib/actions/planner-types";
 import {
   type ActionListTab,
@@ -16,6 +17,8 @@ import {
 type ActionPlannerListViewProps = {
   actions: ActionPlannerListItem[];
   onOpen: (actionId: string) => void;
+  onTransition: PlannerTransition;
+  pendingIds: ReadonlySet<string>;
   pending?: boolean;
   sortBy: "due" | "created" | "title";
 };
@@ -23,6 +26,8 @@ type ActionPlannerListViewProps = {
 export function ActionPlannerListView({
   actions,
   onOpen,
+  onTransition,
+  pendingIds,
   pending = false,
   sortBy,
 }: ActionPlannerListViewProps) {
@@ -115,6 +120,8 @@ export function ActionPlannerListView({
                   key={action.id}
                   action={action}
                   onOpen={onOpen}
+                  onTransition={onTransition}
+                  pending={pendingIds.has(action.id)}
                 />
               ))}
             </section>

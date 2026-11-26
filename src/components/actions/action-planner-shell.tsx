@@ -40,6 +40,7 @@ import {
   subscribeActionPlannerView,
   writeStoredActionPlannerView,
 } from "@/lib/actions/planner-view";
+import { usePlannerTransitions } from "@/lib/actions/use-planner-transitions";
 import { cn } from "@/lib/utils";
 const VIEW_OPTIONS: Array<{
   id: ActionPlannerView;
@@ -71,12 +72,14 @@ type ActionPlannerShellProps = {
 };
 
 export function ActionPlannerShell({
-  actions,
+  actions: serverActions,
   initialOpenActionId = null,
   canCreate = false,
   listFilters,
 }: ActionPlannerShellProps) {
   const router = useRouter();
+  const { actions, pendingIds, error, onTransition } =
+    usePlannerTransitions(serverActions);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const view = useSyncExternalStore(
@@ -249,6 +252,15 @@ export function ActionPlannerShell({
         </div>
       </div>
 
+      {error ? (
+        <p
+          className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          role="alert"
+        >
+          {error}
+        </p>
+      ) : null}
+
       {actions.length === 0 ? (
         <EmptyState
           testId="actions-empty-state"
@@ -270,11 +282,18 @@ export function ActionPlannerShell({
             <ActionPlannerListView
               actions={actions}
               onOpen={openAction}
+              onTransition={onTransition}
+              pendingIds={pendingIds}
               sortBy={listSort}
             />
           ) : null}
           {view === "board" ? (
-            <ActionPlannerBoard actions={boardActions} onOpen={openAction} />
+            <ActionPlannerBoard
+              actions={boardActions}
+              onOpen={openAction}
+              onTransition={onTransition}
+              pendingIds={pendingIds}
+            />
           ) : null}
           {view === "tiles" ? (
             <ActionPlannerTiles actions={actions} onOpen={openAction} />

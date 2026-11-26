@@ -2,12 +2,7 @@
 
 import type { DragEvent } from "react";
 import { GripVertical, MessageSquare } from "lucide-react";
-import { useRouter } from "next/navigation";
-
-import {
-  completeAction,
-  reopenAction,
-} from "@/app/(platform)/platform/actions/actions";
+import type { PlannerTransition } from "@/lib/actions/use-planner-transitions";
 import { PlatformMemberAvatar } from "@/components/platform/platform-member-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -22,6 +17,8 @@ import { cn } from "@/lib/utils";
 export function ActionTaskListRow({
   action,
   onOpen,
+  onTransition,
+  pending = false,
   draggable = false,
   onDragStart,
   onDragEnd,
@@ -29,34 +26,17 @@ export function ActionTaskListRow({
 }: {
   action: ActionPlannerListItem;
   onOpen: (actionId: string) => void;
+  onTransition: PlannerTransition;
+  pending?: boolean;
   draggable?: boolean;
   onDragStart?: (event: DragEvent<HTMLDivElement>) => void;
   onDragEnd?: () => void;
   className?: string;
 }) {
-  const router = useRouter();
   const due = formatDueDate(action.due_at);
   const isDone = action.status === "completed" || action.status === "verified";
   const assigneeName = action.assignee_display_name?.trim() ?? "";
   const isUnassigned = !assigneeName;
-
-  async function handleToggleComplete(nextChecked: boolean) {
-    if (nextChecked) {
-      if (!action.permissions.can_complete) return;
-      const result = await completeAction({
-        actionId: action.id,
-        expectedVersion: action.version,
-      });
-      if (!result.error) router.refresh();
-      return;
-    }
-    if (!action.permissions.can_reopen) return;
-    const result = await reopenAction({
-      actionId: action.id,
-      expectedVersion: action.version,
-    });
-    if (!result.error) router.refresh();
-  }
 
   return (
     <div
@@ -82,16 +62,17 @@ export function ActionTaskListRow({
       <Checkbox
         checked={isDone}
         disabled={
-          isDone
-            ? !action.permissions.can_reopen
-            : !action.permissions.can_complete
+          pending ||
+          (isDone
+            ? action.status === "verified" || !action.permissions.can_reopen
+            : action.status === "cancelled" || !action.permissions.can_complete)
         }
         aria-label={
           isDone ? `Mark ${action.title} as open` : `Complete ${action.title}`
         }
         onClick={(event) => event.stopPropagation()}
         onCheckedChange={(checked) => {
-          void handleToggleComplete(Boolean(checked));
+          void onTransition(action, checked ? "completed" : "open");
         }}
       />
       <button

@@ -1,13 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-import {
-  completeAction,
-  reopenAction,
-  transitionActionStatus,
-} from "@/app/(platform)/platform/actions/actions";
+import type { PlannerTransition } from "@/lib/actions/use-planner-transitions";
 import { ActionPlannerCard } from "@/components/actions/action-planner-card";
 import {
   DropdownMenu,
@@ -31,6 +26,8 @@ import { cn } from "@/lib/utils";
 type ActionPlannerBoardProps = {
   actions: ActionPlannerListItem[];
   onOpen: (actionId: string) => void;
+  onTransition: PlannerTransition;
+  pendingIds: ReadonlySet<string>;
   pendingMove?: boolean;
 };
 
@@ -43,13 +40,13 @@ type DragState = {
 export function ActionPlannerBoard({
   actions,
   onOpen,
+  onTransition,
+  pendingIds,
   pendingMove = false,
 }: ActionPlannerBoardProps) {
-  const router = useRouter();
   const [dragging, setDragging] = useState<DragState>(null);
   const [hoverColumn, setHoverColumn] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
 
   const byStatus = useMemo(() => {
     const map = new Map<string, ActionPlannerListItem[]>();
@@ -68,7 +65,7 @@ export function ActionPlannerBoard({
   }, [actions]);
 
   async function handleDrop(targetStatus: string) {
-    if (!dragging || busy || pendingMove) return;
+    if (!dragging || pendingMove || pendingIds.has(dragging.actionId)) return;
     const action = actions.find((row) => row.id === dragging.actionId);
     if (!action) return;
 
@@ -84,40 +81,10 @@ export function ActionPlannerBoard({
       return;
     }
 
-    setBusy(true);
     setError(null);
-
-    let result: { error?: string; ok?: true };
-    if (targetStatus === "completed") {
-      result = await completeAction({
-        actionId: action.id,
-        expectedVersion: action.version,
-      });
-    } else if (
-      targetStatus === "open" &&
-      (action.status === "completed" || action.status === "cancelled")
-    ) {
-      result = await reopenAction({
-        actionId: action.id,
-        expectedVersion: action.version,
-      });
-    } else {
-      result = await transitionActionStatus({
-        actionId: action.id,
-        toStatus: targetStatus,
-        expectedVersion: action.version,
-      });
-    }
-
-    setBusy(false);
     setDragging(null);
     setHoverColumn(null);
-
-    if (result.error) {
-      setError(result.error);
-      return;
-    }
-    router.refresh();
+    await onTransition(action, targetStatus);
   }
 
   if (pendingMove) {
@@ -243,10 +210,13 @@ export function ActionPlannerBoard({
                       action={action}
                       layout="tile"
                       onOpen={onOpen}
-                      draggable={actionHasDraggableTransitions(
-                        action.permissions,
-                        action.status,
-                      )}
+                      draggable={
+                        !pendingIds.has(action.id) &&
+                        actionHasDraggableTransitions(
+                          action.permissions,
+                          action.status,
+                        )
+                      }
                       onDragStart={() =>
                         setDragging({
                           actionId: action.id,
