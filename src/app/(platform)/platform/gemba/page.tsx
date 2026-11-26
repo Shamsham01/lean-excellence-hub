@@ -37,16 +37,11 @@ export default async function GembaOverviewPage({
   if (workplaceView) return workplaceView;
 
   const supabase = await createServerSupabaseClient();
-  const [
-    analyticsRange,
-    canManage,
-  ] = await Promise.all([
+  const [analyticsRange, canManage] = await Promise.all([
     buildAnalyticsDateRangeForOrganisation(
       parseAnalyticsRangeDays(params.range),
     ),
-    currentMemberHasPermission(
-      GEMBA_PERMISSIONS.definitionsManage,
-    ),
+    currentMemberHasPermission(GEMBA_PERMISSIONS.definitionsManage),
   ]);
 
   let topRows;

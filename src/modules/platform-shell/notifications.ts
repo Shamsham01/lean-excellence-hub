@@ -29,7 +29,8 @@ const chaseSyncByMembership = new Map<
   { startedAt: number; promise: Promise<void> }
 >();
 
-// Process-local throttle: only the sync attempt is shared, never notification
+// Best-effort, process-local throttle: cold starts and separate server instances
+// have independent windows. Only the sync attempt is shared, never notification
 // data. Keep the membership key so an organisation switch cannot reuse a
 // different membership's sync state.
 function syncChaseNotifications(

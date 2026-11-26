@@ -105,7 +105,6 @@ export default async function ActionsPage({
     loadActionPlannerSummaries(actions),
   ]);
 
-
   const openActionParam =
     typeof rawParams.action === "string"
       ? rawParams.action

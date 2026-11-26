@@ -74,15 +74,15 @@ export default async function GembaDefinitionsPage({
   ] = await Promise.all([
     currentMemberHasPermission(GEMBA_PERMISSIONS.definitionsManage),
     supabase
-  
+
       .from("gemba_definitions")
-  
+
       .select(
         "id, display_name, gemba_definition_versions(status, version_number, gemba_walks(count)), gemba_definition_applicable_units(unit_id)",
       )
-  
+
       .is("archived_at", null)
-  
+
       .order("created_at", { ascending: false }),
   ]);
 

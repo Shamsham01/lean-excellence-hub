@@ -624,7 +624,9 @@ describe("homepage authentication routing", () => {
       error: null,
     });
 
-    await expect(continueAuthentication()).rejects.toThrow("REDIRECT:/platform");
+    await expect(continueAuthentication()).rejects.toThrow(
+      "REDIRECT:/platform",
+    );
     expect(routeAfterAuthentication).toHaveBeenCalledTimes(1);
   });
 

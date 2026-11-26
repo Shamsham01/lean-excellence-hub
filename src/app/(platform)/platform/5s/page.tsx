@@ -32,16 +32,11 @@ export default async function FiveSOverviewPage({
   if (workplaceView) return workplaceView;
 
   const supabase = await createServerSupabaseClient();
-  const [
-    analyticsRange,
-    canManage,
-  ] = await Promise.all([
+  const [analyticsRange, canManage] = await Promise.all([
     buildAnalyticsDateRangeForOrganisation(
       parseAnalyticsRangeDays(params.range),
     ),
-    currentMemberHasPermission(
-      FIVE_S_PERMISSIONS.standardsManage,
-    ),
+    currentMemberHasPermission(FIVE_S_PERMISSIONS.standardsManage),
   ]);
 
   let topRows;
@@ -86,8 +81,6 @@ export default async function FiveSOverviewPage({
       .select("id", { count: "exact", head: true })
       .eq("lifecycle_status", "open"),
   ]);
-
-
 
   if (catalog === "empty") {
     return (

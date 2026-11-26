@@ -34,13 +34,8 @@ export default async function FiveSAuditPage({
   if (workplaceView) return workplaceView;
 
   const supabase = await createServerSupabaseClient();
-  const [
-    canEdit,
-    { data: audit },
-  ] = await Promise.all([
-    currentMemberHasPermission(
-      FIVE_S_PERMISSIONS.auditPerform,
-    ),
+  const [canEdit, { data: audit }] = await Promise.all([
+    currentMemberHasPermission(FIVE_S_PERMISSIONS.auditPerform),
     supabase
       .from("five_s_audits")
       .select(
@@ -49,7 +44,6 @@ export default async function FiveSAuditPage({
       .eq("id", id)
       .maybeSingle(),
   ]);
-
 
   if (!audit) {
     const workplaceRecord = await loadWorkplaceRecordFallback({
@@ -88,10 +82,7 @@ export default async function FiveSAuditPage({
     audit.status === "completed" ? loadFiveSAuditLinkedActions(id) : [],
   ]);
 
-  const [
-    { data: sectionsRaw },
-    { data: questionsRaw },
-  ] = await Promise.all([
+  const [{ data: sectionsRaw }, { data: questionsRaw }] = await Promise.all([
     supabase
       .from("template_sections")
       .select("id, title, position")
@@ -105,7 +96,6 @@ export default async function FiveSAuditPage({
       .eq("template_version_id", version?.template_version_id ?? "")
       .order("position"),
   ]);
-
 
   const sections =
     sectionsRaw?.map((section) => ({
@@ -124,7 +114,6 @@ export default async function FiveSAuditPage({
           })) ?? [],
     })) ?? [];
 
-
   const answers: Record<
     string,
     {
@@ -136,7 +125,6 @@ export default async function FiveSAuditPage({
   for (const a of answersRaw ?? []) {
     answers[a.question_id] = a;
   }
-
 
   const attachmentIds = [
     ...new Set((evidenceLinks ?? []).map((link) => link.attachment_id)),
@@ -161,7 +149,6 @@ export default async function FiveSAuditPage({
     }
   }
 
-
   const actionCountsByQuestion: Record<string, number> = {};
   for (const row of actionContextRows ?? []) {
     if (!row.question_id) continue;
@@ -185,7 +172,6 @@ export default async function FiveSAuditPage({
       });
     }
   }
-
 
   if (audit.status === "completed") {
     return (

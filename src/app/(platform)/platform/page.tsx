@@ -184,10 +184,7 @@ export default async function PlatformHomePage({
     training_compliance_percent?: number | null;
     skill_coverage_percent?: number | null;
   } | null;
-  const suggestionsOverview = suggestionsData as Record<
-    string,
-    unknown
-  > | null;
+  const suggestionsOverview = suggestionsData as Record<string, unknown> | null;
   const benefitsOverview = benefitsData as BenefitsOverview | null;
   const benefitsAwaitingValidation =
     (benefitsOverview?.awaiting_validation?.benefits ?? 0) +

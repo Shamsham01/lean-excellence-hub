@@ -38,10 +38,7 @@ export default async function GembaWalkPage({
 
   const { prompt } = await searchParams;
   const supabase = await createServerSupabaseClient();
-  const [
-    canEdit,
-    { data: walk },
-  ] = await Promise.all([
+  const [canEdit, { data: walk }] = await Promise.all([
     currentMemberHasPermission(GEMBA_PERMISSIONS.walkPerform),
     supabase
       .from("gemba_walks")
@@ -82,10 +79,7 @@ export default async function GembaWalkPage({
       .eq("walk_id", id),
   ]);
 
-  const [
-    { data: sectionsRaw },
-    { data: questionsRaw },
-  ] = await Promise.all([
+  const [{ data: sectionsRaw }, { data: questionsRaw }] = await Promise.all([
     supabase
       .from("template_sections")
       .select("id, title, position")

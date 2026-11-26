@@ -80,16 +80,19 @@ export default async function GembaDefinitionPage({
     Array.isArray(query.saved) ? query.saved[0] : query.saved,
   );
   const supabase = await createServerSupabaseClient();
-  const [canManage, canSchedule, { data: definition, error: definitionError }] =
-    await Promise.all([
-      currentMemberHasPermission(GEMBA_PERMISSIONS.definitionsManage),
-      currentMemberHasPermission(SCHEDULE_PERMISSIONS.manage),
-      supabase
-        .from("gemba_definitions")
-        .select("id, display_name, description")
-        .eq("id", id)
-        .maybeSingle(),
-    ]);
+  const [
+    canManage,
+    canSchedule,
+    { data: definition, error: definitionError },
+  ] = await Promise.all([
+    currentMemberHasPermission(GEMBA_PERMISSIONS.definitionsManage),
+    currentMemberHasPermission(SCHEDULE_PERMISSIONS.manage),
+    supabase
+      .from("gemba_definitions")
+      .select("id, display_name, description")
+      .eq("id", id)
+      .maybeSingle(),
+  ]);
 
   requireQuerySuccess(
     definitionError,
@@ -138,23 +141,23 @@ export default async function GembaDefinitionPage({
     applicabilityRows,
   );
   const mappedUnitIds = [...applicableIds];
-  const [{ data: mappedUnits, error: mappedUnitsError }, authoring, activeWalks] =
-    await Promise.all([
-      mappedUnitIds.length > 0
-        ? supabase
-            .from("organisation_units")
-            .select("id, status")
-            .in("id", mappedUnitIds)
-        : { data: [], error: null },
-      loadTemplateAuthoringChildren(
-        supabase,
-        editorVersion?.template_version_id,
-      ),
-      loadActiveGembaWalksForDefinitionVersions(
-        supabase,
-        loadedVersions.map((version) => version.id),
-      ),
-    ]);
+  const [
+    { data: mappedUnits, error: mappedUnitsError },
+    authoring,
+    activeWalks,
+  ] = await Promise.all([
+    mappedUnitIds.length > 0
+      ? supabase
+          .from("organisation_units")
+          .select("id, status")
+          .in("id", mappedUnitIds)
+      : { data: [], error: null },
+    loadTemplateAuthoringChildren(supabase, editorVersion?.template_version_id),
+    loadActiveGembaWalksForDefinitionVersions(
+      supabase,
+      loadedVersions.map((version) => version.id),
+    ),
+  ]);
 
   const unitStatusById = collectUnitStatuses(
     requireQuerySuccess(
