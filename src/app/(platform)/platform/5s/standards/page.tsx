@@ -31,16 +31,14 @@ export default async function FiveSStandardsPage() {
   if (workplaceView) return workplaceView;
 
   const supabase = await createServerSupabaseClient();
-  const [
-    canManage,
-    { data: loadedStandards, error: standardsError },
-  ] = await Promise.all([
+  const [canManage, standardsResult] = await Promise.all([
     currentMemberHasPermission(FIVE_S_PERMISSIONS.standardsManage),
     supabase
       .from("five_s_standards")
       .select("id, display_name, description, created_at")
       .order("created_at", { ascending: false }),
   ]);
+  const { data: loadedStandards, error: standardsError } = standardsResult;
 
   if (standardsError) {
     return (

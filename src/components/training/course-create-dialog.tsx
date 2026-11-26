@@ -1,7 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-
 import { CourseCreateForm } from "@/components/training/course-create-form";
 import { ModuleWriteButton } from "@/components/billing/module-write-button";
 import { ResponsiveFormDialog } from "@/components/ui/responsive-form-dialog";
@@ -14,7 +12,6 @@ export function CourseCreateDialog({
   existingCodes: readonly string[];
   defaultOpen?: boolean;
 }) {
-  const router = useRouter();
   const [open, setOpen] = useDialogDefaultOpen(defaultOpen);
 
   return (
@@ -39,10 +36,7 @@ export function CourseCreateDialog({
           variant="embedded"
           existingCodes={existingCodes}
           cancelHref="/platform/training/courses"
-          onCreated={() => {
-            setOpen(false);
-            router.refresh();
-          }}
+          onCreated={() => setOpen(false)}
         />
       </ResponsiveFormDialog>
     </>

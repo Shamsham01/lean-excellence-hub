@@ -358,7 +358,6 @@ export function RequirementEditor({
 
                 setFeedback("Skills standard published.");
                 setPending(null);
-                router.refresh();
               })
               .catch(() => {
                 setError("Unable to publish this skills standard.");

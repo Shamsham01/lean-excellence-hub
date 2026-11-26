@@ -68,10 +68,7 @@ export default async function GembaDefinitionsPage({
 
   const supabase = await createServerSupabaseClient();
 
-  const [
-    canManage,
-    { data: loadedDefinitions, error: definitionsError },
-  ] = await Promise.all([
+  const [canManage, definitionsResult] = await Promise.all([
     currentMemberHasPermission(GEMBA_PERMISSIONS.definitionsManage),
     supabase
 
@@ -85,6 +82,7 @@ export default async function GembaDefinitionsPage({
 
       .order("created_at", { ascending: false }),
   ]);
+  const { data: loadedDefinitions, error: definitionsError } = definitionsResult;
 
   if (definitionsError) {
     return (

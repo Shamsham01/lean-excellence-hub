@@ -1374,10 +1374,7 @@ export function FrameworkEditor({
               disabled={!publishReadiness.ready || busy}
               data-testid="publish-framework"
               onClick={async () => {
-                const ok = await run(() =>
-                  publishMaturityModel(versionId, modelId),
-                );
-                if (ok) router.refresh();
+                await run(() => publishMaturityModel(versionId, modelId));
               }}
             >
               Publish framework version
