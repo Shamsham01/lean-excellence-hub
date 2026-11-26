@@ -94,10 +94,12 @@ export function ActionPlannerCard({
                   {action.checklist_done}/{action.checklist_total}
                 </span>
               ) : null}
-              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                <MessageSquare className="size-3.5" aria-hidden />
-                <span className="font-mono-data">{action.comment_count}</span>
-              </span>
+              {action.comment_count !== null ? (
+                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                  <MessageSquare className="size-3.5" aria-hidden />
+                  <span className="font-mono-data">{action.comment_count}</span>
+                </span>
+              ) : null}
             </div>
           ) : null}
           {hint && layout === "row" ? (
@@ -140,10 +142,12 @@ export function ActionPlannerCard({
                   {action.checklist_done}/{action.checklist_total}
                 </span>
               ) : null}
-              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                <MessageSquare className="size-3.5" aria-hidden />
-                <span className="font-mono-data">{action.comment_count}</span>
-              </span>
+              {action.comment_count !== null ? (
+                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                  <MessageSquare className="size-3.5" aria-hidden />
+                  <span className="font-mono-data">{action.comment_count}</span>
+                </span>
+              ) : null}
             </>
           ) : null}
           <ActionCardCoverThumb

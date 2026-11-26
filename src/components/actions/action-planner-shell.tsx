@@ -12,7 +12,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -33,7 +32,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { ActionListFilters } from "@/lib/actions/action-filters";
-import type { ActionPlannerListItem } from "@/lib/actions/planner-types";
+import type {
+  ActionPlannerCardDetails,
+  ActionPlannerListItem,
+} from "@/lib/actions/planner-types";
+import { loadPlannerCardDetails } from "@/app/(platform)/platform/actions/actions";
 import {
   type ActionPlannerView,
   readStoredActionPlannerView,
@@ -78,8 +81,12 @@ export function ActionPlannerShell({
   listFilters,
 }: ActionPlannerShellProps) {
   const router = useRouter();
-  const { actions, pendingIds, error, onTransition } =
-    usePlannerTransitions(serverActions);
+  const {
+    actions: localActions,
+    pendingIds,
+    error,
+    onTransition,
+  } = usePlannerTransitions(serverActions);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const view = useSyncExternalStore(
@@ -87,6 +94,48 @@ export function ActionPlannerShell({
     readStoredActionPlannerView,
     () => "list" as ActionPlannerView,
   );
+  const needsCardDetails = view !== "list";
+  const [cardDetails, setCardDetails] = useState<{
+    rows: ActionPlannerListItem[];
+    details: ActionPlannerCardDetails[];
+  } | null>(null);
+  const [cardError, setCardError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!needsCardDetails || cardDetails?.rows === serverActions) return;
+    let active = true;
+    void loadPlannerCardDetails(serverActions.map((action) => action.id))
+      .then((details) => {
+        if (active) {
+          setCardDetails({ rows: serverActions, details });
+          setCardError(null);
+        }
+      })
+      .catch(() => {
+        if (active) setCardError("Unable to load action card details.");
+      });
+    return () => {
+      active = false;
+    };
+  }, [cardDetails, needsCardDetails, serverActions]);
+
+  const cardDetailsById = new Map(
+    (cardDetails?.rows === serverActions ? cardDetails.details : []).map(
+      (detail) => [detail.id, detail],
+    ),
+  );
+  const actions = localActions
+    .filter(
+      (action) =>
+        !listFilters?.filters.status ||
+        action.status === listFilters.filters.status ||
+        pendingIds.has(action.id),
+    )
+    .map((action) => ({
+      ...action,
+      ...(needsCardDetails ? cardDetailsById.get(action.id) : undefined),
+    }));
+
   const [sheetOpen, setSheetOpen] = useState(Boolean(initialOpenActionId));
   const [selectedActionId, setSelectedActionId] = useState<string | null>(
     initialOpenActionId ?? null,
@@ -146,14 +195,8 @@ export function ActionPlannerShell({
     openAction(actionId);
   }
 
-  const boardActions = useMemo(
-    () =>
-      actions.filter((action) =>
-        ["open", "in_progress", "completed", "verified"].includes(
-          action.status,
-        ),
-      ),
-    [actions],
+  const boardActions = actions.filter((action) =>
+    ["open", "in_progress", "completed", "verified"].includes(action.status),
   );
 
   return (
@@ -252,12 +295,15 @@ export function ActionPlannerShell({
         </div>
       </div>
 
-      {error ? (
+      {error || (needsCardDetails && cardError) ? (
         <p
           className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
           role="alert"
+          data-testid={
+            view === "board" ? "actions-board-error" : "actions-list-error"
+          }
         >
-          {error}
+          {error || cardError}
         </p>
       ) : null}
 

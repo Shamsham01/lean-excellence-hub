@@ -21,9 +21,23 @@ export type ActionPlannerListItem = {
   labels: ActionLabel[];
   checklist_done: number;
   checklist_total: number;
-  comment_count: number;
+  comment_count: number | null;
   card_cover_mime_type: string | null;
   card_cover_storage_path: string | null;
   five_s_question_prompt?: string | null;
   five_s_audit_href?: string | null;
 };
+
+export type ActionPlannerCardDetails = Pick<
+  ActionPlannerListItem,
+  | "id"
+  | "source"
+  | "labels"
+  | "checklist_done"
+  | "checklist_total"
+  | "comment_count"
+  | "card_cover_mime_type"
+  | "card_cover_storage_path"
+  | "five_s_question_prompt"
+  | "five_s_audit_href"
+>;

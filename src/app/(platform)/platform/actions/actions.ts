@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import type { ActionPlannerComment } from "@/components/actions/action-planner-comments";
 import type { EvidenceItem } from "@/components/attachments/evidence-uploader";
 import type { CommentRow } from "@/components/comments/resource-comments";
+import { z } from "zod";
+import { loadActionPlannerCardDetails } from "@/lib/actions/load-planner-summaries";
 import { mapActionMutationError } from "@/lib/actions/errors";
 import { callActionRpc } from "@/lib/actions/supabase-untyped";
 import type {
@@ -163,6 +165,11 @@ export async function reopenAction(input: {
 
   revalidateActionPaths(input.actionId);
   return { ok: true };
+}
+
+export async function loadPlannerCardDetails(actionIds: string[]) {
+  const ids = z.array(z.uuid()).max(1000).parse(actionIds);
+  return loadActionPlannerCardDetails([...new Set(ids)]);
 }
 
 export async function listActionLabels(): Promise<{
