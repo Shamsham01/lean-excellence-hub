@@ -19,6 +19,7 @@ type ActionPlannerListViewProps = {
   onOpen: (actionId: string) => void;
   onTransition: PlannerTransition;
   pendingIds: ReadonlySet<string>;
+  pendingFromStatus: ReadonlyMap<string, string>;
   pending?: boolean;
   sortBy: "due" | "created" | "title";
 };
@@ -28,14 +29,28 @@ export function ActionPlannerListView({
   onOpen,
   onTransition,
   pendingIds,
+  pendingFromStatus,
   pending = false,
   sortBy,
 }: ActionPlannerListViewProps) {
   const [tab, setTab] = useState<ActionListTab>("all");
 
+  // Keep a pending row in its original tab so the disabled optimistic
+  // checkbox is visible until the mutation settles.
   const tabbed = useMemo(
-    () => filterActionsByListTab(actions, tab),
-    [actions, tab],
+    () => {
+      const matchingIds = new Set(
+        filterActionsByListTab(
+          actions.map((action) => ({
+            ...action,
+            status: pendingFromStatus.get(action.id) ?? action.status,
+          })),
+          tab,
+        ).map((action) => action.id),
+      );
+      return actions.filter((action) => matchingIds.has(action.id));
+    },
+    [actions, pendingFromStatus, tab],
   );
 
   const sorted = useMemo(() => {

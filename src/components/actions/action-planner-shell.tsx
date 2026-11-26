@@ -84,6 +84,7 @@ export function ActionPlannerShell({
   const {
     actions: localActions,
     pendingIds,
+    pendingFromStatus,
     error,
     onTransition,
   } = usePlannerTransitions(serverActions);
@@ -330,6 +331,7 @@ export function ActionPlannerShell({
               onOpen={openAction}
               onTransition={onTransition}
               pendingIds={pendingIds}
+              pendingFromStatus={pendingFromStatus}
               sortBy={listSort}
             />
           ) : null}

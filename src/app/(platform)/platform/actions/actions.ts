@@ -168,7 +168,7 @@ export async function reopenAction(input: {
 }
 
 export async function loadPlannerCardDetails(actionIds: string[]) {
-  const ids = z.array(z.uuid()).max(1000).parse(actionIds);
+  const ids = z.array(z.guid()).max(1000).parse(actionIds);
   return loadActionPlannerCardDetails([...new Set(ids)]);
 }
 

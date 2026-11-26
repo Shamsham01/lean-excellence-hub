@@ -14,6 +14,7 @@ type Patch = {
   status: string;
   version: number;
   pending: boolean;
+  fromStatus: string;
 };
 
 export function usePlannerTransitions(serverActions: ActionPlannerListItem[]) {
@@ -28,9 +29,12 @@ export function usePlannerTransitions(serverActions: ActionPlannerListItem[]) {
     }
     return { ...action, status: patch.status, version: patch.version };
   });
-  const pendingIds = new Set(
-    Object.keys(patches).filter((id) => patches[id]?.pending),
+  const pendingFromStatus = new Map(
+    Object.entries(patches)
+      .filter(([, patch]) => patch.pending)
+      .map(([id, patch]) => [id, patch.fromStatus] as const),
   );
+  const pendingIds = new Set(pendingFromStatus.keys());
 
   const onTransition: PlannerTransition = async (action, targetStatus) => {
     if (
@@ -53,6 +57,7 @@ export function usePlannerTransitions(serverActions: ActionPlannerListItem[]) {
         status: targetStatus,
         version: action.version,
         pending: true,
+        fromStatus: action.status,
       },
     }));
 
@@ -82,6 +87,7 @@ export function usePlannerTransitions(serverActions: ActionPlannerListItem[]) {
           status: targetStatus,
           version: action.version + 1,
           pending: false,
+          fromStatus: action.status,
         },
       }));
     } catch (cause) {
@@ -101,5 +107,5 @@ export function usePlannerTransitions(serverActions: ActionPlannerListItem[]) {
     }
   };
 
-  return { actions, pendingIds, error, onTransition };
+  return { actions, pendingIds, pendingFromStatus, error, onTransition };
 }

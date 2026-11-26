@@ -6,18 +6,29 @@ import {
   reopenAction,
   transitionActionStatus,
 } from "@/app/(platform)/platform/actions/actions";
-import { requestHasTrustedOrigin } from "@/platform/application-origin";
+import {
+  deriveApplicationOriginFromHeaders,
+  requestHasTrustedOrigin,
+} from "@/platform/application-origin";
 import { getServerEnvironment } from "@/platform/env";
 
 const inputSchema = z.object({
-  actionId: z.uuid(),
+  actionId: z.guid(),
   expectedVersion: z.number().int().nonnegative(),
   fromStatus: z.enum(["open", "in_progress", "completed", "cancelled"]),
   toStatus: z.enum(["open", "in_progress", "completed"]),
 });
 
 export async function POST(request: NextRequest) {
-  if (!requestHasTrustedOrigin(request, getServerEnvironment())) {
+  const origin = request.headers.get("origin");
+  const sameOriginPreview =
+    !!origin &&
+    request.headers.get("sec-fetch-site") === "same-origin" &&
+    origin === deriveApplicationOriginFromHeaders(request.headers);
+  if (
+    !sameOriginPreview &&
+    !requestHasTrustedOrigin(request, getServerEnvironment())
+  ) {
     return NextResponse.json({ error: "Untrusted origin." }, { status: 403 });
   }
   const parsed = inputSchema.safeParse(await request.json().catch(() => null));
