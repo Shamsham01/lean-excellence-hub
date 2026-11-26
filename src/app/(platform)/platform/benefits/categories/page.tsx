@@ -18,16 +18,14 @@ export default async function BenefitCategoriesPage() {
 
   const supabase = await createServerSupabaseClient();
 
-  const { data: categories } = await untypedFrom(supabase, "benefit_categories")
-    .select("id, code, name, description, status, display_order")
-    .order("display_order");
-
-  const { data: settingsRows } = await untypedFrom(
-    supabase,
-    "benefit_reporting_settings",
-  )
-    .select("organisation_id, fiscal_year_start_month")
-    .limit(1);
+  const [{ data: categories }, { data: settingsRows }] = await Promise.all([
+    untypedFrom(supabase, "benefit_categories")
+      .select("id, code, name, description, status, display_order")
+      .order("display_order"),
+    untypedFrom(supabase, "benefit_reporting_settings")
+      .select("organisation_id, fiscal_year_start_month")
+      .limit(1),
+  ]);
 
   const reportingSettings =
     (settingsRows as BenefitReportingSettingsRow[] | null)?.[0] ?? null;

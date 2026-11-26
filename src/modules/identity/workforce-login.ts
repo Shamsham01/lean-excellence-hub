@@ -3,6 +3,7 @@ import "server-only";
 import { createHmac } from "node:crypto";
 
 import { workforceLoginSchema } from "@/modules/identity/auth-input";
+import { AUTH_CONTINUE_PATH } from "@/modules/identity/redirects";
 import { getServerEnvironment } from "@/platform/env";
 import {
   consumeAuthenticationRateLimit,
@@ -179,6 +180,8 @@ export async function authenticateWorkforce(
   );
   return {
     ok: true as const,
-    next: account.password_change_required ? "/update-password" : "/",
+    next: account.password_change_required
+      ? "/update-password"
+      : AUTH_CONTINUE_PATH,
   };
 }

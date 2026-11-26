@@ -57,7 +57,6 @@ export async function setGembaDefinitionApplicableUnits(
     },
   );
   if (error) return { error: error.message };
-  revalidatePath("/platform/gemba");
   revalidatePath(`/platform/gemba/definitions/${definitionId}`);
   return { ok: true };
 }
@@ -98,8 +97,6 @@ export async function setGembaDefinitionApplicableUnitsFromForm(
   if (result.error) {
     throw new Error(result.error);
   }
-  revalidatePath("/platform/gemba");
-  revalidatePath(`/platform/gemba/definitions/${definitionId}`);
 }
 
 export async function addGembaSection(

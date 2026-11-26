@@ -45,6 +45,7 @@ vi.mock("@/modules/identity/session", () => ({
 }));
 
 import Home, { metadata } from "@/app/page";
+import { GET as continueAuthentication } from "@/app/auth/continue/route";
 import { ThemeProvider } from "@/app/theme-provider";
 import { MarketingHome } from "@/components/marketing/home";
 import { restingPosition } from "@/components/marketing/v6/thread-carousel";
@@ -604,8 +605,8 @@ describe("homepage authentication routing", () => {
     cleanup();
   });
 
-  it("renders the public homepage when the visitor is not authenticated", async () => {
-    const view = await Home();
+  it("renders the public homepage without a session lookup", () => {
+    const view = Home();
     render(view);
 
     expect(
@@ -613,6 +614,7 @@ describe("homepage authentication routing", () => {
         name: "Make continuous improvement visible, accountable and measurable.",
       }),
     ).toBeInTheDocument();
+    expect(getClaims).not.toHaveBeenCalled();
     expect(routeAfterAuthentication).not.toHaveBeenCalled();
   });
 
@@ -622,7 +624,9 @@ describe("homepage authentication routing", () => {
       error: null,
     });
 
-    await expect(Home()).rejects.toThrow("REDIRECT:/platform");
+    await expect(continueAuthentication()).rejects.toThrow(
+      "REDIRECT:/platform",
+    );
     expect(routeAfterAuthentication).toHaveBeenCalledTimes(1);
   });
 
@@ -701,11 +705,18 @@ describe("homepage authentication routing", () => {
     expect(appearance).not.toContain("localStorage.setItem");
   });
 
-  it("keeps the page-level auth gate and public metadata", () => {
-    const source = readFileSync("src/app/page.tsx", "utf8");
-    expect(source).toContain("routeAfterAuthentication");
-    expect(source).toContain("createServerSupabaseClient");
-    expect(source).toContain("getClaims");
+  it("keeps the homepage auth redirect and public metadata", () => {
+    const proxy = readFileSync("src/platform/supabase/proxy.ts", "utf8");
+    const continuation = readFileSync("src/app/auth/continue/route.ts", "utf8");
+    expect(proxy).toContain("supabase.auth.getClaims()");
+    expect(proxy).toContain(
+      'if (request.nextUrl.pathname === "/" && claims.data?.claims?.sub)',
+    );
+    expect(proxy).toContain('url.pathname = "/auth/continue"');
+    expect(proxy).toContain("NextResponse.redirect(url)");
+    expect(continuation).toContain("createServerSupabaseClient");
+    expect(continuation).toContain("supabase.auth.getClaims()");
+    expect(continuation).toContain("await routeAfterAuthentication()");
     expect(metadata.title).toBe(
       "Lean Excellence Hub — Operational Excellence & Continuous Improvement Platform",
     );

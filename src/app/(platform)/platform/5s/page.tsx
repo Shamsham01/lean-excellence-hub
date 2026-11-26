@@ -32,12 +32,12 @@ export default async function FiveSOverviewPage({
   if (workplaceView) return workplaceView;
 
   const supabase = await createServerSupabaseClient();
-  const analyticsRange = await buildAnalyticsDateRangeForOrganisation(
-    parseAnalyticsRangeDays(params.range),
-  );
-  const canManage = await currentMemberHasPermission(
-    FIVE_S_PERMISSIONS.standardsManage,
-  );
+  const [analyticsRange, canManage] = await Promise.all([
+    buildAnalyticsDateRangeForOrganisation(
+      parseAnalyticsRangeDays(params.range),
+    ),
+    currentMemberHasPermission(FIVE_S_PERMISSIONS.standardsManage),
+  ]);
 
   let topRows;
   let startableCount;
@@ -60,23 +60,27 @@ export default async function FiveSOverviewPage({
     visibleCount: startableCount,
   });
 
-  const { count: auditCount } = await supabase
-    .from("five_s_audits")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "completed");
-
-  const { data: latestAudit } = await supabase
-    .from("five_s_audits")
-    .select("id, overall_score_percent, target_percent, completed_at")
-    .eq("status", "completed")
-    .order("completed_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const { count: openOccurrences } = await supabase
-    .from("schedule_occurrences")
-    .select("id", { count: "exact", head: true })
-    .eq("lifecycle_status", "open");
+  const [
+    { count: auditCount },
+    { data: latestAudit },
+    { count: openOccurrences },
+  ] = await Promise.all([
+    supabase
+      .from("five_s_audits")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "completed"),
+    supabase
+      .from("five_s_audits")
+      .select("id, overall_score_percent, target_percent, completed_at")
+      .eq("status", "completed")
+      .order("completed_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("schedule_occurrences")
+      .select("id", { count: "exact", head: true })
+      .eq("lifecycle_status", "open"),
+  ]);
 
   if (catalog === "empty") {
     return (

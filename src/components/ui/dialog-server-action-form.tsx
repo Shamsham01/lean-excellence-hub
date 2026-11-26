@@ -11,12 +11,14 @@ export function DialogServerActionForm({
   className,
   onSuccess,
   onError,
+  refreshOnSuccess = false,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   children: ReactNode;
   className?: string;
   onSuccess?: () => void;
   onError?: (error: unknown) => void;
+  refreshOnSuccess?: boolean;
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -32,9 +34,11 @@ export function DialogServerActionForm({
           formRef.current?.reset();
           guard?.setPending(false);
           onSuccess?.();
-          queueMicrotask(() => {
-            router.refresh();
-          });
+          if (refreshOnSuccess) {
+            queueMicrotask(() => {
+              router.refresh();
+            });
+          }
         } catch (error) {
           guard?.setPending(false);
           if (onError) {

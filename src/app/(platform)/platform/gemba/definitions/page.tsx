@@ -68,21 +68,22 @@ export default async function GembaDefinitionsPage({
 
   const supabase = await createServerSupabaseClient();
 
-  const canManage = await currentMemberHasPermission(
-    GEMBA_PERMISSIONS.definitionsManage,
-  );
+  const [canManage, definitionsResult] = await Promise.all([
+    currentMemberHasPermission(GEMBA_PERMISSIONS.definitionsManage),
+    supabase
 
-  const { data: loadedDefinitions, error: definitionsError } = await supabase
+      .from("gemba_definitions")
 
-    .from("gemba_definitions")
+      .select(
+        "id, display_name, gemba_definition_versions(status, version_number, gemba_walks(count)), gemba_definition_applicable_units(unit_id)",
+      )
 
-    .select(
-      "id, display_name, gemba_definition_versions(status, version_number, gemba_walks(count)), gemba_definition_applicable_units(unit_id)",
-    )
+      .is("archived_at", null)
 
-    .is("archived_at", null)
-
-    .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false }),
+  ]);
+  const { data: loadedDefinitions, error: definitionsError } =
+    definitionsResult;
 
   if (definitionsError) {
     return (

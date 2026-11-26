@@ -1,7 +1,11 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
+
 import {
+  AUTHORING_SAVED_PARAM,
   authoringSaveMessage,
+  parseAuthoringSavedKey,
   type AuthoringSavedKey,
 } from "@/lib/authoring/authoring-query";
 
@@ -31,5 +35,23 @@ export function AuthoringSaveFeedback({
     >
       {message}
     </p>
+  );
+}
+
+/** Live query feedback for pages whose mutation already revalidated the data. */
+export function LiveAuthoringSaveFeedback({
+  savedKey,
+  ...props
+}: AuthoringSaveFeedbackProps) {
+  const searchParams = useSearchParams();
+  return (
+    <AuthoringSaveFeedback
+      {...props}
+      savedKey={
+        searchParams
+          ? parseAuthoringSavedKey(searchParams.get(AUTHORING_SAVED_PARAM))
+          : (savedKey ?? null)
+      }
+    />
   );
 }

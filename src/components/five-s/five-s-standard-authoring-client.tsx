@@ -70,7 +70,7 @@ export function FiveSApplicabilityEditor({
   staleWarning: string | null;
 }) {
   const [open, setOpen] = useState(false);
-  const flashSaved = useAuthoringSavedFlash();
+  const flashSaved = useAuthoringSavedFlash(true);
 
   return (
     <>
@@ -132,7 +132,7 @@ export function FiveSScoringScaleEditor({
   saved: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const flashSaved = useAuthoringSavedFlash();
+  const flashSaved = useAuthoringSavedFlash(true);
 
   return (
     <>
@@ -261,7 +261,7 @@ export function FiveSDraftAuthoringPanels({
   const [removeStructuralError, setRemoveStructuralError] = useState<
     string | null
   >(null);
-  const flashSaved = useAuthoringSavedFlash();
+  const flashSaved = useAuthoringSavedFlash(true);
 
   return (
     <>

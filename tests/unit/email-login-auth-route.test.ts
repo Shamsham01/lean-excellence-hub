@@ -1,10 +1,16 @@
 /**
  * @vitest-environment node
  */
+import { readFileSync } from "node:fs";
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 import { POST } from "@/app/api/auth/login/route";
+import {
+  AUTH_CONTINUE_PATH,
+  postSignInRedirectPath,
+} from "@/modules/identity/redirects";
 
 const recordAuthenticationSecurityEvent = vi.fn();
 const resolveEmailPasswordLoginRedirectPath = vi.fn();
@@ -179,5 +185,27 @@ describe("email login auth route redirects", () => {
     );
 
     expect(response.status).toBe(403);
+  });
+
+  it("can redirect successful logins through /auth/continue", async () => {
+    resolveEmailPasswordLoginRedirectPath.mockResolvedValue(AUTH_CONTINUE_PATH);
+
+    const response = await POST(createTrustedLoginRequest());
+
+    expect(response.status).toBe(303);
+    expect(response.headers.get("Location")).toBe(
+      "https://leanexcellencehub.com/auth/continue",
+    );
+  });
+
+  it("maps a successful-auth homepage target to /auth/continue", () => {
+    expect(postSignInRedirectPath("/")).toBe("/auth/continue");
+    expect(postSignInRedirectPath("/platform")).toBe("/platform");
+  });
+
+  it("keeps email login success redirects off the marketing homepage", () => {
+    const source = readFileSync("src/modules/identity/email-login.ts", "utf8");
+    expect(source).toContain("postSignInRedirectPath");
+    expect(source).toContain("resolvePostAuthenticationRedirectPath");
   });
 });

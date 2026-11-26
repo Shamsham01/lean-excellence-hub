@@ -51,51 +51,47 @@ export default async function BenefitDetailPage({
     notFound();
   }
 
-  const canManage = await currentMemberHasPermission("benefits.manage");
-  const canValidateCi = await currentMemberHasPermission(
-    "benefits.validate.ci",
-  );
-  const canValidateFinance = await currentMemberHasPermission(
-    "benefits.validate.finance",
-  );
-  const canRecordRealisation = await currentMemberHasPermission(
-    "benefits.realisation.record",
-  );
-  const canValidateRealisation = await currentMemberHasPermission(
-    "benefits.realisation.validate",
-  );
-
-  const { data: forecastHistoryData } = await callBenefitRpc<{
-    items: BenefitForecastVersion[];
-  }>(supabase, "get_benefit_forecast_history", {
-    target_benefit_id: benefitId,
-  });
-
-  const { data: realisationHistoryData } = await callBenefitRpc<{
-    items: BenefitRealisationEntry[];
-  }>(supabase, "get_benefit_realisation_history", {
-    target_benefit_id: benefitId,
-  });
-
-  const { data: realisationSummary } =
-    await callBenefitRpc<BenefitRealisationSummary>(
+  const [
+    canManage,
+    canValidateCi,
+    canValidateFinance,
+    canRecordRealisation,
+    canValidateRealisation,
+    { data: forecastHistoryData },
+    { data: realisationHistoryData },
+    { data: realisationSummary },
+    { data: comments },
+    { data: evidenceLinks },
+  ] = await Promise.all([
+    currentMemberHasPermission("benefits.manage"),
+    currentMemberHasPermission("benefits.validate.ci"),
+    currentMemberHasPermission("benefits.validate.finance"),
+    currentMemberHasPermission("benefits.realisation.record"),
+    currentMemberHasPermission("benefits.realisation.validate"),
+    callBenefitRpc<{ items: BenefitForecastVersion[] }>(
+      supabase,
+      "get_benefit_forecast_history",
+      { target_benefit_id: benefitId },
+    ),
+    callBenefitRpc<{ items: BenefitRealisationEntry[] }>(
+      supabase,
+      "get_benefit_realisation_history",
+      { target_benefit_id: benefitId },
+    ),
+    callBenefitRpc<BenefitRealisationSummary>(
       supabase,
       "get_benefit_realisation_summary",
       { target_benefit_id: benefitId },
-    );
-
-  const { data: comments } = await supabase
-    .from("comments")
-    .select("id, body, created_at, author_membership_id")
-    .eq("target_resource_id", benefitId)
-    .order("created_at");
-
-  const { data: evidenceLinks } = await untypedFrom(
-    supabase,
-    "benefit_evidence_links",
-  )
-    .select("attachment_id")
-    .eq("benefit_id", benefitId);
+    ),
+    supabase
+      .from("comments")
+      .select("id, body, created_at, author_membership_id")
+      .eq("target_resource_id", benefitId)
+      .order("created_at"),
+    untypedFrom(supabase, "benefit_evidence_links")
+      .select("attachment_id")
+      .eq("benefit_id", benefitId),
+  ]);
 
   const attachmentIds =
     (evidenceLinks as Array<{ attachment_id: string }> | null)?.map(

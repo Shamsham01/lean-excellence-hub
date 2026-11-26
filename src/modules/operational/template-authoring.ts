@@ -152,19 +152,23 @@ export async function loadTemplateAuthoringChildren(
     return emptyTemplateAuthoringChildren();
   }
 
-  const { data: sectionsRaw, error: sectionsError } = await supabase
-    .from("template_sections")
-    .select(TEMPLATE_AUTHORING_SECTION_COLUMNS)
-    .eq("template_version_id", templateVersionId)
-    .order("position");
+  const [
+    { data: sectionsRaw, error: sectionsError },
+    { data: questionsRaw, error: questionsError },
+  ] = await Promise.all([
+    supabase
+      .from("template_sections")
+      .select(TEMPLATE_AUTHORING_SECTION_COLUMNS)
+      .eq("template_version_id", templateVersionId)
+      .order("position"),
+    supabase
+      .from("template_questions")
+      .select(TEMPLATE_AUTHORING_QUESTION_COLUMNS)
+      .eq("template_version_id", templateVersionId)
+      .order("position"),
+  ]);
 
   throwIfAuthoringQueryError("template_sections", sectionsError);
-
-  const { data: questionsRaw, error: questionsError } = await supabase
-    .from("template_questions")
-    .select(TEMPLATE_AUTHORING_QUESTION_COLUMNS)
-    .eq("template_version_id", templateVersionId)
-    .order("position");
 
   throwIfAuthoringQueryError("template_questions", questionsError);
 
