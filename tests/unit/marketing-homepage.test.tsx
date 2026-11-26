@@ -705,11 +705,18 @@ describe("homepage authentication routing", () => {
     expect(appearance).not.toContain("localStorage.setItem");
   });
 
-  it("keeps the page-level auth gate and public metadata", () => {
-    const source = readFileSync("src/app/page.tsx", "utf8");
-    expect(source).toContain("routeAfterAuthentication");
-    expect(source).toContain("createServerSupabaseClient");
-    expect(source).toContain("getClaims");
+  it("keeps the homepage auth redirect and public metadata", () => {
+    const proxy = readFileSync("src/platform/supabase/proxy.ts", "utf8");
+    const continuation = readFileSync("src/app/auth/continue/route.ts", "utf8");
+    expect(proxy).toContain("supabase.auth.getClaims()");
+    expect(proxy).toContain(
+      'if (request.nextUrl.pathname === "/" && claims.data?.claims?.sub)',
+    );
+    expect(proxy).toContain('url.pathname = "/auth/continue"');
+    expect(proxy).toContain("NextResponse.redirect(url)");
+    expect(continuation).toContain("createServerSupabaseClient");
+    expect(continuation).toContain("supabase.auth.getClaims()");
+    expect(continuation).toContain("await routeAfterAuthentication()");
     expect(metadata.title).toBe(
       "Lean Excellence Hub — Operational Excellence & Continuous Improvement Platform",
     );
