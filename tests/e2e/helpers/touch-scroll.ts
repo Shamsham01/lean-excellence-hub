@@ -15,26 +15,42 @@ export function usesChromiumCdpTouch(testInfo: TestInfo) {
   return testInfo.project.name === "chromium-pixel7";
 }
 
+async function pause(ms: number) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function dispatchCdpTouchSwipe(
   page: Page,
   x: number,
   startY: number,
   endY: number,
 ) {
+  // A single jump from start to end is often ignored by Chromium's
+  // Android touch scroller. Step the move so the gesture can latch.
+  const steps = 12;
+  const frameMs = 16;
   const client = await page.context().newCDPSession(page);
-  await client.send("Input.dispatchTouchEvent", {
-    type: "touchStart",
-    touchPoints: [{ x, y: startY }],
-  });
-  await client.send("Input.dispatchTouchEvent", {
-    type: "touchMove",
-    touchPoints: [{ x, y: endY }],
-  });
-  await client.send("Input.dispatchTouchEvent", {
-    type: "touchEnd",
-    touchPoints: [],
-  });
-  await client.detach();
+  try {
+    await client.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x, y: startY }],
+    });
+    await pause(frameMs);
+    for (let step = 1; step <= steps; step += 1) {
+      const y = startY + ((endY - startY) * step) / steps;
+      await client.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: [{ x, y }],
+      });
+      await pause(frameMs);
+    }
+    await client.send("Input.dispatchTouchEvent", {
+      type: "touchEnd",
+      touchPoints: [],
+    });
+  } finally {
+    await client.detach();
+  }
 }
 
 /** Chromium-only CDP touch swipe. Returns false on WebKit (callers must not invoke CDP). */
