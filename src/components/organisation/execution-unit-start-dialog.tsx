@@ -63,6 +63,8 @@ export function ExecutionUnitStartDialog({
         onOpenChange={setOpen}
         title={dialogTitle}
         testId={`${formProps.formTestId}-dialog`}
+        // The unit selector is the mobile touch scroller; do not let the sheet compete.
+        contentClassName="max-sm:overflow-y-hidden"
         enableGuard
       >
         <ExecutionUnitStartForm {...dialogFormProps} />
