@@ -64,7 +64,8 @@ export function ExecutionUnitStartDialog({
         title={dialogTitle}
         testId={`${formProps.formTestId}-dialog`}
         // The unit selector is the mobile touch scroller; do not let the sheet compete.
-        contentClassName="max-sm:overflow-y-hidden"
+        // overflow-hidden (not max-sm:overflow-y-hidden) so twMerge drops overflow-y-auto.
+        contentClassName="overflow-hidden"
         enableGuard
       >
         <ExecutionUnitStartForm {...dialogFormProps} />
