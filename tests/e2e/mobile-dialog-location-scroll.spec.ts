@@ -121,9 +121,7 @@ async function expectTouchScroll(page: Page, list: Locator) {
     expect(first!.height).toBeGreaterThan(0);
     await list.evaluate(
       () =>
-        new Promise((resolve) =>
-          requestAnimationFrame(() => resolve(null)),
-        ),
+        new Promise((resolve) => requestAnimationFrame(() => resolve(null))),
     );
     const second = await list.boundingBox();
     expect(second).toEqual(first);
