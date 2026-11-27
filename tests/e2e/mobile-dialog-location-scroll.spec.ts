@@ -85,12 +85,50 @@ async function captureMobileScreenshot(page: Page, path: string) {
   return path;
 }
 
+async function waitForSheetAnimations(list: Locator) {
+  await list.evaluate(async (element) => {
+    const root =
+      element.closest<HTMLElement>("[role='dialog']") ??
+      element.closest<HTMLElement>("[data-testid$='-dialog']") ??
+      element;
+    const running = root
+      .getAnimations({ subtree: true })
+      .filter((animation) => {
+        if (animation.playState !== "running") return false;
+        const iterations = animation.effect?.getComputedTiming().iterations;
+        return iterations !== Infinity;
+      });
+    await Promise.all(
+      running.map((animation) => animation.finished.catch(() => undefined)),
+    );
+  });
+}
+
 async function expectTouchScroll(page: Page, list: Locator) {
   // The responsive form can switch from a dialog to a sheet while mounting.
   // Resolve the list again if that switch detaches it during the stability check.
   await expect(async () => {
     await list.scrollIntoViewIfNeeded({ timeout: 2_000 });
+    await waitForSheetAnimations(list);
+    const metrics = await list.evaluate((element) => ({
+      scrollHeight: element.scrollHeight,
+      clientHeight: element.clientHeight,
+    }));
+    expect(metrics.clientHeight).toBeGreaterThan(0);
+    expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight);
+    const first = await list.boundingBox();
+    expect(first).not.toBeNull();
+    expect(first!.height).toBeGreaterThan(0);
+    await list.evaluate(
+      () =>
+        new Promise((resolve) =>
+          requestAnimationFrame(() => resolve(null)),
+        ),
+    );
+    const second = await list.boundingBox();
+    expect(second).toEqual(first);
   }).toPass({ timeout: 10_000 });
+
   const readBackgroundScroll = () =>
     page.evaluate(() => ({
       window: window.scrollY,
@@ -98,17 +136,23 @@ async function expectTouchScroll(page: Page, list: Locator) {
     }));
   const backgroundBefore = await readBackgroundScroll();
   const listBefore = await list.evaluate((element) => element.scrollTop);
-  const box = await list.boundingBox();
-  expect(box).not.toBeNull();
-  await dispatchCdpTouchSwipe(
-    page,
-    box!.x + box!.width / 2,
-    box!.y + box!.height * 0.8,
-    box!.y + box!.height * 0.2,
-  );
-  await expect
-    .poll(() => list.evaluate((element) => element.scrollTop))
-    .toBeGreaterThan(listBefore);
+
+  // A single gesture can still be ignored; retry the swipe, not the assertion.
+  await expect(async () => {
+    const box = await list.boundingBox();
+    expect(box).not.toBeNull();
+    await dispatchCdpTouchSwipe(
+      page,
+      box!.x + box!.width / 2,
+      box!.y + box!.height * 0.8,
+      box!.y + box!.height * 0.2,
+    );
+    expect(await list.evaluate((element) => element.scrollTop)).toBeGreaterThan(
+      listBefore,
+    );
+    expect(await readBackgroundScroll()).toEqual(backgroundBefore);
+  }).toPass({ timeout: 8_000 });
+
   expect(await readBackgroundScroll()).toEqual(backgroundBefore);
   expect(
     await list.evaluate((element) => element.scrollWidth),
