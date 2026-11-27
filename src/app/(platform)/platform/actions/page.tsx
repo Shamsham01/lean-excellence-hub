@@ -63,6 +63,7 @@ export default async function ActionsPage({
     priority: string;
     created_at: string;
     due_at: string | null;
+    unit_id: string | null;
     version: number;
   }> = [];
 

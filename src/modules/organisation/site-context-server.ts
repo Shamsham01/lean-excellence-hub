@@ -28,6 +28,7 @@ type ServerSupabaseClient = Awaited<
 type DirectoryPerson = {
   membership_id: string;
   display_name: string | null;
+  avatar_url?: string | null;
   job_title?: string | null;
   job_function_name?: string | null;
 };
@@ -36,33 +37,34 @@ type DirectoryPayload = {
   people?: DirectoryPerson[];
 };
 
-const DIRECTORY_PAGE_SIZE = 200;
+// The directory RPC caps page size at 100.
+const DIRECTORY_PAGE_SIZE = 100;
 const DIRECTORY_MAX_PAGES = 25;
 
-async function loadDirectoryPeople(
-  supabase: ServerSupabaseClient,
-): Promise<DirectoryPerson[]> {
-  const people: DirectoryPerson[] = [];
+export const loadDirectoryPeople = cache(
+  async (supabase: ServerSupabaseClient): Promise<DirectoryPerson[]> => {
+    const people: DirectoryPerson[] = [];
 
-  for (let page = 1; page <= DIRECTORY_MAX_PAGES; page += 1) {
-    const { data, error } = await supabase.rpc("get_people_directory", {
-      target_page: page,
-      target_page_size: DIRECTORY_PAGE_SIZE,
-    });
+    for (let page = 1; page <= DIRECTORY_MAX_PAGES; page += 1) {
+      const { data, error } = await supabase.rpc("get_people_directory", {
+        target_page: page,
+        target_page_size: DIRECTORY_PAGE_SIZE,
+      });
 
-    if (error) {
-      return people;
+      if (error) {
+        return people;
+      }
+
+      const batch = (data as DirectoryPayload | null)?.people ?? [];
+      people.push(...batch);
+      if (batch.length < DIRECTORY_PAGE_SIZE) {
+        break;
+      }
     }
 
-    const batch = (data as DirectoryPayload | null)?.people ?? [];
-    people.push(...batch);
-    if (batch.length < DIRECTORY_PAGE_SIZE) {
-      break;
-    }
-  }
-
-  return people;
-}
+    return people;
+  },
+);
 
 export const loadAccessibleOrganisationUnits = cache(
   async (): Promise<FlatOrganisationUnit[]> => {

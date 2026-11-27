@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { ActionTaskListRow } from "@/components/actions/action-task-list-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { PlannerTransition } from "@/lib/actions/use-planner-transitions";
 import type { ActionPlannerListItem } from "@/lib/actions/planner-types";
 import {
   type ActionListTab,
@@ -16,6 +17,9 @@ import {
 type ActionPlannerListViewProps = {
   actions: ActionPlannerListItem[];
   onOpen: (actionId: string) => void;
+  onTransition: PlannerTransition;
+  pendingIds: ReadonlySet<string>;
+  pendingFromStatus: ReadonlyMap<string, string>;
   pending?: boolean;
   sortBy: "due" | "created" | "title";
 };
@@ -23,15 +27,28 @@ type ActionPlannerListViewProps = {
 export function ActionPlannerListView({
   actions,
   onOpen,
+  onTransition,
+  pendingIds,
+  pendingFromStatus,
   pending = false,
   sortBy,
 }: ActionPlannerListViewProps) {
   const [tab, setTab] = useState<ActionListTab>("all");
 
-  const tabbed = useMemo(
-    () => filterActionsByListTab(actions, tab),
-    [actions, tab],
-  );
+  // Keep a pending row in its original tab so the disabled optimistic
+  // checkbox is visible until the mutation settles.
+  const tabbed = useMemo(() => {
+    const matchingIds = new Set(
+      filterActionsByListTab(
+        actions.map((action) => ({
+          ...action,
+          status: pendingFromStatus.get(action.id) ?? action.status,
+        })),
+        tab,
+      ).map((action) => action.id),
+    );
+    return actions.filter((action) => matchingIds.has(action.id));
+  }, [actions, pendingFromStatus, tab]);
 
   const sorted = useMemo(() => {
     const copy = [...tabbed];
@@ -115,6 +132,8 @@ export function ActionPlannerListView({
                   key={action.id}
                   action={action}
                   onOpen={onOpen}
+                  onTransition={onTransition}
+                  pending={pendingIds.has(action.id)}
                 />
               ))}
             </section>
