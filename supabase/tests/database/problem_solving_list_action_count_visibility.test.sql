@@ -582,6 +582,8 @@ as $$
   );
 $$;
 
+grant execute on function pg_temp.vis1b_open_action_count(uuid) to authenticated;
+
 -- Scenario H/J: fully authorised owner sees accurate readable open action count
 select set_config(
   'request.jwt.claims',

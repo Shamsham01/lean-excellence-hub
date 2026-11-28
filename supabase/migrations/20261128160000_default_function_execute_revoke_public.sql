@@ -24,6 +24,9 @@
 -- explicitly. That matches the intent of the original per-schema revokes
 -- for both public and private (public RPCs and RLS helpers must carry
 -- explicit grants, which is already the repo convention).
+-- After this migration, DROP + CREATE of a function needs explicit GRANT
+-- EXECUTE for any role that should call it. CREATE OR REPLACE keeps the
+-- existing ACL and is unaffected.
 --
 -- What this migration does NOT do:
 --   * change any existing function's ACL (default privileges only apply to
