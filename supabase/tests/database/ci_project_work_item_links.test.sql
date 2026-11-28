@@ -904,6 +904,8 @@ begin
 end;
 $$;
 
+grant execute on function pg_temp.submit_work_link_project(uuid) to authenticated;
+
 set local role authenticated;
 
 insert into work_link_ids (key, id)
