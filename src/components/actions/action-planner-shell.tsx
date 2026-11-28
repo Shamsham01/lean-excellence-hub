@@ -74,6 +74,10 @@ type ActionPlannerShellProps = {
   };
 };
 
+function subscribeNoop() {
+  return () => {};
+}
+
 export function ActionPlannerShell({
   actions: serverActions,
   initialOpenActionId = null,
@@ -94,6 +98,13 @@ export function ActionPlannerShell({
     subscribeActionPlannerView,
     readStoredActionPlannerView,
     () => "list" as ActionPlannerView,
+  );
+  // Toolbar controls stay disabled until React has hydrated so an early tap on
+  // server-rendered markup is never silently dropped (no click handler yet).
+  const hydrated = useSyncExternalStore(
+    subscribeNoop,
+    () => true,
+    () => false,
   );
   const needsCardDetails = view !== "list";
   const [cardDetails, setCardDetails] = useState<{
@@ -256,6 +267,7 @@ export function ActionPlannerShell({
                 size="sm"
                 className="gap-1.5"
                 onClick={openCreateDialog}
+                disabled={!hydrated}
                 data-testid="actions-add-new"
               >
                 <Plus className="size-3.5" aria-hidden />
@@ -284,6 +296,7 @@ export function ActionPlannerShell({
                     role="tab"
                     aria-selected={active}
                     data-testid={`actions-view-${option.id}`}
+                    disabled={!hydrated}
                     onClick={() => selectView(option.id)}
                   >
                     <Icon className="size-3.5" aria-hidden />
